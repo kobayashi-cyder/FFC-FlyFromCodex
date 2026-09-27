@@ -36,6 +36,7 @@ public class MainActivity extends Activity {
     private final ArrayList<Edge> edges = new ArrayList<>();
     private LinearLayout content;
     private long selectedId = 1001;
+    private final BioState bio = new BioState();
     private static final int REQ_NODES = 501;
     private static final int REQ_EDGES = 502;
 
@@ -62,6 +63,7 @@ public class MainActivity extends Activity {
         nav.addView(navButton("細胞", this::showCell));
         nav.addView(navButton("Hops", this::showHops));
         nav.addView(navButton("Graph", this::showGraph));
+        nav.addView(navButton("相互作用", this::showInteractions));
         nav.addView(navButton("学習", this::showLearn));
         nav.addView(navButton("取込", this::showImport));
         scroll.addView(nav);
@@ -330,6 +332,168 @@ public class MainActivity extends Activity {
         GraphView graph = new GraphView();
         content.addView(graph, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 1100));
+    }
+
+
+    private static final class BioState {
+        double extracellularK = 1.00;   // MODEL: normalised, not mM
+        double transmitter = 0.00;      // MODEL: local microdomain concentration proxy
+        double glialK = 0.50;           // MODEL: glial buffering load
+        double excitability = 0.20;     // MODEL: 0..1 proxy
+        double metabotropic = 0.00;     // MODEL: slow intracellular signal
+        double plasticity = 0.00;       // MODEL: persistent trace, 0..1
+        int step = 0;
+
+        void clamp() {
+            extracellularK = Math.max(0.0, Math.min(3.0, extracellularK));
+            transmitter = Math.max(0.0, Math.min(3.0, transmitter));
+            glialK = Math.max(0.0, Math.min(3.0, glialK));
+            excitability = Math.max(0.0, Math.min(1.0, excitability));
+            metabotropic = Math.max(0.0, Math.min(1.0, metabotropic));
+            plasticity = Math.max(0.0, Math.min(1.0, plasticity));
+        }
+
+        void passiveStep() {
+            transmitter *= 0.86;
+            extracellularK += (1.0 - extracellularK) * 0.08;
+            glialK += (0.50 - glialK) * 0.03;
+            excitability += ((0.20 + Math.max(0, extracellularK - 1.0) * 0.28) - excitability) * 0.18;
+            metabotropic *= 0.97;
+            plasticity *= 0.998;
+            step++;
+            clamp();
+        }
+    }
+
+    private void showInteractions() {
+        clear();
+        content.addView(text("液体・小域・グリア相互作用 → FFC写像", 21, true));
+        content.addView(text(
+                "[BANC] = v888から直接得る構造\n" +
+                "[文献] = ショウジョウバエ生理で支持される機構\n" +
+                "[MODEL] = FFC内の計算用状態。実測濃度ではない",
+                14, false));
+
+        content.addView(text("写像の骨格", 19, true));
+        content.addView(text(
+                "[BANC] presynaptic neuron → synapse count / NT prediction → postsynaptic neuron\n" +
+                "                         ↓\n" +
+                "[文献]       局所小域（細胞外）: K⁺・伝達物質が一時的に変化\n" +
+                "               ↙                     ↘\n" +
+                "[文献] グリアK⁺緩衝/再取り込み      受容体応答\n" +
+                "          ↓                          ↓\n" +
+                "[文献] BBB ↔ 血リンパ          ionotropic / metabotropic\n" +
+                "                                      ↓\n" +
+                "[MODEL]                        slow signal → plasticity",
+                14, false));
+
+        content.addView(text("状態ベクトル", 19, true));
+        content.addView(text(
+                "[MODEL] x(t) = {K小域, transmitter小域, glial load, excitability, metabotropic signal, plasticity}\n" +
+                "x(t+1) = F(x(t), neuronal activity, BANC edge weight, glial buffering, receptor mode)",
+                14, false));
+
+        final LinearLayout stateBox = new LinearLayout(this);
+        stateBox.setOrientation(LinearLayout.VERTICAL);
+        content.addView(stateBox);
+
+        Runnable redraw = () -> {
+            stateBox.removeAllViews();
+            stateBox.addView(text(
+                    "step = " + bio.step + "\n" +
+                    "K⁺ 小域 = " + fmt(bio.extracellularK) + " [MODEL normalized]\n" +
+                    "伝達物質 小域 = " + fmt(bio.transmitter) + " [MODEL normalized]\n" +
+                    "グリア K⁺ load = " + fmt(bio.glialK) + " [MODEL]\n" +
+                    "興奮性 proxy = " + fmt(bio.excitability) + "\n" +
+                    "代謝型 signal = " + fmt(bio.metabotropic) + "\n" +
+                    "plasticity trace = " + fmt(bio.plasticity),
+                    16, true));
+        };
+        redraw.run();
+
+        content.addView(text("操作して因果鎖を見る", 19, true));
+
+        content.addView(navButton("ニューロン発火", () -> {
+            double w = selectedStructuralWeight();
+            bio.extracellularK += 0.18 + 0.08 * w;
+            bio.transmitter += 0.30 + 0.22 * w;
+            bio.excitability += 0.10;
+            bio.passiveStep();
+            redraw.run();
+        }));
+
+        content.addView(navButton("グリア K⁺ 緩衝", () -> {
+            double take = Math.max(0.0, Math.min(0.30, bio.extracellularK - 0.75));
+            bio.extracellularK -= take;
+            bio.glialK += take;
+            bio.excitability -= take * 0.18;
+            bio.passiveStep();
+            redraw.run();
+        }));
+
+        content.addView(navButton("伝達物質再取り込み", () -> {
+            bio.transmitter *= 0.55;
+            bio.passiveStep();
+            redraw.run();
+        }));
+
+        content.addView(navButton("代謝型受容体 → slow signal", () -> {
+            double drive = Math.min(1.0, bio.transmitter / 1.2);
+            bio.metabotropic += 0.22 * drive;
+            bio.plasticity += 0.08 * bio.metabotropic;
+            bio.passiveStep();
+            redraw.run();
+        }));
+
+        content.addView(navButton("受容体応答（速い）", () -> {
+            double drive = Math.min(1.0, bio.transmitter / 1.2);
+            bio.excitability += 0.20 * drive;
+            bio.passiveStep();
+            redraw.run();
+        }));
+
+        content.addView(navButton("10 step自然緩和", () -> {
+            for (int i=0; i<10; i++) bio.passiveStep();
+            redraw.run();
+        }));
+
+        content.addView(navButton("状態リセット", () -> {
+            bio.extracellularK = 1.0;
+            bio.transmitter = 0.0;
+            bio.glialK = 0.5;
+            bio.excitability = 0.2;
+            bio.metabotropic = 0.0;
+            bio.plasticity = 0.0;
+            bio.step = 0;
+            redraw.run();
+        }));
+
+        content.addView(text("BANC構造との結合", 19, true));
+        content.addView(text(
+                "選択中 neuron " + selectedId + " の出力synapse数から MODEL coupling を作ります。\n" +
+                "coupling = log(1 + Σsynapse_count) を0〜1へ正規化。\n" +
+                "弱い接続も削除せず、couplingへの寄与として残します。",
+                14, false));
+
+        content.addView(text("生理学的に支持される部分", 19, true));
+        content.addView(text(
+                "・ニューロン活動は細胞外K⁺を増やし得る。グリアはK⁺を取り込み、興奮性を調節する。[文献]\n" +
+                "・ショウジョウバエBBBはK⁺の高い血リンパと脳内液を隔てる。[文献]\n" +
+                "・アストロサイト様グリアは伝達物質輸送によりシナプス伝達を調節し得る。[文献]\n" +
+                "・キノコ体ではdopamine→cAMP/PKA系などのslow signalingが長期可塑性に関与する。[文献]\n" +
+                "・上のボタンで使う係数・速度はFFCの仮定値であり、BANC実測値ではない。[MODEL]",
+                14, false));
+    }
+
+    private double selectedStructuralWeight() {
+        long sum = 0;
+        for (Edge e : edges) if (e.pre == selectedId) sum += Math.max(0, e.syn);
+        if (sum <= 0) return 0.0;
+        return Math.min(1.0, Math.log1p(sum) / Math.log(101.0));
+    }
+
+    private String fmt(double x) {
+        return String.format(Locale.ROOT, "%.3f", x);
     }
 
     private void showLearn() {
