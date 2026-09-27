@@ -2,737 +2,178 @@ package jp.ffc.flyfromcodex;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.content.Intent;
 import android.graphics.*;
-import android.net.Uri;
 import android.view.*;
 import android.widget.*;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class MainActivity extends Activity {
-    static final class Neuron {
-        long id;
-        String type, superClass, bodyPart, nt;
-        double neuriteUm, gliaPct;
-        Neuron(long id, String type, String superClass, String bodyPart, String nt, double neuriteUm, double gliaPct) {
-            this.id=id; this.type=type; this.superClass=superClass; this.bodyPart=bodyPart; this.nt=nt;
-            this.neuriteUm=neuriteUm; this.gliaPct=gliaPct;
-        }
-    }
-
-    static final class Edge {
-        long pre, post;
-        int syn;
-        String nt, neuropil, effect, confidence;
-        Edge(long pre, long post, int syn, String nt, String neuropil, String effect, String confidence) {
-            this.pre=pre; this.post=post; this.syn=syn; this.nt=nt; this.neuropil=neuropil;
-            this.effect=effect; this.confidence=confidence;
-        }
-    }
-
-    private final ArrayList<Neuron> neurons = new ArrayList<>();
-    private final ArrayList<Edge> edges = new ArrayList<>();
     private LinearLayout content;
-    private long selectedId = 1001;
-    private final BioState bio = new BioState();
-    private static final int REQ_NODES = 501;
-    private static final int REQ_EDGES = 502;
+    private BancDataset banc;
+    private volatile boolean bancReady=false;
+    private String bancStatus="BANC v888 実データを初期化中…";
+    private long selectedId=0L;
+    private final BioState bio=new BioState();
 
-    @Override public void onCreate(Bundle state) {
+    @Override public void onCreate(Bundle state){
         super.onCreate(state);
-        loadDemoData();
         buildShell();
         showOverview();
+        initBanc();
     }
 
-    private void buildShell() {
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(12, 12, 12, 12);
-
-        TextView title = text("FFC Connectome Explorer", 24, true);
-        root.addView(title);
-
-        HorizontalScrollView scroll = new HorizontalScrollView(this);
-        LinearLayout nav = new LinearLayout(this);
-        nav.setOrientation(LinearLayout.HORIZONTAL);
-        nav.addView(navButton("概要", this::showOverview));
-        nav.addView(navButton("検索", this::showSearch));
-        nav.addView(navButton("細胞", this::showCell));
-        nav.addView(navButton("Hops", this::showHops));
-        nav.addView(navButton("Graph", this::showGraph));
-        nav.addView(navButton("相互作用", this::showInteractions));
-        nav.addView(navButton("学習", this::showLearn));
-        nav.addView(navButton("取込", this::showImport));
-        scroll.addView(nav);
-        root.addView(scroll);
-
-        ScrollView page = new ScrollView(this);
-        content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(4, 10, 4, 80);
-        page.addView(content);
-        root.addView(page, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
-
-        setContentView(root);
-    }
-
-    private TextView text(String s, int sp, boolean bold) {
-        TextView v = new TextView(this);
-        v.setText(s);
-        v.setTextSize(sp);
-        v.setTextColor(Color.rgb(25,25,30));
-        v.setPadding(10,10,10,10);
-        if (bold) v.setTypeface(null, 1);
-        return v;
-    }
-
-    private Button navButton(String label, Runnable action) {
-        Button b = new Button(this);
-        b.setText(label);
-        b.setOnClickListener(v -> action.run());
-        return b;
-    }
-
-    private void clear() { content.removeAllViews(); }
-
-    private void showOverview() {
-        clear();
-        content.addView(text("理解の順序", 21, true));
-        content.addView(text(
-                "EM image → segmentation → neuron/root → mesh/skeleton → synapse → connectivity graph → annotation → cell type / function / body part",
-                16, false));
-
-        content.addView(text("このAPKで見るもの", 20, true));
-        content.addView(text(
-                "・ニューロン属性\n" +
-                "・直接接続（1-hop）\n" +
-                "・Exact 2〜6-hop\n" +
-                "・長さkの全path集約\n" +
-                "・synapse count / NT / neuropil\n" +
-                "・effect / confidence\n" +
-                "・neurite length / glial coverage 派生指標\n" +
-                "・ネイティブ接続グラフ\n" +
-                "・CSV差し替え",
-                16, false));
-
-        content.addView(text("データ状態", 19, true));
-        content.addView(text(
-                "現在の同梱データはUI・アルゴリズム確認用デモです。BANC実IDではありません。\n" +
-                "neurons=" + neurons.size() + " / edges=" + edges.size(),
-                15, false));
-    }
-
-    private void showSearch() {
-        clear();
-        content.addView(text("ニューロン検索", 21, true));
-
-        EditText query = new EditText(this);
-        query.setHint("ID / cell type / super class / body part / NT");
-        content.addView(query);
-
-        LinearLayout results = new LinearLayout(this);
-        results.setOrientation(LinearLayout.VERTICAL);
-
-        content.addView(navButton("検索", () -> {
-            results.removeAllViews();
-            String q = query.getText().toString().trim().toLowerCase(Locale.ROOT);
-            int count = 0;
-            for (Neuron n : neurons) {
-                String hay = (n.id + " " + n.type + " " + n.superClass + " " + n.bodyPart + " " + n.nt)
-                        .toLowerCase(Locale.ROOT);
-                if (q.isEmpty() || hay.contains(q)) {
-                    Button row = navButton(
-                            n.type + " · " + n.id + " | " + n.superClass + " | " + n.nt,
-                            () -> { selectedId = n.id; showCell(); });
-                    results.addView(row);
-                    count++;
-                }
+    private void initBanc(){
+        new Thread(() -> {
+            try{
+                BancDataset d=new BancDataset(this);
+                d.open(); banc=d; bancReady=true;
+                List<BancDataset.Meta> first=d.search("",1);
+                if(!first.isEmpty()) selectedId=first.get(0).id;
+                bancStatus="BANC v888 / synapses_v2 loaded: neurons="+d.nodeCount()+" / directed pairs="+d.edgeCount()+" / pair threshold=0 (count=1保持)";
+            }catch(Exception e){
+                bancStatus="BANC実データ初期化失敗: "+e.getMessage();
             }
-            if (count == 0) results.addView(text("該当なし", 15, false));
-        }));
-
-        content.addView(results);
+            runOnUiThread(this::showOverview);
+        }).start();
     }
 
-    private Neuron neuron(long id) {
-        for (Neuron n : neurons) if (n.id == id) return n;
-        return null;
+    private void buildShell(){
+        LinearLayout root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(12,12,12,12);
+        root.addView(text("FFC · BANC v888 Native Mapper",24,true));
+        HorizontalScrollView hs=new HorizontalScrollView(this); LinearLayout nav=new LinearLayout(this); nav.setOrientation(LinearLayout.HORIZONTAL);
+        nav.addView(button("概要",this::showOverview)); nav.addView(button("検索",this::showSearch)); nav.addView(button("細胞",this::showCell));
+        nav.addView(button("Hops",this::showHops)); nav.addView(button("Graph",this::showGraph)); nav.addView(button("相互作用",this::showInteractions));
+        nav.addView(button("データ",this::showData)); nav.addView(button("学習",this::showLearn)); hs.addView(nav); root.addView(hs);
+        ScrollView sc=new ScrollView(this); content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(4,10,4,80); sc.addView(content);
+        root.addView(sc,new LinearLayout.LayoutParams(-1,0,1)); setContentView(root);
     }
 
-    private void showCell() {
-        clear();
-        Neuron n = neuron(selectedId);
-        if (n == null) {
-            content.addView(text("細胞が見つかりません。", 18, true));
-            return;
-        }
+    private TextView text(String s,int sp,boolean bold){ TextView v=new TextView(this);v.setText(s);v.setTextSize(sp);v.setTextColor(Color.rgb(25,25,30));v.setPadding(10,10,10,10);if(bold)v.setTypeface(null,1);return v; }
+    private Button button(String s,Runnable r){Button b=new Button(this);b.setText(s);b.setOnClickListener(v->r.run());return b;}
+    private void clear(){content.removeAllViews();}
+    private void notReady(){content.addView(text(bancStatus,17,true));}
 
-        content.addView(text("Cell " + n.id, 22, true));
-        content.addView(text(
-                "cell type: " + n.type + "\n" +
-                "super class: " + n.superClass + "\n" +
-                "body part: " + n.bodyPart + "\n" +
-                "neurotransmitter: " + n.nt + "\n" +
-                "neurite length: " + n.neuriteUm + " µm\n" +
-                "glial coverage: " + n.gliaPct + " %",
-                16, false));
-
-        content.addView(text("Outputs", 19, true));
-        boolean any = false;
-        for (Edge e : edges) {
-            if (e.pre == n.id) {
-                content.addView(text(
-                        "→ " + e.post +
-                        " | syn=" + e.syn +
-                        " | NT=" + e.nt +
-                        " | region=" + e.neuropil +
-                        " | effect=" + e.effect +
-                        " | confidence=" + e.confidence,
-                        14, false));
-                any = true;
-            }
-        }
-        if (!any) content.addView(text("なし", 14, false));
-
-        content.addView(text("Inputs", 19, true));
-        any = false;
-        for (Edge e : edges) {
-            if (e.post == n.id) {
-                content.addView(text(
-                        "← " + e.pre +
-                        " | syn=" + e.syn +
-                        " | NT=" + e.nt +
-                        " | region=" + e.neuropil +
-                        " | effect=" + e.effect +
-                        " | confidence=" + e.confidence,
-                        14, false));
-                any = true;
-            }
-        }
-        if (!any) content.addView(text("なし", 14, false));
+    private void showOverview(){
+        clear(); content.addView(text("BANC v888 実マッピング",22,true)); content.addView(text(bancStatus,16,true));
+        content.addView(text("構造レイヤ",19,true));
+        content.addView(text("root ID → cell type / super class / region / NT → direct synaptic pair → Exact 1–6 hop → FFC相互作用モデル",16,false));
+        content.addView(text("弱い接続",19,true));
+        content.addView(text("pair単位のcountしきい値は0です。count=1の接続もデータ層から削除しません。画面・hop解析で最小synapse数を1,2,5…へ変更できます。",15,false));
+        content.addView(text("実測とモデルの分離",19,true));
+        content.addView(text("[BANC] root ID・接続数・annotation・NT等はv888実データ。\n[文献] K⁺緩衝・再取り込み・BBB・代謝型シグナルは生理学的機構。\n[MODEL] 小域濃度・興奮性・plasticityの時系列係数はFFCの計算モデルです。",15,false));
     }
 
-    private void showHops() {
-        clear();
-        content.addView(text("Exact-hop / k-path 解析", 21, true));
-
-        EditText source = new EditText(this);
-        source.setInputType(2);
-        source.setText(Long.toString(selectedId));
-        content.addView(source);
-
-        Spinner hop = new Spinner(this);
-        hop.setAdapter(new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
-                new String[]{"1","2","3","4","5","6"}));
-        hop.setSelection(1);
-        content.addView(hop);
-
-        EditText minSyn = new EditText(this);
-        minSyn.setInputType(2);
-        minSyn.setHint("最小synapse数");
-        minSyn.setText("1");
-        content.addView(minSyn);
-
-        LinearLayout out = new LinearLayout(this);
-        out.setOrientation(LinearLayout.VERTICAL);
-
-        content.addView(navButton("計算", () -> {
-            out.removeAllViews();
-            long src = parseLong(source.getText().toString(), selectedId);
-            int k = Integer.parseInt((String) hop.getSelectedItem());
-            int min = (int) parseLong(minSyn.getText().toString(), 1);
-
-            Map<Long,Integer> distances = shortestDistances(src, k, min);
-            Map<Long,long[]> allKPaths = aggregateKPaths(src, k, min);
-
-            int exactCount = 0;
-            for (Map.Entry<Long,long[]> entry : allKPaths.entrySet()) {
-                long target = entry.getKey();
-                if (distances.getOrDefault(target, Integer.MAX_VALUE) == k) {
-                    Neuron t = neuron(target);
-                    long[] a = entry.getValue();
-                    out.addView(text(
-                            target + " " + (t == null ? "" : t.type) +
-                            " | paths=" + a[0] +
-                            " | weightedSyn=" + a[1],
-                            14, false));
-                    exactCount++;
-                }
-            }
-
-            out.addView(text(
-                    "Exact " + k + "-hop = " + exactCount + " cells\n" +
-                    "Exact-k = 最短距離がちょうどkの細胞集合。\n" +
-                    "k-path = 長さkの全経路集合。両者は別物です。",
-                    14, true));
-        }));
-
-        content.addView(out);
+    private void showSearch(){
+        clear(); if(!bancReady){notReady();return;}
+        content.addView(text("BANC v888ニューロン検索",21,true));
+        EditText q=new EditText(this);q.setHint("root ID / cell type / super class / class / region / NT / neuromere");content.addView(q);
+        LinearLayout out=new LinearLayout(this);out.setOrientation(LinearLayout.VERTICAL);content.addView(button("検索",()->{
+            out.removeAllViews(); out.addView(text("検索中…",14,false)); String query=q.getText().toString();
+            new Thread(()->{List<BancDataset.Meta> rows=banc.search(query,100);runOnUiThread(()->{
+                out.removeAllViews(); if(rows.isEmpty()){out.addView(text("該当なし",15,false));return;}
+                for(BancDataset.Meta m:rows){String label=(m.cellType.isEmpty()?"(untyped)":m.cellType)+" · "+m.id+" | "+m.superClass+" | "+m.region+" | "+m.nt;
+                    out.addView(button(label,()->{selectedId=m.id;showCell();}));}
+            });}).start();
+        }));content.addView(out);
     }
 
-    private Map<Long,Integer> shortestDistances(long src, int maxHop, int minSyn) {
-        Map<Long,Integer> dist = new HashMap<>();
-        ArrayDeque<Long> q = new ArrayDeque<>();
-        dist.put(src, 0);
-        q.add(src);
-
-        while (!q.isEmpty()) {
-            long u = q.remove();
-            int du = dist.get(u);
-            if (du >= maxHop) continue;
-
-            for (Edge e : edges) {
-                if (e.pre == u && e.syn >= minSyn && !dist.containsKey(e.post)) {
-                    dist.put(e.post, du + 1);
-                    q.add(e.post);
-                }
-            }
-        }
-        return dist;
+    private void showCell(){
+        clear(); if(!bancReady){notReady();return;} if(selectedId==0){content.addView(text("検索からニューロンを選択してください。",17,true));return;}
+        content.addView(text("Cell "+selectedId,22,true));
+        new Thread(()->{
+            try{
+                BancDataset.Meta m=banc.meta(selectedId); List<BancDataset.Link> outs=banc.outputs(selectedId,1,0); List<BancDataset.Link> ins=banc.inputs(selectedId,1,0);
+                runOnUiThread(()->renderCell(m,outs,ins));
+            }catch(Exception e){runOnUiThread(()->content.addView(text("読込エラー: "+e.getMessage(),15,true)));}
+        }).start();
     }
 
-    private Map<Long,long[]> aggregateKPaths(long src, int k, int minSyn) {
-        Map<Long,long[]> frontier = new HashMap<>();
-        frontier.put(src, new long[]{1, 0});
-
-        for (int step=0; step<k; step++) {
-            Map<Long,long[]> next = new HashMap<>();
-            for (Map.Entry<Long,long[]> cur : frontier.entrySet()) {
-                for (Edge e : edges) {
-                    if (e.pre == cur.getKey() && e.syn >= minSyn) {
-                        long[] agg = next.get(e.post);
-                        if (agg == null) {
-                            agg = new long[]{0,0};
-                            next.put(e.post, agg);
-                        }
-                        long pathCount = cur.getValue()[0];
-                        agg[0] += pathCount;
-                        agg[1] += pathCount * e.syn;
-                    }
-                }
-            }
-            frontier = next;
-        }
-        return frontier;
+    private void renderCell(BancDataset.Meta m,List<BancDataset.Link> outs,List<BancDataset.Link> ins){
+        if(m==null){content.addView(text("metadataなし",16,true));return;}
+        String neurite=Double.isNaN(m.neuriteUm)?"n/a":String.format(Locale.ROOT,"%.1f µm",m.neuriteUm);
+        content.addView(text("cell type: "+m.cellType+"\nsuper class: "+m.superClass+"\ncell class: "+m.cellClass+"\nsubclass: "+m.cellSubClass+"\nregion: "+m.region+"\nside: "+m.side+"\nneuromere: "+m.neuromere+"\nflow: "+m.flow+"\nNT: "+m.nt+"\nneurite: "+neurite+"\nBANC total input synapses: "+banc.inputTotal(selectedId)+"\nBANC total output synapses: "+banc.outputTotal(selectedId),15,false));
+        renderLinks("Outputs",outs,true); renderLinks("Inputs",ins,false);
     }
 
-    private void showGraph() {
-        clear();
-        content.addView(text("ネイティブ接続グラフ", 21, true));
-        content.addView(text(
-                "ノード=細胞、線=接続。線幅はsynapse数の概算強度。ピンチ拡大・ドラッグ対応。",
-                14, false));
-
-        GraphView graph = new GraphView();
-        content.addView(graph, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 1100));
+    private void renderLinks(String title,List<BancDataset.Link> ls,boolean outgoing){
+        int weak=0;for(BancDataset.Link l:ls)if(l.count==1)weak++;
+        content.addView(text(title+" · pair数="+ls.size()+" · count=1="+weak,19,true));
+        int strong=Math.min(100,ls.size());
+        for(int i=0;i<strong;i++) addLinkLine(ls.get(i),outgoing,"strong→weak");
+        if(ls.size()>strong){content.addView(text("…中間を省略…",13,false));int start=Math.max(strong,ls.size()-40);for(int i=start;i<ls.size();i++)addLinkLine(ls.get(i),outgoing,"weak tail");}
     }
 
-
-    private static final class BioState {
-        double extracellularK = 1.00;   // MODEL: normalised, not mM
-        double transmitter = 0.00;      // MODEL: local microdomain concentration proxy
-        double glialK = 0.50;           // MODEL: glial buffering load
-        double excitability = 0.20;     // MODEL: 0..1 proxy
-        double metabotropic = 0.00;     // MODEL: slow intracellular signal
-        double plasticity = 0.00;       // MODEL: persistent trace, 0..1
-        int step = 0;
-
-        void clamp() {
-            extracellularK = Math.max(0.0, Math.min(3.0, extracellularK));
-            transmitter = Math.max(0.0, Math.min(3.0, transmitter));
-            glialK = Math.max(0.0, Math.min(3.0, glialK));
-            excitability = Math.max(0.0, Math.min(1.0, excitability));
-            metabotropic = Math.max(0.0, Math.min(1.0, metabotropic));
-            plasticity = Math.max(0.0, Math.min(1.0, plasticity));
-        }
-
-        void passiveStep() {
-            transmitter *= 0.86;
-            extracellularK += (1.0 - extracellularK) * 0.08;
-            glialK += (0.50 - glialK) * 0.03;
-            excitability += ((0.20 + Math.max(0, extracellularK - 1.0) * 0.28) - excitability) * 0.18;
-            metabotropic *= 0.97;
-            plasticity *= 0.998;
-            step++;
-            clamp();
-        }
+    private void addLinkLine(BancDataset.Link l,boolean outgoing,String tag){
+        BancDataset.Meta p=banc.meta(l.partner); String t=p==null?"":p.cellType; String nt=p==null?"":p.nt;
+        content.addView(text((outgoing?"→ ":"← ")+l.partner+" | syn="+l.count+" | "+t+" | NT="+nt+" | "+tag,13,false));
     }
 
-    private void showInteractions() {
-        clear();
-        content.addView(text("液体・小域・グリア相互作用 → FFC写像", 21, true));
-        content.addView(text(
-                "[BANC] = v888から直接得る構造\n" +
-                "[文献] = ショウジョウバエ生理で支持される機構\n" +
-                "[MODEL] = FFC内の計算用状態。実測濃度ではない",
-                14, false));
-
-        content.addView(text("写像の骨格", 19, true));
-        content.addView(text(
-                "[BANC] presynaptic neuron → synapse count / NT prediction → postsynaptic neuron\n" +
-                "                         ↓\n" +
-                "[文献]       局所小域（細胞外）: K⁺・伝達物質が一時的に変化\n" +
-                "               ↙                     ↘\n" +
-                "[文献] グリアK⁺緩衝/再取り込み      受容体応答\n" +
-                "          ↓                          ↓\n" +
-                "[文献] BBB ↔ 血リンパ          ionotropic / metabotropic\n" +
-                "                                      ↓\n" +
-                "[MODEL]                        slow signal → plasticity",
-                14, false));
-
-        content.addView(text("状態ベクトル", 19, true));
-        content.addView(text(
-                "[MODEL] x(t) = {K小域, transmitter小域, glial load, excitability, metabotropic signal, plasticity}\n" +
-                "x(t+1) = F(x(t), neuronal activity, BANC edge weight, glial buffering, receptor mode)",
-                14, false));
-
-        final LinearLayout stateBox = new LinearLayout(this);
-        stateBox.setOrientation(LinearLayout.VERTICAL);
-        content.addView(stateBox);
-
-        Runnable redraw = () -> {
-            stateBox.removeAllViews();
-            stateBox.addView(text(
-                    "step = " + bio.step + "\n" +
-                    "K⁺ 小域 = " + fmt(bio.extracellularK) + " [MODEL normalized]\n" +
-                    "伝達物質 小域 = " + fmt(bio.transmitter) + " [MODEL normalized]\n" +
-                    "グリア K⁺ load = " + fmt(bio.glialK) + " [MODEL]\n" +
-                    "興奮性 proxy = " + fmt(bio.excitability) + "\n" +
-                    "代謝型 signal = " + fmt(bio.metabotropic) + "\n" +
-                    "plasticity trace = " + fmt(bio.plasticity),
-                    16, true));
-        };
-        redraw.run();
-
-        content.addView(text("操作して因果鎖を見る", 19, true));
-
-        content.addView(navButton("ニューロン発火", () -> {
-            double w = selectedStructuralWeight();
-            bio.extracellularK += 0.18 + 0.08 * w;
-            bio.transmitter += 0.30 + 0.22 * w;
-            bio.excitability += 0.10;
-            bio.passiveStep();
-            redraw.run();
-        }));
-
-        content.addView(navButton("グリア K⁺ 緩衝", () -> {
-            double take = Math.max(0.0, Math.min(0.30, bio.extracellularK - 0.75));
-            bio.extracellularK -= take;
-            bio.glialK += take;
-            bio.excitability -= take * 0.18;
-            bio.passiveStep();
-            redraw.run();
-        }));
-
-        content.addView(navButton("伝達物質再取り込み", () -> {
-            bio.transmitter *= 0.55;
-            bio.passiveStep();
-            redraw.run();
-        }));
-
-        content.addView(navButton("代謝型受容体 → slow signal", () -> {
-            double drive = Math.min(1.0, bio.transmitter / 1.2);
-            bio.metabotropic += 0.22 * drive;
-            bio.plasticity += 0.08 * bio.metabotropic;
-            bio.passiveStep();
-            redraw.run();
-        }));
-
-        content.addView(navButton("受容体応答（速い）", () -> {
-            double drive = Math.min(1.0, bio.transmitter / 1.2);
-            bio.excitability += 0.20 * drive;
-            bio.passiveStep();
-            redraw.run();
-        }));
-
-        content.addView(navButton("10 step自然緩和", () -> {
-            for (int i=0; i<10; i++) bio.passiveStep();
-            redraw.run();
-        }));
-
-        content.addView(navButton("状態リセット", () -> {
-            bio.extracellularK = 1.0;
-            bio.transmitter = 0.0;
-            bio.glialK = 0.5;
-            bio.excitability = 0.2;
-            bio.metabotropic = 0.0;
-            bio.plasticity = 0.0;
-            bio.step = 0;
-            redraw.run();
-        }));
-
-        content.addView(text("BANC構造との結合", 19, true));
-        content.addView(text(
-                "選択中 neuron " + selectedId + " の出力synapse数から MODEL coupling を作ります。\n" +
-                "coupling = log(1 + Σsynapse_count) を0〜1へ正規化。\n" +
-                "弱い接続も削除せず、couplingへの寄与として残します。",
-                14, false));
-
-        content.addView(text("生理学的に支持される部分", 19, true));
-        content.addView(text(
-                "・ニューロン活動は細胞外K⁺を増やし得る。グリアはK⁺を取り込み、興奮性を調節する。[文献]\n" +
-                "・ショウジョウバエBBBはK⁺の高い血リンパと脳内液を隔てる。[文献]\n" +
-                "・アストロサイト様グリアは伝達物質輸送によりシナプス伝達を調節し得る。[文献]\n" +
-                "・キノコ体ではdopamine→cAMP/PKA系などのslow signalingが長期可塑性に関与する。[文献]\n" +
-                "・上のボタンで使う係数・速度はFFCの仮定値であり、BANC実測値ではない。[MODEL]",
-                14, false));
+    private void showHops(){
+        clear();if(!bancReady){notReady();return;}content.addView(text("Exact-hop（実BANC v888）",21,true));
+        EditText src=new EditText(this);src.setInputType(2);src.setText(Long.toString(selectedId));content.addView(src);
+        Spinner hop=new Spinner(this);hop.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"1","2","3","4","5","6"}));hop.setSelection(1);content.addView(hop);
+        EditText min=new EditText(this);min.setInputType(2);min.setText("1");min.setHint("最小pair synapse count");content.addView(min);
+        LinearLayout out=new LinearLayout(this);out.setOrientation(LinearLayout.VERTICAL);
+        content.addView(button("計算",()->{
+            long s=parseLong(src.getText().toString(),selectedId);int k=Integer.parseInt((String)hop.getSelectedItem());int threshold=Math.max(1,(int)parseLong(min.getText().toString(),1));
+            out.removeAllViews();out.addView(text("計算中… count="+threshold+"以上。count=1なら弱い接続も含みます。",14,true));
+            new Thread(()->{try{BancDataset.HopResult r=banc.exactHop(s,k,threshold,200);runOnUiThread(()->{
+                out.removeAllViews();out.addView(text("Exact "+k+"-hop = "+r.exactCount+" neurons / min count="+threshold,16,true));
+                for(long id:r.sampleIds){BancDataset.Meta m=banc.meta(id);out.addView(text(id+" | "+(m==null?"":m.cellType)+" | "+(m==null?"":m.superClass)+" | "+(m==null?"":m.nt),13,false));}
+                if(r.exactCount>r.sampleIds.length)out.addView(text("表示は先頭"+r.sampleIds.length+"件。計算自体は全Exact-hop集合です。",13,false));
+            });}catch(Exception e){runOnUiThread(()->{out.removeAllViews();out.addView(text("計算エラー: "+e.getMessage(),14,true));});}}).start();
+        }));content.addView(out);
     }
 
-    private double selectedStructuralWeight() {
-        long sum = 0;
-        for (Edge e : edges) if (e.pre == selectedId) sum += Math.max(0, e.syn);
-        if (sum <= 0) return 0.0;
-        return Math.min(1.0, Math.log1p(sum) / Math.log(101.0));
+    private void showGraph(){
+        clear();if(!bancReady){notReady();return;}if(selectedId==0){content.addView(text("ニューロンを選択してください。",16,true));return;}
+        content.addView(text("選択ニューロンの実1-hopマップ",21,true));
+        try{List<BancDataset.Link> all=banc.outputs(selectedId,1,0);List<BancDataset.Link> sample=strongWeakSample(all,40,20);content.addView(text("全output pair="+all.size()+"。描画は強い40＋弱い20を抽出。元データは削除していません。",14,false));GraphView g=new GraphView(selectedId,sample);content.addView(g,new LinearLayout.LayoutParams(-1,1100));}
+        catch(Exception e){content.addView(text("graph error: "+e.getMessage(),14,true));}
     }
 
-    private String fmt(double x) {
-        return String.format(Locale.ROOT, "%.3f", x);
+    private List<BancDataset.Link> strongWeakSample(List<BancDataset.Link> a,int strong,int weak){ArrayList<BancDataset.Link> r=new ArrayList<>();for(int i=0;i<Math.min(strong,a.size());i++)r.add(a.get(i));for(int i=Math.max(strong,a.size()-weak);i<a.size();i++)r.add(a.get(i));return r;}
+
+    private void showData(){
+        clear();content.addView(text("同梱データ",21,true));content.addView(text(bancStatus,16,true));
+        content.addView(text("dataset: BANC\nmaterialization: v888\nsynapse detector/edgelist: v2 (paper version)\nsource: Lee Lab public GCS compiled_data/banc_888\npair count threshold: 0\nweak pair: count=1 retained\nautapses: source edgelist buildに従う\nmetadata: root ID / hierarchy / region / side / NT / morphology metrics等",15,false));
+        content.addView(text("注意: v2の『size ≥ 5』は元synapse検出側のサイズ条件で、neuron pairをcount≥5に切る条件ではありません。このAPKではedge pairのcountフィルタを生成時にかけません。",14,true));
     }
 
-    private void showLearn() {
-        clear();
-        content.addView(text("BANC / Codex 学習メモ", 21, true));
-        String[] notes = new String[] {
-                "root_id + materialization: ニューロンIDは版情報と組で扱う。",
-                "synapse: 個々の接点。edge: neuron pairへ集約した接続。",
-                "1-hop: 直接接続。",
-                "2-hop: A→M→B。中継Mのまとまり・収束・発散を見る。",
-                "3-hop: A→M1→M2→B。再収束・ボトルネックを見る。",
-                "NT: 効果の手掛かり。受容体情報なしに興奮/抑制を断定しない。",
-                "effect confidence: 構造接続と機能効果の確度を分ける。",
-                "Influence: multi-hop累積指標。実験的因果そのものではない。",
-                "neurite length: 完成形の静的形態指標。発生時の伸長速度ではない。",
-                "glial coverage: 静的EMから作る派生評価枠。BANC標準の動的伸長値ではない。"
-        };
-        for (String n : notes) content.addView(text("・" + n, 15, false));
+    private static final class BioState{
+        double extracellularK=1.0,transmitter=0,glialK=.5,excitability=.2,metabotropic=0,plasticity=0;int step=0;
+        void clamp(){extracellularK=cl(extracellularK,0,3);transmitter=cl(transmitter,0,3);glialK=cl(glialK,0,3);excitability=cl(excitability,0,1);metabotropic=cl(metabotropic,0,1);plasticity=cl(plasticity,0,1);}static double cl(double x,double a,double b){return Math.max(a,Math.min(b,x));}
+        void passive(){transmitter*=.86;extracellularK+=(1-extracellularK)*.08;glialK+=(.5-glialK)*.03;excitability+=((.2+Math.max(0,extracellularK-1)*.28)-excitability)*.18;metabotropic*=.97;plasticity*=.998;step++;clamp();}
     }
 
-    private void showImport() {
-        clear();
-        content.addView(text("BANC由来データ取込", 21, true));
-        content.addView(text(
-                "nodes.csv\n" +
-                "id,cell_type,super_class,body_part,nt,neurite_um,glia_coverage_pct\n\n" +
-                "edges.csv\n" +
-                "pre_id,post_id,synapse_count,nt,neuropil,effect,effect_confidence",
-                14, false));
-
-        content.addView(navButton("nodes.csv を選択", () -> pickCsv(REQ_NODES)));
-        content.addView(navButton("edges.csv を選択", () -> pickCsv(REQ_EDGES)));
-        content.addView(navButton("デモデータに戻す", () -> {
-            loadDemoData();
-            showOverview();
-        }));
+    private void showInteractions(){
+        clear();if(!bancReady){notReady();return;}content.addView(text("BANC構造 → 小域/液体 → FFC状態写像",21,true));BancDataset.Meta m=selectedId==0?null:banc.meta(selectedId);
+        content.addView(text("[BANC] selected="+selectedId+" | cell="+(m==null?"":m.cellType)+" | NT="+(m==null?"":m.nt)+" | Σoutput syn="+(selectedId==0?0:banc.outputTotal(selectedId))+"\n[文献] 小域K⁺・伝達物質、グリア緩衝/再取り込み、BBB、受容体シグナル\n[MODEL] 下の連続値と係数。BANC実測濃度ではありません。",14,false));
+        content.addView(text("写像: BANC edge → release/drive → local microdomain → receptor/glia → next state → plasticity",16,true));
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);content.addView(box);Runnable draw=()->{box.removeAllViews();box.addView(text("step="+bio.step+"\nK⁺小域="+fmt(bio.extracellularK)+"\ntransmitter小域="+fmt(bio.transmitter)+"\nglial load="+fmt(bio.glialK)+"\nexcitability="+fmt(bio.excitability)+"\nmetabotropic="+fmt(bio.metabotropic)+"\nplasticity="+fmt(bio.plasticity),16,true));};draw.run();
+        content.addView(button("選択ニューロン発火",()->{double w=selectedStructuralWeight();bio.extracellularK+=.18+.08*w;bio.transmitter+=.30+.22*w;bio.excitability+=.10;bio.passive();draw.run();}));
+        content.addView(button("グリアK⁺緩衝",()->{double take=Math.max(0,Math.min(.30,bio.extracellularK-.75));bio.extracellularK-=take;bio.glialK+=take;bio.excitability-=take*.18;bio.passive();draw.run();}));
+        content.addView(button("伝達物質再取り込み",()->{bio.transmitter*=.55;bio.passive();draw.run();}));
+        content.addView(button("速い受容体応答",()->{bio.excitability+=.20*Math.min(1,bio.transmitter/1.2);bio.passive();draw.run();}));
+        content.addView(button("代謝型受容体→slow signal",()->{double d=Math.min(1,bio.transmitter/1.2);bio.metabotropic+=.22*d;bio.plasticity+=.08*bio.metabotropic;bio.passive();draw.run();}));
+        content.addView(button("10 step自然緩和",()->{for(int i=0;i<10;i++)bio.passive();draw.run();}));
+        content.addView(button("reset",()->{bio.extracellularK=1;bio.transmitter=0;bio.glialK=.5;bio.excitability=.2;bio.metabotropic=0;bio.plasticity=0;bio.step=0;draw.run();}));
     }
 
-    private void pickCsv(int requestCode) {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/*");
-        startActivityForResult(intent, requestCode);
-    }
+    private double selectedStructuralWeight(){if(!bancReady||selectedId==0)return 0;long sum=banc.outputTotal(selectedId);return sum<=0?0:Math.min(1,Math.log1p(sum)/Math.log(100001.0));}
+    private String fmt(double x){return String.format(Locale.ROOT,"%.3f",x);}
 
-    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode != RESULT_OK || data == null) return;
-        Uri uri = data.getData();
-        if (uri == null) return;
+    private void showLearn(){clear();content.addView(text("読み方",21,true));String[] a={"root IDはv888 materializationと組で扱う。","count=1も構造edgeとして保持。ただし生理的有効性は別問題。","Exact-kは最短距離がk。長さkの全walkとは別。","NT予測だけで受容体依存の効果符号を断定しない。","BANCは静的EM connectome。イオン濃度時系列はBANC実測ではない。","FFC小域モデルは構造データと生理モデルの接続層として表示する。"};for(String s:a)content.addView(text("・"+s,15,false));}
 
-        try (InputStream in = getContentResolver().openInputStream(uri)) {
-            int rows = requestCode == REQ_NODES ? importNodes(in) : importEdges(in);
-            Toast.makeText(this, rows + " rows imported", Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            Toast.makeText(this, "Import error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
+    private long parseLong(String s,long d){try{return Long.parseLong(s.trim());}catch(Exception e){return d;}}
 
-    private int importNodes(InputStream in) throws Exception {
-        List<String[]> rows = readCsv(in);
-        if (rows.size() < 2) return 0;
-        String[] h = rows.get(0);
-        neurons.clear();
+    @Override protected void onDestroy(){super.onDestroy();if(banc!=null)try{banc.close();}catch(Exception ignored){}}
 
-        for (int i=1; i<rows.size(); i++) {
-            String[] r = rows.get(i);
-            neurons.add(new Neuron(
-                    parseLong(col(h,r,"id"),0),
-                    col(h,r,"cell_type"),
-                    col(h,r,"super_class"),
-                    col(h,r,"body_part"),
-                    col(h,r,"nt"),
-                    parseDouble(col(h,r,"neurite_um"),0),
-                    parseDouble(col(h,r,"glia_coverage_pct"),0)
-            ));
-        }
-        return neurons.size();
-    }
-
-    private int importEdges(InputStream in) throws Exception {
-        List<String[]> rows = readCsv(in);
-        if (rows.size() < 2) return 0;
-        String[] h = rows.get(0);
-        edges.clear();
-
-        for (int i=1; i<rows.size(); i++) {
-            String[] r = rows.get(i);
-            edges.add(new Edge(
-                    parseLong(col(h,r,"pre_id"),0),
-                    parseLong(col(h,r,"post_id"),0),
-                    (int) parseLong(col(h,r,"synapse_count"),0),
-                    col(h,r,"nt"),
-                    col(h,r,"neuropil"),
-                    col(h,r,"effect"),
-                    col(h,r,"effect_confidence")
-            ));
-        }
-        return edges.size();
-    }
-
-    private List<String[]> readCsv(InputStream in) throws Exception {
-        ArrayList<String[]> rows = new ArrayList<>();
-        BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-        String line;
-        while ((line = br.readLine()) != null) {
-            if (!line.trim().isEmpty()) rows.add(line.split(",", -1));
-        }
-        return rows;
-    }
-
-    private String col(String[] h, String[] r, String key) {
-        for (int i=0; i<h.length; i++) {
-            if (h[i].trim().equalsIgnoreCase(key)) return i < r.length ? r[i].trim() : "";
-        }
-        return "";
-    }
-
-    private long parseLong(String s, long fallback) {
-        try { return Long.parseLong(s.trim()); }
-        catch (Exception e) { return fallback; }
-    }
-
-    private double parseDouble(String s, double fallback) {
-        try { return Double.parseDouble(s.trim()); }
-        catch (Exception e) { return fallback; }
-    }
-
-    private void loadDemoData() {
-        neurons.clear();
-        edges.clear();
-
-        neurons.add(new Neuron(1001,"Sensory-A","sensory","antenna","ACh",680,21));
-        neurons.add(new Neuron(1002,"Local-B","interneuron","brain","ACh",920,32));
-        neurons.add(new Neuron(1003,"Local-C","interneuron","brain","GABA",740,35));
-        neurons.add(new Neuron(1004,"Projection-D","projection","brain→VNC","ACh",1880,44));
-        neurons.add(new Neuron(1005,"Descending-E","descending","brain→VNC","ACh",2450,61));
-        neurons.add(new Neuron(1006,"Premotor-F","premotor","VNC","Glu",1120,54));
-        neurons.add(new Neuron(1007,"Motor-G","motor","leg","ACh",1640,70));
-        neurons.add(new Neuron(1008,"Modulator-H","modulatory","brain","Dopamine",1310,29));
-        neurons.add(new Neuron(1009,"Local-I","interneuron","VNC","GABA",860,47));
-        neurons.add(new Neuron(1010,"Motor-J","motor","wing","ACh",1710,66));
-
-        edges.add(new Edge(1001,1002,18,"ACh","AL","excitatory?","medium"));
-        edges.add(new Edge(1001,1003,9,"ACh","AL","excitatory?","medium"));
-        edges.add(new Edge(1002,1004,15,"ACh","SMP","excitatory?","medium"));
-        edges.add(new Edge(1003,1004,12,"GABA","SMP","inhibitory?","medium"));
-        edges.add(new Edge(1002,1008,6,"ACh","SMP","modulatory path","low"));
-        edges.add(new Edge(1008,1005,8,"Dopamine","SMP","modulatory","medium"));
-        edges.add(new Edge(1004,1005,21,"ACh","neck","excitatory?","medium"));
-        edges.add(new Edge(1005,1006,26,"ACh","VNC","excitatory?","medium"));
-        edges.add(new Edge(1005,1009,11,"ACh","VNC","excitatory?","medium"));
-        edges.add(new Edge(1009,1006,13,"GABA","VNC","inhibitory?","medium"));
-        edges.add(new Edge(1006,1007,30,"Glu","leg","unknown","low"));
-        edges.add(new Edge(1006,1010,17,"Glu","wing","unknown","low"));
-    }
-
-    private final class GraphView extends View {
-        private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Paint nodePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Paint labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Map<Long, PointF> positions = new HashMap<>();
-        private final ScaleGestureDetector scaler;
-
-        private float scale = 1f;
-        private float dx = 0f, dy = 0f;
-        private float lastX, lastY;
-
-        GraphView() {
-            super(MainActivity.this);
-            setBackgroundColor(Color.rgb(248,248,250));
-            labelPaint.setColor(Color.DKGRAY);
-            labelPaint.setTextSize(22);
-
-            scaler = new ScaleGestureDetector(MainActivity.this,
-                    new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                        @Override public boolean onScale(ScaleGestureDetector detector) {
-                            scale = Math.max(0.45f, Math.min(4.0f,
-                                    scale * detector.getScaleFactor()));
-                            invalidate();
-                            return true;
-                        }
-                    });
-
-            int count = Math.max(1, neurons.size());
-            for (int i=0; i<neurons.size(); i++) {
-                double angle = 2.0 * Math.PI * i / count;
-                positions.put(neurons.get(i).id,
-                        new PointF((float)(360*Math.cos(angle)), (float)(360*Math.sin(angle))));
-            }
-        }
-
-        @Override protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            canvas.save();
-            canvas.translate(getWidth()/2f + dx, getHeight()/2f + dy);
-            canvas.scale(scale, scale);
-
-            linePaint.setColor(Color.LTGRAY);
-            for (Edge e : edges) {
-                PointF a = positions.get(e.pre);
-                PointF b = positions.get(e.post);
-                if (a == null || b == null) continue;
-                linePaint.setStrokeWidth(Math.max(2f, Math.min(12f, e.syn/2f)) / scale);
-                canvas.drawLine(a.x, a.y, b.x, b.y, linePaint);
-            }
-
-            for (Neuron n : neurons) {
-                PointF p = positions.get(n.id);
-                if (p == null) continue;
-                nodePaint.setColor(n.id == selectedId
-                        ? Color.rgb(210,120,40)
-                        : Color.rgb(70,100,180));
-                canvas.drawCircle(p.x, p.y, 32f, nodePaint);
-                labelPaint.setTextSize(20f / scale);
-                canvas.drawText(Long.toString(n.id), p.x + 38f, p.y + 6f, labelPaint);
-            }
-
-            canvas.restore();
-        }
-
-        @Override public boolean onTouchEvent(android.view.MotionEvent e) {
-            scaler.onTouchEvent(e);
-            if (!scaler.isInProgress()) {
-                if (e.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) {
-                    lastX = e.getX();
-                    lastY = e.getY();
-                    return true;
-                }
-                if (e.getActionMasked() == android.view.MotionEvent.ACTION_MOVE) {
-                    dx += e.getX() - lastX;
-                    dy += e.getY() - lastY;
-                    lastX = e.getX();
-                    lastY = e.getY();
-                    invalidate();
-                    return true;
-                }
-            }
-            return true;
-        }
+    private final class GraphView extends View{
+        Paint line=new Paint(1),node=new Paint(1),label=new Paint(1);Map<Long,PointF> pos=new HashMap<>();List<BancDataset.Link> links;long center;float scale=1,dx=0,dy=0,lx,ly;ScaleGestureDetector sg;
+        GraphView(long center,List<BancDataset.Link> links){super(MainActivity.this);this.center=center;this.links=links;setBackgroundColor(Color.rgb(248,248,250));label.setColor(Color.DKGRAY);label.setTextSize(20);pos.put(center,new PointF(0,0));int n=Math.max(1,links.size());for(int i=0;i<links.size();i++){double a=2*Math.PI*i/n;pos.put(links.get(i).partner,new PointF((float)(390*Math.cos(a)),(float)(390*Math.sin(a))));}sg=new ScaleGestureDetector(MainActivity.this,new ScaleGestureDetector.SimpleOnScaleGestureListener(){public boolean onScale(ScaleGestureDetector d){scale=Math.max(.4f,Math.min(4,scale*d.getScaleFactor()));invalidate();return true;}});}
+        protected void onDraw(Canvas c){super.onDraw(c);c.save();c.translate(getWidth()/2f+dx,getHeight()/2f+dy);c.scale(scale,scale);PointF cp=pos.get(center);for(BancDataset.Link e:links){PointF p=pos.get(e.partner);line.setColor(e.count==1?Color.rgb(190,190,190):Color.rgb(120,120,140));line.setStrokeWidth(Math.max(1.5f,Math.min(12,e.count/2f))/scale);c.drawLine(cp.x,cp.y,p.x,p.y,line);}for(Map.Entry<Long,PointF>x:pos.entrySet()){node.setColor(x.getKey()==center?Color.rgb(210,120,40):Color.rgb(70,100,180));c.drawCircle(x.getValue().x,x.getValue().y,x.getKey()==center?36:25,node);label.setTextSize(18/scale);c.drawText(Long.toString(x.getKey()),x.getValue().x+30,x.getValue().y+5,label);}c.restore();}
+        public boolean onTouchEvent(MotionEvent e){sg.onTouchEvent(e);if(!sg.isInProgress()){if(e.getActionMasked()==MotionEvent.ACTION_DOWN){lx=e.getX();ly=e.getY();return true;}if(e.getActionMasked()==MotionEvent.ACTION_MOVE){dx+=e.getX()-lx;dy+=e.getY()-ly;lx=e.getX();ly=e.getY();invalidate();return true;}}return true;}
     }
 }
