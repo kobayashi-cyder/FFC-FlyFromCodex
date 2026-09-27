@@ -6,7 +6,8 @@ import pyarrow.feather as feather
 
 BASE='https://storage.googleapis.com/lee-lab_brain-and-nerve-cord-fly-connectome/compiled_data/banc_888'
 META_URL=f'{BASE}/banc_888_meta.feather'
-EDGE_URL=f'{BASE}/banc_888_edgelist_simple_v2.feather'\nNT_URL=f'{BASE}/banc_888_neurotransmitter_prediction_v2.csv'
+EDGE_URL=f'{BASE}/banc_888_edgelist_simple_v2.feather'
+NT_URL=f'{BASE}/banc_888_neurotransmitter_prediction_v2.csv'
 OUTDIR=Path(sys.argv[1] if len(sys.argv)>1 else 'app/src/main/assets')
 CACHE=Path(os.environ.get('BANC_CACHE','.banc_cache'))
 OUTDIR.mkdir(parents=True,exist_ok=True); CACHE.mkdir(parents=True,exist_ok=True)
@@ -53,9 +54,22 @@ def sha256_file(path):
 
 meta_path=dl(META_URL,'banc_888_meta.feather')
 edge_path=dl(EDGE_URL,'banc_888_edgelist_simple_v2.feather')
+nt_path=dl(NT_URL,'banc_888_neurotransmitter_prediction_v2.csv')
 print('read feather',flush=True)
 meta=feather.read_table(meta_path)
-edges=feather.read_table(edge_path,columns=['pre','post','count','pre_count','post_count'])\n\n# Per-neuron NT predictions are released separately from the meta feather.\nimport csv\nnt_map={}\nnt_score_map={}\nwith open(nt_path,'r',encoding='utf-8-sig',newline='') as nf:\n    for row in csv.DictReader(nf):\n        try: rid=int(row.get('root_id',''))\n        except: continue\n        nt_map[rid]=row.get('neurotransmitter_predicted','') or ''\n        try: nt_score_map[rid]=float(row.get('neurotransmitter_score',''))\n        except: nt_score_map[rid]=None
+edges=feather.read_table(edge_path,columns=['pre','post','count','pre_count','post_count'])
+
+# Per-neuron NT predictions are released separately from the meta feather.
+import csv
+nt_map={}
+nt_score_map={}
+with open(nt_path,'r',encoding='utf-8-sig',newline='') as nf:
+    for row in csv.DictReader(nf):
+        try: rid=int(row.get('root_id',''))
+        except: continue
+        nt_map[rid]=row.get('neurotransmitter_predicted','') or ''
+        try: nt_score_map[rid]=float(row.get('neurotransmitter_score',''))
+        except: nt_score_map[rid]=None
 
 idcol=col(meta,'banc_888_id','root_id','root_888','pt_root_id')
 if not idcol: raise RuntimeError('No BANC root-id column')
@@ -110,7 +124,8 @@ cols={
 'neurite_um':col(meta,'l2_cable_length_um','cable_length_um','neurite_length_um'),
 'volume_nm3':col(meta,'volume_nm3','volume'),'input_count':col(meta,'input_connections','post_count','input_count','n_inputs'),
 'output_count':col(meta,'output_connections','pre_count','output_count','n_outputs')}
-S={k:strings(meta,v,m) for k,v in cols.items() if k not in ('neurite_um','volume_nm3','input_count','output_count','nt')}\nS['nt']=[nt_map.get(int(v),'') for v in meta_ids]
+S={k:strings(meta,v,m) for k,v in cols.items() if k not in ('neurite_um','volume_nm3','input_count','output_count','nt')}
+S['nt']=[nt_map.get(int(v),'') for v in meta_ids]
 N={k:nums(meta,v,m,float if k=='neurite_um' else int) for k,v in cols.items() if k in ('neurite_um','volume_nm3','input_count','output_count')}
 rows=[]
 for x in range(m):
