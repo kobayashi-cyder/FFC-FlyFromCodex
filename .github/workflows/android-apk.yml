@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 
@@ -15,6 +16,20 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Build full BANC v888 mobile data
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pyarrow
+          python tools/build_banc_mobile.py app/src/main/assets
+          echo "=== BANC mobile manifest ==="
+          cat app/src/main/assets/banc888_manifest.json
+          echo "=== Asset sizes ==="
+          du -h app/src/main/assets/*
 
       - name: Use preinstalled Android SDK
         run: |
@@ -29,11 +44,18 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
+      - name: Build debug APK with BANC v888
         run: gradle --no-daemon :app:assembleDebug
+
+      - name: Verify APK
+        run: |
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+          sha256sum app/build/outputs/apk/debug/app-debug.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FFC-Connectome-Explorer-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: FFC-BANC888-Full-debug
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/src/main/assets/banc888_manifest.json
           if-no-files-found: error
