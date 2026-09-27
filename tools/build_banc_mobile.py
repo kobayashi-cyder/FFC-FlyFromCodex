@@ -6,7 +6,7 @@ import pyarrow.feather as feather
 
 BASE='https://storage.googleapis.com/lee-lab_brain-and-nerve-cord-fly-connectome/compiled_data/banc_888'
 META_URL=f'{BASE}/banc_888_meta.feather'
-EDGE_URL=f'{BASE}/banc_888_edgelist_simple_v2.feather'
+EDGE_URL=f'{BASE}/banc_888_edgelist_simple_v2.feather'\nNT_URL=f'{BASE}/banc_888_neurotransmitter_prediction_v2.csv'
 OUTDIR=Path(sys.argv[1] if len(sys.argv)>1 else 'app/src/main/assets')
 CACHE=Path(os.environ.get('BANC_CACHE','.banc_cache'))
 OUTDIR.mkdir(parents=True,exist_ok=True); CACHE.mkdir(parents=True,exist_ok=True)
@@ -55,7 +55,7 @@ meta_path=dl(META_URL,'banc_888_meta.feather')
 edge_path=dl(EDGE_URL,'banc_888_edgelist_simple_v2.feather')
 print('read feather',flush=True)
 meta=feather.read_table(meta_path)
-edges=feather.read_table(edge_path,columns=['pre','post','count','pre_count','post_count'])
+edges=feather.read_table(edge_path,columns=['pre','post','count','pre_count','post_count'])\n\n# Per-neuron NT predictions are released separately from the meta feather.\nimport csv\nnt_map={}\nnt_score_map={}\nwith open(nt_path,'r',encoding='utf-8-sig',newline='') as nf:\n    for row in csv.DictReader(nf):\n        try: rid=int(row.get('root_id',''))\n        except: continue\n        nt_map[rid]=row.get('neurotransmitter_predicted','') or ''\n        try: nt_score_map[rid]=float(row.get('neurotransmitter_score',''))\n        except: nt_score_map[rid]=None
 
 idcol=col(meta,'banc_888_id','root_id','root_888','pt_root_id')
 if not idcol: raise RuntimeError('No BANC root-id column')
@@ -106,11 +106,11 @@ m=len(meta_ids)
 cols={
 'cell_type':col(meta,'cell_type'),'super_class':col(meta,'super_class'),'cell_class':col(meta,'cell_class'),
 'cell_sub_class':col(meta,'cell_sub_class','subclass'),'region':col(meta,'region'),'side':col(meta,'side'),
-'nt':col(meta,'top_nt','nt_type','neurotransmitter'),'neuromere':col(meta,'neuromere'),'flow':col(meta,'flow'),
+'nt':None,'neuromere':col(meta,'neuromere'),'flow':col(meta,'flow'),
 'neurite_um':col(meta,'l2_cable_length_um','cable_length_um','neurite_length_um'),
-'volume_nm3':col(meta,'volume_nm3','volume'),'input_count':col(meta,'post_count','input_count','n_inputs'),
-'output_count':col(meta,'pre_count','output_count','n_outputs')}
-S={k:strings(meta,v,m) for k,v in cols.items() if k not in ('neurite_um','volume_nm3','input_count','output_count')}
+'volume_nm3':col(meta,'volume_nm3','volume'),'input_count':col(meta,'input_connections','post_count','input_count','n_inputs'),
+'output_count':col(meta,'output_connections','pre_count','output_count','n_outputs')}
+S={k:strings(meta,v,m) for k,v in cols.items() if k not in ('neurite_um','volume_nm3','input_count','output_count','nt')}\nS['nt']=[nt_map.get(int(v),'') for v in meta_ids]
 N={k:nums(meta,v,m,float if k=='neurite_um' else int) for k,v in cols.items() if k in ('neurite_um','volume_nm3','input_count','output_count')}
 rows=[]
 for x in range(m):
@@ -122,9 +122,9 @@ con.executemany('INSERT OR IGNORE INTO neurons(id,cell_type,super_class,cell_cla
 con.commit(); con.execute('VACUUM'); con.close()
 
 manifest={'dataset':'BANC','materialization':888,'synapse_version':'v2','source':'Lee Lab public GCS compiled_data/banc_888',
-'meta_url':META_URL,'edge_url':EDGE_URL,'node_count':int(n),'metadata_rows':int(m),'edge_pair_count':int(E),
+'meta_url':META_URL,'edge_url':EDGE_URL,'nt_url':NT_URL,'node_count':int(n),'metadata_rows':int(m),'nt_prediction_rows':int(len(nt_map)),'edge_pair_count':int(E),
 'min_pair_synapse_count':int(count.min()),'max_pair_synapse_count':int(count.max()),'pair_count_threshold_applied':False,
 'weak_connections_preserved':bool(count.min()==1),'graph_bytes':graph.stat().st_size,'meta_db_bytes':db.stat().st_size,
-'graph_sha256':sha256_file(graph),'meta_db_sha256':sha256_file(db),'metadata_columns':cols}
+'graph_sha256':sha256_file(graph),'meta_db_sha256':sha256_file(db),'metadata_columns':{**cols,'nt':'neurotransmitter_prediction_v2.csv:neurotransmitter_predicted'}}
 (OUTDIR/'banc888_manifest.json').write_text(json.dumps(manifest,indent=2,ensure_ascii=False),encoding='utf-8')
 print(json.dumps(manifest,indent=2),flush=True)
