@@ -355,17 +355,13 @@ public class Banc888Engine {
             return s;
         }
 
-        boolean[][] adj;
-        if (n <= 1200) {
-            adj = new boolean[n][n];
-            for (ModuleEdge e : moduleEdges) adj[e.preModule][e.postModule] = true;
-        } else {
-            // Avoid a huge dense matrix; motif scan falls back to reciprocal only through edge map.
-            adj = null;
-        }
-
         HashMap<Long,Boolean> edgeSet = new HashMap<>();
-        for (ModuleEdge e : moduleEdges) edgeSet.put(pairKey(e.preModule,e.postModule), Boolean.TRUE);
+        ArrayList<ArrayList<Integer>> outgoing = new ArrayList<>(n);
+        for (int i=0;i<n;i++) outgoing.add(new ArrayList<>());
+        for (ModuleEdge e : moduleEdges) {
+            edgeSet.put(pairKey(e.preModule,e.postModule), Boolean.TRUE);
+            outgoing.get(e.preModule).add(e.postModule);
+        }
 
         for (ModuleEdge e : moduleEdges) {
             if (e.preModule < e.postModule &&
@@ -373,18 +369,19 @@ public class Banc888Engine {
                 s.reciprocalPairs++;
         }
 
-        if (adj != null) {
-            // Count unique directed 3-cycles once by requiring a to be the smallest index.
-            for (int a=0;a<n;a++) {
-                for (int b=0;b<n;b++) if (a!=b && adj[a][b]) {
-                    for (int c=0;c<n;c++) {
-                        if (c==a || c==b) continue;
-                        if (a < b && a < c && adj[b][c] && adj[c][a]) s.threeCycles++;
-                        if (a < b && b < c && adj[a][c] && adj[b][c]) s.feedForwardLoops++;
-                    }
-                }
+        long cycles = 0;
+        long ffl = 0;
+        for (ModuleEdge e : moduleEdges) {
+            int a = e.preModule;
+            int b = e.postModule;
+            for (int cNode : outgoing.get(b)) {
+                if (cNode == a) continue;
+                if (edgeSet.containsKey(pairKey(cNode,a))) cycles++;
+                if (edgeSet.containsKey(pairKey(a,cNode))) ffl++;
             }
         }
+        s.threeCycles = (int)Math.min(Integer.MAX_VALUE, cycles / 3L);
+        s.feedForwardLoops = (int)Math.min(Integer.MAX_VALUE, ffl);
 
         motifStats = s;
         return s;
