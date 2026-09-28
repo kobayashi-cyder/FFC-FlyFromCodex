@@ -34,3 +34,22 @@ The same small vocabulary is used throughout:
 - No network permission
 
 This is intentionally independent of FlyWire Codex. BANC adapters can be added later as a separate data layer.
+
+
+## v0.3 MORE / LESS circuit tutorial
+
+The app now contains an interactive tutorial that derives digital logic and arithmetic from the comparator primitives.
+
+- MORE(T): output 1 when weighted SUM >= T
+- LESS(T): output 1 when weighted SUM < T
+- NOT, OR, NOR, AND, NAND
+- XOR as an exact-one range using MORE(1) + LESS(2)
+- Half adder and full adder
+- Half subtractor and full subtractor
+- 1-bit multiplication
+- 2-bit multiplication via partial products and half adders
+- n-bit multiplication as AND partial-products + shifts + adder tree
+- ENABLE gating
+
+Subtraction demonstrates signed weights directly:
+D = A - B - Bin, and borrow is LESS(0, D).
