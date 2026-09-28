@@ -87,6 +87,13 @@ public class MainActivity extends Activity {
         builderLp.setMargins(dp(12),0,dp(12),dp(8));
         root.addView(builder, builderLp);
 
+        Button banc = btn("BANC v888 Lab（読込・Module化・Motif）");
+        banc.setOnClickListener(v -> startActivity(new Intent(this, Banc888Activity.class)));
+        LinearLayout.LayoutParams bancLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(56));
+        bancLp.setMargins(dp(12),0,dp(12),dp(8));
+        root.addView(banc, bancLp);
+
         LinearLayout tabs1 = new LinearLayout(this);
         tabs1.setPadding(dp(12),0,dp(12),0);
         Button a = btn("基本回路");
