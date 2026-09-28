@@ -1,6 +1,7 @@
 package dev.ffc.ce3;
 
 import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -15,6 +16,7 @@ import android.widget.TextView;
 
 import java.util.Locale;
 
+@SuppressLint("SetTextI18n")
 public class BioSystemActivity extends Activity {
     private final ConnectomeEngine engine = new ConnectomeEngine();
     private NetworkView networkView;
@@ -51,7 +53,7 @@ public class BioSystemActivity extends Activity {
 
     private TextView section(String text) {
         TextView h = tv(text, 17);
-        h.setTypeface(null, 1);
+        h.setTypeface(null, android.graphics.Typeface.BOLD);
         h.setPadding(dp(2), dp(14), dp(2), dp(6));
         return h;
     }
@@ -65,7 +67,7 @@ public class BioSystemActivity extends Activity {
         Button back = btn("← 戻る");
         back.setOnClickListener(v -> finish());
         TextView title = tv("Ce3 · Connectome-Transfer System", 20);
-        title.setTypeface(null, 1);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
         top.addView(back, new LinearLayout.LayoutParams(dp(92), dp(52)));
         top.addView(title, new LinearLayout.LayoutParams(0, dp(52), 1));
         root.addView(top);
@@ -166,7 +168,7 @@ public class BioSystemActivity extends Activity {
         body.addView(stepRow);
 
         resultText = tv("", 15);
-        resultText.setTypeface(null, 1);
+        resultText.setTypeface(null, android.graphics.Typeface.BOLD);
         resultText.setBackgroundColor(Color.WHITE);
         resultText.setPadding(dp(12), dp(12), dp(12), dp(12));
         body.addView(resultText);
