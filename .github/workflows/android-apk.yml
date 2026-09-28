@@ -1,8 +1,8 @@
-name: Build FFC Android APK
+name: Build FFC BANC888 Logic APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "apk/banc888-logic" ]
   workflow_dispatch:
 
 jobs:
@@ -54,7 +54,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FFC-BANC888-Full-debug
+          name: FFC-BANC888-Logic-debug
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/src/main/assets/banc888_manifest.json
