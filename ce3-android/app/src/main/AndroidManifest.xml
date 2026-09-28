@@ -6,6 +6,9 @@
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
         <activity
+            android:name=".BancTutorialActivity"
+            android:exported="false"/>
+        <activity
             android:name=".Banc888Activity"
             android:exported="false"/>
         <activity
