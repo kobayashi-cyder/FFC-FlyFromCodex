@@ -46,11 +46,11 @@ public class MainActivity extends Activity {
 
     private void buildShell(){
         LinearLayout root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(12,12,12,12);
-        root.addView(text("FFC · BANC v888 Native Mapper",24,true));
+        root.addView(text("FFC · BANC v888 Logic",24,true));
         HorizontalScrollView hs=new HorizontalScrollView(this); LinearLayout nav=new LinearLayout(this); nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.addView(button("概要",this::showOverview)); nav.addView(button("検索",this::showSearch)); nav.addView(button("細胞",this::showCell));
         nav.addView(button("Hops",this::showHops)); nav.addView(button("Graph",this::showGraph)); nav.addView(button("相互作用",this::showInteractions));
-        nav.addView(button("Emulator",this::showEmulator)); nav.addView(button("調教",this::showTraining)); nav.addView(button("データ",this::showData)); nav.addView(button("学習",this::showLearn)); hs.addView(nav); root.addView(hs);
+        nav.addView(button("Emulator",this::showEmulator)); nav.addView(button("データ",this::showData)); nav.addView(button("学習",this::showLearn)); hs.addView(nav); root.addView(hs);
         ScrollView sc=new ScrollView(this); content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(4,10,4,80); sc.addView(content);
         root.addView(sc,new LinearLayout.LayoutParams(-1,0,1)); setContentView(root);
     }
