@@ -3,7 +3,7 @@ name: Test and Build Ce3 Connectome APK
 on:
   push:
     branches:
-      - ce3-connectome-tested-v0.6
+      - ce3-guided-v0.7
     paths:
       - 'ce3-android/**'
       - '.github/workflows/ce3-android-build.yml'
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ce3-v0.6-${{ github.ref }}
+  group: ce3-v0.7-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -61,20 +61,20 @@ jobs:
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner verify --verbose "$APK"
 
       - name: Rename verified APK
-        run: cp ce3-android/app/build/outputs/apk/debug/app-debug.apk ce3-android/app/build/outputs/apk/debug/FFC-Ce3-Connectome-Tested-v0.6-debug.apk
+        run: cp ce3-android/app/build/outputs/apk/debug/app-debug.apk ce3-android/app/build/outputs/apk/debug/FFC-Ce3-Guided-v0.7-debug.apk
 
       - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
-          name: FFC-Ce3-Connectome-Tested-v0.6
-          path: ce3-android/app/build/outputs/apk/debug/FFC-Ce3-Connectome-Tested-v0.6-debug.apk
+          name: FFC-Ce3-Guided-v0.7
+          path: ce3-android/app/build/outputs/apk/debug/FFC-Ce3-Guided-v0.7-debug.apk
           if-no-files-found: error
 
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FFC-Ce3-v0.6-test-reports
+          name: FFC-Ce3-v0.7-test-reports
           path: |
             ce3-android/app/build/reports/tests/testDebugUnitTest/**
             ce3-android/app/build/reports/lint-results-debug.html
