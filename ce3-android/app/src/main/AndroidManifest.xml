@@ -6,6 +6,9 @@
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
         <activity
+            android:name=".BuilderActivity"
+            android:exported="false"/>
+        <activity
             android:name=".QuickStartActivity"
             android:exported="false"/>
         <activity
