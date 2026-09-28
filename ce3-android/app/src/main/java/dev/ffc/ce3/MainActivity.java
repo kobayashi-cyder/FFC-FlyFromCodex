@@ -1,6 +1,7 @@
 package dev.ffc.ce3;
 
 import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.content.Context;
 import android.content.Intent;
@@ -22,6 +23,7 @@ import android.widget.TextView;
 import java.util.Locale;
 import java.util.Random;
 
+@SuppressLint("SetTextI18n")
 public class MainActivity extends Activity {
     private final AutoCore auto = new AutoCore();
     private final MLP ml = new MLP();
@@ -62,7 +64,7 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(Color.rgb(245,247,251));
 
         TextView title = tv("FFC · Ce3  Automaton / ML / Connectome", 20);
-        title.setTypeface(null, 1);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
         title.setPadding(dp(16),dp(14),dp(16),dp(6));
         root.addView(title);
 
@@ -130,7 +132,7 @@ public class MainActivity extends Activity {
     }
 
     private void addHeader(String s) {
-        TextView h=tv(s,17); h.setTypeface(null,1); h.setPadding(dp(2),dp(12),dp(2),dp(6)); controls.addView(h);
+        TextView h=tv(s,17); h.setTypeface(null, android.graphics.Typeface.BOLD); h.setPadding(dp(2),dp(12),dp(2),dp(6)); controls.addView(h);
     }
 
     private void buildAuto() {
@@ -172,7 +174,7 @@ public class MainActivity extends Activity {
                 v->{auto.step(); refreshAutoText(); circuitView.invalidate();},
                 v->{auto.reset(); refreshAutoText(); circuitView.invalidate();}
         });
-        status=tv("",16); status.setTypeface(null,1); controls.addView(status);
+        status=tv("",16); status.setTypeface(null, android.graphics.Typeface.BOLD); controls.addView(status);
         detail=tv("",13); detail.setTextColor(Color.DKGRAY); controls.addView(detail);
         refreshAutoText();
 
@@ -212,7 +214,7 @@ public class MainActivity extends Activity {
                 v->{saveMl();refreshMlText();}, v->{loadMl();refreshMlText();circuitView.invalidate();}
         });
 
-        status=tv("",16);status.setTypeface(null,1);controls.addView(status);
+        status=tv("",16);status.setTypeface(null, android.graphics.Typeface.BOLD);controls.addView(status);
         detail=tv("",13);detail.setTextColor(Color.DKGRAY);controls.addView(detail);
         refreshMlText();
 
