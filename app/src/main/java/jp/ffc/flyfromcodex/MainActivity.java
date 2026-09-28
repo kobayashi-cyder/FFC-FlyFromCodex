@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
 
     private void buildShell(){
         LinearLayout root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(12,12,12,12);
-        root.addView(text("FFC · BANC v888 Native Mapper",24,true));
+        root.addView(text("FFC · BANC v888 FineTune",24,true));
         HorizontalScrollView hs=new HorizontalScrollView(this); LinearLayout nav=new LinearLayout(this); nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.addView(button("概要",this::showOverview)); nav.addView(button("検索",this::showSearch)); nav.addView(button("細胞",this::showCell));
         nav.addView(button("Hops",this::showHops)); nav.addView(button("Graph",this::showGraph)); nav.addView(button("相互作用",this::showInteractions));
