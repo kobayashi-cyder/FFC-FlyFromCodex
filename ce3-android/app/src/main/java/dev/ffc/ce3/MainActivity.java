@@ -3,6 +3,7 @@ package dev.ffc.ce3;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -74,11 +75,14 @@ public class MainActivity extends Activity {
         tabs.setPadding(dp(12),0,dp(12),dp(6));
         Button a = btn("AUTOMATON");
         Button m = btn("ML CIRCUIT");
+        Button t = btn("TUTORIAL");
         tabs.addView(a, new LinearLayout.LayoutParams(0, dp(50), 1));
         tabs.addView(m, new LinearLayout.LayoutParams(0, dp(50), 1));
+        tabs.addView(t, new LinearLayout.LayoutParams(0, dp(50), 1));
         root.addView(tabs);
         a.setOnClickListener(v -> { mlMode=false; buildControls(); });
         m.setOnClickListener(v -> { mlMode=true; buildControls(); });
+        t.setOnClickListener(v -> startActivity(new Intent(this, TutorialActivity.class)));
 
         circuitView = new CircuitView(this);
         circuitView.setMinimumHeight(dp(300));
@@ -145,10 +149,13 @@ public class MainActivity extends Activity {
         controls.addView(sb);
 
         addHeader("3. プリセット");
-        addRowButtons(new String[]{"OR","AND","NOR","NOT A"}, new View.OnClickListener[]{
+        addRowButtons(new String[]{"OR","AND","NOR","NAND"}, new View.OnClickListener[]{
                 v->{auto.more=true;auto.threshold=1f;buildControls();},
                 v->{auto.more=true;auto.threshold=2f;buildControls();},
                 v->{auto.more=false;auto.threshold=1f;buildControls();},
+                v->{auto.more=false;auto.threshold=2f;buildControls();}
+        });
+        addRowButtons(new String[]{"NOT A"}, new View.OnClickListener[]{
                 v->{auto.more=false;auto.threshold=1f;auto.b=0;buildControls();}
         });
 
