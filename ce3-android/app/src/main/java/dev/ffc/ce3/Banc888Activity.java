@@ -92,6 +92,13 @@ public class Banc888Activity extends Activity {
         sub.setPadding(dp(14),0,dp(14),dp(8));
         root.addView(sub);
 
+        Button tutorial = btn("▶ BANC v888 Labの使い方（3分）");
+        tutorial.setOnClickListener(v -> startActivity(new Intent(this,BancTutorialActivity.class)));
+        LinearLayout.LayoutParams tutorialLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(54));
+        tutorialLp.setMargins(dp(12),0,dp(12),dp(8));
+        root.addView(tutorial,tutorialLp);
+
         ScrollView sv = new ScrollView(this);
         LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
