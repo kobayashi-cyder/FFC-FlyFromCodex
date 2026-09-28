@@ -53,7 +53,8 @@ jobs:
           base64 --decode /tmp/GBridge-source.zip.b64 > /tmp/GBridge-source.zip
           rm -rf /tmp/gbridge-src
           mkdir -p /tmp/gbridge-src
-          unzip -q /tmp/GBridge-source.zip -d /tmp/gbridge-src
+          unzip -o -q /tmp/GBridge-source.zip -d /tmp/gbridge-src || true
+          rm -f /tmp/gbridge-src/GBridge/app/src/main/res/mipmap-hdpi/ic_launcher.png
           test -f /tmp/gbridge-src/GBridge/settings.gradle
           sed -i "s/compileSdk 37/compileSdk 36/; s/targetSdk 37/targetSdk 36/" /tmp/gbridge-src/GBridge/app/build.gradle
 
