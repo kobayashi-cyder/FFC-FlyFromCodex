@@ -33,6 +33,7 @@ public class MainActivity extends Activity {
     private TextView detail;
     private boolean mlMode = false;
     private int mlTarget = 3;
+    private String autoPreset = "OR";
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
@@ -63,28 +64,28 @@ public class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.rgb(245,247,251));
 
-        TextView title = tv("FFC · Ce3  Automaton / ML / Connectome", 20);
+        TextView title = tv("F · Ce3  直感的コンピューティング実験室", 20);
         title.setTypeface(null, android.graphics.Typeface.BOLD);
         title.setPadding(dp(16),dp(14),dp(16),dp(6));
         root.addView(title);
 
-        TextView sub = tv("MORE/LESS → STATE → ROUTE を基礎に、connectome由来の制御原理とMLを実験するAPK", 13);
+        TextView sub = tv("迷ったら ①回路を選ぶ → ②A/Bを押す → ③結果を見る → ④STEP。図・数字・文章の3通りで同じ状態を確認できます。", 13);
         sub.setTextColor(Color.DKGRAY);
         sub.setPadding(dp(16),0,dp(16),dp(8));
         root.addView(sub);
 
         LinearLayout tabs1 = new LinearLayout(this);
         tabs1.setPadding(dp(12),0,dp(12),0);
-        Button a = btn("AUTOMATON");
-        Button m = btn("ML CIRCUIT");
+        Button a = btn("基本回路\nAUTOMATON");
+        Button m = btn("学習回路\nML CIRCUIT");
         tabs1.addView(a, new LinearLayout.LayoutParams(0, dp(50), 1));
         tabs1.addView(m, new LinearLayout.LayoutParams(0, dp(50), 1));
         root.addView(tabs1);
 
         LinearLayout tabs2 = new LinearLayout(this);
         tabs2.setPadding(dp(12),0,dp(12),dp(6));
-        Button t = btn("TUTORIAL");
-        Button bio = btn("CONNECTOME SYSTEM");
+        Button t = btn("使い方\nTUTORIAL");
+        Button bio = btn("生体モデル\nCONNECTOME SYSTEM");
         tabs2.addView(t, new LinearLayout.LayoutParams(0, dp(50), 1));
         tabs2.addView(bio, new LinearLayout.LayoutParams(0, dp(50), 1));
         root.addView(tabs2);
@@ -96,7 +97,7 @@ public class MainActivity extends Activity {
 
         circuitView = new CircuitView(this);
         circuitView.setMinimumHeight(dp(300));
-        root.addView(circuitView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(310)));
+        root.addView(circuitView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(280)));
 
         ScrollView sv = new ScrollView(this);
         controls = new LinearLayout(this);
@@ -135,82 +136,162 @@ public class MainActivity extends Activity {
         TextView h=tv(s,17); h.setTypeface(null, android.graphics.Typeface.BOLD); h.setPadding(dp(2),dp(12),dp(2),dp(6)); controls.addView(h);
     }
 
+    private TextView card(String text, int sp) {
+        TextView v = tv(text, sp);
+        v.setBackgroundColor(Color.WHITE);
+        v.setPadding(dp(12), dp(10), dp(12), dp(10));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, dp(4), 0, dp(8));
+        v.setLayoutParams(lp);
+        return v;
+    }
+
+    private void setPreset(String name, boolean more, float threshold) {
+        autoPreset = name;
+        auto.more = more;
+        auto.threshold = threshold;
+        auto.reset();
+        buildControls();
+    }
+
+    private boolean logicOutput() {
+        float s = auto.sum();
+        return auto.more ? s >= auto.threshold : s < auto.threshold;
+    }
+
+    private String logicReason() {
+        float s = auto.sum();
+        String op = auto.more ? "≥" : "<";
+        return String.format(Locale.US,
+                "SUM = A + B = %.0f。 %.0f %s %.1f なので、判定は %s。",
+                s, s, op, auto.threshold, logicOutput() ? "成立 / ON" : "不成立 / OFF");
+    }
+
     private void buildAuto() {
-        addHeader("1. 入力");
-        addRowButtons(new String[]{"A: "+auto.a,"B: "+auto.b,"ENABLE: "+(auto.enable?"ON":"OFF")},
+        TextView guide = card(
+                "最短操作\n" +
+                "① 下の回路を1つ選ぶ\n" +
+                "② 入力A/Bを押して 0⇄1 を切り替える\n" +
+                "③ 「論理出力」と中央の青いノードを見る\n" +
+                "④ STEPで判定を状態メモリへ送る",
+                14);
+        guide.setTypeface(null, android.graphics.Typeface.BOLD);
+        controls.addView(guide);
+
+        addHeader("① 回路を選ぶ — まずはここ");
+        addRowButtons(new String[]{"OR\nどちらか1","AND\n両方1","NOR\n両方0","NAND\n11以外"}, new View.OnClickListener[]{
+                v->{setPreset("OR",true,1f);},
+                v->{setPreset("AND",true,2f);},
+                v->{setPreset("NOR",false,1f);},
+                v->{setPreset("NAND",false,2f);}
+        });
+        addRowButtons(new String[]{"NOT A\nAを反転"}, new View.OnClickListener[]{
+                v->{auto.b=0;setPreset("NOT A",false,1f);}
+        });
+
+        addHeader("② 入力を変える — 押すたび0⇄1");
+        addRowButtons(new String[]{
+                        "入力A\n"+(auto.a==1?"ON = 1":"OFF = 0"),
+                        "入力B\n"+(auto.b==1?"ON = 1":"OFF = 0"),
+                        "遷移許可\n"+(auto.enable?"ENABLE":"BLOCK")
+                },
                 new View.OnClickListener[]{
                         v->{auto.a=1-auto.a;buildControls();},
                         v->{auto.b=1-auto.b;buildControls();},
                         v->{auto.enable=!auto.enable;buildControls();}
                 });
 
-        addHeader("2. 比較器");
-        addRowButtons(new String[]{"MORE  ≥ T","LESS  < T"}, new View.OnClickListener[]{
-                v->{auto.more=true;buildControls();},
-                v->{auto.more=false;buildControls();}
+        addHeader("③ 結果を見る — 同じ内容を3通り表示");
+        status = card("", 17);
+        status.setTypeface(null, android.graphics.Typeface.BOLD);
+        controls.addView(status);
+        detail = card("", 13);
+        detail.setTextColor(Color.DKGRAY);
+        controls.addView(detail);
+
+        addHeader("④ STEP — 判定を状態として覚える");
+        addRowButtons(new String[]{"STEP\n1回進める","RESET\n状態だけ戻す"}, new View.OnClickListener[]{
+                v->{auto.step(logicOutput()); refreshAutoText(); circuitView.invalidate();},
+                v->{auto.reset(); refreshAutoText(); circuitView.invalidate();}
         });
-        TextView th=tv(String.format(Locale.US,"Threshold T = %.2f",auto.threshold),15);
+        TextView stateHelp = card(
+                "STATEの意味\n" +
+                "判定成立が1回 → ACTIVE、2回連続 → LOCKED。\n" +
+                "不成立が続くと LOCKED → ACTIVE → IDLE と戻ります。\n" +
+                "ENABLEをBLOCKにすると、論理判定は見えてもSTATEだけ止まります。",
+                13);
+        controls.addView(stateHelp);
+
+        addHeader("詳細設定 — 慣れてから触ればOK");
+        addRowButtons(new String[]{"MORE\nSUM ≥ T","LESS\nSUM < T"}, new View.OnClickListener[]{
+                v->{autoPreset="CUSTOM";auto.more=true;buildControls();},
+                v->{autoPreset="CUSTOM";auto.more=false;buildControls();}
+        });
+        TextView th=tv(String.format(Locale.US,"しきい値 T = %.2f",auto.threshold),14);
         controls.addView(th);
-        SeekBar sb=new SeekBar(this); sb.setMax(200); sb.setProgress((int)(auto.threshold*100));
+        SeekBar sb=new SeekBar(this);
+        sb.setMax(200);
+        sb.setProgress((int)(auto.threshold*100));
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
-            public void onProgressChanged(SeekBar s,int p,boolean from){ auto.threshold=p/100f; th.setText(String.format(Locale.US,"Threshold T = %.2f",auto.threshold)); circuitView.invalidate(); refreshAutoText(); }
-            public void onStartTrackingTouch(SeekBar s){} public void onStopTrackingTouch(SeekBar s){}
+            public void onProgressChanged(SeekBar s,int p,boolean from){
+                autoPreset="CUSTOM";
+                auto.threshold=p/100f;
+                th.setText(String.format(Locale.US,"しきい値 T = %.2f",auto.threshold));
+                circuitView.invalidate();
+                refreshAutoText();
+            }
+            public void onStartTrackingTouch(SeekBar s){}
+            public void onStopTrackingTouch(SeekBar s){}
         });
         controls.addView(sb);
 
-        addHeader("3. プリセット");
-        addRowButtons(new String[]{"OR","AND","NOR","NAND"}, new View.OnClickListener[]{
-                v->{auto.more=true;auto.threshold=1f;buildControls();},
-                v->{auto.more=true;auto.threshold=2f;buildControls();},
-                v->{auto.more=false;auto.threshold=1f;buildControls();},
-                v->{auto.more=false;auto.threshold=2f;buildControls();}
-        });
-        addRowButtons(new String[]{"NOT A"}, new View.OnClickListener[]{
-                v->{auto.more=false;auto.threshold=1f;auto.b=0;buildControls();}
-        });
-
-        addHeader("4. オートマトン");
-        addRowButtons(new String[]{"STEP","RESET"}, new View.OnClickListener[]{
-                v->{auto.step(); refreshAutoText(); circuitView.invalidate();},
-                v->{auto.reset(); refreshAutoText(); circuitView.invalidate();}
-        });
-        status=tv("",16); status.setTypeface(null, android.graphics.Typeface.BOLD); controls.addView(status);
-        detail=tv("",13); detail.setTextColor(Color.DKGRAY); controls.addView(detail);
         refreshAutoText();
-
-        addHeader("構造");
-        TextView note=tv("SUM = A + B。ENABLE=OFFなら状態遷移を遮断。MOREは上向き遷移、LESSは戻り遷移として使います。\nIDLE → ACTIVE → LOCKED は状態を保持するため、単なるif/switchより「履歴」を持ちます。",13);
-        note.setTextColor(Color.DKGRAY); controls.addView(note);
     }
 
     private void refreshAutoText() {
         if(status==null||mlMode)return;
-        float s=auto.sum();
-        boolean cmp=auto.more ? s>=auto.threshold : s<auto.threshold;
-        status.setText(String.format(Locale.US,"STATE = %s    SUM = %.2f    %s = %s",
-                auto.state,s,auto.more?"MORE":"LESS",cmp?"TRUE":"FALSE"));
-        detail.setText("Last: "+auto.last+"\nRule: "+auto.ruleText());
+        boolean out = logicOutput();
+        status.setText(
+                "現在の回路: " + autoPreset + "\n" +
+                "入力: A=" + auto.a + "  B=" + auto.b + "\n" +
+                "論理出力: " + (out ? "ON = 1  ✓ 成立" : "OFF = 0  — 不成立") + "\n" +
+                "状態メモリ: " + auto.state
+        );
+        detail.setText(
+                "なぜ？ " + logicReason() + "\n" +
+                "比較器: " + (auto.more ? "MORE (SUM ≥ T)" : "LESS (SUM < T)") +
+                " / T=" + String.format(Locale.US,"%.2f",auto.threshold) + "\n" +
+                "ENABLE: " + (auto.enable ? "ON — STEPで状態更新できます" : "BLOCK — STEPしても状態を保持します") + "\n" +
+                "直前のSTEP: " + auto.last
+        );
     }
 
     private void buildMl() {
-        addHeader("1. 学習する論理");
+        TextView guide = card(
+                "おすすめ体験: XORを選ぶ → A/Bを切り替えて未学習の出力を見る → TRAIN ×2000 → 同じ入力で結果を見る。\n" +
+                "固定回路ではなく、重みが学習して論理を近似する様子を確認できます。",
+                14);
+        guide.setTypeface(null, android.graphics.Typeface.BOLD);
+        controls.addView(guide);
+        addHeader("① 学習したい論理を選ぶ");
         addRowButtons(new String[]{"AND","OR","NOR","XOR"}, new View.OnClickListener[]{
                 v->{mlTarget=0;buildControls();}, v->{mlTarget=1;buildControls();},
                 v->{mlTarget=2;buildControls();}, v->{mlTarget=3;buildControls();}
         });
 
-        addHeader("2. 入力と判定");
+        addHeader("② 入力を変えて出力を見る");
         addRowButtons(new String[]{"A: "+ml.a,"B: "+ml.b,"COMPARE: "+(ml.more?"MORE":"LESS")},new View.OnClickListener[]{
                 v->{ml.a=1-ml.a;buildControls();},v->{ml.b=1-ml.b;buildControls();},
                 v->{ml.more=!ml.more;buildControls();}
         });
 
-        addHeader("3. ML回路");
-        addRowButtons(new String[]{"TRAIN ×2000","RESET WEIGHTS"}, new View.OnClickListener[]{
+        addHeader("③ 学習させる");
+        addRowButtons(new String[]{"TRAIN ×2000\n学習","RESET WEIGHTS\n初期化"}, new View.OnClickListener[]{
                 v->{ for(int i=0;i<2000;i++) ml.trainEpoch(mlTarget); refreshMlText(); circuitView.invalidate(); },
                 v->{ml.resetWeights();refreshMlText();circuitView.invalidate();}
         });
-        addRowButtons(new String[]{"保存","読込"}, new View.OnClickListener[]{
+        addRowButtons(new String[]{"学習結果を保存","保存結果を読込"}, new View.OnClickListener[]{
                 v->{saveMl();refreshMlText();}, v->{loadMl();refreshMlText();circuitView.invalidate();}
         });
 
@@ -250,22 +331,17 @@ public class MainActivity extends Activity {
         String state="IDLE"; String last="ready";
         float sum(){return a+b;}
         void reset(){state="IDLE";last="reset";}
-        String ruleText(){
-            if(more) return "MORE: IDLE --(SUM≥T)→ ACTIVE --(SUM≥T+0.5)→ LOCKED";
-            return "LESS: LOCKED --(SUM<T)→ ACTIVE --(SUM<T)→ IDLE";
-        }
-        void step(){
-            float s=sum();
-            if(!enable){last="ENABLE=OFF: transition blocked";return;}
-            if(more){
-                if(state.equals("IDLE") && s>=threshold){state="ACTIVE";last="MORE accepted: IDLE→ACTIVE";}
-                else if(state.equals("ACTIVE") && s>=threshold+0.5f){state="LOCKED";last="MORE accepted: ACTIVE→LOCKED";}
-                else last="MORE condition not sufficient: state held";
+        void step(boolean condition){
+            if(!enable){last="BLOCK: 状態はそのまま";return;}
+            String before=state;
+            if(condition){
+                if(state.equals("IDLE")) state="ACTIVE";
+                else if(state.equals("ACTIVE")) state="LOCKED";
             }else{
-                if(state.equals("LOCKED") && s<threshold){state="ACTIVE";last="LESS accepted: LOCKED→ACTIVE";}
-                else if(state.equals("ACTIVE") && s<threshold){state="IDLE";last="LESS accepted: ACTIVE→IDLE";}
-                else last="LESS condition not sufficient: state held";
+                if(state.equals("LOCKED")) state="ACTIVE";
+                else if(state.equals("ACTIVE")) state="IDLE";
             }
+            last=before+" → "+state+(condition?"（判定成立）":"（判定不成立）");
         }
     }
 
