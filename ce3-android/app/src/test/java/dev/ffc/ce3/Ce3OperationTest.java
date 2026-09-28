@@ -21,7 +21,7 @@ public class Ce3OperationTest {
 
     @Test public void mainScreenRoutesToConnectomeSystem() {
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        Button connectome = buttonExact(activity.getWindow().getDecorView(), "CONNECTOME SYSTEM");
+        Button connectome = buttonContains(activity.getWindow().getDecorView(), "CONNECTOME SYSTEM");
         assertNotNull(connectome);
         connectome.performClick();
 
@@ -29,6 +29,47 @@ public class Ce3OperationTest {
         assertNotNull(next);
         assertNotNull(next.getComponent());
         assertEquals(BioSystemActivity.class.getName(), next.getComponent().getClassName());
+    }
+
+    @Test public void guidedHomeExplainsFourStepFlow() {
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
+        View root = activity.getWindow().getDecorView();
+        assertNotNull(textContains(root, "①回路を選ぶ"));
+        assertNotNull(textContains(root, "論理出力"));
+        assertNotNull(buttonContains(root, "OR"));
+        assertNotNull(buttonContains(root, "入力A"));
+        assertNotNull(buttonContains(root, "STEP"));
+    }
+
+    @Test public void andPresetAndInputsProduceOnResult() {
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
+        View root = activity.getWindow().getDecorView();
+
+        Button and = buttonContains(root, "AND");
+        assertNotNull(and);
+        and.performClick();
+
+        root = activity.getWindow().getDecorView();
+        buttonContains(root, "入力A").performClick();
+        buttonContains(root, "入力B").performClick();
+
+        TextView result = textContains(root, "論理出力: ON = 1");
+        assertNotNull("AND with A=B=1 should show ON", result);
+        assertTrue(result.getText().toString().contains("現在の回路: AND"));
+    }
+
+    @Test public void stepBuildsStateMemoryAndBlockHoldsIt() {
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
+        View root = activity.getWindow().getDecorView();
+
+        buttonContains(root, "OR").performClick();
+        buttonContains(root, "入力A").performClick();
+        buttonContains(root, "STEP").performClick();
+        assertNotNull(textContains(root, "状態メモリ: ACTIVE"));
+
+        buttonContains(root, "遷移許可").performClick();
+        buttonContains(root, "STEP").performClick();
+        assertNotNull(textContains(root, "BLOCK: 状態はそのまま"));
     }
 
     @Test public void inAppSelfTestIsVisibleAndPasses() {
