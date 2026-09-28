@@ -99,7 +99,7 @@ public class Ce3OperationTest {
         BioSystemActivity activity = Robolectric.buildActivity(BioSystemActivity.class).setup().get();
         View root = activity.getWindow().getDecorView();
 
-        buttonExact(root, "FORAGE").performClick();
+        buttonContains(root, "FORAGE").performClick();
         assertNotNull(textContains(root, "OUTPUT = APPROACH"));
 
         Button approachGate = buttonContains(root, "APPROACH");
@@ -116,7 +116,7 @@ public class Ce3OperationTest {
         BioSystemActivity activity = Robolectric.buildActivity(BioSystemActivity.class).setup().get();
         View root = activity.getWindow().getDecorView();
 
-        buttonExact(root, "FORAGE").performClick();
+        buttonContains(root, "FORAGE").performClick();
         TextView weights = textContains(root, "WEIGHT MATRIX");
         assertNotNull(weights);
         String before = weights.getText().toString();
@@ -134,7 +134,7 @@ public class Ce3OperationTest {
         BioSystemActivity activity = Robolectric.buildActivity(BioSystemActivity.class).setup().get();
         View root = activity.getWindow().getDecorView();
 
-        buttonExact(root, "FORAGE").performClick();
+        buttonContains(root, "FORAGE").performClick();
         TextView weights = textContains(root, "WEIGHT MATRIX");
         Button toggle = buttonExact(root, "LEARN ON");
         assertNotNull(toggle);
