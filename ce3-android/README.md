@@ -101,3 +101,23 @@ Engineering abstractions kept separate:
 - simple reward update rule
 
 This is a transfer architecture, not a claim that the fly brain literally uses these exact equations.
+
+
+## v0.7 intuitive operation UI
+
+The basic circuit screen was reorganized around one guided sequence:
+
+1. choose a circuit,
+2. toggle A/B,
+3. read the same result as diagram + binary output + plain-language explanation,
+4. press STEP to store the result as temporal state.
+
+Redundancy is intentional. The same state is shown visually, numerically, and in words so a first-time user does not need to infer the meaning of MORE/LESS from the diagram alone.
+
+Preset buttons now explain their condition:
+OR = either input, AND = both, NOR = both zero, NAND = anything except 11, NOT A = inversion.
+
+STATE behavior is now reachable and consistent for every preset:
+IDLE -> ACTIVE -> LOCKED on consecutive true decisions, and reverses on consecutive false decisions. BLOCK freezes only the state transition while leaving the logic result visible.
+
+The launcher icon is a single white **F** on the FFC navy field.
