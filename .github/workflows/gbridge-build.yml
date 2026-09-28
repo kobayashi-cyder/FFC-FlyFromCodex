@@ -49,15 +49,7 @@ jobs:
       - name: Restore G Bridge source
         shell: bash
         run: |
-          cat \\
-            gbridge/source/chunk00.b64 \\
-            gbridge/source/chunk01.b64 \\
-            gbridge/source/chunk02.b64 \\
-            gbridge/source/chunk03a.b64 \\
-            gbridge/source/chunk03b.b64 \\
-            gbridge/source/chunk04.b64 \\
-            gbridge/source/chunk05.b64 \\
-            > /tmp/GBridge-source.zip.b64
+          cat gbridge/source/chunk00.b64 gbridge/source/chunk01.b64 gbridge/source/chunk02.b64 gbridge/source/chunk03a.b64 gbridge/source/chunk03b.b64 gbridge/source/chunk04.b64 gbridge/source/chunk05.b64 > /tmp/GBridge-source.zip.b64
           base64 --decode /tmp/GBridge-source.zip.b64 > /tmp/GBridge-source.zip
           rm -rf /tmp/gbridge-src
           mkdir -p /tmp/gbridge-src
