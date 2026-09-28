@@ -48,6 +48,50 @@ public class Ce3OperationTest {
         assertNotNull(textContains(guideRoot, "ENABLEは『通行許可』"));
     }
 
+    @Test public void mainScreenRoutesToReusableBuilder() {
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
+        Button builder = buttonExact(activity.getWindow().getDecorView(),
+                "＋ 回路ビルダー（保存・コピー・Instance・Fork）");
+        assertNotNull(builder);
+        builder.performClick();
+
+        Intent next = Shadows.shadowOf(activity).getNextStartedActivity();
+        assertNotNull(next);
+        assertNotNull(next.getComponent());
+        assertEquals(BuilderActivity.class.getName(), next.getComponent().getClassName());
+    }
+
+    @Test public void builderCanPlaceCopyAndCompileWtaBlock() {
+        BuilderActivity activity = Robolectric.buildActivity(BuilderActivity.class).setup().get();
+        View root = activity.getWindow().getDecorView();
+
+        Button wta = buttonExact(root, "+ WTA");
+        assertNotNull(wta);
+        wta.performClick();
+
+        assertNotNull(textContains(root, "Winner-Take-All 1"));
+        assertNotNull(textContains(root, "MORE >="));
+
+        Button copy = buttonExact(root, "COPY");
+        assertNotNull(copy);
+        copy.performClick();
+
+        assertNotNull(textContains(root, "blocks=2"));
+        assertNotNull(textContains(root, "[COPY]"));
+    }
+
+    @Test public void builderEasySettingsExposeMeaningBeforeNumbers() {
+        BuilderActivity activity = Robolectric.buildActivity(BuilderActivity.class).setup().get();
+        View root = activity.getWindow().getDecorView();
+
+        buttonExact(root, "+ Custom").performClick();
+        assertNotNull(textContains(root, "必要入力 — いつONになるか"));
+        assertNotNull(buttonContains(root, "半分以上"));
+        assertNotNull(textContains(root, "感度 — 入力をどれだけ強く受けるか"));
+        assertNotNull(textContains(root, "抑制 — 他の候補をどれだけ抑えるか"));
+        assertNotNull(textContains(root, "記憶 — 前の状態をどれだけ残すか"));
+    }
+
     @Test public void inAppSelfTestIsVisibleAndPasses() {
         BioSystemActivity activity = Robolectric.buildActivity(BioSystemActivity.class).setup().get();
         Button selfTest = buttonExact(activity.getWindow().getDecorView(), "RUN SELF TEST");
