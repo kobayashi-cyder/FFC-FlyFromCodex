@@ -1,6 +1,7 @@
 package dev.ffc.ce3;
 
 import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -12,6 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+@SuppressLint("SetTextI18n")
 public class TutorialActivity extends Activity {
     private int lesson=0;
     private int a=0,b=0,cin=0;
