@@ -27,14 +27,19 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android API 37
         shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-37" "build-tools;36.0.0"
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-37" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
 
       - name: Set up Gradle 9.6.0
         uses: gradle/actions/setup-gradle@v4
@@ -46,6 +51,7 @@ jobs:
         run: |
           cat gbridge/source/chunk*.b64 > /tmp/GBridge-source.zip.b64
           base64 --decode /tmp/GBridge-source.zip.b64 > /tmp/GBridge-source.zip
+          rm -rf /tmp/gbridge-src
           mkdir -p /tmp/gbridge-src
           unzip -q /tmp/GBridge-source.zip -d /tmp/gbridge-src
           test -f /tmp/gbridge-src/GBridge/settings.gradle
