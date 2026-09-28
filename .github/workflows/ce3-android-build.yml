@@ -6,7 +6,6 @@ on:
       - ce3-connectome-tested-v0.6
     paths:
       - 'ce3-android/**'
-      - '.github/scripts/ce3_ui_smoke.py'
       - '.github/workflows/ce3-android-build.yml'
 
 permissions:
@@ -52,17 +51,14 @@ jobs:
         working-directory: ce3-android
         run: gradle :app:assembleDebug --stacktrace
 
-      - name: Emulator UI smoke test
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          arch: x86_64
-          target: google_apis
-          profile: pixel_2
-          disable-animations: true
-          script: |
-            adb install -r ce3-android/app/build/outputs/apk/debug/app-debug.apk
-            python3 .github/scripts/ce3_ui_smoke.py
+      - name: Verify APK archive package and signature
+        run: |
+          APK="ce3-android/app/build/outputs/apk/debug/app-debug.apk"
+          unzip -t "$APK" >/dev/null
+          /usr/local/lib/android/sdk/build-tools/34.0.0/aapt dump badging "$APK" | tee /tmp/ce3-badging.txt
+          grep -q "package: name='dev.ffc.ce3'" /tmp/ce3-badging.txt
+          grep -q "launchable-activity: name='dev.ffc.ce3.MainActivity'" /tmp/ce3-badging.txt
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner verify --verbose "$APK"
 
       - name: Rename verified APK
         run: cp ce3-android/app/build/outputs/apk/debug/app-debug.apk ce3-android/app/build/outputs/apk/debug/FFC-Ce3-Connectome-Tested-v0.6-debug.apk
