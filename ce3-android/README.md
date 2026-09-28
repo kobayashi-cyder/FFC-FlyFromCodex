@@ -72,3 +72,32 @@ The interactive MORE/LESS tutorial now continues from logic and arithmetic into 
 
 The tutorial keeps the core decomposition explicit:
 weighted SUM -> MORE/LESS -> ENABLE/ROUTE -> STATE.
+
+
+## v0.5 connectome-inspired transfer system
+
+A new interactive **CONNECTOME SYSTEM** screen turns reusable connectome principles into an executable control architecture.
+
+Pipeline:
+
+sensor inputs -> weighted integration -> MORE threshold -> module gates -> winner-take-all competition -> recurrent state -> behavior output
+
+A long-range supervisor can bias SEEK or AVOID without replacing local control. Three local modules (APPROACH / AVOID / HOLD) compete after thresholding. Recurrent memory retains recent winners across steps. A simple reward-modulated engineering learner can change the winning module's input weights.
+
+Biological inspiration kept explicit:
+- sparse weighted integration
+- excitation / inhibition through signed weights
+- thresholding
+- local modules
+- gating
+- recurrence
+- competition / winner selection
+- long-range modulation
+
+Engineering abstractions kept separate:
+- explicit MORE/LESS notation
+- three-module WTA implementation
+- numeric supervisor bias
+- simple reward update rule
+
+This is a transfer architecture, not a claim that the fly brain literally uses these exact equations.
