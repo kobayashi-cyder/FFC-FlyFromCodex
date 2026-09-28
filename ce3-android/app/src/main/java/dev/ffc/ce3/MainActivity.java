@@ -80,6 +80,13 @@ public class MainActivity extends Activity {
         guideLp.setMargins(dp(12),0,dp(12),dp(8));
         root.addView(guide, guideLp);
 
+        Button builder = btn("＋ 回路ビルダー（保存・コピー・Instance・Fork）");
+        builder.setOnClickListener(v -> startActivity(new Intent(this, BuilderActivity.class)));
+        LinearLayout.LayoutParams builderLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(56));
+        builderLp.setMargins(dp(12),0,dp(12),dp(8));
+        root.addView(builder, builderLp);
+
         LinearLayout tabs1 = new LinearLayout(this);
         tabs1.setPadding(dp(12),0,dp(12),0);
         Button a = btn("基本回路");
