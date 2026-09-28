@@ -133,6 +133,31 @@ public class Ce3OperationTest {
         assertNotNull(textContains(root, "manual override"));
     }
 
+    @Test public void bancLabHasDedicatedTutorialAndItExplainsTheWorkflow() {
+        Banc888Activity lab = Robolectric.buildActivity(Banc888Activity.class).setup().get();
+        Button tutorial = buttonExact(lab.getWindow().getDecorView(),
+                "▶ BANC v888 Labの使い方（3分）");
+        assertNotNull(tutorial);
+        tutorial.performClick();
+
+        Intent next = Shadows.shadowOf(lab).getNextStartedActivity();
+        assertNotNull(next);
+        assertNotNull(next.getComponent());
+        assertEquals(BancTutorialActivity.class.getName(), next.getComponent().getClassName());
+
+        BancTutorialActivity guide =
+                Robolectric.buildActivity(BancTutorialActivity.class).setup().get();
+        View root = guide.getWindow().getDecorView();
+
+        assertNotNull(textContains(root, "Cellを属性でまとめる"));
+        assertNotNull(textContains(root, "AUTO ASSIGNは『仮説の初期値』"));
+        assertNotNull(textContains(root, "Module化で複雑さを畳む"));
+        assertNotNull(textContains(root, "Motifは『候補』として読む"));
+        assertNotNull(textContains(root, "例外Cellだけ個別調整"));
+        assertNotNull(textContains(root, "Builderへ持っていく"));
+        assertNotNull(textContains(root, "やってはいけない読み方"));
+    }
+
     @Test public void inAppSelfTestIsVisibleAndPasses() {
         BioSystemActivity activity = Robolectric.buildActivity(BioSystemActivity.class).setup().get();
         Button selfTest = buttonExact(activity.getWindow().getDecorView(), "RUN SELF TEST");
