@@ -291,6 +291,13 @@ public class BioSystemActivity extends Activity {
         networkView.invalidate();
     }
 
+    private String outputJa(String output) {
+        if ("APPROACH".equals(output)) return "接近";
+        if ("AVOID".equals(output)) return "回避";
+        if ("HOLD".equals(output)) return "待機";
+        return "停止";
+    }
+
     class NetworkView extends View {
         private final Paint p = new Paint(1);
 
