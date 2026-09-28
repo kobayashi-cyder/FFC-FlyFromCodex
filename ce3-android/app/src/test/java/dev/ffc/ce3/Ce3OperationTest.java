@@ -21,7 +21,7 @@ public class Ce3OperationTest {
 
     @Test public void mainScreenRoutesToConnectomeSystem() {
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        Button connectome = buttonExact(activity.getWindow().getDecorView(), "CONNECTOME SYSTEM");
+        Button connectome = buttonExact(activity.getWindow().getDecorView(), "コネクトーム");
         assertNotNull(connectome);
         connectome.performClick();
 
@@ -29,6 +29,23 @@ public class Ce3OperationTest {
         assertNotNull(next);
         assertNotNull(next.getComponent());
         assertEquals(BioSystemActivity.class.getName(), next.getComponent().getClassName());
+    }
+
+    @Test public void quickStartTutorialExplainsTheBasicScreen() {
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
+        Button guide = buttonExact(activity.getWindow().getDecorView(), "▶ この画面の使い方（30秒）");
+        assertNotNull(guide);
+        guide.performClick();
+
+        Intent next = Shadows.shadowOf(activity).getNextStartedActivity();
+        assertNotNull(next);
+        assertNotNull(next.getComponent());
+        assertEquals(QuickStartActivity.class.getName(), next.getComponent().getClassName());
+
+        QuickStartActivity guideActivity = Robolectric.buildActivity(QuickStartActivity.class).setup().get();
+        View guideRoot = guideActivity.getWindow().getDecorView();
+        assertNotNull(textContains(guideRoot, "判定を見るだけならSTEPは不要です"));
+        assertNotNull(textContains(guideRoot, "ENABLEは『通行許可』"));
     }
 
     @Test public void inAppSelfTestIsVisibleAndPasses() {
