@@ -53,3 +53,22 @@ The app now contains an interactive tutorial that derives digital logic and arit
 
 Subtraction demonstrates signed weights directly:
 D = A - B - Bin, and borrow is LESS(0, D).
+
+
+## v0.4 system tutorial
+
+The interactive MORE/LESS tutorial now continues from logic and arithmetic into a minimal computing system:
+
+- signed compare: LT / GE / EQ from X-Y
+- shifter
+- incrementer
+- 2-bit ALU with ADD / SUB / AND / OR
+- SR latch
+- 2-bit register
+- 2-bit counter
+- repeated-subtraction divider controlled by MORE/LESS
+- finite-state automaton with ENABLE / RESET / STEP
+- minimal accumulator CPU datapath
+
+The tutorial keeps the core decomposition explicit:
+weighted SUM -> MORE/LESS -> ENABLE/ROUTE -> STATE.
