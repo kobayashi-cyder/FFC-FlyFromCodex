@@ -15,6 +15,7 @@ public class MainActivity extends Activity {
     private String bancStatus="BANC v888 実データを初期化中…";
     private long selectedId=0L;
     private LogicFluidEmulator emulator;
+    private PlasticityStore plasticity;
     private final BioState bio=new BioState();
 
     @Override public void onCreate(Bundle state){
@@ -31,7 +32,8 @@ public class MainActivity extends Activity {
                 d.open(); banc=d;
                 List<BancDataset.Meta> first=d.search("",1);
                 if(!first.isEmpty()) selectedId=first.get(0).id;
-                emulator=new LogicFluidEmulator(d);
+                plasticity=new PlasticityStore(this);
+                emulator=new LogicFluidEmulator(d,plasticity);
                 emulator.reset(selectedId);
                 bancReady=true;
                 bancStatus="BANC v888 / synapses_v2 loaded: neurons="+d.nodeCount()+" / directed pairs="+d.edgeCount()+" / pair threshold=0 (count=1保持)";
@@ -48,7 +50,7 @@ public class MainActivity extends Activity {
         HorizontalScrollView hs=new HorizontalScrollView(this); LinearLayout nav=new LinearLayout(this); nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.addView(button("概要",this::showOverview)); nav.addView(button("検索",this::showSearch)); nav.addView(button("細胞",this::showCell));
         nav.addView(button("Hops",this::showHops)); nav.addView(button("Graph",this::showGraph)); nav.addView(button("相互作用",this::showInteractions));
-        nav.addView(button("Emulator",this::showEmulator)); nav.addView(button("データ",this::showData)); nav.addView(button("学習",this::showLearn)); hs.addView(nav); root.addView(hs);
+        nav.addView(button("Emulator",this::showEmulator)); nav.addView(button("調教",this::showTraining)); nav.addView(button("データ",this::showData)); nav.addView(button("学習",this::showLearn)); hs.addView(nav); root.addView(hs);
         ScrollView sc=new ScrollView(this); content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(4,10,4,80); sc.addView(content);
         root.addView(sc,new LinearLayout.LayoutParams(-1,0,1)); setContentView(root);
     }
@@ -247,6 +249,141 @@ public class MainActivity extends Activity {
         }
     }
 
+
+    private void showTraining(){
+        clear();
+        if(!bancReady || emulator==null){notReady();return;}
+
+        content.addView(text("ハエを調教する · Reward-modulated Plasticity",21,true));
+        content.addView(text(
+                "BANCの元接続は変更しません。調教で変わるのは別保存された plasticity delta だけです。\n" +
+                "刺激→伝播→recent eligibility trace→報酬/罰→最近使ったedgeの有効重み補正、という簡略3-factor学習です。\n" +
+                "これは『実ショウジョウバエの学習を完全再現』するモデルではなく、BANC上で学習挙動を試すFFCモデルです。",
+                14,false));
+
+        EditText seedBox=new EditText(this);
+        seedBox.setInputType(2);
+        seedBox.setHint("刺激 root ID");
+        seedBox.setText(Long.toString(selectedId));
+        content.addView(seedBox);
+
+        EditText targetBox=new EditText(this);
+        targetBox.setInputType(2);
+        targetBox.setHint("目標 root ID（報酬判定先）");
+        targetBox.setText(Long.toString(selectedId));
+        content.addView(targetBox);
+
+        EditText ticksBox=new EditText(this);
+        ticksBox.setInputType(2);
+        ticksBox.setHint("1 episodeのtick数");
+        ticksBox.setText("5");
+        content.addView(ticksBox);
+
+        EditText episodesBox=new EditText(this);
+        episodesBox.setInputType(2);
+        episodesBox.setHint("episode数");
+        episodesBox.setText("20");
+        content.addView(episodesBox);
+
+        EditText lrBox=new EditText(this);
+        lrBox.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        lrBox.setHint("学習率");
+        lrBox.setText("0.06");
+        content.addView(lrBox);
+
+        LinearLayout result=new LinearLayout(this);
+        result.setOrientation(LinearLayout.VERTICAL);
+
+        content.addView(button("手動: 報酬 +1",()->{
+            float lr=(float)parseDouble(lrBox.getText().toString(),0.06);
+            int changed=emulator.reinforce(1f,lr);
+            Toast.makeText(this,"reward: "+changed+" edges changed",Toast.LENGTH_LONG).show();
+            drawTrainingState(result,parseLong(targetBox.getText().toString(),0));
+        }));
+
+        content.addView(button("手動: 罰 -1",()->{
+            float lr=(float)parseDouble(lrBox.getText().toString(),0.06);
+            int changed=emulator.reinforce(-1f,lr);
+            Toast.makeText(this,"punishment: "+changed+" edges changed",Toast.LENGTH_LONG).show();
+            drawTrainingState(result,parseLong(targetBox.getText().toString(),0));
+        }));
+
+        content.addView(button("条件づけ訓練を実行",()->{
+            long seed=parseLong(seedBox.getText().toString(),selectedId);
+            long target=parseLong(targetBox.getText().toString(),0);
+            int ticks=Math.max(1,Math.min(50,(int)parseLong(ticksBox.getText().toString(),5)));
+            int episodes=Math.max(1,Math.min(500,(int)parseLong(episodesBox.getText().toString(),20)));
+            float lr=(float)Math.max(0.001,Math.min(0.5,parseDouble(lrBox.getText().toString(),0.06)));
+            result.removeAllViews();
+            result.addView(text("調教中… "+episodes+" episodes",15,true));
+
+            new Thread(()->{
+                int hits=0,totalChanged=0;
+                try{
+                    for(int ep=0;ep<episodes;ep++){
+                        emulator.reset(seed);
+                        emulator.stimulate(seed,1f);
+                        boolean reached=false;
+                        for(int t=0;t<ticks;t++){
+                            emulator.step();
+                            if(target>0 && emulator.isActive(target))reached=true;
+                        }
+                        if(reached){
+                            hits++;
+                            totalChanged+=emulator.reinforce(1f,lr);
+                        }else{
+                            totalChanged+=emulator.reinforce(-0.12f,lr*0.35f);
+                        }
+                    }
+                    int h=hits,c=totalChanged;
+                    runOnUiThread(()->{
+                        result.removeAllViews();
+                        result.addView(text(
+                                "訓練完了\n"+
+                                "target到達="+h+"/"+episodes+" episodes\n"+
+                                "更新edge延べ数="+c+"\n"+
+                                "保存済みplasticity edges="+emulator.learnedEdgeCount(),
+                                16,true));
+                        drawTrainingState(result,target);
+                    });
+                }catch(Exception e){
+                    runOnUiThread(()->{
+                        result.removeAllViews();
+                        result.addView(text("training error: "+e.getMessage(),14,true));
+                    });
+                }
+            }).start();
+        }));
+
+        content.addView(button("学習前のBANCへ戻す（学習差分全消去）",()->{
+            emulator.clearTraining();
+            Toast.makeText(this,"Plasticity cleared. BANC base graph is unchanged.",Toast.LENGTH_LONG).show();
+            drawTrainingState(result,parseLong(targetBox.getText().toString(),0));
+        }));
+
+        content.addView(text("どう変わるか",18,true));
+        content.addView(text(
+                "報酬を受けた直前の伝播経路は次回少し通りやすくなり、罰を受けた経路は少し通りにくくなります。\n" +
+                "同じ刺激を繰り返すと、特定の経路へ活動が偏る・目標ニューロンへ到達しやすくなる・別経路が抑えられる、といった挙動を観察できます。\n" +
+                "細胞外小域/ISF K⁺とグリア緩衝も毎tick動くので、回路学習と興奮性環境を同時に見られます。",
+                14,false));
+
+        content.addView(result);
+        drawTrainingState(result,parseLong(targetBox.getText().toString(),0));
+    }
+
+    private void drawTrainingState(LinearLayout result,long target){
+        LogicFluidEmulator.Snapshot s=emulator.snapshot();
+        result.addView(text(
+                "learned edges="+s.learnedEdges+
+                " | mean |Δw|="+fmt(s.meanAbsPlasticity)+
+                " | eligibility="+s.eligibilityEdges+"\n"+
+                "cumulative reward="+fmt(s.cumulativeReward)+
+                " | last reward="+fmt(s.lastReward)+
+                (target>0?"\ntarget "+target+" activity="+String.format(Locale.ROOT,"%.3f",emulator.activityOf(target)):""),
+                14,false));
+    }
+
     private void showData(){
         clear();content.addView(text("同梱データ",21,true));content.addView(text(bancStatus,16,true));
         content.addView(text("dataset: BANC\nmaterialization: v888\nsynapse detector/edgelist: v2 (paper version)\nsource: Lee Lab public GCS compiled_data/banc_888\npair count threshold: 0\nweak pair: count=1 retained\nautapses: source edgelist buildに従う\nmetadata: root ID / hierarchy / region / side / NT / morphology metrics等",15,false));
@@ -279,6 +416,7 @@ public class MainActivity extends Activity {
     private void showLearn(){clear();content.addView(text("読み方",21,true));String[] a={"root IDはv888 materializationと組で扱う。","count=1も構造edgeとして保持。ただし生理的有効性は別問題。","Exact-kは最短距離がk。長さkの全walkとは別。","NT予測だけで受容体依存の効果符号を断定しない。","BANCは静的EM connectome。イオン濃度時系列はBANC実測ではない。","FFC小域モデルは構造データと生理モデルの接続層として表示する。"};for(String s:a)content.addView(text("・"+s,15,false));}
 
     private long parseLong(String s,long d){try{return Long.parseLong(s.trim());}catch(Exception e){return d;}}
+    private double parseDouble(String s,double d){try{return Double.parseDouble(s.trim());}catch(Exception e){return d;}}
 
     @Override protected void onDestroy(){super.onDestroy();if(banc!=null)try{banc.close();}catch(Exception ignored){}}
 
