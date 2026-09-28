@@ -48,6 +48,41 @@ public class Ce3OperationTest {
         assertNotNull(textContains(guideRoot, "ENABLEは『通行許可』"));
     }
 
+    @Test public void moduleBuilderCanCreateAndReuseModules() {
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
+        Button builder = buttonExact(activity.getWindow().getDecorView(), "🧩 モジュールを作る・コピーして再利用");
+        assertNotNull(builder);
+        builder.performClick();
+        Intent next = Shadows.shadowOf(activity).getNextStartedActivity();
+        assertNotNull(next);
+        assertEquals(ModuleBuilderActivity.class.getName(), next.getComponent().getClassName());
+
+        ModuleBuilderActivity screen = Robolectric.buildActivity(ModuleBuilderActivity.class).setup().get();
+        View root = screen.getWindow().getDecorView();
+
+        Button threshold = buttonExact(root, "THRESHOLD");
+        assertNotNull(threshold);
+        threshold.performClick();
+
+        Button copy = buttonExact(root, "COPY");
+        Button instance = buttonExact(root, "INSTANCE");
+        Button fork = buttonExact(root, "FORK");
+        assertNotNull(copy);
+        assertNotNull(instance);
+        assertNotNull(fork);
+
+        copy.performClick();
+        assertNotNull(textContains(root, "独立モジュール"));
+        instance.performClick();
+        assertNotNull(textContains(root, "INSTANCE: 設定は source"));
+        Button source = buttonExact(root, "SOURCE");
+        assertNotNull(source);
+        source.performClick();
+
+        assertNotNull(textContains(root, "EASY SETTINGS"));
+        assertNotNull(textContains(root, "ADVANCED"));
+    }
+
     @Test public void inAppSelfTestIsVisibleAndPasses() {
         BioSystemActivity activity = Robolectric.buildActivity(BioSystemActivity.class).setup().get();
         Button selfTest = buttonExact(activity.getWindow().getDecorView(), "RUN SELF TEST");
