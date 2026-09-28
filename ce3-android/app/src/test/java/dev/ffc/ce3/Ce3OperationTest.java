@@ -86,12 +86,12 @@ public class Ce3OperationTest {
         BioSystemActivity activity = Robolectric.buildActivity(BioSystemActivity.class).setup().get();
         View root = activity.getWindow().getDecorView();
 
-        buttonExact(root, "FORAGE").performClick();
+        buttonContains(root, "FORAGE").performClick();
         TextView forage = textContains(root, "OUTPUT = APPROACH");
         assertNotNull("FORAGE should select APPROACH", forage);
         assertTrue(forage.getText().toString().contains("WHY:"));
 
-        buttonExact(root, "THREAT").performClick();
+        buttonContains(root, "THREAT").performClick();
         assertNotNull("THREAT should select AVOID", textContains(root, "OUTPUT = AVOID"));
     }
 
@@ -121,7 +121,7 @@ public class Ce3OperationTest {
         assertNotNull(weights);
         String before = weights.getText().toString();
 
-        Button reward = buttonExact(root, "REWARD +");
+        Button reward = buttonContains(root, "REWARD +");
         assertNotNull(reward);
         reward.performClick();
 
@@ -142,7 +142,7 @@ public class Ce3OperationTest {
         assertEquals("LEARN OFF", toggle.getText().toString());
 
         String before = weights.getText().toString();
-        buttonExact(root, "REWARD +").performClick();
+        buttonContains(root, "REWARD +").performClick();
         String after = weights.getText().toString();
         assertEquals(before, after);
     }
