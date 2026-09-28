@@ -14,6 +14,7 @@ public class MainActivity extends Activity {
     private volatile boolean bancReady=false;
     private String bancStatus="BANC v888 実データを初期化中…";
     private long selectedId=0L;
+    private LogicFluidEmulator emulator;
     private final BioState bio=new BioState();
 
     @Override public void onCreate(Bundle state){
@@ -27,9 +28,12 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             try{
                 BancDataset d=new BancDataset(this);
-                d.open(); banc=d; bancReady=true;
+                d.open(); banc=d;
                 List<BancDataset.Meta> first=d.search("",1);
                 if(!first.isEmpty()) selectedId=first.get(0).id;
+                emulator=new LogicFluidEmulator(d);
+                emulator.reset(selectedId);
+                bancReady=true;
                 bancStatus="BANC v888 / synapses_v2 loaded: neurons="+d.nodeCount()+" / directed pairs="+d.edgeCount()+" / pair threshold=0 (count=1保持)";
             }catch(Exception e){
                 bancStatus="BANC実データ初期化失敗: "+e.getMessage();
@@ -44,7 +48,7 @@ public class MainActivity extends Activity {
         HorizontalScrollView hs=new HorizontalScrollView(this); LinearLayout nav=new LinearLayout(this); nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.addView(button("概要",this::showOverview)); nav.addView(button("検索",this::showSearch)); nav.addView(button("細胞",this::showCell));
         nav.addView(button("Hops",this::showHops)); nav.addView(button("Graph",this::showGraph)); nav.addView(button("相互作用",this::showInteractions));
-        nav.addView(button("データ",this::showData)); nav.addView(button("学習",this::showLearn)); hs.addView(nav); root.addView(hs);
+        nav.addView(button("Emulator",this::showEmulator)); nav.addView(button("データ",this::showData)); nav.addView(button("学習",this::showLearn)); hs.addView(nav); root.addView(hs);
         ScrollView sc=new ScrollView(this); content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(4,10,4,80); sc.addView(content);
         root.addView(sc,new LinearLayout.LayoutParams(-1,0,1)); setContentView(root);
     }
@@ -60,6 +64,8 @@ public class MainActivity extends Activity {
         content.addView(text("root ID → cell type / super class / region / NT → direct synaptic pair → Exact 1–6 hop → FFC相互作用モデル",16,false));
         content.addView(text("弱い接続",19,true));
         content.addView(text("pair単位のcountしきい値は0です。count=1の接続もデータ層から削除しません。画面・hop解析で最小synapse数を1,2,5…へ変更できます。",15,false));
+        content.addView(text("挙動エミュレーション",19,true));
+        content.addView(text("Emulatorでは実BANC edgeをイベント駆動で伝播し、細胞外小域ECF・細胞間質液(ISF)・グリアK⁺緩衝・BBB/血リンパ境界を同じtickで更新します。",15,false));
         content.addView(text("実測とモデルの分離",19,true));
         content.addView(text("[BANC] root ID・接続数・annotation・NT等はv888実データ。\n[文献] K⁺緩衝・再取り込み・BBB・代謝型シグナルは生理学的機構。\n[MODEL] 小域濃度・興奮性・plasticityの時系列係数はFFCの計算モデルです。",15,false));
     }
@@ -134,6 +140,112 @@ public class MainActivity extends Activity {
     }
 
     private List<BancDataset.Link> strongWeakSample(List<BancDataset.Link> a,int strong,int weak){ArrayList<BancDataset.Link> r=new ArrayList<>();for(int i=0;i<Math.min(strong,a.size());i++)r.add(a.get(i));for(int i=Math.max(strong,a.size()-weak);i<a.size();i++)r.add(a.get(i));return r;}
+
+
+    private void showEmulator(){
+        clear();
+        if(!bancReady || emulator==null){notReady();return;}
+        content.addView(text("BANC論理回路 + 細胞外液/間質液 Emulator",21,true));
+        content.addView(text(
+                "[BANC] 実root IDと全v2 pair接続を使います。count=1も保持。\n" +
+                "[文献境界] brain-side K⁺ ≈ 5 mM、血リンパK⁺は高濃度（代表値40 mM）。\n" +
+                "[MODEL] 小域→ISF拡散、グリア緩衝、BBB透過、興奮性への係数は挙動比較用の簡略モデルです。\n" +
+                "1 tickは物理的なmsへ固定していません。",
+                14,false));
+
+        LinearLayout state=new LinearLayout(this);
+        state.setOrientation(LinearLayout.VERTICAL);
+        content.addView(state);
+
+        EditText min=new EditText(this);
+        min.setInputType(2);
+        min.setText(Integer.toString(emulator.getMinSynapseCount()));
+        min.setHint("最小synapse count（1なら弱い接続を含む）");
+        content.addView(min);
+
+        Switch barrier=new Switch(this);
+        barrier.setText("BBB permeability stress ×10");
+        barrier.setChecked(emulator.isBarrierStressed());
+        barrier.setOnCheckedChangeListener((b,checked)->{
+            emulator.setBarrierStress(checked);
+            drawEmulatorSnapshot(state,emulator.snapshot());
+        });
+        content.addView(barrier);
+
+        content.addView(button("選択ニューロンを刺激",()->{
+            emulator.stimulate(selectedId,1.0f);
+            drawEmulatorSnapshot(state,emulator.snapshot());
+        }));
+        content.addView(button("このニューロンをseedにリセット",()->{
+            emulator.reset(selectedId);
+            drawEmulatorSnapshot(state,emulator.snapshot());
+        }));
+        content.addView(button("1 tick進める",()->runEmulatorTicks(1,min,state)));
+        content.addView(button("10 tick進める",()->runEmulatorTicks(10,min,state)));
+        content.addView(button("50 tick進める",()->runEmulatorTicks(50,min,state)));
+
+        content.addView(text("状態の意味",18,true));
+        content.addView(text(
+                "microdomain K⁺ = シナプス周辺など局所細胞外液のK⁺。\n" +
+                "ISF K⁺ = 脳内の細胞間質液として平均化したK⁺。\n" +
+                "ECF volume = 細胞外液量の相対値。K⁺/水恒常性の崩れを可視化するproxy。\n" +
+                "glial load = グリアが回収したK⁺負荷のproxy。\n" +
+                "excitability gain = ISF K⁺上昇で論理発火閾値が下がるようにしたMODEL係数。\n" +
+                "active neurons = 現tickで論理的に活動している実BANC root ID数。",
+                14,false));
+
+        drawEmulatorSnapshot(state,emulator.snapshot());
+    }
+
+    private void runEmulatorTicks(int steps,EditText minBox,LinearLayout state){
+        int threshold=Math.max(1,(int)parseLong(minBox.getText().toString(),1));
+        emulator.setMinSynapseCount(threshold);
+        state.removeAllViews();
+        state.addView(text("計算中… "+steps+" tick / min syn="+threshold,15,true));
+        new Thread(()->{
+            try{
+                LogicFluidEmulator.Snapshot snap=null;
+                for(int i=0;i<steps;i++) snap=emulator.step();
+                LogicFluidEmulator.Snapshot out=snap==null?emulator.snapshot():snap;
+                runOnUiThread(()->drawEmulatorSnapshot(state,out));
+            }catch(Exception e){
+                runOnUiThread(()->{
+                    state.removeAllViews();
+                    state.addView(text("Emulator error: "+e.getMessage(),14,true));
+                });
+            }
+        }).start();
+    }
+
+    private void drawEmulatorSnapshot(LinearLayout state,LogicFluidEmulator.Snapshot s){
+        state.removeAllViews();
+        state.addView(text(
+                "tick="+s.tick+
+                " | active="+s.activeNeurons+
+                " | evaluated edges="+s.evaluatedEdges+"\n"+
+                "microdomain K⁺="+fmt(s.microdomainK)+" mM\n"+
+                "ISF / interstitial K⁺="+fmt(s.interstitialK)+" mM\n"+
+                "hemolymph K⁺="+fmt(LogicFluidEmulator.HEMOLYMPH_K_MM)+" mM [boundary]\n"+
+                "ECF volume="+fmt(s.extracellularVolume)+" × baseline\n"+
+                "transmitter="+fmt(s.transmitter)+" [MODEL]\n"+
+                "glial K⁺ load="+fmt(s.glialKLoad)+" [MODEL]\n"+
+                "excitability gain="+fmt(s.excitabilityGain)+" ×\n"+
+                "BBB permeability="+String.format(Locale.ROOT,"%.6f",s.bbbPermeability),
+                16,true));
+        if(s.topIds.length>0){
+            state.addView(text("上位active root IDs",17,true));
+            for(int i=0;i<s.topIds.length;i++){
+                BancDataset.Meta m=banc.meta(s.topIds[i]);
+                state.addView(text(
+                        s.topIds[i]+" | a="+String.format(Locale.ROOT,"%.3f",s.topActivities[i])+
+                        " | "+(m==null?"":m.cellType)+
+                        " | NT="+(m==null?"":m.nt),
+                        13,false));
+            }
+        }else{
+            state.addView(text("活動は消失しています。seed刺激で再開できます。",13,false));
+        }
+    }
 
     private void showData(){
         clear();content.addView(text("同梱データ",21,true));content.addView(text(bancStatus,16,true));
