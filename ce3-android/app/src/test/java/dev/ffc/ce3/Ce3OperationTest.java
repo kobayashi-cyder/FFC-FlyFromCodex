@@ -92,6 +92,47 @@ public class Ce3OperationTest {
         assertNotNull(textContains(root, "記憶 — 前の状態をどれだけ残すか"));
     }
 
+    @Test public void mainScreenRoutesToBanc888Lab() {
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
+        Button banc = buttonExact(activity.getWindow().getDecorView(),
+                "BANC v888 Lab（読込・Module化・Motif）");
+        assertNotNull(banc);
+        banc.performClick();
+
+        Intent next = Shadows.shadowOf(activity).getNextStartedActivity();
+        assertNotNull(next);
+        assertNotNull(next.getComponent());
+        assertEquals(Banc888Activity.class.getName(), next.getComponent().getClassName());
+    }
+
+    @Test public void bancLabDemoBuildsModulesAndAllowsExceptionOverride() {
+        Banc888Activity activity = Robolectric.buildActivity(Banc888Activity.class).setup().get();
+        View root = activity.getWindow().getDecorView();
+
+        Button demo = buttonExact(root, "DEMOを読込");
+        assertNotNull(demo);
+        demo.performClick();
+
+        assertNotNull(textContains(root, "cells=7"));
+        assertNotNull(textContains(root, "module nodes="));
+        assertNotNull(textContains(root, "MemoryLoop"));
+
+        android.widget.EditText input = editTextWithHint(root, "root_id を入力");
+        assertNotNull(input);
+        input.setText("1001");
+
+        Button memory = buttonExact(root, "Memory");
+        assertNotNull(memory);
+        memory.performClick();
+
+        Button apply = buttonExact(root, "適用");
+        assertNotNull(apply);
+        apply.performClick();
+
+        assertNotNull(textContains(root, "template=T-MEM"));
+        assertNotNull(textContains(root, "manual override"));
+    }
+
     @Test public void inAppSelfTestIsVisibleAndPasses() {
         BioSystemActivity activity = Robolectric.buildActivity(BioSystemActivity.class).setup().get();
         Button selfTest = buttonExact(activity.getWindow().getDecorView(), "RUN SELF TEST");
@@ -175,6 +216,21 @@ public class Ce3OperationTest {
     private static Button buttonContains(View root, String text) {
         View v = find(root, text, false, true);
         return v instanceof Button ? (Button) v : null;
+    }
+
+    private static android.widget.EditText editTextWithHint(View root, String hint) {
+        if (root instanceof android.widget.EditText) {
+            CharSequence h = ((android.widget.EditText) root).getHint();
+            if (h != null && h.toString().equals(hint)) return (android.widget.EditText) root;
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                android.widget.EditText found = editTextWithHint(group.getChildAt(i), hint);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     private static TextView textContains(View root, String text) {
