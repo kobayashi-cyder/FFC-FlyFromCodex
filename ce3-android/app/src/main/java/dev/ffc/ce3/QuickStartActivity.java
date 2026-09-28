@@ -23,8 +23,8 @@ public class QuickStartActivity extends Activity {
     private String preset="OR";
     private TextView live, stepHint;
 
-    @Override public void onCreate(Bundle b){
-        super.onCreate(b);
+    @Override public void onCreate(Bundle savedInstanceState){
+        super.onCreate(savedInstanceState);
 
         LinearLayout root=new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
