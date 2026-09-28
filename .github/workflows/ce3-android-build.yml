@@ -1,44 +1,81 @@
-name: Build Ce3 Android APK
+name: Test and Build Ce3 Connectome APK
 
 on:
   push:
     branches:
-      - ce3-connectome-primitives-v0.5
+      - ce3-connectome-tested-v0.6
     paths:
       - 'ce3-android/**'
+      - '.github/scripts/ce3_ui_smoke.py'
       - '.github/workflows/ce3-android-build.yml'
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_HOME: /usr/local/lib/android/sdk
-    defaults:
-      run:
-        working-directory: ce3-android
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Accept Android licenses
         run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null || true
+
       - name: Install Android SDK
         run: /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Build debug APK
+
+      - name: Unit tests
+        working-directory: ce3-android
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Android lint
+        working-directory: ce3-android
+        run: gradle :app:lintDebug --stacktrace
+
+      - name: Assemble debug APK
+        working-directory: ce3-android
         run: gradle :app:assembleDebug --stacktrace
-      - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/FFC-Ce3-Connectome-System-v0.5-debug.apk
-      - uses: actions/upload-artifact@v4
+
+      - name: Emulator UI smoke test
+        uses: reactivecircus/android-emulator-runner@v2
         with:
-          name: FFC-Ce3-Connectome-System-v0.5
-          path: ce3-android/app/build/outputs/apk/debug/FFC-Ce3-Connectome-System-v0.5-debug.apk
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            adb install -r ce3-android/app/build/outputs/apk/debug/app-debug.apk
+            python3 .github/scripts/ce3_ui_smoke.py
+
+      - name: Rename verified APK
+        run: cp ce3-android/app/build/outputs/apk/debug/app-debug.apk ce3-android/app/build/outputs/apk/debug/FFC-Ce3-Connectome-Tested-v0.6-debug.apk
+
+      - name: Upload verified APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FFC-Ce3-Connectome-Tested-v0.6
+          path: ce3-android/app/build/outputs/apk/debug/FFC-Ce3-Connectome-Tested-v0.6-debug.apk
           if-no-files-found: error
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FFC-Ce3-v0.6-test-reports
+          path: |
+            ce3-android/app/build/reports/tests/testDebugUnitTest/**
+            ce3-android/app/build/reports/lint-results-debug.html
+          if-no-files-found: warn
