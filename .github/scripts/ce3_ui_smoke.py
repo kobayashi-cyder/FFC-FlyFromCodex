@@ -110,5 +110,4 @@ fatal_lines = [line for line in log.splitlines()
 if fatal_lines:
     raise AssertionError("Fatal exception found in logcat:\n" + "\n".join(fatal_lines[-20:]))
 
-run("exec-out", "screencap", "-p", check=False)
 print("UI_SMOKE_PASS: launch -> connectome system -> self-test -> forage/approach -> threat/avoid")
