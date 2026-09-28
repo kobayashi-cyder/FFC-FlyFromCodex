@@ -77,8 +77,15 @@ public class MainActivity extends Activity {
         guide.setOnClickListener(v -> startActivity(new Intent(this, QuickStartActivity.class)));
         LinearLayout.LayoutParams guideLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(54));
-        guideLp.setMargins(dp(12),0,dp(12),dp(8));
+        guideLp.setMargins(dp(12),0,dp(12),dp(6));
         root.addView(guide, guideLp);
+
+        Button builder = btn("🧩 モジュールを作る・コピーして再利用");
+        builder.setOnClickListener(v -> startActivity(new Intent(this, ModuleBuilderActivity.class)));
+        LinearLayout.LayoutParams builderLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(54));
+        builderLp.setMargins(dp(12),0,dp(12),dp(8));
+        root.addView(builder, builderLp);
 
         LinearLayout tabs1 = new LinearLayout(this);
         tabs1.setPadding(dp(12),0,dp(12),0);
