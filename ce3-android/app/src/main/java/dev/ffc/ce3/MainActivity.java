@@ -61,28 +61,36 @@ public class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.rgb(245,247,251));
 
-        TextView title = tv("FFC · Ce3  Automaton + ML Circuit", 20);
+        TextView title = tv("FFC · Ce3  Automaton / ML / Connectome", 20);
         title.setTypeface(null, 1);
         title.setPadding(dp(16),dp(14),dp(16),dp(6));
         root.addView(title);
 
-        TextView sub = tv("COMPARE(MORE/LESS) → STATE → ROUTE を基礎に、学習可能な重みを追加する実験APK", 13);
+        TextView sub = tv("MORE/LESS → STATE → ROUTE を基礎に、connectome由来の制御原理とMLを実験するAPK", 13);
         sub.setTextColor(Color.DKGRAY);
         sub.setPadding(dp(16),0,dp(16),dp(8));
         root.addView(sub);
 
-        LinearLayout tabs = new LinearLayout(this);
-        tabs.setPadding(dp(12),0,dp(12),dp(6));
+        LinearLayout tabs1 = new LinearLayout(this);
+        tabs1.setPadding(dp(12),0,dp(12),0);
         Button a = btn("AUTOMATON");
         Button m = btn("ML CIRCUIT");
+        tabs1.addView(a, new LinearLayout.LayoutParams(0, dp(50), 1));
+        tabs1.addView(m, new LinearLayout.LayoutParams(0, dp(50), 1));
+        root.addView(tabs1);
+
+        LinearLayout tabs2 = new LinearLayout(this);
+        tabs2.setPadding(dp(12),0,dp(12),dp(6));
         Button t = btn("TUTORIAL");
-        tabs.addView(a, new LinearLayout.LayoutParams(0, dp(50), 1));
-        tabs.addView(m, new LinearLayout.LayoutParams(0, dp(50), 1));
-        tabs.addView(t, new LinearLayout.LayoutParams(0, dp(50), 1));
-        root.addView(tabs);
+        Button bio = btn("CONNECTOME SYSTEM");
+        tabs2.addView(t, new LinearLayout.LayoutParams(0, dp(50), 1));
+        tabs2.addView(bio, new LinearLayout.LayoutParams(0, dp(50), 1));
+        root.addView(tabs2);
+
         a.setOnClickListener(v -> { mlMode=false; buildControls(); });
         m.setOnClickListener(v -> { mlMode=true; buildControls(); });
         t.setOnClickListener(v -> startActivity(new Intent(this, TutorialActivity.class)));
+        bio.setOnClickListener(v -> startActivity(new Intent(this, BioSystemActivity.class)));
 
         circuitView = new CircuitView(this);
         circuitView.setMinimumHeight(dp(300));
