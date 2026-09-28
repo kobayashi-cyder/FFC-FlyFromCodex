@@ -16,9 +16,9 @@ import android.widget.TextView;
 import java.util.Locale;
 
 public class BioSystemActivity extends Activity {
-    private final Engine engine = new Engine();
+    private final ConnectomeEngine engine = new ConnectomeEngine();
     private NetworkView networkView;
-    private TextView sensorText, resultText, weightText, provenanceText;
+    private TextView sensorText, resultText, weightText, provenanceText, testText;
     private Button gateA, gateV, gateH, learnToggle, supervisorButton;
     private SeekBar targetBar, threatBar, contextBar;
 
@@ -86,6 +86,20 @@ public class BioSystemActivity extends Activity {
         sv.addView(body);
         root.addView(sv, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+
+        body.addView(section("0. 起動前セルフテスト"));
+        Button selfTest = btn("RUN SELF TEST");
+        testText = tv("", 13);
+        testText.setTypeface(android.graphics.Typeface.MONOSPACE);
+        testText.setBackgroundColor(Color.WHITE);
+        testText.setPadding(dp(12), dp(12), dp(12), dp(12));
+        selfTest.setOnClickListener(v -> {
+            ConnectomeEngine.SelfTestReport report = ConnectomeEngine.runSelfTest();
+            testText.setText((report.allPassed() ? "ALL PASS  " : "CHECK FAILED  ") +
+                    report.passed + "/" + report.total + "\n" + report.details);
+        });
+        body.addView(selfTest);
+        body.addView(testText);
 
         body.addView(section("1. センサ入力"));
         sensorText = tv("", 14);
@@ -242,11 +256,13 @@ public class BioSystemActivity extends Activity {
                 "OUTPUT = %s\n" +
                 "scores: APPROACH %.3f | AVOID %.3f | HOLD %.3f\n" +
                 "memory: A %.3f | V %.3f | H %.3f\n" +
-                "threshold %.2f | step %d | last reward %+.1f",
+                "threshold %.2f | step %d | last reward %+.1f\n" +
+                "WHY: %s",
                 engine.output,
                 engine.score[0], engine.score[1], engine.score[2],
                 engine.memory[0], engine.memory[1], engine.memory[2],
-                engine.threshold, engine.steps, engine.lastReward));
+                engine.threshold, engine.steps, engine.lastReward,
+                engine.explanation()));
 
         weightText.setText(String.format(Locale.US,
                 "WEIGHT MATRIX  [target, threat, context]\n" +
@@ -261,89 +277,6 @@ public class BioSystemActivity extends Activity {
                 engine.lr));
 
         networkView.invalidate();
-    }
-
-    static class Engine {
-        final double[] sensor = {0.55, 0.25, 0.50};
-        final boolean[] gate = {true, true, true};
-        final double[][] w = {
-                {+1.20, -1.10, +0.35},
-                {-0.25, +1.45, +0.15},
-                {+0.10, +0.20, +0.75}
-        };
-        final double[] memory = {0, 0, 0};
-        final double[] score = {0, 0, 0};
-        final double[] bias = {0, 0, 0};
-        final double threshold = 0.35;
-        final double lr = 0.08;
-        int supervisor = 0;
-        int steps = 0;
-        int winner = -1;
-        String output = "IDLE";
-        double lastReward = 0;
-        boolean learningEnabled = true;
-
-        void setBias() {
-            bias[0] = bias[1] = bias[2] = 0;
-            if (supervisor == 1) {
-                bias[0] = +0.25;
-                bias[1] = -0.10;
-            } else if (supervisor == 2) {
-                bias[0] = -0.15;
-                bias[1] = +0.30;
-            }
-        }
-
-        void preview() {
-            setBias();
-            for (int m = 0; m < 3; m++) {
-                double sum = bias[m] + 0.35 * memory[m];
-                for (int i = 0; i < 3; i++) sum += w[m][i] * sensor[i];
-                score[m] = gate[m] && sum >= threshold ? sum : 0;
-            }
-            winner = -1;
-            double best = 0;
-            for (int m = 0; m < 3; m++) {
-                if (score[m] > best) {
-                    best = score[m];
-                    winner = m;
-                }
-            }
-            output = winner == 0 ? "APPROACH" :
-                     winner == 1 ? "AVOID" :
-                     winner == 2 ? "HOLD" : "IDLE";
-        }
-
-        void step() {
-            preview();
-            for (int m = 0; m < 3; m++) {
-                double drive = (winner == m) ? 1.0 : 0.0;
-                memory[m] = 0.72 * memory[m] + 0.28 * drive;
-            }
-            steps++;
-            preview();
-        }
-
-        void learn(double reward) {
-            lastReward = reward;
-            preview();
-            if (!learningEnabled || winner < 0) return;
-            for (int i = 0; i < 3; i++) {
-                w[winner][i] = clamp(w[winner][i] + lr * reward * sensor[i], -2.0, 2.0);
-            }
-            preview();
-        }
-
-        void resetState() {
-            for (int i = 0; i < 3; i++) memory[i] = 0;
-            steps = 0;
-            lastReward = 0;
-            preview();
-        }
-
-        static double clamp(double v, double lo, double hi) {
-            return Math.max(lo, Math.min(hi, v));
-        }
     }
 
     class NetworkView extends View {
