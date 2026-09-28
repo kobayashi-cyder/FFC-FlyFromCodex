@@ -442,13 +442,13 @@ public class Banc888Engine {
     public void loadDemo() {
         clearAll();
         String[] rows = {
-                "1001,TasteA,sensory,ACh,leg,broadcaster",
-                "1002,TasteB,sensory,ACh,leg,",
+                "1001,TasteSensory,sensory,ACh,leg,broadcaster",
+                "1002,TasteSensory,sensory,ACh,leg,broadcaster",
                 "1003,GateGABA,interneuron,GABA,GNG,reciprocal",
                 "1004,Integrator,interneuron,ACh,GNG,integrator",
                 "1005,MemoryLoop,interneuron,ACh,GNG,attractor",
-                "1006,MotorA,motor,ACh,leg,",
-                "1007,MotorB,motor,ACh,leg,"
+                "1006,LegMotor,motor,ACh,leg,",
+                "1007,LegMotor,motor,ACh,leg,"
         };
         for (String r : rows) {
             String[] p = r.split(",",-1);
