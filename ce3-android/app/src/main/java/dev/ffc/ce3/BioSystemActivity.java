@@ -66,13 +66,13 @@ public class BioSystemActivity extends Activity {
         LinearLayout top = new LinearLayout(this);
         Button back = btn("← 戻る");
         back.setOnClickListener(v -> finish());
-        TextView title = tv("Ce3 · Connectome-Transfer System", 20);
+        TextView title = tv("F · Ce3  Connectome Lab", 20);
         title.setTypeface(null, android.graphics.Typeface.BOLD);
         top.addView(back, new LinearLayout.LayoutParams(dp(92), dp(52)));
         top.addView(title, new LinearLayout.LayoutParams(0, dp(52), 1));
         root.addView(top);
 
-        TextView sub = tv("重み付き統合 → 閾値 → ゲート → 競合 → 再帰状態 → 長距離調整 → 学習", 13);
+        TextView sub = tv("①場面を選ぶ → ②行動を見る → ③ゲートで止める → ④STEPで記憶 → ⑤REWARDで学習", 13);
         sub.setTextColor(Color.DKGRAY);
         sub.setPadding(dp(14), 0, dp(14), dp(8));
         root.addView(sub);
@@ -89,6 +89,16 @@ public class BioSystemActivity extends Activity {
         root.addView(sv, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
+        TextView quick = tv(
+                "おすすめ体験\n" +
+                "FORAGE（探索）を押す → APPROACH（接近）を確認 → APPROACHゲートをBLOCK → HOLDへ変化 → STEP ×8 → REWARD +。\n" +
+                "同じ変化を、ネットワーク図・数値・WHY説明の3つで確認できます。",
+                14);
+        quick.setTypeface(null, android.graphics.Typeface.BOLD);
+        quick.setBackgroundColor(Color.WHITE);
+        quick.setPadding(dp(12), dp(12), dp(12), dp(12));
+        body.addView(quick);
+
         body.addView(section("0. 起動前セルフテスト"));
         Button selfTest = btn("RUN SELF TEST");
         testText = tv("", 13);
@@ -103,7 +113,7 @@ public class BioSystemActivity extends Activity {
         body.addView(selfTest);
         body.addView(testText);
 
-        body.addView(section("1. センサ入力"));
+        body.addView(section("1. 場面を選ぶ — まずここ"));
         sensorText = tv("", 14);
         body.addView(sensorText);
         targetBar = addSlider(body, "TARGET", 55);
@@ -114,20 +124,20 @@ public class BioSystemActivity extends Activity {
         contextBar.setOnSeekBarChangeListener(listener(2));
 
         LinearLayout presets = new LinearLayout(this);
-        String[] names = {"FORAGE", "THREAT", "AMBIG"};
+        String[] names = {"FORAGE\n探索", "THREAT\n危険", "AMBIG\n曖昧"};
         for (String name : names) {
             Button b = btn(name);
             b.setOnClickListener(v -> {
                 String n = ((Button)v).getText().toString();
-                if ("FORAGE".equals(n)) setSensors(85, 10, 65);
-                else if ("THREAT".equals(n)) setSensors(20, 95, 45);
+                if (n.contains("FORAGE")) setSensors(85, 10, 65);
+                else if (n.contains("THREAT")) setSensors(20, 95, 45);
                 else setSensors(55, 55, 50);
             });
             presets.addView(b, new LinearLayout.LayoutParams(0, dp(50), 1));
         }
         body.addView(presets);
 
-        body.addView(section("2. 局所モジュールのゲート"));
+        body.addView(section("2. 行動候補を止める / 通す — GATE"));
         LinearLayout gates = new LinearLayout(this);
         gateA = btn("");
         gateV = btn("");
@@ -140,7 +150,7 @@ public class BioSystemActivity extends Activity {
         gates.addView(gateH, new LinearLayout.LayoutParams(0, dp(52), 1));
         body.addView(gates);
 
-        body.addView(section("3. 長距離の監督バイアス"));
+        body.addView(section("3. 上位の方針を変える — SUPERVISOR"));
         supervisorButton = btn("");
         supervisorButton.setOnClickListener(v -> {
             engine.supervisor = (engine.supervisor + 1) % 3;
@@ -148,11 +158,11 @@ public class BioSystemActivity extends Activity {
         });
         body.addView(supervisorButton);
 
-        body.addView(section("4. 時間発展・状態"));
+        body.addView(section("4. 時間を進めて記憶を見る — STATE"));
         LinearLayout stepRow = new LinearLayout(this);
-        Button step = btn("STEP");
-        Button run8 = btn("STEP ×8");
-        Button reset = btn("RESET");
+        Button step = btn("STEP\n1回");
+        Button run8 = btn("STEP ×8\n連続");
+        Button reset = btn("RESET\n記憶を消す");
         step.setOnClickListener(v -> { engine.step(); refresh(); });
         run8.setOnClickListener(v -> {
             for (int i = 0; i < 8; i++) engine.step();
@@ -173,10 +183,10 @@ public class BioSystemActivity extends Activity {
         resultText.setPadding(dp(12), dp(12), dp(12), dp(12));
         body.addView(resultText);
 
-        body.addView(section("5. 報酬変調学習（工学的抽象化）"));
+        body.addView(section("5. 結果を評価して学習 — REWARD"));
         LinearLayout learnRow = new LinearLayout(this);
-        Button positive = btn("REWARD +");
-        Button negative = btn("REWARD -");
+        Button positive = btn("REWARD +\n良かった");
+        Button negative = btn("REWARD -\n悪かった");
         learnToggle = btn("");
         positive.setOnClickListener(v -> { engine.learn(+1.0); refresh(); });
         negative.setOnClickListener(v -> { engine.learn(-1.0); refresh(); });
@@ -246,21 +256,21 @@ public class BioSystemActivity extends Activity {
                 "TARGET %.2f    THREAT %.2f    CONTEXT %.2f",
                 engine.sensor[0], engine.sensor[1], engine.sensor[2]));
 
-        gateA.setText("APPROACH\n" + (engine.gate[0] ? "EN" : "BLOCK"));
-        gateV.setText("AVOID\n" + (engine.gate[1] ? "EN" : "BLOCK"));
-        gateH.setText("HOLD\n" + (engine.gate[2] ? "EN" : "BLOCK"));
+        gateA.setText("接近 APPROACH\n" + (engine.gate[0] ? "EN / 通す" : "BLOCK / 止める"));
+        gateV.setText("回避 AVOID\n" + (engine.gate[1] ? "EN / 通す" : "BLOCK / 止める"));
+        gateH.setText("待機 HOLD\n" + (engine.gate[2] ? "EN / 通す" : "BLOCK / 止める"));
 
         String[] modes = {"NEUTRAL", "SEEK bias", "AVOID bias"};
-        supervisorButton.setText("SUPERVISOR: " + modes[engine.supervisor] + "  → tap to cycle");
+        supervisorButton.setText("上位方針 SUPERVISOR: " + modes[engine.supervisor] + "\n押すと切替");
         learnToggle.setText(engine.learningEnabled ? "LEARN ON" : "LEARN OFF");
 
         resultText.setText(String.format(Locale.US,
-                "OUTPUT = %s\n" +
+                "OUTPUT = %s  (%s)\n" +
                 "scores: APPROACH %.3f | AVOID %.3f | HOLD %.3f\n" +
                 "memory: A %.3f | V %.3f | H %.3f\n" +
                 "threshold %.2f | step %d | last reward %+.1f\n" +
                 "WHY: %s",
-                engine.output,
+                engine.output, outputJa(engine.output),
                 engine.score[0], engine.score[1], engine.score[2],
                 engine.memory[0], engine.memory[1], engine.memory[2],
                 engine.threshold, engine.steps, engine.lastReward,
