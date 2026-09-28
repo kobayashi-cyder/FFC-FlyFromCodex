@@ -286,13 +286,14 @@ public class BuilderEngine {
         for (String line : lines) {
             String[] p = line.split("\\|", -1);
             if (p.length != 11) continue;
-            Template base = findTemplate(unescape(p[1]));
+            String savedTemplateId = unescape(p[1]);
+            Template base = findTemplate(savedTemplateId);
             if (base == null) {
-                base = new Template("T-" + nextTemplate++, unescape(p[0]) + " restored", "RESTORED");
+                base = new Template(savedTemplateId, unescape(p[0]) + " restored", "RESTORED");
                 templates.add(base);
             }
             Block b = new Block(nextBlockId(), unescape(p[0]), base, p[2], "1".equals(p[3]));
-            b.templateId = unescape(p[1]);
+            b.templateId = savedTemplateId;
             b.more = "1".equals(p[4]);
             b.thresholdRatio = parse(p[5], 0.5);
             b.gain = parse(p[6], 1.0);
@@ -301,6 +302,7 @@ public class BuilderEngine {
             b.bias = parse(p[9], 0.0);
             try { b.requiredInput = RequiredInput.valueOf(p[10]); }
             catch (Exception ignored) { b.requiredInput = RequiredInput.HALF; }
+            if (b.linked) writeBlockToTemplate(b, base);
             blocks.add(b);
         }
         if (!blocks.isEmpty()) selected = 0;
