@@ -188,6 +188,7 @@ function classify(text){
  if(/画像生成|絵を描|イラスト.*(?:作|生成)|image.*generate/.test(t))scores.image+=1.5;
  if(/マイク.*(?:状態|権限|診断)|音声入力|読み上げ|文字起こし/.test(t))scores.voice+=1.5;
  if(/コード生成|コード.*(?:書|作|修正)|実装して|デバッグ|リファクタ/.test(t))scores.code+=1.8;
+ if(/unit test|テスト.*(?:書|作|生成)|検証コード|pytest|unittest|jest/.test(t))scores.code+=1.5;
  if(/(?:画像生成|音声入力|docx).*コード|コード.*(?:画像生成|音声入力|docx)|python.*docx|kotlin.*(?:マイク|音声)/.test(t))scores.code+=3;
  const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]),domain=sorted[0][0],score=sorted[0][1],second=sorted[1][1];
  let ir=null,tool=null,action='none';
