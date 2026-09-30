@@ -2,11 +2,14 @@ package com.ffc.banc888.fly;
 
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
+import android.os.ParcelFileDescriptor;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,6 +42,12 @@ public class BridgeIntegrationTest {
 
     @Test
     public void nativeBridgesAndAgentRuntimeAreActuallyLinked() throws Exception {
+        try (ParcelFileDescriptor ignored = InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .executeShellCommand("pm grant com.ffc.banc888.fly " + Manifest.permission.RECORD_AUDIO)) {
+            Thread.sleep(400);
+        }
+
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             assertTrue(awaitJs(scenario,
                     "!!(window.FFC_THREADS&&window.FFC_PROXY_AGENT&&window.FFC_CAPABILITIES&&window.FFCConversationOutput&&window.FFC_WEBVIEW_RUNTIME&&window.AndroidRuntime)", 30000));
@@ -54,6 +63,34 @@ public class BridgeIntegrationTest {
 
             assertTrue(awaitJs(scenario,
                     "JSON.parse(__BancVoice.status('wrong-token')).error==='native bridge denied'", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "JSON.parse(AndroidVoice.status()).permission==='granted'", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){var p=JSON.parse(AndroidDiagnostics.probeMicrophone());return p.ok===true&&p.initialized===true&&p.readSamples>0})()", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){"
+                            + "window.__bancListenReady=false;window.__bancListenError='';"
+                            + "var n=window.BANC888_NATIVE_VOICE;"
+                            + "var ready=n.onListening,err=n.onError;"
+                            + "n.onListening=function(){window.__bancListenReady=true;if(ready)return ready.apply(this,arguments)};"
+                            + "n.onError=function(code,msg){window.__bancListenError=String(code||'')+':'+String(msg||'');if(err)return err.apply(this,arguments)};"
+                            + "return AndroidVoice.startListening('ja-JP')===true"
+                            + "})()", 5000));
+
+            assertTrue(awaitJs(scenario,
+                    "window.__bancListenReady===true", 12000));
+
+            assertTrue(awaitJs(scenario,
+                    "window.__bancListenError===''", 2000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.recognizerReadyAtMs>0&&(s.recognizerBackend==='on-device'||s.recognizerBackend==='system')})()", 5000));
+
+            assertTrue(awaitJs(scenario,
+                    "AndroidVoice.stopListening()===true", 5000));
 
             assertTrue(awaitJs(scenario,
                     "(function(){window.__bancRuntimePingOk=false;AndroidRuntime.ping().then(function(r){window.__bancRuntimePingOk=!!(r&&r.ok)});return true})()", 10000));
@@ -74,6 +111,7 @@ public class BridgeIntegrationTest {
             assertTrue(awaitJs(scenario,
                     "window.FFCConversationOutput.speech({threadIds:[1],reason:'same',confidence:1},'こんにちは',window.FFCThreadCore.excelCode,{includeRoute:false})==='こんにちは'", 10000));
 
+            // UI-routing check only: real microphone and recognizer readiness were verified above.
             assertTrue(awaitJs(scenario,
                     "(function(){var x=document.getElementById('flyVoiceSpeak');if(x)x.checked=false;return AndroidDiagnostics.simulateVoiceResult('こんにちは',0.95)===true})()", 10000));
 
