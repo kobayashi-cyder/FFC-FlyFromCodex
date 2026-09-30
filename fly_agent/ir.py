@@ -572,7 +572,7 @@ def _required_scale(patches: list[IRPatch]) -> EditScale:
         if isinstance(patch.value, (dict, list)):
             required = max(required, EditScale.LOCAL)
             value_size = _json_size(patch.value)
-            if depth <= 1 or value_size > 8_192:
+            if (patch.op in {"set", "replace"} and depth <= 1) or value_size > 8_192:
                 required = max(required, EditScale.STRUCTURAL)
     if payload_bytes > 65_536:
         required = max(required, EditScale.GLOBAL)
