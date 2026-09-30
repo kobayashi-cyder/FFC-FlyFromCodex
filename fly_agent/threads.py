@@ -79,9 +79,8 @@ class ThreadRouter:
         if parsed:
             label, body = parsed
             thread = self.get_by_label(label)
-            if thread is None:
-                raise KeyError(f"unknown thread label: {label}")
-            return RoutedText(thread.id, thread.label, body, explicit=True)
+            if thread is not None:
+                return RoutedText(thread.id, thread.label, body, explicit=True)
 
         candidates = [t for t in self.threads() if (t.listener_enabled or not listeners_only)]
         if not candidates:

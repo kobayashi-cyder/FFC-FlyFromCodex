@@ -1,4 +1,7 @@
 from pathlib import Path
+import json
+import subprocess
+import sys
 
 from fly_agent import (
     AtomicCheckpointStore,
@@ -7,6 +10,8 @@ from fly_agent import (
     FlyMachineAgent,
     GoalStatus,
     GraphConnectomeKernel,
+    PlanProposal,
+    PlanStep,
     ResultStatus,
     Stimulus,
     ThreadRouter,
@@ -55,6 +60,16 @@ def test_thread_router_explicit_and_context_routes():
     assert explicit.text == "画像を続ける"
     routed = router.route("BANC 画像")
     assert routed.thread_id == b.id
+
+
+def test_planner_command_prefix_is_not_misread_as_thread_label():
+    router = ThreadRouter()
+    a = router.create("Main")
+    for command in ("calc: 1+1", "say: hello", "tool: echo"):
+        routed = router.route(command)
+        assert routed.thread_id == a.id
+        assert routed.text == command
+        assert routed.explicit is False
 
 
 def test_voice_router_respects_listener_disable(tmp_path):
@@ -160,6 +175,102 @@ def test_running_goal_recovers_as_queued(tmp_path):
     assert "interrupted" in (restored_goal.last_error or "")
 
 
+def test_interrupted_side_effect_is_blocked_instead_of_replayed(tmp_path):
+    agent = FlyMachineAgent(state_dir=tmp_path, output=lambda _: None)
+    agent.tools.register(ToolSpec("device.tap", lambda _: ToolResult.success("tap"), Capability.IR, side_effect=True))
+    goal = agent.submit_goal("placeholder")
+    goal.status = GoalStatus.RUNNING
+    goal.metadata[agent.EXECUTION_KEY] = {
+        "proposal": PlanProposal([PlanStep("device.tap")], source="test").to_dict(),
+        "next_step_index": 0,
+        "in_flight_step": 0,
+        "in_flight_side_effect": True,
+        "in_flight_tool": "device.tap",
+    }
+    agent._save()
+    restored = FlyMachineAgent(state_dir=tmp_path, output=lambda _: None)
+    restored_goal = next(g for g in restored.goals if g.id == goal.id)
+    assert restored_goal.status == GoalStatus.BLOCKED
+    assert "duplicate side effects" in (restored_goal.last_error or "")
+
+
+def test_running_state_is_persisted_before_side_effect_tool(tmp_path):
+    policy = ToolPolicy({Capability.COMPUTE})
+    bus = ToolBus(policy)
+    seen = {}
+
+    def inspect_checkpoint(_):
+        payload = json.loads((tmp_path / "checkpoint.json").read_text(encoding="utf-8"))
+        current = payload["goals"][0]
+        seen["status"] = current["status"]
+        seen["in_flight"] = current["metadata"]["_execution"]["in_flight_step"]
+        return ToolResult.success("ok")
+
+    bus.register(ToolSpec("planner.propose", lambda _: ToolResult.success({"steps": [{"tool": "effect"}]}), Capability.COMPUTE))
+    bus.register(ToolSpec("effect", inspect_checkpoint, Capability.COMPUTE, side_effect=True))
+    agent = FlyMachineAgent(state_dir=tmp_path, tools=bus, output=lambda _: None)
+    agent.submit_goal("abstract")
+    agent.run()
+    assert seen == {"status": "running", "in_flight": 0}
+
+
+def test_retry_resumes_at_failed_step_without_replaying_prior_side_effect(tmp_path):
+    policy = ToolPolicy({Capability.COMPUTE})
+    bus = ToolBus(policy)
+    calls = {"planner": 0, "first": 0, "second": 0}
+
+    def propose(_):
+        calls["planner"] += 1
+        return ToolResult.success({"steps": [{"tool": "first"}, {"tool": "second"}]})
+
+    def first(_):
+        calls["first"] += 1
+        return ToolResult.success("first")
+
+    def second(_):
+        calls["second"] += 1
+        if calls["second"] == 1:
+            return ToolResult.retry("temporary")
+        return ToolResult.success("second")
+
+    bus.register(ToolSpec("planner.propose", propose, Capability.COMPUTE))
+    bus.register(ToolSpec("first", first, Capability.COMPUTE, side_effect=True))
+    bus.register(ToolSpec("second", second, Capability.COMPUTE))
+    agent = FlyMachineAgent(state_dir=tmp_path, tools=bus, output=lambda _: None)
+    goal = agent.submit_goal("abstract")
+    assert agent.step() is True
+    assert goal.status == GoalStatus.QUEUED
+    assert agent.step() is True
+    assert goal.status == GoalStatus.DONE
+    assert calls == {"planner": 1, "first": 1, "second": 2}
+
+
+def test_observer_normalizes_arbitrary_tool_output(tmp_path):
+    policy = ToolPolicy({Capability.COMPUTE})
+    bus = ToolBus(policy)
+
+    class Strange:
+        def __repr__(self):
+            return "<strange>"
+
+    bus.register(
+        ToolSpec(
+            "weird",
+            lambda _: ToolResult.success({"bytes": b"abc", "path": Path("x/y"), "object": Strange()}),
+            Capability.COMPUTE,
+        )
+    )
+    agent = FlyMachineAgent(state_dir=tmp_path, tools=bus, output=lambda _: None)
+    goal = agent.submit_goal("tool: weird")
+    agent.run()
+    assert goal.status == GoalStatus.DONE
+    lines = (tmp_path / "episodes.jsonl").read_text(encoding="utf-8").splitlines()
+    parsed = [json.loads(line) for line in lines]
+    observation = next(row for row in parsed if row["kind"] == "observation" and row["data"]["tool"] == "weird")
+    assert observation["data"]["output"]["bytes"]["__type__"] == "bytes"
+    assert observation["data"]["output"]["path"] == "x/y"
+
+
 def test_equal_priority_scheduling_rotates_threads(tmp_path):
     agent = FlyMachineAgent(state_dir=tmp_path, output=lambda _: None)
     b = agent.new_thread("B")
@@ -216,3 +327,14 @@ def test_connectome_projection_keeps_verified_roles_and_neighborhood():
     assert "far" not in ids
     assert next(node for node in graph["nodes"] if node["id"] == "s1")["channel"] == "danger"
     assert next(node for node in graph["nodes"] if node["id"] == "m1")["action"] == "evade"
+
+
+def test_connectome_projection_cli_is_importable_from_repo_root():
+    result = subprocess.run(
+        [sys.executable, "tools/connectome_project.py", "--help"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "Project a verified connectome" in result.stdout

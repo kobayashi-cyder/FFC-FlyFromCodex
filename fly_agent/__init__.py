@@ -15,7 +15,18 @@ from .ir import (
     IRValidationError,
 )
 from .memory import MemoryFabric
-from .models import Goal, GoalStatus, Intent, OutputMode, ResultStatus, Stimulus, ToolContext, ToolResult
+from .models import (
+    Goal,
+    GoalStatus,
+    Intent,
+    OutputMode,
+    PlanProposal,
+    PlanStep,
+    ResultStatus,
+    Stimulus,
+    ToolContext,
+    ToolResult,
+)
 from .planner import CompositePlanner, MachinePlannerAdapter, RulePlanner
 from .runtime import FlyMachineAgent, RequirementContract
 from .threads import ThreadRouter, excel_label
@@ -48,11 +59,12 @@ __all__ = [
     "MachinePlannerAdapter",
     "MemoryFabric",
     "OutputMode",
+    "PlanProposal",
+    "PlanStep",
     "RequirementContract",
     "ResultStatus",
     "RulePlanner",
     "Stimulus",
-    "ThreadContext",
     "ThreadRouter",
     "ToolBus",
     "ToolContext",

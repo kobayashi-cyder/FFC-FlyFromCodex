@@ -81,6 +81,24 @@ class PlanStep:
     max_retries: int = 2
     expected_effect: str = ""
 
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "PlanStep":
+        if not isinstance(data, dict) or not isinstance(data.get("tool"), str):
+            raise ValueError("invalid plan step")
+        args = data.get("args", {})
+        if not isinstance(args, dict):
+            raise ValueError("plan step args must be an object")
+        return cls(
+            tool=data["tool"],
+            args=dict(args),
+            description=str(data.get("description", "")),
+            max_retries=int(data.get("max_retries", 2)),
+            expected_effect=str(data.get("expected_effect", "")),
+        )
+
 
 @dataclass(slots=True)
 class PlanProposal:
@@ -89,6 +107,30 @@ class PlanProposal:
     confidence: float = 1.0
     source: str = "rule"
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "steps": [step.to_dict() for step in self.steps],
+            "rationale": self.rationale,
+            "confidence": self.confidence,
+            "source": self.source,
+            "id": self.id,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "PlanProposal":
+        if not isinstance(data, dict):
+            raise ValueError("invalid plan proposal")
+        raw_steps = data.get("steps")
+        if not isinstance(raw_steps, list) or not raw_steps:
+            raise ValueError("plan proposal requires steps")
+        return cls(
+            steps=[PlanStep.from_dict(step) for step in raw_steps],
+            rationale=str(data.get("rationale", "")),
+            confidence=float(data.get("confidence", 1.0)),
+            source=str(data.get("source", "recovered")),
+            id=str(data.get("id") or uuid.uuid4().hex[:12]),
+        )
 
 
 @dataclass(slots=True)

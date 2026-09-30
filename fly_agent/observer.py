@@ -3,6 +3,7 @@ from __future__ import annotations
 from .executive import ConnectomeExecutive
 from .memory import MemoryFabric
 from .models import AgentEvent, Observation, ResultStatus
+from .serialization import json_safe
 
 
 class Observer:
@@ -25,7 +26,7 @@ class Observer:
                     "tool": observation.tool,
                     "status": result.status.value,
                     "error": result.error,
-                    "output": result.output,
+                    "output": json_safe(result.output),
                 },
             )
         )

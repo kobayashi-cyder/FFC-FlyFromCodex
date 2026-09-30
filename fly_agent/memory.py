@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import asdict
 import json
 import os
 from pathlib import Path
@@ -10,6 +9,7 @@ import threading
 from typing import Any, Iterable
 
 from .models import AgentEvent
+from .serialization import json_safe
 
 _TOKEN = re.compile(r"[\wぁ-んァ-ン一-龥]+", re.UNICODE)
 
@@ -33,12 +33,18 @@ class MemoryFabric:
                         self.working.append(row)
 
     def append(self, event: AgentEvent) -> None:
-        row = asdict(event)
+        row = json_safe({
+            "kind": event.kind,
+            "message": event.message,
+            "thread_id": event.thread_id,
+            "data": event.data,
+            "ts": event.ts,
+        })
         with self._lock:
             self.working.append(row)
             if self.path:
                 with self.path.open("a", encoding="utf-8") as f:
-                    f.write(json.dumps(row, ensure_ascii=False) + "\n")
+                    f.write(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n")
                     f.flush()
                     os.fsync(f.fileno())
 

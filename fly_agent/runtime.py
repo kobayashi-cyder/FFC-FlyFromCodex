@@ -16,6 +16,7 @@ from .models import (
     Goal,
     GoalStatus,
     Observation,
+    PlanProposal,
     PlannerResult,
     ResultStatus,
     Stimulus,
@@ -44,7 +45,8 @@ class RequirementContract:
 class FlyMachineAgent:
     """Fly-led proxy agent with machine cognition and tool prostheses."""
 
-    STATE_SCHEMA = 2
+    STATE_SCHEMA = 3
+    EXECUTION_KEY = "_execution"
 
     def __init__(
         self,
@@ -247,6 +249,11 @@ class FlyMachineAgent:
         goal = self._goal(goal_id)
         if goal is None or goal.status not in (GoalStatus.BLOCKED, GoalStatus.FAILED, GoalStatus.WAITING):
             return False
+        execution = self._execution_state(goal)
+        if execution is not None:
+            execution["in_flight_step"] = None
+            execution["in_flight_side_effect"] = False
+            execution["in_flight_tool"] = None
         goal.status = GoalStatus.QUEUED
         goal.last_error = None
         goal.updated_at = time.time()
@@ -289,34 +296,75 @@ class FlyMachineAgent:
         goal.attempts += 1
         goal.updated_at = time.time()
         self._last_thread_id = goal.thread_id
-        memory = self.memory.recall(goal.text, thread_id=goal.thread_id)
-        planning = self.planner.propose(goal, memory, self.tools)
-        if not planning.ok:
-            self._apply_planning_failure(goal, planning)
-            self._save()
-            return True
+        self._save()
 
-        proposal = planning.proposal
-        verdict = self.executive.evaluate_proposal(goal, proposal, self.tools)
-        if not verdict.accepted:
+        proposal = self._restore_proposal(goal)
+        execution = self._execution_state(goal)
+        if proposal is None:
+            memory = self.memory.recall(goal.text, thread_id=goal.thread_id)
+            planning = self.planner.propose(goal, memory, self.tools)
+            if not planning.ok:
+                self._apply_planning_failure(goal, planning)
+                self._save()
+                return True
+
+            proposal = planning.proposal
+            verdict = self.executive.evaluate_proposal(goal, proposal, self.tools)
+            if not verdict.accepted:
+                goal.status = GoalStatus.BLOCKED
+                goal.last_error = verdict.reason
+                goal.updated_at = time.time()
+                self.emit("blocked", verdict.reason, thread_id=goal.thread_id, goal_id=goal.id)
+                self._save()
+                return True
+
+            assert proposal is not None
+            execution = {
+                "proposal": proposal.to_dict(),
+                "next_step_index": 0,
+                "in_flight_step": None,
+                "in_flight_side_effect": False,
+                "in_flight_tool": None,
+            }
+            goal.metadata[self.EXECUTION_KEY] = execution
+            self.emit(
+                "plan",
+                f"accepted {len(proposal.steps)} step proposal from {proposal.source}",
+                thread_id=goal.thread_id,
+                goal_id=goal.id,
+                proposal_id=proposal.id,
+                rationale=proposal.rationale,
+            )
+            self._save()
+        else:
+            assert execution is not None
+            self.emit(
+                "resume-plan",
+                f"resume proposal from step {int(execution.get('next_step_index', 0))}",
+                thread_id=goal.thread_id,
+                goal_id=goal.id,
+                proposal_id=proposal.id,
+            )
+
+        assert proposal is not None and execution is not None
+        start = int(execution.get("next_step_index", 0))
+        if start < 0 or start > len(proposal.steps):
             goal.status = GoalStatus.BLOCKED
-            goal.last_error = verdict.reason
-            goal.updated_at = time.time()
-            self.emit("blocked", verdict.reason, thread_id=goal.thread_id, goal_id=goal.id)
+            goal.last_error = "invalid persisted plan progress"
+            self.emit("blocked", goal.last_error, thread_id=goal.thread_id, goal_id=goal.id)
             self._save()
             return True
 
-        assert proposal is not None
-        self.emit(
-            "plan",
-            f"accepted {len(proposal.steps)} step proposal from {proposal.source}",
-            thread_id=goal.thread_id,
-            goal_id=goal.id,
-            proposal_id=proposal.id,
-            rationale=proposal.rationale,
-        )
+        for index in range(start, len(proposal.steps)):
+            plan_step = proposal.steps[index]
+            spec = self.tools.spec(plan_step.tool)
+            if spec is None:
+                goal.status = GoalStatus.BLOCKED
+                goal.last_error = f"tool disappeared before execution: {plan_step.tool}"
+                self.emit("blocked", goal.last_error, thread_id=goal.thread_id, goal_id=goal.id)
+                self._save()
+                return True
 
-        for index, plan_step in enumerate(proposal.steps):
             self.emit(
                 "act",
                 plan_step.description or plan_step.tool,
@@ -325,6 +373,11 @@ class FlyMachineAgent:
                 tool=plan_step.tool,
                 step_index=index,
             )
+            execution["in_flight_step"] = index
+            execution["in_flight_side_effect"] = bool(spec.side_effect)
+            execution["in_flight_tool"] = plan_step.tool
+            self._save()
+
             result = self.tools.execute(
                 plan_step.tool,
                 plan_step.args,
@@ -332,14 +385,23 @@ class FlyMachineAgent:
                 resource_timeout=self.contract.resource_timeout,
             )
             self.observer.record(Observation(goal.id, goal.thread_id, plan_step.tool, result, index))
+
+            execution["in_flight_step"] = None
+            execution["in_flight_side_effect"] = False
+            execution["in_flight_tool"] = None
             if not result.ok:
+                execution["next_step_index"] = index
                 self._apply_tool_failure(goal, result, plan_step.max_retries)
                 self._save()
                 return True
 
+            execution["next_step_index"] = index + 1
+            self._save()
+
         goal.status = GoalStatus.DONE
         goal.last_error = None
         goal.updated_at = time.time()
+        goal.metadata.pop(self.EXECUTION_KEY, None)
         self.threads.record(goal.thread_id or self.threads.active_thread_id or "", f"DONE {goal.text}")
         self.executive.reinforce("delegate", 0.2)
         self.emit("done", f"goal completed: {goal.text}", thread_id=goal.thread_id, goal_id=goal.id)
@@ -393,6 +455,29 @@ class FlyMachineAgent:
         if thread is None:
             raise KeyError(thread_ref)
         return thread.id
+
+    def _execution_state(self, goal: Goal) -> dict[str, Any] | None:
+        raw = goal.metadata.get(self.EXECUTION_KEY)
+        return raw if isinstance(raw, dict) else None
+
+    def _restore_proposal(self, goal: Goal) -> PlanProposal | None:
+        execution = self._execution_state(goal)
+        if execution is None:
+            return None
+        raw = execution.get("proposal")
+        if not isinstance(raw, dict):
+            return None
+        try:
+            proposal = PlanProposal.from_dict(raw)
+        except (TypeError, ValueError):
+            goal.metadata.pop(self.EXECUTION_KEY, None)
+            return None
+        verdict = self.executive.evaluate_proposal(goal, proposal, self.tools)
+        if not verdict.accepted:
+            goal.status = GoalStatus.BLOCKED
+            goal.last_error = f"persisted proposal no longer valid: {verdict.reason}"
+            return None
+        return proposal
 
     def _apply_planning_failure(self, goal: Goal, planning: PlannerResult) -> None:
         goal.last_error = planning.error
@@ -477,7 +562,16 @@ class FlyMachineAgent:
             if goal.thread_id is None or self.threads.get(goal.thread_id) is None:
                 goal.thread_id = self.threads.active_thread_id
             if goal.status == GoalStatus.RUNNING:
-                goal.status = GoalStatus.QUEUED
-                goal.last_error = "recovered after interrupted execution"
+                execution = self._execution_state(goal)
+                if execution and execution.get("in_flight_step") is not None and execution.get("in_flight_side_effect"):
+                    tool = execution.get("in_flight_tool") or "side-effecting tool"
+                    goal.status = GoalStatus.BLOCKED
+                    goal.last_error = (
+                        f"uncertain outcome after interruption during {tool}; "
+                        "explicit reconciliation/retry required to avoid duplicate side effects"
+                    )
+                else:
+                    goal.status = GoalStatus.QUEUED
+                    goal.last_error = "recovered after interrupted execution"
             restored.append(goal)
         self.goals = restored
