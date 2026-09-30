@@ -138,6 +138,14 @@ final class BridgeRegistry {
     }
 
     public final class DiagnosticsBridge {
+        @JavascriptInterface public boolean simulateVoiceResult(String token, String text, double confidence) {
+            if (!allow(token)) return false;
+            boolean debug = (activity.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+            if (!debug) return false;
+            speech.simulateRecognition(text, (float)confidence);
+            return true;
+        }
+
         @JavascriptInterface public String status(String token) {
             if (!allow(token)) return denied();
             JSONObject o = new JSONObject();
