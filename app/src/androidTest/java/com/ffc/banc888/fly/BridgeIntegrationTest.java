@@ -87,10 +87,21 @@ public class BridgeIntegrationTest {
                     "JSON.parse(AndroidVoice.status()).ttsReady===true", 15000));
 
             assertTrue(awaitJs(scenario,
-                    "(function(){window.__bancTtsRequested=AndroidVoice.speak('音声テストです','ja-JP',1,1);return window.__bancTtsRequested===true})()", 5000));
+                    "(function(){"
+                            + "window.__bancTtsDone=false;window.__bancTtsError='';"
+                            + "var n=window.BANC888_NATIVE_VOICE;"
+                            + "var done=n.onTtsDone,err=n.onTtsError;"
+                            + "n.onTtsDone=function(){window.__bancTtsDone=true;if(done)return done.apply(this,arguments)};"
+                            + "n.onTtsError=function(msg){window.__bancTtsError=String(msg||'error');if(err)return err.apply(this,arguments)};"
+                            + "window.__bancTtsRequested=AndroidVoice.speak('音声テストです','ja-JP',1,1);"
+                            + "return window.__bancTtsRequested===true"
+                            + "})()", 5000));
 
             assertTrue(awaitJs(scenario,
-                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.ttsReady===true&&(!s.lastTtsError)&&s.lastTtsErrorCode===0})()", 15000));
+                    "window.__bancTtsDone===true&&window.__bancTtsError===''", 20000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.ttsReady===true&&s.state==='IDLE'&&(!s.lastTtsError)&&s.lastTtsErrorCode===0})()", 5000));
         }
     }
 }
