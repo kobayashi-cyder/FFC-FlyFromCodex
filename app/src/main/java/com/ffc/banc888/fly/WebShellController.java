@@ -18,6 +18,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 
+import androidx.webkit.NavigationListener;
+import androidx.webkit.Page;
 import androidx.webkit.WebResourceErrorCompat;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
@@ -50,6 +52,9 @@ final class WebShellController {
     private volatile int jsErrorCount = 0;
     private volatile int longTaskCount = 0;
     private volatile int pageProgress = 0;
+    private volatile long nativeFirstContentfulPaintMs = -1L;
+    private volatile long nativeLargestContentfulPaintMs = -1L;
+    private NavigationListener navigationListener;
 
     WebShellController(Activity activity, WebView webView, DevLiveManager devLive, NativeSession session) {
         this.activity = activity;
@@ -92,6 +97,7 @@ final class WebShellController {
 
         bridges.install();
         installMessageBridge();
+        installNavigationMetrics();
 
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .setDomain(AppConfig.APP_HOST)
@@ -193,6 +199,22 @@ final class WebShellController {
                 return true;
             }
         });
+    }
+
+    private void installNavigationMetrics() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.NAVIGATION_LISTENER)) return;
+        navigationListener = new NavigationListener() {
+            @Override
+            public void onFirstContentfulPaintMillis(Page page, long durationMillis) {
+                nativeFirstContentfulPaintMs = Math.max(0L, durationMillis);
+            }
+
+            @Override
+            public void onLargestContentfulPaintMillis(Page page, long durationMillis) {
+                nativeLargestContentfulPaintMs = Math.max(0L, durationMillis);
+            }
+        };
+        WebViewCompat.addNavigationListener(webView, navigationListener);
     }
 
     private boolean safeTrustedInternal(String url) {
@@ -378,6 +400,8 @@ final class WebShellController {
                     : Math.max(0L, SystemClock.elapsedRealtime() - lastHeartbeatAt));
             o.put("jsErrorCount", jsErrorCount);
             o.put("longTaskCount", longTaskCount);
+            o.put("nativeFirstContentfulPaintMs", nativeFirstContentfulPaintMs < 0 ? JSONObject.NULL : nativeFirstContentfulPaintMs);
+            o.put("nativeLargestContentfulPaintMs", nativeLargestContentfulPaintMs < 0 ? JSONObject.NULL : nativeLargestContentfulPaintMs);
             o.put("recovery", new JSONObject(WebRecoveryGuard.statusJson()));
 
             PackageInfo pkg = WebView.getCurrentWebViewPackage();
@@ -398,6 +422,12 @@ final class WebShellController {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
             try { WebViewCompat.removeWebMessageListener(webView, "BancNative"); }
             catch (Throwable ignored) {}
+        }
+        if (navigationListener != null
+                && WebViewFeature.isFeatureSupported(WebViewFeature.NAVIGATION_LISTENER)) {
+            try { WebViewCompat.removeNavigationListener(webView, navigationListener); }
+            catch (Throwable ignored) {}
+            navigationListener = null;
         }
         bridges.uninstall();
         webView.stopLoading();
