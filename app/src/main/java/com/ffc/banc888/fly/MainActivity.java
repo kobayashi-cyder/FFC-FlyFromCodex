@@ -24,11 +24,15 @@ import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -67,6 +71,7 @@ public class MainActivity extends Activity {
         webView.setBackgroundColor(0xff050a13);
         webView.addJavascriptInterface(new AndroidVoiceBridge(), "AndroidVoice");
         webView.addJavascriptInterface(new AndroidFilesBridge(), "AndroidFiles");
+        webView.addJavascriptInterface(new AndroidResearchBridge(), "AndroidResearch");
 
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
@@ -92,9 +97,11 @@ public class MainActivity extends Activity {
                 super.onPageFinished(view, url);
                 injectAsset("thread-router-core.js");
                 injectAsset("capability-vocabulary-core.js");
+                injectAsset("research-physics-core.js");
                 injectAsset("ir-patch-core.js");
                 injectAsset("proxy-agent-core.js");
                 injectAsset("capability-tools.js");
+                injectAsset("research-physics-tools.js");
                 injectAsset("proxy-agent.js");
                 injectAsset("conversation-output-core.js");
                 injectAsset("thread-router.js");
@@ -404,6 +411,84 @@ public class MainActivity extends Activity {
         }
     }
 
+
+    private static String httpGetFixed(String rawUrl, int maxChars) throws Exception {
+        URL u = new URL(rawUrl);
+        String host = u.getHost() == null ? "" : u.getHost().toLowerCase(Locale.ROOT);
+        boolean allowed = host.endsWith(".wikipedia.org") || host.equals("api.crossref.org");
+        if (!"https".equalsIgnoreCase(u.getProtocol()) || !allowed) throw new SecurityException("research host blocked");
+        HttpURLConnection con = (HttpURLConnection)u.openConnection();
+        con.setConnectTimeout(8000);
+        con.setReadTimeout(12000);
+        con.setInstanceFollowRedirects(true);
+        con.setRequestProperty("User-Agent","BANC888-FlyResearch/1.0");
+        int code = con.getResponseCode();
+        if (code < 200 || code >= 300) throw new IllegalStateException("HTTP " + code);
+        int cap = Math.max(1000, Math.min(80000, maxChars));
+        StringBuilder b = new StringBuilder();
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
+            char[] buf = new char[4096]; int n;
+            while ((n = r.read(buf)) >= 0 && b.length() < cap) b.append(buf,0,Math.min(n,cap-b.length()));
+        } finally { con.disconnect(); }
+        return b.toString();
+    }
+
+    public class AndroidResearchBridge {
+        @JavascriptInterface
+        public String searchWikipedia(String query, int limit) {
+            JSONObject out = new JSONObject();
+            try {
+                int n = Math.max(1, Math.min(5, limit));
+                String q = URLEncoder.encode(query == null ? "" : query, "UTF-8");
+                String raw = httpGetFixed("https://ja.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch="+q+"&gsrlimit="+n+"&prop=extracts|info&exintro=1&explaintext=1&inprop=url&format=json&utf8=1", 80000);
+                JSONObject j = new JSONObject(raw), pages = j.optJSONObject("query") == null ? null : j.optJSONObject("query").optJSONObject("pages");
+                JSONArray arr = new JSONArray();
+                if (pages != null) {
+                    java.util.Iterator<String> it = pages.keys();
+                    while (it.hasNext()) {
+                        JSONObject p = pages.optJSONObject(it.next()); if (p == null) continue;
+                        JSONObject x = new JSONObject();
+                        x.put("title", p.optString("title",""));
+                        x.put("url", p.optString("fullurl",""));
+                        x.put("extract", p.optString("extract",""));
+                        arr.put(x);
+                    }
+                }
+                out.put("ok", true); out.put("results", arr); out.put("provider", "wikipedia");
+            } catch (Exception e) {
+                try { out.put("ok", false); out.put("error", e.getMessage()==null?e.toString():e.getMessage()); } catch (Exception ignored) {}
+            }
+            return out.toString();
+        }
+
+        @JavascriptInterface
+        public String searchCrossref(String query, int limit) {
+            JSONObject out = new JSONObject();
+            try {
+                int n = Math.max(1, Math.min(5, limit));
+                String q = URLEncoder.encode(query == null ? "" : query, "UTF-8");
+                String raw = httpGetFixed("https://api.crossref.org/works?rows="+n+"&select=DOI,title,URL,author,published,abstract&query="+q, 80000);
+                JSONObject j = new JSONObject(raw);
+                JSONArray items = j.optJSONObject("message") == null ? new JSONArray() : j.optJSONObject("message").optJSONArray("items");
+                JSONArray arr = new JSONArray();
+                if (items != null) for (int i=0;i<items.length();i++) {
+                    JSONObject p = items.optJSONObject(i); if (p == null) continue;
+                    JSONObject x = new JSONObject();
+                    JSONArray tt = p.optJSONArray("title");
+                    x.put("title", tt != null && tt.length()>0 ? tt.optString(0) : "");
+                    x.put("url", p.optString("URL",""));
+                    x.put("abstract", p.optString("abstract","").replaceAll("<[^>]+>"," "));
+                    x.put("published", p.optJSONObject("published") == null ? JSONObject.NULL : p.optJSONObject("published"));
+                    arr.put(x);
+                }
+                out.put("ok", true); out.put("results", arr); out.put("provider", "crossref");
+            } catch (Exception e) {
+                try { out.put("ok", false); out.put("error", e.getMessage()==null?e.toString():e.getMessage()); } catch (Exception ignored) {}
+            }
+            return out.toString();
+        }
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -421,6 +506,7 @@ public class MainActivity extends Activity {
         if (webView != null) {
             webView.removeJavascriptInterface("AndroidVoice");
             webView.removeJavascriptInterface("AndroidFiles");
+            webView.removeJavascriptInterface("AndroidResearch");
             webView.destroy();
         }
         super.onDestroy();
