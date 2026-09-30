@@ -27,3 +27,6 @@ Enable the accessibility service from the **操作権限** button before externa
 ## Build
 
 GitHub Actions builds `app-debug.apk` and uploads it as the `BANC888-Agent-debug` artifact.
+
+
+Build trigger: workflow syntax repaired.
