@@ -12,13 +12,13 @@ import android.util.Log;
 import android.webkit.ConsoleMessage;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 
+import androidx.webkit.WebResourceErrorCompat;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 import androidx.webkit.WebViewCompat;
@@ -177,7 +177,7 @@ final class WebShellController {
             }
 
             @Override
-            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceErrorCompat error) {
                 super.onReceivedError(view, request, error);
                 if (request != null && request.isForMainFrame()) {
                     String description = error == null ? "unknown" : String.valueOf(error.getDescription());
