@@ -52,10 +52,14 @@ final class AppConfig {
 
     private AppConfig() {}
 
+    static boolean isTrustedOrigin(Uri uri) {
+        return uri != null
+                && "https".equalsIgnoreCase(uri.getScheme())
+                && APP_HOST.equalsIgnoreCase(uri.getHost());
+    }
+
     static boolean isTrustedInternalUri(Uri uri) {
-        if (uri == null) return false;
-        if (!"https".equalsIgnoreCase(uri.getScheme())) return false;
-        if (!APP_HOST.equalsIgnoreCase(uri.getHost())) return false;
+        if (!isTrustedOrigin(uri)) return false;
         String path = uri.getPath() == null ? "" : uri.getPath();
         return path.startsWith("/assets/") || path.startsWith("/live/");
     }
