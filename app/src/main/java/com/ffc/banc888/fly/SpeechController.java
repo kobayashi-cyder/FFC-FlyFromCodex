@@ -327,11 +327,16 @@ final class SpeechController {
 
             short[] pcm = new short[Math.max(1600, bufferSize / 2)];
             record.startRecording();
-            int read = record.read(pcm, 0, pcm.length, AudioRecord.READ_BLOCKING);
+            long startedAt = System.currentTimeMillis();
+            long deadline = startedAt + 1500L;
             long sumSq = 0L;
+            int totalRead = 0;
             int nonZero = 0;
             int peak = 0;
-            if (read > 0) {
+            while (System.currentTimeMillis() < deadline && nonZero < 64) {
+                int read = record.read(pcm, 0, pcm.length, AudioRecord.READ_BLOCKING);
+                if (read <= 0) continue;
+                totalRead += read;
                 for (int i = 0; i < read; i++) {
                     int v = pcm[i];
                     if (v != 0) nonZero++;
@@ -339,12 +344,13 @@ final class SpeechController {
                     sumSq += (long)v * (long)v;
                 }
             }
-            double rms = read > 0 ? Math.sqrt((double)sumSq / read) : 0.0;
-            o.put("ok", read > 0);
-            o.put("readSamples", read);
+            double rms = totalRead > 0 ? Math.sqrt((double)sumSq / totalRead) : 0.0;
+            o.put("ok", totalRead > 0);
+            o.put("readSamples", totalRead);
             o.put("nonZeroSamples", nonZero);
             o.put("peakAbs", peak);
             o.put("rms", rms);
+            o.put("captureMs", System.currentTimeMillis() - startedAt);
         } catch (Throwable e) {
             try {
                 o.put("ok", false);
