@@ -1,12 +1,13 @@
 {
   "schema": 1,
-  "minShellVersion": 61,
-  "bridgeSchema": 3,
-  "assetSchema": 3,
-  "commit": "4154cceb87b66dff23fad1e4a5ce4ac1bad36c21",
+  "minShellVersion": 70,
+  "bridgeSchema": 4,
+  "assetSchema": 4,
+  "commit": "c0492dd54d66d960ed82dfd5d045849d31f6d872",
   "files": {
     "index.html": "7b28ae31debdd442773582b4af09acd212ac4d292bcf446c7191650613401999",
     "native-bridge.js": "3ee7441775b644db9d8c8c66d7cb5bd773bda35221a314ad815f485cbf410167",
+    "webview-runtime.js": "3ca2e7433a2e4a020625f5083863973ed4bd9700b56a9bc5d57eaa8c86d3726a",
     "thread-router-core.js": "b19931c8f24397ce781bd9408132cefb5addf959f9fa09779f2a9b9d63731cb9",
     "capability-vocabulary-core.js": "407e1f6ad0ee153fc5bbbdf6de0ecbe066e33689cebeaa4d09daea71f24f0c55",
     "research-physics-core.js": "ab7cb284c5f71d3a935eed4155ce57fd59aeac120640ae8d41e351fe2c3d9fb4",
