@@ -6,7 +6,7 @@ const norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\s+/g,' ').
 function format(t){if(/docx|\bword\b|ワード/.test(t))return'docx';if(/markdown|\bmd\b/.test(t))return'markdown';if(/html/.test(t))return'html';if(/txt|テキスト/.test(t))return'text';return'docx'}
 function isDoc(t){return /資料|文書|レポート|報告書|仕様書|提案書|手順書|docx|\bword\b|markdown|まとめて|資料化/.test(t)}
 function researchIntent(t){return /ウェブ|web|ネット|インターネット|検索|調べて|調査|出典|根拠|最新|情報収集|文献|論文|wikipedia|crossref/.test(t)}
-function physicsIntent(t){return /物理|物理的|推定|概算|フェルミ|見積|エネルギー|電力|電力量|熱量|力|加速度|速度|圧力|流量|効率|質量|運動エネルギー|位置エネルギー|電圧|電流|抵抗|バッテリー|太陽光|発電|ガス|燃料/.test(t)}
+function physicsIntent(t){return /物理的|物理モデル|推定|概算|フェルミ|見積|計算して|計算する|算出|求めて|理論上|どのくらい.*(?:出る|必要|なる|使う)/.test(t)}
 function cleanQuery(text){
  return String(text||'').replace(/(?:ウェブ|web|ネット|インターネット|検索|調べて|調査して|資料|文書|docx|word|にして|作って|まとめて|物理的に|推定して)/gi,' ').replace(/\s+/g,' ').trim().slice(0,180)||String(text||'').slice(0,180);
 }
