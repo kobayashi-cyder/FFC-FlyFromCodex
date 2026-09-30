@@ -3,12 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import time
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable
 
 from .body import BodyArbiter
 from .checkpoint import AtomicCheckpointStore
 from .connectome import GraphConnectomeKernel, default_connectome
 from .executive import ConnectomeExecutive, DecisionType
+from .ir import IRController
 from .memory import MemoryFabric
 from .models import (
     AgentEvent,
@@ -19,6 +20,7 @@ from .models import (
     ResultStatus,
     Stimulus,
     ToolContext,
+    ToolResult,
 )
 from .observer import Observer
 from .planner import CompositePlanner, MachinePlannerAdapter, PlannerAdapter, RulePlanner
@@ -63,6 +65,8 @@ class FlyMachineAgent:
         self.threads = ThreadRouter()
         self.body = tools.arbiter if tools is not None else BodyArbiter()
         self.tools = tools or default_tools(output=output, policy=policy, arbiter=self.body)
+        self.ir = IRController(self.state_dir / "ir_store.json")
+        self.ir.install(self.tools)
         self.executive = ConnectomeExecutive(
             connectome or default_connectome(),
             reflex_threshold=self.contract.reflex_threshold,
@@ -123,6 +127,95 @@ class FlyMachineAgent:
             thread_id=routed.thread_id,
         )
         return self.submit_goal(routed.text, priority=priority, thread_id=routed.thread_id)
+
+    def create_ir(
+        self,
+        kind: str,
+        data: Any,
+        *,
+        document_id: str | None = None,
+        protected_paths: Iterable[str] = (),
+        thread_ref: str | None = None,
+    ) -> ToolResult:
+        thread_id = self._resolve_thread_ref(thread_ref)
+        result = self.tools.execute(
+            "ir.create",
+            {
+                "kind": kind,
+                "data": data,
+                "document_id": document_id,
+                "protected_paths": list(protected_paths),
+            },
+            ToolContext(thread_id=thread_id),
+        )
+        self._record_ir_result("ir.create", result, thread_id)
+        return result
+
+    def preview_ir_edit(
+        self,
+        document_id: str,
+        patches: list[dict[str, Any]],
+        *,
+        scale: str = "LOCAL",
+        expected_version: int | None = None,
+        reason: str = "",
+        thread_ref: str | None = None,
+        transaction_id: str | None = None,
+    ) -> ToolResult:
+        thread_id = self._resolve_thread_ref(thread_ref)
+        args = {
+            "document_id": document_id,
+            "patches": patches,
+            "scale": scale,
+            "expected_version": expected_version,
+            "reason": reason,
+        }
+        if transaction_id:
+            args["transaction_id"] = transaction_id
+        result = self.tools.execute("ir.preview", args, ToolContext(thread_id=thread_id))
+        self._record_ir_result("ir.preview", result, thread_id)
+        return result
+
+    def edit_ir(
+        self,
+        document_id: str,
+        patches: list[dict[str, Any]],
+        *,
+        scale: str = "LOCAL",
+        expected_version: int | None = None,
+        reason: str = "",
+        thread_ref: str | None = None,
+        transaction_id: str | None = None,
+    ) -> ToolResult:
+        thread_id = self._resolve_thread_ref(thread_ref)
+        args = {
+            "document_id": document_id,
+            "patches": patches,
+            "scale": scale,
+            "expected_version": expected_version,
+            "reason": reason,
+        }
+        if transaction_id:
+            args["transaction_id"] = transaction_id
+        result = self.tools.execute("ir.patch", args, ToolContext(thread_id=thread_id))
+        self._record_ir_result("ir.patch", result, thread_id)
+        return result
+
+    def undo_ir(
+        self,
+        document_id: str,
+        *,
+        expected_version: int | None = None,
+        thread_ref: str | None = None,
+    ) -> ToolResult:
+        thread_id = self._resolve_thread_ref(thread_ref)
+        result = self.tools.execute(
+            "ir.undo",
+            {"document_id": document_id, "expected_version": expected_version},
+            ToolContext(thread_id=thread_id),
+        )
+        self._record_ir_result("ir.undo", result, thread_id)
+        return result
 
     def pause(self) -> None:
         self.paused = True
@@ -280,7 +373,26 @@ class FlyMachineAgent:
             "tools": self.tools.names(),
             "capabilities": sorted(cap.value for cap in self.tools.policy.allowed),
             "body": self.body.snapshot(),
+            "ir_documents": self.ir.store.list_metadata(),
         }
+
+    def _record_ir_result(self, tool: str, result: ToolResult, thread_id: str | None) -> None:
+        self.observer.record(Observation(None, thread_id, tool, result))
+        self.emit(
+            "ir",
+            f"{tool}: {result.status.value}",
+            thread_id=thread_id,
+            error=result.error,
+            output=result.output,
+        )
+
+    def _resolve_thread_ref(self, thread_ref: str | None) -> str | None:
+        if thread_ref is None:
+            return self.threads.active_thread_id
+        thread = self.threads.get(thread_ref) or self.threads.get_by_label(thread_ref)
+        if thread is None:
+            raise KeyError(thread_ref)
+        return thread.id
 
     def _apply_planning_failure(self, goal: Goal, planning: PlannerResult) -> None:
         goal.last_error = planning.error

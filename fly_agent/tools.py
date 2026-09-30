@@ -16,6 +16,7 @@ class Capability(str, Enum):
     WRITE_STATE = "write_state"
     HUMAN_OUTPUT = "human_output"
     KNOWLEDGE = "knowledge"
+    IR = "intermediate_representation"
     CODE = "code"
     GENERATION = "generation"
     VOICE = "voice"
@@ -26,11 +27,12 @@ class Capability(str, Enum):
 @dataclass(slots=True)
 class ToolSpec:
     name: str
-    fn: Callable[[dict[str, Any]], ToolResult | Any]
+    fn: Callable[..., ToolResult | Any]
     capability: Capability
     description: str = ""
     resource: str | None = None
     side_effect: bool = False
+    contextual: bool = False
 
 
 class ToolPolicy:
@@ -40,6 +42,7 @@ class ToolPolicy:
         Capability.WRITE_STATE,
         Capability.HUMAN_OUTPUT,
         Capability.KNOWLEDGE,
+        Capability.IR,
     }
 
     def __init__(self, allowed: set[Capability] | None = None):
@@ -101,7 +104,7 @@ class ToolBus:
             if lease is None:
                 return ToolResult.retry(f"resource busy: {spec.resource}")
         try:
-            raw = spec.fn(args or {})
+            raw = spec.fn(args or {}, ctx) if spec.contextual else spec.fn(args or {})
             if isinstance(raw, ToolResult):
                 return raw
             return ToolResult.success(raw)
