@@ -4,6 +4,7 @@ if(window.__BANC888_WEBVIEW_RUNTIME_V7__)return;
 window.__BANC888_WEBVIEW_RUNTIME_V7__=true;
 
 const VERSION=7;
+const BUILD='7.1-java-integrated';
 const bootAt=performance.now();
 const state={
   ready:false,
@@ -13,14 +14,24 @@ const state={
   longTasks:0,
   lastNativeAt:0,
   native:null,
+  capabilities:null,
+  nativeEvents:0,
+  lastNativeEvent:null,
   errors:[],
   metrics:{domContentLoaded:0,load:0,firstPaint:0,firstContentfulPaint:0}
 };
-let badge=null,panel=null,readySent=false;
+let panel=null;
+let readySent=false;
+let mountObserver=null;
 
+function transport(){
+  try{return window.AndroidRuntime&&AndroidRuntime.transport?AndroidRuntime.transport():{mode:'none',epoch:0,pending:0}}
+  catch{return{mode:'error',epoch:0,pending:0}}
+}
 function snapshot(){
   return{
     version:VERSION,
+    build:BUILD,
     ready:state.ready,
     visible:state.visible,
     online:state.online,
@@ -29,6 +40,10 @@ function snapshot(){
     longTasks:state.longTasks,
     lastNativeAt:state.lastNativeAt,
     native:state.native,
+    capabilities:state.capabilities,
+    nativeEvents:state.nativeEvents,
+    lastNativeEvent:state.lastNativeEvent,
+    transport:transport(),
     metrics:{...state.metrics},
     errors:state.errors.slice(-8),
     bridges:{
@@ -45,6 +60,10 @@ function send(type,data){
   return AndroidRuntime.post(type,data||{}).then(r=>{
     if(r&&r.status){
       state.native=r.status;
+      state.lastNativeAt=Date.now();
+    }
+    if(r&&r.capabilities){
+      state.capabilities=r.capabilities;
       state.lastNativeAt=Date.now();
     }
     render();
@@ -79,42 +98,45 @@ function restoreScroll(){
   }catch{}
 }
 function ensureUi(){
-  if(badge||!document.body)return;
-  const host=document.querySelector('header h1')||document.body;
-  badge=document.createElement('button');
-  badge.type='button';
-  badge.id='bancWebRuntimeBadge';
-  badge.textContent='WV …';
-  badge.style.cssText='margin-left:8px;padding:3px 8px;border-radius:999px;font-size:11px;border:1px solid #8a7a46;background:#0b1528;color:#cfe0ff;cursor:pointer';
-  badge.onclick=()=>{
-    ensurePanel();
-    panel.hidden=!panel.hidden;
-    render();
-  };
-  host.appendChild(badge);
-}
-function ensurePanel(){
-  if(panel)return;
-  panel=document.createElement('div');
-  panel.hidden=true;
+  if(panel&&document.contains(panel))return true;
+  const settings=document.getElementById('uiSettingsBody');
+  if(!settings)return false;
+  panel=document.createElement('details');
   panel.id='bancWebRuntimePanel';
-  panel.style.cssText='position:fixed;right:10px;bottom:10px;z-index:2147483000;width:min(430px,calc(100vw - 20px));max-height:65vh;overflow:auto;padding:12px;border:1px solid #38577f;border-radius:14px;background:#07111ff5;box-shadow:0 18px 60px #0009;color:#e9f1ff;font:12px/1.45 system-ui,sans-serif';
-  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>WebView Runtime v7</b><button data-x>×</button></div><pre data-dump style="white-space:pre-wrap;word-break:break-word;max-height:42vh;overflow:auto"></pre><div style="display:flex;gap:6px;flex-wrap:wrap"><button data-ping>Native ping</button><button data-reload>再読込</button><button data-roll>Rollback</button><button data-bundle>APK内蔵</button></div>';
-  document.body.appendChild(panel);
-  panel.querySelector('[data-x]').onclick=()=>panel.hidden=true;
-  panel.querySelector('[data-ping]').onclick=()=>send('runtime.status');
+  panel.className='agentSubDetails';
+  panel.innerHTML='<summary>WebView / Java連携 <span data-state class="pill">WV …</span></summary>'
+    +'<div class="agentSubBody">'
+    +'<div class="muted tiny" style="margin-bottom:8px">WebMessage・セッション世代・Renderer・Heartbeatをまとめて監視します。</div>'
+    +'<pre data-dump class="expmono" style="white-space:pre-wrap;word-break:break-word;max-height:42vh;overflow:auto">接続確認中…</pre>'
+    +'<div class="row" style="margin-top:8px"><button data-ping>連携確認</button><button data-reload>再読込</button><button data-roll>Rollback</button><button data-bundle>APK内蔵</button></div>'
+    +'</div>';
+  settings.prepend(panel);
+  panel.querySelector('[data-ping]').onclick=()=>Promise.all([send('runtime.status'),send('runtime.capabilities')]);
   panel.querySelector('[data-reload]').onclick=()=>send('runtime.reload').then(r=>{if(r&&r.fallback)location.reload()});
   panel.querySelector('[data-roll]').onclick=()=>send('runtime.rollback');
   panel.querySelector('[data-bundle]').onclick=()=>send('runtime.useBundled');
+  if(mountObserver){mountObserver.disconnect();mountObserver=null}
+  render();
+  return true;
+}
+function watchUi(){
+  if(ensureUi()||mountObserver||!document.documentElement)return;
+  mountObserver=new MutationObserver(()=>ensureUi());
+  mountObserver.observe(document.documentElement,{childList:true,subtree:true});
 }
 function render(){
-  ensureUi();
-  if(!badge)return;
+  if(!panel)ensureUi();
+  if(!panel)return;
+  const t=transport();
   const stale=!!window.AndroidRuntime&&state.lastNativeAt>0&&Date.now()-state.lastNativeAt>40000;
-  const bad=state.jsErrors>0||stale;
-  badge.textContent=bad?'WV !':state.ready?'WV ✓':'WV …';
-  badge.style.borderColor=bad?'#a45a68':state.ready?'#3f8b67':'#8a7a46';
-  if(panel&&!panel.hidden){
+  const rendererBad=!!(state.native&&state.native.rendererUnresponsive);
+  const bad=state.jsErrors>0||stale||rendererBad;
+  const mark=panel.querySelector('[data-state]');
+  if(mark){
+    mark.textContent=bad?'WV !':state.ready?'WV ✓':'WV …';
+    mark.title=t.mode+' / epoch '+t.epoch;
+  }
+  if(panel.open){
     const d=panel.querySelector('[data-dump]');
     if(d)d.textContent=JSON.stringify(snapshot(),null,2);
   }
@@ -124,12 +146,14 @@ function ready(){
   readySent=true;
   state.ready=true;
   capturePaints();
+  watchUi();
   render();
-  send('runtime.ready',snapshot());
+  send('runtime.ready',snapshot()).then(()=>send('runtime.capabilities'));
 }
 function probe(){
+  watchUi();
   render();
-  return send('runtime.status',snapshot());
+  return Promise.all([send('runtime.status',snapshot()),send('runtime.capabilities')]);
 }
 
 window.addEventListener('error',e=>recordError('error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
@@ -140,7 +164,7 @@ document.addEventListener('visibilitychange',()=>{state.visible=document.visibil
 document.addEventListener('DOMContentLoaded',()=>{
   state.metrics.domContentLoaded=performance.now();
   restoreScroll();
-  ensureUi();
+  watchUi();
   render();
 },{once:true});
 window.addEventListener('load',()=>{
@@ -161,11 +185,19 @@ try{
 
 if(window.AndroidRuntime){
   AndroidRuntime.subscribe(msg=>{
-    if(msg&&msg.status){
-      state.native=msg.status;
-      state.lastNativeAt=Date.now();
-      render();
+    if(!msg)return;
+    if(msg.status)state.native=msg.status;
+    if(msg.capabilities)state.capabilities=msg.capabilities;
+    if(msg.nativePush){
+      state.nativeEvents++;
+      state.lastNativeEvent=msg;
+      if(msg.type==='renderer.state'&&state.native&&msg.data){
+        state.native.rendererUnresponsive=!!msg.data.unresponsive;
+        state.native.rendererUnresponsiveCount=Number(msg.data.count||0);
+      }
     }
+    state.lastNativeAt=Date.now();
+    render();
   });
 }
 
@@ -175,22 +207,22 @@ setInterval(()=>{
       jsErrors:state.jsErrors,
       longTasks:state.longTasks,
       uptimeMs:Math.round(performance.now()-bootAt),
-      online:navigator.onLine
+      online:navigator.onLine,
+      transport:transport()
     });
   }
 },15000);
 
 window.FFC_WEBVIEW_RUNTIME={
   version:VERSION,
+  build:BUILD,
   status:snapshot,
   probe,
   reload:()=>send('runtime.reload'),
   post:send
 };
 
+watchUi();
 if(document.readyState==='complete')ready();
-else{
-  ensureUi();
-  render();
-}
+else render();
 })();
