@@ -508,12 +508,13 @@ class FlyMachineAgent:
         if result.status in (ResultStatus.BLOCKED, ResultStatus.UNSUPPORTED):
             goal.status = GoalStatus.BLOCKED
             self.emit("blocked", result.error or result.status.value, thread_id=goal.thread_id, goal_id=goal.id)
-        elif result.status == ResultStatus.RETRY and goal.attempts < allowed_attempts:
-            goal.status = GoalStatus.QUEUED
-            self.emit("retry", result.error or "tool requested retry", thread_id=goal.thread_id, goal_id=goal.id)
-        elif goal.attempts < allowed_attempts:
-            goal.status = GoalStatus.QUEUED
-            self.emit("retry", result.error or "tool failed", thread_id=goal.thread_id, goal_id=goal.id)
+        elif result.status == ResultStatus.RETRY:
+            if goal.attempts < allowed_attempts:
+                goal.status = GoalStatus.QUEUED
+                self.emit("retry", result.error or "tool requested retry", thread_id=goal.thread_id, goal_id=goal.id)
+            else:
+                goal.status = GoalStatus.FAILED
+                self.emit("failed", result.error or "retry budget exhausted", thread_id=goal.thread_id, goal_id=goal.id)
         else:
             goal.status = GoalStatus.FAILED
             self.emit("failed", result.error or "tool failed", thread_id=goal.thread_id, goal_id=goal.id)
