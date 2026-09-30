@@ -70,9 +70,10 @@ public class BridgeIntegrationTest {
             assertTrue(awaitJs(scenario,
                     "(function(){var p=JSON.parse(AndroidDiagnostics.probeMicrophone());return p.ok===true&&p.initialized===true&&p.readSamples>0&&p.nonZeroSamples>0&&p.peakAbs>0})()", 10000));
 
-            assertTrue(awaitJs(scenario,
+            assertTrue("SpeechRecognizer.startListening was rejected",
+                    awaitJs(scenario,
                     "(function(){"
-                            + "window.__bancListenReady=false;window.__bancListenError='';window.__bancRealTranscript='';"
+                            + "window.__bancListenReady=false;window.__bancListenError='';window.__bancRealTranscript='';window.__bancListenStartedAt=Date.now();"
                             + "var auto=document.getElementById('flyVoiceAutoSend');if(auto)auto.checked=false;"
                             + "var loop=document.getElementById('flyVoiceLoop');if(loop)loop.checked=false;"
                             + "var n=window.BANC888_NATIVE_VOICE;"
@@ -81,19 +82,23 @@ public class BridgeIntegrationTest {
                             + "n.onError=function(code,msg){window.__bancListenError=String(code||'')+':'+String(msg||'');if(err)return err.apply(this,arguments)};"
                             + "n.onResult=function(text){window.__bancRealTranscript=String(text||'').trim();if(res)return res.apply(this,arguments)};"
                             + "return AndroidVoice.startListening('ja-JP')===true"
-                            + "})()", 5000));
+                            + "})()", 2000));
 
-            assertTrue(awaitJs(scenario,
-                    "window.__bancListenReady===true", 12000));
+            assertTrue("No transcript or recognizer error within 5 seconds of continuous test audio",
+                    awaitJs(scenario,
+                    "window.__bancRealTranscript.length>0||window.__bancListenError!==''", 5000));
 
-            assertTrue(awaitJs(scenario,
-                    "window.__bancRealTranscript.length>0", 25000));
+            assertTrue("Recognizer returned an error instead of a transcript",
+                    awaitJs(scenario,
+                    "window.__bancListenError===''&&window.__bancRealTranscript.length>0", 1000));
 
-            assertTrue(awaitJs(scenario,
-                    "window.__bancListenError===''", 2000));
+            assertTrue("Recognizer never reached onReadyForSpeech",
+                    awaitJs(scenario,
+                    "window.__bancListenReady===true", 1000));
 
-            assertTrue(awaitJs(scenario,
-                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.recognizerReadyAtMs>0&&s.recognitionResultCount>0&&(s.recognizerBackend==='on-device'||s.recognizerBackend==='system')})()", 5000));
+            assertTrue("Recognizer diagnostics did not record a real result",
+                    awaitJs(scenario,
+                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.recognizerReadyAtMs>0&&s.recognitionResultCount>0&&s.recognizerBackend==='system'})()", 1000));
 
             assertTrue(awaitJs(scenario,
                     "AndroidVoice.stopListening()===true", 5000));
