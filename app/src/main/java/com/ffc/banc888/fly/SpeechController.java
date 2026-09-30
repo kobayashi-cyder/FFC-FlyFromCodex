@@ -43,6 +43,15 @@ final class SpeechController {
     private String pendingSpeechLanguage = "ja-JP";
     private double pendingSpeechRate = 1.0;
     private double pendingSpeechPitch = 1.0;
+    private String lastSpeechText = "";
+    private String lastSpeechLanguage = "ja-JP";
+    private double lastSpeechRate = 1.0;
+    private double lastSpeechPitch = 1.0;
+    private Voice ttsDefaultVoice = null;
+    private boolean ttsFallbackAttempted = false;
+    private int ttsLanguageStatus = TextToSpeech.LANG_NOT_SUPPORTED;
+    private int lastTtsErrorCode = 0;
+    private String lastTtsError = "";
     private State state = State.IDLE;
     private int ttsRemaining = 0;
 
@@ -198,7 +207,8 @@ final class SpeechController {
                 }
                 return;
             }
-            tts.setLanguage(Locale.JAPAN);
+            try { ttsDefaultVoice = tts.getDefaultVoice(); } catch (Throwable ignored) {}
+            ttsLanguageStatus = tts.setLanguage(Locale.JAPAN);
             tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                 @Override public void onStart(String utteranceId) {
                     setState(State.SPEAKING);
@@ -214,11 +224,11 @@ final class SpeechController {
                     if (done) js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onTtsDone&&window.BANC888_NATIVE_VOICE.onTtsDone()");
                 }
                 @Override public void onError(String utteranceId) {
-                    synchronized (SpeechController.this) {
-                        ttsRemaining = 0;
-                        state = State.IDLE;
-                    }
-                    js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onTtsError&&window.BANC888_NATIVE_VOICE.onTtsError('TextToSpeech error')");
+                    handleTtsFailure(utteranceId, TextToSpeech.ERROR);
+                }
+
+                @Override public void onError(String utteranceId, int errorCode) {
+                    handleTtsFailure(utteranceId, errorCode);
                 }
             });
             js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onStatus&&window.BANC888_NATIVE_VOICE.onStatus("
@@ -243,8 +253,7 @@ final class SpeechController {
 
     synchronized boolean speak(String text, String lang, double rate, double pitch) {
         if (tts == null) {
-            js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onTtsError"
-                    + "&&window.BANC888_NATIVE_VOICE.onTtsError('TextToSpeech unavailable')");
+            notifyTtsError("TextToSpeech unavailable");
             return false;
         }
         if (!ttsReady) {
@@ -255,49 +264,149 @@ final class SpeechController {
             state = State.STARTING;
             return true;
         }
+
+        lastSpeechText = text == null ? "" : text;
+        lastSpeechLanguage = lang == null ? "ja-JP" : lang;
+        lastSpeechRate = rate;
+        lastSpeechPitch = pitch;
+        ttsFallbackAttempted = false;
+        lastTtsErrorCode = 0;
+        lastTtsError = "";
+        return speakInternal(lastSpeechText, lastSpeechLanguage, lastSpeechRate, lastSpeechPitch, false);
+    }
+
+    private synchronized boolean speakInternal(
+            String text,
+            String lang,
+            double rate,
+            double pitch,
+            boolean fallback
+    ) {
+        if (tts == null || !ttsReady) return false;
         try {
             if (recognizer != null) recognizer.cancel();
-            state = State.SPEAKING;
-            Locale locale = Locale.forLanguageTag(lang == null ? "ja-JP" : lang);
-            tts.setLanguage(locale);
-            chooseLocalVoice(locale);
-            tts.setSpeechRate((float)Math.max(0.5, Math.min(2.0, rate)));
-            tts.setPitch((float)Math.max(0.5, Math.min(2.0, pitch)));
-            List<String> chunks = splitForTts(text == null ? "" : text);
-            ttsRemaining = chunks.size();
+
+            String clean = text == null ? "" : text.trim();
+            List<String> chunks = splitForTts(clean);
             if (chunks.isEmpty()) {
                 state = State.IDLE;
                 return false;
             }
+
+            Locale locale = Locale.forLanguageTag(lang == null ? "ja-JP" : lang);
+            ttsLanguageStatus = tts.setLanguage(locale);
+
+            if (fallback || ttsLanguageStatus < TextToSpeech.LANG_AVAILABLE) {
+                Voice fallbackVoice = findFallbackVoice(locale);
+                if (fallbackVoice != null) {
+                    tts.setVoice(fallbackVoice);
+                } else if (ttsDefaultVoice != null) {
+                    tts.setVoice(ttsDefaultVoice);
+                }
+            }
+
+            tts.setSpeechRate((float)Math.max(0.5, Math.min(2.0, rate)));
+            tts.setPitch((float)Math.max(0.5, Math.min(2.0, pitch)));
+            state = State.SPEAKING;
+            ttsRemaining = chunks.size();
+
             for (int i = 0; i < chunks.size(); i++) {
-                String id = "fly-" + UUID.randomUUID();
-                tts.speak(chunks.get(i), i == 0 ? TextToSpeech.QUEUE_FLUSH : TextToSpeech.QUEUE_ADD, null, id);
+                String id = (fallback ? "fly-fallback-" : "fly-") + UUID.randomUUID();
+                int result = tts.speak(
+                        chunks.get(i),
+                        i == 0 ? TextToSpeech.QUEUE_FLUSH : TextToSpeech.QUEUE_ADD,
+                        null,
+                        id
+                );
+                if (result == TextToSpeech.ERROR) {
+                    handleTtsFailure(id, TextToSpeech.ERROR);
+                    return false;
+                }
             }
             return true;
         } catch (Throwable e) {
             ttsRemaining = 0;
             state = State.IDLE;
-            js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onTtsError&&window.BANC888_NATIVE_VOICE.onTtsError("
-                    + JSONObject.quote(e.getMessage() == null ? e.toString() : e.getMessage()) + ")");
+            lastTtsError = e.getMessage() == null ? e.toString() : e.getMessage();
+            notifyTtsError(lastTtsError);
             return false;
         }
     }
 
-    private void chooseLocalVoice(Locale locale) {
+    private Voice findFallbackVoice(Locale locale) {
         try {
             Set<Voice> voices = tts.getVoices();
-            if (voices == null) return;
-            Voice preferred = null;
+            if (voices == null || voices.isEmpty()) return null;
+
+            Voice current = null;
+            try { current = tts.getVoice(); } catch (Throwable ignored) {}
+
+            Voice sameLanguageNetwork = null;
             for (Voice v : voices) {
+                if (v == null || v.getLocale() == null) continue;
                 if (!v.getLocale().getLanguage().equals(locale.getLanguage())) continue;
-                if (!v.isNetworkConnectionRequired()) {
-                    preferred = v;
-                    break;
-                }
-                if (preferred == null) preferred = v;
+                if (current != null && v.getName().equals(current.getName())) continue;
+                if (!v.isNetworkConnectionRequired()) return v;
+                if (sameLanguageNetwork == null) sameLanguageNetwork = v;
             }
-            if (preferred != null) tts.setVoice(preferred);
+            return sameLanguageNetwork;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private void handleTtsFailure(String utteranceId, int errorCode) {
+        String retryText;
+        String retryLanguage;
+        double retryRate;
+        double retryPitch;
+        boolean retry;
+
+        synchronized (this) {
+            ttsRemaining = 0;
+            state = State.IDLE;
+            lastTtsErrorCode = errorCode;
+            lastTtsError = "TextToSpeech error " + errorCode;
+            retry = !ttsFallbackAttempted && lastSpeechText != null && !lastSpeechText.trim().isEmpty();
+            if (retry) ttsFallbackAttempted = true;
+            retryText = lastSpeechText;
+            retryLanguage = lastSpeechLanguage;
+            retryRate = lastSpeechRate;
+            retryPitch = lastSpeechPitch;
+        }
+
+        if (retry) {
+            activity.runOnUiThread(() -> {
+                try { if (tts != null) tts.stop(); } catch (Throwable ignored) {}
+                boolean accepted = speakInternal(retryText, retryLanguage, retryRate, retryPitch, true);
+                if (!accepted && lastTtsErrorCode == errorCode) {
+                    notifyTtsError(ttsErrorDetails(errorCode));
+                }
+            });
+            return;
+        }
+
+        notifyTtsError(ttsErrorDetails(errorCode));
+    }
+
+    private String ttsErrorDetails(int errorCode) {
+        String engine = "";
+        String voice = "";
+        try { engine = tts == null ? "" : String.valueOf(tts.getCurrentEngine()); } catch (Throwable ignored) {}
+        try {
+            Voice v = tts == null ? null : tts.getVoice();
+            voice = v == null ? "" : v.getName();
         } catch (Throwable ignored) {}
+        return "TextToSpeech error code=" + errorCode
+                + " / langStatus=" + ttsLanguageStatus
+                + (engine.isEmpty() ? "" : " / engine=" + engine)
+                + (voice.isEmpty() ? "" : " / voice=" + voice);
+    }
+
+    private void notifyTtsError(String message) {
+        js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onTtsError"
+                + "&&window.BANC888_NATIVE_VOICE.onTtsError("
+                + JSONObject.quote(message == null ? "TextToSpeech error" : message) + ")");
     }
 
     private List<String> splitForTts(String raw) {
@@ -330,8 +439,14 @@ final class SpeechController {
             o.put("state", state.name());
             o.put("ttsReady", ttsReady);
             o.put("ttsPending", pendingSpeechText != null);
+            o.put("ttsLanguageStatus", ttsLanguageStatus);
+            o.put("ttsFallbackAttempted", ttsFallbackAttempted);
+            o.put("lastTtsErrorCode", lastTtsErrorCode);
+            o.put("lastTtsError", lastTtsError);
+            o.put("ttsEngine", ttsReady && tts != null ? tts.getCurrentEngine() : JSONObject.NULL);
             Voice v = ttsReady && tts != null ? tts.getVoice() : null;
             o.put("ttsVoice", v == null ? JSONObject.NULL : v.getName());
+            o.put("ttsVoiceNetworkRequired", v == null ? JSONObject.NULL : v.isNetworkConnectionRequired());
             o.put("sdkInt", Build.VERSION.SDK_INT);
             o.put("threadRouter", true);
         } catch (Throwable e) {
