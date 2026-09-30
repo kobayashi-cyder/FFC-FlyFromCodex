@@ -7,6 +7,7 @@ on:
     paths:
       - "app/**"
       - ".github/workflows/banc888-linked-integration.yml"
+      - ".github/scripts/banc888-voice-ci.sh"
   workflow_dispatch:
 
 permissions:
