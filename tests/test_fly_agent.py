@@ -338,3 +338,33 @@ def test_connectome_projection_cli_is_importable_from_repo_root():
     )
     assert result.returncode == 0, result.stderr
     assert "Project a verified connectome" in result.stdout
+
+
+def test_non_retryable_failure_is_not_automatically_replayed(tmp_path):
+    policy = ToolPolicy({Capability.COMPUTE})
+    bus = ToolBus(policy)
+    calls = {"planner": 0, "effect": 0}
+
+    def propose(_):
+        calls["planner"] += 1
+        return ToolResult.success({"steps": [{"tool": "effect"}]})
+
+    def effect(_):
+        calls["effect"] += 1
+        return ToolResult.failed("permanent")
+
+    bus.register(ToolSpec("planner.propose", propose, Capability.COMPUTE))
+    bus.register(ToolSpec("effect", effect, Capability.COMPUTE, side_effect=True))
+    agent = FlyMachineAgent(state_dir=tmp_path, tools=bus, output=lambda _: None)
+    goal = agent.submit_goal("abstract permanent failure")
+    assert agent.step() is True
+    assert goal.status == GoalStatus.FAILED
+    assert agent.step() is False
+    assert calls == {"planner": 1, "effect": 1}
+
+
+def test_package_wildcard_exports_are_defined():
+    namespace = {}
+    exec("from fly_agent import *", namespace)
+    assert "ToolContext" in namespace
+    assert "ThreadContext" not in namespace
