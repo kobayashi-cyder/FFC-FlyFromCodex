@@ -7,6 +7,9 @@ const config=read('app/src/main/java/com/ffc/banc888/fly/AppConfig.java');
 const shell=read('app/src/main/java/com/ffc/banc888/fly/WebShellController.java');
 const activity=read('app/src/main/java/com/ffc/banc888/fly/MainActivity.java');
 const session=read('app/src/main/java/com/ffc/banc888/fly/NativeSession.java');
+const registry=read('app/src/main/java/com/ffc/banc888/fly/BridgeRegistry.java');
+const speech=read('app/src/main/java/com/ffc/banc888/fly/SpeechController.java');
+const index=read('app/src/main/assets/index.html');
 const bridge=read('app/src/main/assets/native-bridge.js');
 const runtime=read('app/src/main/assets/webview-runtime.js');
 const manifest=JSON.parse(read('app/src/main/assets/live-manifest.json'));
@@ -33,6 +36,12 @@ must(shell.includes('runtime.capabilities'),'native capability handshake missing
 must(shell.includes('__nativeDispatch'),'Java-to-WebView event dispatch missing');
 must(shell.includes('stale-native-session'),'stale WebView session rejection missing');
 must(session.includes('long epoch()'),'native session epoch accessor missing');
+must(registry.includes('activity.runOnUiThread(() -> speech.startListening(language))'),'native speech start must be dispatched to Android main thread');
+must(registry.includes('activity.runOnUiThread(speech::stopListening)'),'native speech stop must be dispatched to Android main thread');
+must(registry.includes('activity.runOnUiThread(() -> speech.speak(text, language, rate, pitch))'),'native TTS must be dispatched to Android main thread');
+must(speech.includes('pendingSpeechText'),'TTS readiness queue missing');
+must(speech.includes('ttsPending'),'TTS pending diagnostics missing');
+must(index.includes('id="flyVoiceLoop" type="checkbox" checked'),'hands-free voice loop must default on');
 
 must(activity.includes('WebViewCompat.saveState'),'bounded state save missing');
 must(activity.includes('128 * 1024'),'saved state cap changed unexpectedly');
