@@ -79,6 +79,18 @@ public class BridgeIntegrationTest {
 
             assertTrue(awaitJs(scenario,
                     "document.getElementById('flyVoiceTranscript')&&document.getElementById('flyVoiceTranscript').textContent==='こんにちは'", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){var x=document.getElementById('flyVoiceSpeak');if(x)x.checked=true;return true})()", 5000));
+
+            assertTrue(awaitJs(scenario,
+                    "JSON.parse(AndroidVoice.status()).ttsReady===true", 15000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){window.__bancTtsRequested=AndroidVoice.speak('音声テストです','ja-JP',1,1);return window.__bancTtsRequested===true})()", 5000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.ttsReady===true&&(!s.lastTtsError)&&s.lastTtsErrorCode===0})()", 15000));
         }
     }
 }
