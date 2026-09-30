@@ -36,9 +36,11 @@ must(shell.includes('runtime.capabilities'),'native capability handshake missing
 must(shell.includes('__nativeDispatch'),'Java-to-WebView event dispatch missing');
 must(shell.includes('stale-native-session'),'stale WebView session rejection missing');
 must(session.includes('long epoch()'),'native session epoch accessor missing');
-must(registry.includes('activity.runOnUiThread(() -> speech.startListening(language))'),'native speech start must be dispatched to Android main thread');
-must(registry.includes('activity.runOnUiThread(speech::stopListening)'),'native speech stop must be dispatched to Android main thread');
-must(registry.includes('activity.runOnUiThread(() -> speech.speak(text, language, rate, pitch))'),'native TTS must be dispatched to Android main thread');
+must(registry.includes('callUiBoolean'),'native speech bridge must synchronously return the Android main-thread result');
+must(registry.includes('speech.startListening(language)'),'native speech start bridge missing');
+must(registry.includes('speech.stopListening()'),'native speech stop bridge missing');
+must(registry.includes('speech.speak(text, language, rate, pitch)'),'native TTS bridge missing');
+must(registry.includes('probeMicrophone'),'raw microphone diagnostic bridge missing');
 must(speech.includes('pendingSpeechText'),'TTS readiness queue missing');
 must(speech.includes('ttsPending'),'TTS pending diagnostics missing');
 must(speech.includes('findFallbackVoice'),'TTS fallback voice selection missing');
@@ -46,6 +48,13 @@ must(speech.includes('handleTtsFailure'),'TTS retry/error handler missing');
 must(speech.includes('ttsLanguageStatus'),'TTS language diagnostics missing');
 must(speech.includes('ttsDefaultVoice'),'TTS default-voice diagnostics missing');
 must(speech.includes('tts.speak(')&&speech.includes('TextToSpeech.ERROR'),'TTS immediate enqueue failure detection missing');
+must(speech.includes('AudioRecord'),'raw microphone capture probe missing');
+must(speech.includes('readSamples'),'microphone PCM read diagnostics missing');
+must(speech.includes('recognizerReadyAtMs'),'recognizer readiness diagnostics missing');
+must(speech.includes('fallbackToSystemRecognizer'),'on-device to system recognizer fallback missing');
+must(speech.includes('ready-timeout'),'recognizer readiness watchdog missing');
+must(index.includes('PCM取得OK'),'UI must distinguish real PCM capture from permission-only state');
+must(index.includes('micProbe'),'UI microphone probe diagnostics missing');
 must(index.includes('id="flyVoiceLoop" type="checkbox" checked'),'hands-free voice loop must default on');
 
 must(activity.includes('WebViewCompat.saveState'),'bounded state save missing');
@@ -56,6 +65,7 @@ must(bridge.includes("post('runtime.status')"),'runtime status message missing')
 must(bridge.includes("post('runtime.capabilities')"),'runtime capability request missing');
 must(bridge.includes('__nativeDispatch'),'native push receiver missing');
 must(bridge.includes('epoch'),'bridge session epoch missing');
+must(bridge.includes('probeMicrophone'),'WebView microphone probe wrapper missing');
 must(runtime.includes('window.FFC_WEBVIEW_RUNTIME'),'WebView health runtime missing');
 must(runtime.includes('uiSettingsBody'),'WebView diagnostics must live inside settings drawer');
 must(runtime.includes('WebView / Java連携'),'integrated Java/WebView panel missing');
