@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.webkit.WebBackForwardList;
 import android.webkit.WebView;
 
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+
 public class MainActivity extends Activity {
     static final int REQ_MIC = 888;
 
@@ -58,7 +61,13 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        if (webView != null) webView.saveState(outState);
+        if (webView != null) {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.SAVE_STATE)) {
+                WebViewCompat.saveState(webView, outState, 128 * 1024, false);
+            } else {
+                webView.saveState(outState);
+            }
+        }
         super.onSaveInstanceState(outState);
     }
 
