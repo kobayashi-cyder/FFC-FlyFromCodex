@@ -3,7 +3,7 @@ const V=require('../app/src/main/assets/capability-vocabulary-core.js');
 let x=V.classify('PythonでCSVを読むコードを書いて');
 assert.equal(x.tool,'code.generate'); assert.equal(x.args.language,'python');
 x=V.classify('このJavaScriptコードのバグを修正して');
-assert.equal(x.tool,'code.revise');
+assert.equal(x.tool,'code.debug');
 x=V.classify('1024x1024で猫の画像を生成して');
 assert.equal(x.tool,'image.generate'); assert.equal(x.args.size,'1024x1024');
 x=V.classify('マイクの権限状態を診断して');
