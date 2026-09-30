@@ -66,6 +66,7 @@ jobs:
           node --check app/src/main/assets/proxy-agent.js
           node --check app/src/main/assets/conversation-output-core.js
           node --check app/src/main/assets/thread-router.js
+          node --check app/src/main/assets/dev-live.js
           node tests/thread_router_core.test.cjs
           node tests/capability_vocabulary.test.cjs
           node tests/specialist_capability_v2.test.cjs
@@ -88,7 +89,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v5.9-route-on-switch-debug
+          name: BANC888-v6.0-dev-live-debug
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/debug/app-debug.apk.sha256

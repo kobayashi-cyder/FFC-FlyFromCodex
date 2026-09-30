@@ -29,6 +29,9 @@ import org.json.JSONArray;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -43,21 +46,46 @@ import java.util.zip.ZipOutputStream;
 public class MainActivity extends Activity {
     private static final int REQ_MIC = 888;
     private static final String APP_ORIGIN = "https://appassets.androidplatform.net";
+    private static final String DEV_REF = "banc888-apk-thread-router";
+    private static final String DEV_RAW_BASE = "https://raw.githubusercontent.com/kobayashi-cyder/FFC-FlyFromCodex/" + DEV_REF + "/app/src/main/assets/";
+    private static final String[] LIVE_ASSETS = new String[]{
+            "index.html",
+            "thread-router-core.js",
+            "capability-vocabulary-core.js",
+            "research-physics-core.js",
+            "ir-patch-core.js",
+            "proxy-agent-core.js",
+            "capability-tools.js",
+            "research-physics-tools.js",
+            "proxy-agent.js",
+            "conversation-output-core.js",
+            "thread-router.js",
+            "dev-live.js"
+    };
     private WebView webView;
     private SpeechRecognizer recognizer;
     private TextToSpeech tts;
     private boolean ttsReady = false;
     private String pendingLanguage = "ja-JP";
+    private File devRoot;
+    private boolean liveMode = false;
+    private String liveBundle = "";
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        devRoot = new File(getFilesDir(), "dev_live_public");
+        if (!devRoot.exists()) devRoot.mkdirs();
+        liveBundle = getSharedPreferences("banc_dev", MODE_PRIVATE).getString("bundle", "");
+        liveMode = getSharedPreferences("banc_dev", MODE_PRIVATE).getBoolean("live", false)
+                && currentBundleDir() != null
+                && new File(currentBundleDir(), "ready.marker").isFile();
         webView = new WebView(this);
         setContentView(webView);
         configureWebView();
         initTts();
         initRecognizer();
-        webView.loadUrl(APP_ORIGIN + "/assets/index.html");
+        loadCurrentPage();
     }
 
     private void configureWebView() {
@@ -72,9 +100,11 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new AndroidVoiceBridge(), "AndroidVoice");
         webView.addJavascriptInterface(new AndroidFilesBridge(), "AndroidFiles");
         webView.addJavascriptInterface(new AndroidResearchBridge(), "AndroidResearch");
+        webView.addJavascriptInterface(new AndroidDevBridge(), "AndroidDev");
 
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                .addPathHandler("/live/", new WebViewAssetLoader.InternalStoragePathHandler(this, devRoot))
                 .build();
 
         webView.setWebViewClient(new WebViewClientCompat() {
@@ -105,21 +135,150 @@ public class MainActivity extends Activity {
                 injectAsset("proxy-agent.js");
                 injectAsset("conversation-output-core.js");
                 injectAsset("thread-router.js");
+                injectAsset("dev-live.js");
                 view.postDelayed(() -> callJsStatus(), 250);
             }
         });
     }
 
+    private File currentBundleDir() {
+        if (liveBundle == null || liveBundle.isEmpty() || devRoot == null) return null;
+        File d = new File(devRoot, liveBundle);
+        return d.isDirectory() ? d : null;
+    }
+
+    private boolean isDebuggableApp() {
+        return (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+    }
+
+    private void loadCurrentPage() {
+        File d = currentBundleDir();
+        if (liveMode && d != null && new File(d, "index.html").isFile()) {
+            webView.loadUrl(APP_ORIGIN + "/live/" + liveBundle + "/index.html?t=" + System.currentTimeMillis());
+        } else {
+            liveMode = false;
+            webView.loadUrl(APP_ORIGIN + "/assets/index.html");
+        }
+    }
+
+    private InputStream openRuntimeAsset(String name) throws Exception {
+        File d = currentBundleDir();
+        File f = d == null ? null : new File(d, name);
+        if (liveMode && f != null && f.isFile()) return new FileInputStream(f);
+        return getAssets().open(name);
+    }
+
     private void injectAsset(String name) {
         try {
             StringBuilder b = new StringBuilder();
-            try (BufferedReader r = new BufferedReader(new InputStreamReader(getAssets().open(name), StandardCharsets.UTF_8))) {
+            try (BufferedReader r = new BufferedReader(new InputStreamReader(openRuntimeAsset(name), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = r.readLine()) != null) b.append(line).append('\n');
             }
             webView.evaluateJavascript(b.toString(), null);
         } catch (Exception e) {
             Toast.makeText(this, "JS injection failed: " + name, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void downloadLiveAsset(String name, File out) throws Exception {
+        URL u = new URL(DEV_RAW_BASE + name);
+        HttpURLConnection c = (HttpURLConnection)u.openConnection();
+        c.setConnectTimeout(8000);
+        c.setReadTimeout(15000);
+        c.setInstanceFollowRedirects(true);
+        c.setRequestProperty("User-Agent", "BANC888-DevLive/1.0");
+        int code = c.getResponseCode();
+        if (code < 200 || code >= 300) {
+            c.disconnect();
+            throw new IllegalStateException(name + ": HTTP " + code);
+        }
+        long max = "index.html".equals(name) ? 2_500_000L : 700_000L;
+        long total = 0;
+        try (InputStream in = c.getInputStream(); OutputStream os = new FileOutputStream(out)) {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) >= 0) {
+                total += n;
+                if (total > max) throw new IllegalStateException(name + ": too large");
+                os.write(buf, 0, n);
+            }
+        } finally {
+            c.disconnect();
+        }
+        if (total < 16) throw new IllegalStateException(name + ": empty");
+    }
+
+    private void cleanOldBundles(String keep) {
+        File[] dirs = devRoot == null ? null : devRoot.listFiles();
+        if (dirs == null) return;
+        for (File d : dirs) {
+            if (!d.isDirectory() || d.getName().equals(keep)) continue;
+            File[] fs = d.listFiles();
+            if (fs != null) for (File f : fs) f.delete();
+            d.delete();
+        }
+    }
+
+    private void syncLiveBundle() {
+        if (!isDebuggableApp()) {
+            runOnUiThread(() -> Toast.makeText(this, "Live更新はdebug APK専用です", Toast.LENGTH_LONG).show());
+            return;
+        }
+        new Thread(() -> {
+            String bundle = "b" + System.currentTimeMillis();
+            File dir = new File(devRoot, bundle);
+            try {
+                if (!dir.mkdirs()) throw new IllegalStateException("cannot create live bundle");
+                for (String name : LIVE_ASSETS) downloadLiveAsset(name, new File(dir, name));
+                String html = "";
+                try (BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(new File(dir, "index.html")), StandardCharsets.UTF_8))) {
+                    String line; StringBuilder b = new StringBuilder();
+                    while ((line = r.readLine()) != null && b.length() < 8192) b.append(line).append('\n');
+                    html = b.toString();
+                }
+                if (!html.contains("BANC888")) throw new IllegalStateException("index validation failed");
+                try (FileOutputStream o = new FileOutputStream(new File(dir, "ready.marker"))) {
+                    o.write((DEV_REF + "\n" + System.currentTimeMillis()).getBytes(StandardCharsets.UTF_8));
+                }
+                liveBundle = bundle;
+                liveMode = true;
+                getSharedPreferences("banc_dev", MODE_PRIVATE).edit().putBoolean("live", true).putString("bundle", bundle).apply();
+                cleanOldBundles(bundle);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Live更新完了。再読込します", Toast.LENGTH_SHORT).show();
+                    loadCurrentPage();
+                });
+            } catch (Exception e) {
+                File[] fs = dir.listFiles();
+                if (fs != null) for (File f : fs) f.delete();
+                dir.delete();
+                runOnUiThread(() -> Toast.makeText(this, "Live更新失敗: " + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
+        }, "BANC888-DevSync").start();
+    }
+
+    public class AndroidDevBridge {
+        @JavascriptInterface public String status() {
+            try {
+                JSONObject o = new JSONObject();
+                o.put("canLive", isDebuggableApp());
+                o.put("live", liveMode);
+                o.put("bundle", liveBundle == null ? "" : liveBundle);
+                o.put("ref", DEV_REF);
+                o.put("origin", APP_ORIGIN);
+                return o.toString();
+            } catch (Exception e) { return "{\"canLive\":false}"; }
+        }
+        @JavascriptInterface public void syncAndReload() { syncLiveBundle(); }
+        @JavascriptInterface public void reload() { runOnUiThread(() -> loadCurrentPage()); }
+        @JavascriptInterface public void useBundledAndReload() {
+            liveMode = false;
+            getSharedPreferences("banc_dev", MODE_PRIVATE).edit().putBoolean("live", false).apply();
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this, "APK内蔵版へ戻しました", Toast.LENGTH_SHORT).show();
+                loadCurrentPage();
+            });
         }
     }
 
@@ -507,6 +666,7 @@ public class MainActivity extends Activity {
             webView.removeJavascriptInterface("AndroidVoice");
             webView.removeJavascriptInterface("AndroidFiles");
             webView.removeJavascriptInterface("AndroidResearch");
+            webView.removeJavascriptInterface("AndroidDev");
             webView.destroy();
         }
         super.onDestroy();
