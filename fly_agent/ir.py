@@ -196,6 +196,7 @@ class IRStore:
         self.history_limit = int(history_limit)
         self.documents: dict[str, IRDocument] = {}
         self.history: dict[str, list[IRRevision]] = {}
+        self.transaction_ledger: dict[str, dict[str, Any]] = {}
         self.validators: dict[str, list[Callable[[Any], None]]] = {}
         self._load()
 
@@ -284,6 +285,7 @@ class IRStore:
         previous_version = doc.version
         previous_updated = doc.updated_at
         previous_history = list(self.history.get(doc.id, []))
+        previous_ledger = self.transaction_ledger.get(transaction.id)
 
         doc.data = candidate
         doc.version += 1
@@ -305,6 +307,7 @@ class IRStore:
         revisions.append(revision)
         if len(revisions) > self.history_limit:
             del revisions[:-self.history_limit]
+        self.transaction_ledger[transaction.id] = revision.summary()
 
         try:
             self._persist()
@@ -313,6 +316,10 @@ class IRStore:
             doc.version = previous_version
             doc.updated_at = previous_updated
             self.history[doc.id] = previous_history
+            if previous_ledger is None:
+                self.transaction_ledger.pop(transaction.id, None)
+            else:
+                self.transaction_ledger[transaction.id] = previous_ledger
             raise
         return deepcopy(revision)
 
@@ -367,7 +374,7 @@ class IRStore:
         if transaction.scale == EditScale.GLOBAL and transaction.expected_version is None:
             raise IRValidationError("GLOBAL edits require expected_version")
 
-        required = _required_scale(transaction.patches)
+        required = _required_scale(doc.data, transaction.patches)
         if transaction.scale < required:
             raise IRValidationError(
                 f"declared scale {transaction.scale.name} is too small; required {required.name}"
@@ -410,25 +417,48 @@ class IRStore:
                 raise IRValidationError(f"validator rejected {kind}: {exc}") from exc
 
     def _find_transaction(self, transaction_id: str) -> IRRevision | None:
-        for rows in self.history.values():
-            for revision in rows:
-                if revision.transaction_id == transaction_id:
-                    return revision
-        return None
+        raw = self.transaction_ledger.get(transaction_id)
+        if not isinstance(raw, dict):
+            return None
+        try:
+            return IRRevision(
+                transaction_id=str(raw["transaction_id"]),
+                document_id=str(raw["document_id"]),
+                from_version=int(raw["from_version"]),
+                to_version=int(raw["to_version"]),
+                declared_scale=EditScale.parse(raw["declared_scale"]),
+                required_scale=EditScale.parse(raw["required_scale"]),
+                op_count=int(raw["op_count"]),
+                before_data=None,
+                thread_id=raw.get("thread_id"),
+                author=str(raw.get("author", "fly-executive")),
+                reason=str(raw.get("reason", "")),
+                created_at=float(raw.get("created_at", 0.0)),
+            )
+        except (KeyError, TypeError, ValueError):
+            return None
 
     def _persist(self) -> None:
         payload = {
-            "schema": 1,
+            "schema": 2,
             "documents": [doc.to_dict() for doc in self.documents.values()],
             "history": {
                 document_id: [revision.to_dict() for revision in revisions]
                 for document_id, revisions in self.history.items()
             },
+            "transaction_ledger": self.transaction_ledger,
         }
         self.checkpoint.save(payload)
 
     def _load(self) -> None:
         raw = self.checkpoint.load(default={})
+        ledger = raw.get("transaction_ledger", {})
+        if isinstance(ledger, dict):
+            self.transaction_ledger = {
+                str(transaction_id): dict(summary)
+                for transaction_id, summary in ledger.items()
+                if isinstance(summary, dict)
+            }
         for item in raw.get("documents", []):
             try:
                 doc = IRDocument.from_dict(item)
@@ -441,7 +471,9 @@ class IRStore:
             parsed: list[IRRevision] = []
             for row in rows[-self.history_limit :]:
                 try:
-                    parsed.append(IRRevision.from_dict(row))
+                    revision = IRRevision.from_dict(row)
+                    parsed.append(revision)
+                    self.transaction_ledger.setdefault(revision.transaction_id, revision.summary())
                 except (TypeError, ValueError, KeyError):
                     continue
             self.history[document_id] = parsed
@@ -550,7 +582,7 @@ def _document_metadata(doc: IRDocument) -> dict[str, Any]:
     }
 
 
-def _required_scale(patches: list[IRPatch]) -> EditScale:
+def _required_scale(root: Any, patches: list[IRPatch]) -> EditScale:
     if not patches:
         raise IRValidationError("empty patch list")
     required = EditScale.MICRO
@@ -562,8 +594,10 @@ def _required_scale(patches: list[IRPatch]) -> EditScale:
         required = EditScale.LOCAL
 
     payload_bytes = 0
+    affected_bytes = 0
     for patch in patches:
-        payload_bytes += _json_size(patch.value)
+        payload_size = _json_size(patch.value)
+        payload_bytes += payload_size
         depth = len(_pointer_tokens(patch.path))
         if patch.path == "":
             required = max(required, EditScale.GLOBAL)
@@ -571,12 +605,28 @@ def _required_scale(patches: list[IRPatch]) -> EditScale:
             required = max(required, EditScale.LOCAL)
         if isinstance(patch.value, (dict, list)):
             required = max(required, EditScale.LOCAL)
-            value_size = _json_size(patch.value)
-            if (patch.op in {"set", "replace"} and depth <= 1) or value_size > 8_192:
+            if (patch.op in {"set", "replace"} and depth <= 1) or payload_size > 8_192:
                 required = max(required, EditScale.STRUCTURAL)
-    if payload_bytes > 65_536:
+
+        if patch.op in {"set", "replace", "delete"} and patch.path:
+            try:
+                existing = _get(root, _pointer_tokens(patch.path))
+            except IRValidationError:
+                existing = None
+            else:
+                existing_size = _json_size(existing)
+                affected_bytes += existing_size
+                if isinstance(existing, (dict, list)) and depth <= 1:
+                    required = max(required, EditScale.STRUCTURAL)
+                if existing_size > 65_536:
+                    required = max(required, EditScale.GLOBAL)
+                elif existing_size > 8_192:
+                    required = max(required, EditScale.STRUCTURAL)
+
+    total_change_bytes = payload_bytes + affected_bytes
+    if total_change_bytes > 65_536:
         required = max(required, EditScale.GLOBAL)
-    elif payload_bytes > 8_192:
+    elif total_change_bytes > 8_192:
         required = max(required, EditScale.STRUCTURAL)
     return required
 
