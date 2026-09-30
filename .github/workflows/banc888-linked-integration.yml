@@ -40,25 +40,12 @@ jobs:
       - name: Configure virtual microphone
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y pulseaudio pulseaudio-utils
+          sudo apt-get install -y pulseaudio pulseaudio-utils espeak-ng
           pulseaudio --check || pulseaudio --start --exit-idle-time=-1
           pactl load-module module-null-sink sink_name=ci_mic_sink sink_properties=device.description=CI_Microphone
           pactl set-default-source ci_mic_sink.monitor
-          python3 - <<'PY'
-          import math, struct, wave
-          rate = 16000
-          seconds = 20
-          amp = 12000
-          with wave.open('/tmp/ci-mic-tone.wav', 'wb') as w:
-              w.setnchannels(1)
-              w.setsampwidth(2)
-              w.setframerate(rate)
-              frames = bytearray()
-              for i in range(rate * seconds):
-                  v = int(amp * math.sin(2 * math.pi * 440 * i / rate))
-                  frames += struct.pack('<h', v)
-              w.writeframes(frames)
-          PY
+          espeak-ng -v ja -s 125 -a 180 -w /tmp/ci-mic-speech.wav "こんにちは。これは おんせい てすと です。"
+          test -s /tmp/ci-mic-speech.wav
           pactl info
           pactl list short sources
 
@@ -72,7 +59,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
           script: |
-            (while true; do paplay --device=ci_mic_sink /tmp/ci-mic-tone.wav; done) >/tmp/ci-mic-play.log 2>&1 &
+            (while true; do paplay --device=ci_mic_sink /tmp/ci-mic-speech.wav; sleep 1; done) >/tmp/ci-mic-play.log 2>&1 &
             MIC_PID=$!
             sleep 2
             gradle --no-daemon connectedDebugAndroidTest
