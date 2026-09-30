@@ -85,7 +85,10 @@ final class SpeechController {
     }
 
     void initRecognizer() {
-        initRecognizer(true);
+        // Prefer the platform/default recognition service. "On-device available"
+        // only means an engine exists; it does not guarantee the requested
+        // language model (for example ja-JP) is installed.
+        initRecognizer(false);
     }
 
     private void initRecognizer(boolean preferOnDevice) {
