@@ -296,6 +296,20 @@ final class SpeechController {
         return o.toString();
     }
 
+    void simulateRecognition(String text, float confidence) {
+        String safe = text == null ? "" : text;
+        JSONArray alternatives = new JSONArray();
+        JSONObject x = new JSONObject();
+        try {
+            x.put("text", safe);
+            x.put("confidence", confidence);
+            alternatives.put(x);
+        } catch (Exception ignored) {}
+        js.eval("(function(){var n=window.BANC888_NATIVE_VOICE;if(!n)return;"
+                + "n.onAlternatives&&n.onAlternatives(" + alternatives.toString() + ");"
+                + "n.onResult&&n.onResult(" + JSONObject.quote(safe) + "," + confidence + ");})()");
+    }
+
     private String recognitionErrorText(int error) {
         switch (error) {
             case SpeechRecognizer.ERROR_AUDIO: return "audio error";
