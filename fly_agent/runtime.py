@@ -300,6 +300,9 @@ class FlyMachineAgent:
 
         proposal = self._restore_proposal(goal)
         execution = self._execution_state(goal)
+        if goal.status == GoalStatus.BLOCKED:
+            self._save()
+            return True
         if proposal is None:
             memory = self.memory.recall(goal.text, thread_id=goal.thread_id)
             planning = self.planner.propose(goal, memory, self.tools)
