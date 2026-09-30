@@ -42,6 +42,10 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y pulseaudio pulseaudio-utils espeak-ng
           pulseaudio --check || pulseaudio --start --exit-idle-time=-1
+          PULSE_SOCKET="$(pactl info | sed -n 's/^Server String: //p')"
+          test -n "$PULSE_SOCKET"
+          echo "PULSE_SERVER=unix:$PULSE_SOCKET" >> "$GITHUB_ENV"
+          echo "QEMU_AUDIO_DRV=pa" >> "$GITHUB_ENV"
           pactl load-module module-null-sink sink_name=ci_mic_sink sink_properties=device.description=CI_Microphone
           pactl set-default-source ci_mic_sink.monitor
           espeak-ng -v ja -s 125 -a 180 -w /tmp/ci-mic-speech.wav "こんにちは。これは おんせい てすと です。"
@@ -57,12 +61,10 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -allow-host-audio
           script: |
+            adb emu avd hostmicon || true
+            pactl info
             (while true; do paplay --device=ci_mic_sink /tmp/ci-mic-speech.wav; sleep 1; done) >/tmp/ci-mic-play.log 2>&1 &
-            MIC_PID=$!
             sleep 2
             gradle --no-daemon connectedDebugAndroidTest
-            STATUS=$?
-            kill $MIC_PID || true
-            exit $STATUS
