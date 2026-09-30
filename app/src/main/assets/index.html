@@ -67,6 +67,15 @@ body.ui-compact header h1{font-size:19px;margin:0 0 3px}
 .uiHubTop{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .uiHubTitle{font-weight:750;font-size:15px}.uiHubNav{display:flex;gap:6px;flex-wrap:wrap}
 .uiHub button{padding:7px 10px}.uiHubState{font-size:11px;color:var(--muted)}
+.uiSettingsShade{position:fixed;inset:0;background:#0009;z-index:39;display:none}
+.uiSettingsShade.open{display:block}
+.uiSettingsDrawer{position:fixed;top:0;right:0;bottom:0;width:min(92vw,520px);background:#08111f;border-left:1px solid #36506f;z-index:40;transform:translateX(102%);transition:transform .18s ease;overflow:auto;box-shadow:-12px 0 40px #0008}
+.uiSettingsDrawer.open{transform:translateX(0)}
+.uiSettingsHead{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;background:#0d1729f5;border-bottom:1px solid #2c405c}
+.uiSettingsTitle{font-size:17px;font-weight:800}.uiSettingsBody{padding:10px}
+.uiSettingsBody>.uiGroup,.uiSettingsBody>.agentSubDetails{margin-bottom:10px}
+.uiGearButton{font-size:18px;min-width:44px}
+@media(max-width:640px){.uiSettingsDrawer{width:100vw}.uiHubState{display:none}}
 body.ui-compact #flyAgentCard{border-color:#5579b7;box-shadow:0 10px 35px #0004;padding:13px}
 body.ui-compact #flyAgentCard>h2{margin-top:0;font-size:19px}
 body.ui-compact #flyAgentCard>.note{display:none}
@@ -5699,14 +5708,23 @@ window.BANC888_FLY_STACK={
 
     // Compact persistent navigation.
     const hub=document.createElement('section');hub.id='uiHub';hub.className='uiHub';
-    hub.innerHTML=`<div class="uiHubTop"><div><span class="uiHubTitle">🪰 Fly Console</span> <span class="uiHubState">代理人としてのハエが音声・画面・ToolBusを統括</span></div><nav class="uiHubNav"><button data-ui-target="flyAgentCard" class="primary">会話</button><button data-ui-target="uiBancGroup">BANC / 知識</button><button data-ui-target="uiMediaGroup">生成 / メディア</button><button data-ui-target="uiComputeGroup">計算 / 進化</button></nav></div>`;
+    hub.innerHTML=`<div class="uiHubTop"><div><span class="uiHubTitle">🪰 BANC888</span> <span class="uiHubState">Fly Console</span></div><nav class="uiHubNav"><button id="uiGearButton" class="uiGearButton" aria-label="詳細設定">⚙</button></nav></div>`;
+    const shade=document.createElement('div');shade.id='uiSettingsShade';shade.className='uiSettingsShade';
+    const drawer=document.createElement('aside');drawer.id='uiSettingsDrawer';drawer.className='uiSettingsDrawer';drawer.setAttribute('aria-hidden','true');
+    drawer.innerHTML='<div class="uiSettingsHead"><div class="uiSettingsTitle">⚙ 詳細</div><button id="uiSettingsClose">閉じる</button></div><div id="uiSettingsBody" class="uiSettingsBody"></div>';
+    document.body.append(shade,drawer);
+    const settingsBody=drawer.querySelector('#uiSettingsBody');
+    const setSettings=open=>{drawer.classList.toggle('open',open);shade.classList.toggle('open',open);drawer.setAttribute('aria-hidden',open?'false':'true')};
+    hub.querySelector('#uiGearButton').onclick=()=>setSettings(true);
+    drawer.querySelector('#uiSettingsClose').onclick=()=>setSettings(false);
+    shade.onclick=()=>setSettings(false);
     main.insertBefore(hub,main.firstChild);
     main.insertBefore(agent,hub.nextSibling);
     agent.querySelector(':scope > h2').innerHTML='🪰 Fly Console <span class="pill">VOICE + DISPLAY + AGENT</span>';
 
     // Put long explanation behind a small disclosure instead of occupying the primary screen.
     const note=agent.querySelector(':scope > .note');
-    if(note){const d=document.createElement('details');d.className='agentSubDetails';d.innerHTML='<summary>構成説明</summary><div class="agentSubBody"></div>';d.querySelector('.agentSubBody').append(note);agent.insertBefore(d,agent.querySelector('.flyvoicegrid'));}
+    if(note){const d=document.createElement('details');d.className='agentSubDetails';d.innerHTML='<summary>構成説明</summary><div class="agentSubBody"></div>';d.querySelector('.agentSubBody').append(note);settingsBody.append(d);}
 
     // Merge the legacy adaptive chat into Fly Console as a secondary conversation log.
     const chat=original.find(x=>directTitle(x).includes('自然言語・マルチモーダル会話'));
@@ -5714,7 +5732,7 @@ window.BANC888_FLY_STACK={
       chat.id='flyConversationCard';
       const d=document.createElement('details');d.className='agentSubDetails';d.id='flyConversationDetails';
       d.innerHTML='<summary>会話ログ・添付・学習記憶</summary><div class="agentSubBody"></div>';
-      d.querySelector('.agentSubBody').append(chat);agent.append(d);
+      d.querySelector('.agentSubBody').append(chat);settingsBody.append(d);
     }
 
     // Collapse agent debugging/trace controls without removing any functional element.
@@ -5728,12 +5746,12 @@ window.BANC888_FLY_STACK={
     }
     const cand=document.getElementById('agentCandidates')?.closest('.grid');if(cand)techBody.append(cand);
     const trace=document.getElementById('agentTrace');if(trace){const h=trace.previousElementSibling;if(h&&h.tagName==='H3')techBody.append(h);techBody.append(trace)}
-    agent.append(tech);
+    settingsBody.append(tech);
 
     const banc=makeGroup('uiBancGroup','BANC / 知識・記憶','O0・検索・CDL・経験列');
     const media=makeGroup('uiMediaGroup','生成 / メディア','O2/O3・画像・動画・教師・評価');
     const compute=makeGroup('uiComputeGroup','計算 / 進化','CPF・Micro-Op・F38・F42・F46');
-    main.append(banc.d,media.d,compute.d);
+    settingsBody.append(banc.d,media.d,compute.d);
     const computeIds=new Set(['cpfCard','microOpCard','fly38Card','fly42Card','fly46Card']);
     const mediaIds=new Set(['o23Card','a1111Card','semanticCard','o3v0Card','o2PhotoCard','o2PlusCard','teacherListCard','teacherRunnerCard','o2ConvCard','packCard','packExtendedCard']);
     for(const el of original){
@@ -5743,12 +5761,7 @@ window.BANC888_FLY_STACK={
       else banc.b.append(el);
     }
 
-    // Section buttons open details automatically and scroll to the requested workspace.
-    hub.querySelectorAll('[data-ui-target]').forEach(btn=>btn.addEventListener('click',()=>{
-      const target=document.getElementById(btn.dataset.uiTarget);if(!target)return;
-      if(target.tagName==='DETAILS')target.open=true;
-      target.scrollIntoView({behavior:'smooth',block:'start'});
-    }));
+    // Advanced workspaces live in the settings drawer; the main screen stays conversational.
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(consolidate,120));
   else setTimeout(consolidate,120);
