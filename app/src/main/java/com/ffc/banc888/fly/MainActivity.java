@@ -92,7 +92,10 @@ public class MainActivity extends Activity {
                 super.onPageFinished(view, url);
                 injectAsset("thread-router-core.js");
                 injectAsset("capability-vocabulary-core.js");
+                injectAsset("ir-patch-core.js");
+                injectAsset("proxy-agent-core.js");
                 injectAsset("capability-tools.js");
+                injectAsset("proxy-agent.js");
                 injectAsset("thread-router.js");
                 view.postDelayed(() -> callJsStatus(), 250);
             }
