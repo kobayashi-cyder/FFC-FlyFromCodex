@@ -25,6 +25,8 @@ import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
+import androidx.webkit.WebViewRenderProcess;
+import androidx.webkit.WebViewRenderProcessClient;
 
 import org.json.JSONObject;
 
@@ -54,6 +56,9 @@ final class WebShellController {
     private volatile int pageProgress = 0;
     private volatile long nativeFirstContentfulPaintMs = -1L;
     private volatile long nativeLargestContentfulPaintMs = -1L;
+    private volatile boolean rendererUnresponsive = false;
+    private volatile int rendererUnresponsiveCount = 0;
+    private volatile long rendererStateChangedAt = 0L;
     private NavigationListener navigationListener;
 
     WebShellController(Activity activity, WebView webView, DevLiveManager devLive, NativeSession session) {
@@ -98,6 +103,7 @@ final class WebShellController {
         bridges.install();
         installMessageBridge();
         installNavigationMetrics();
+        installRendererMonitor();
 
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .setDomain(AppConfig.APP_HOST)
@@ -215,6 +221,26 @@ final class WebShellController {
             }
         };
         WebViewCompat.addNavigationListener(webView, navigationListener);
+    }
+
+    private void installRendererMonitor() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_VIEW_RENDERER_CLIENT_BASIC_USAGE)) return;
+        WebViewCompat.setWebViewRenderProcessClient(webView, new WebViewRenderProcessClient() {
+            @Override
+            public void onRenderProcessResponsive(WebView view, WebViewRenderProcess renderer) {
+                rendererUnresponsive = false;
+                rendererStateChangedAt = SystemClock.elapsedRealtime();
+                Log.i(TAG, "renderer responsive");
+            }
+
+            @Override
+            public void onRenderProcessUnresponsive(WebView view, WebViewRenderProcess renderer) {
+                rendererUnresponsive = true;
+                rendererUnresponsiveCount++;
+                rendererStateChangedAt = SystemClock.elapsedRealtime();
+                Log.w(TAG, "renderer unresponsive count=" + rendererUnresponsiveCount);
+            }
+        });
     }
 
     private boolean safeTrustedInternal(String url) {
@@ -402,6 +428,9 @@ final class WebShellController {
             o.put("longTaskCount", longTaskCount);
             o.put("nativeFirstContentfulPaintMs", nativeFirstContentfulPaintMs < 0 ? JSONObject.NULL : nativeFirstContentfulPaintMs);
             o.put("nativeLargestContentfulPaintMs", nativeLargestContentfulPaintMs < 0 ? JSONObject.NULL : nativeLargestContentfulPaintMs);
+            o.put("rendererUnresponsive", rendererUnresponsive);
+            o.put("rendererUnresponsiveCount", rendererUnresponsiveCount);
+            o.put("rendererStateChangedAtElapsedMs", rendererStateChangedAt);
             o.put("recovery", new JSONObject(WebRecoveryGuard.statusJson()));
 
             PackageInfo pkg = WebView.getCurrentWebViewPackage();
@@ -429,8 +458,12 @@ final class WebShellController {
             catch (Throwable ignored) {}
             navigationListener = null;
         }
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_VIEW_RENDERER_CLIENT_BASIC_USAGE)) {
+            try { WebViewCompat.setWebViewRenderProcessClient(webView, null); }
+            catch (Throwable ignored) {}
+        }
         bridges.uninstall();
-        webView.stopLoading();
-        webView.destroy();
+        try { webView.stopLoading(); } catch (Throwable ignored) {}
+        try { webView.destroy(); } catch (Throwable ignored) {}
     }
 }
