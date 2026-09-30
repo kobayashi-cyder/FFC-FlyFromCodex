@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 72
-        versionName '7.0.2-webview-voice-tts'
+        versionCode 73
+        versionName '7.0.3-webview-voice-capture'
     }
 
     buildTypes {
