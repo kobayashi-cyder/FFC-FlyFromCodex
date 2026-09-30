@@ -15,7 +15,7 @@ The IR layer provides four edit scales:
 | STRUCTURAL | subtree or collection reorganization | replace a scene object set, rewrite a plan section |
 | GLOBAL | whole-representation replacement | new global layout/schema/state |
 
-The declared scale is not trusted blindly. The runtime re-estimates the minimum required scale from operation count, operation type, path depth, and payload size. A large edit cannot be passed as `MICRO`.
+The declared scale is not trusted blindly. The runtime re-estimates the minimum required scale from operation count, operation type, path depth, new payload size, **and the size/type of the existing target being replaced or deleted**. A large existing subtree cannot be erased by replacing it with a tiny scalar while claiming `MICRO`.
 
 ## Patch model
 
@@ -60,7 +60,7 @@ Every successful commit:
 - records author, reason, operation count, and transaction ID
 - persists via an atomic checkpoint
 
-A caller can supply `transaction_id` to make retry delivery idempotent.
+A caller can supply `transaction_id` to make retry delivery idempotent. Committed transaction IDs are kept in a durable ledger separate from the bounded undo snapshots, so a delayed retry remains idempotent even after its undo snapshot has aged out.
 
 ## Optimistic concurrency
 
