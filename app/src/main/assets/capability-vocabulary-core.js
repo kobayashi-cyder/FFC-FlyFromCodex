@@ -196,7 +196,7 @@ function classify(text){
  else if(domain==='voice'&&score>=1.9){ir=buildVoiceIR(raw);action=ir.operation;tool={listen:'voice.listen',speak:'voice.speak.native',status:'voice.status.native',configure:'voice.configure'}[action]}
  else if(domain==='document'&&score>=2.0){ir=buildDocumentIR(raw);action=ir.action;tool='document.create.'+ir.format}
  const confidence=tool?Math.max(.56,Math.min(1,.5+score*.07+Math.max(0,score-second)*.07)):Math.min(.5,score*.1);
- return{raw,normalized:t,domain,action,tool,args:ir?{ir}:{prompt:raw},ir,confidence,scores,handled:!!tool,packVersion:'2.0'};
+ const args=ir?Object.assign({ir,prompt:raw},ir):{prompt:raw};return{raw,normalized:t,domain,action,tool,args,ir,confidence,scores,handled:!!tool,packVersion:'2.0'};
 }
 function lexiconStats(){return{code:Object.values(PACK.code).flat().length,image:Object.values(PACK.image).flat().length,voice:Object.values(PACK.voice).flat().length,document:Object.values(PACK.document).flat().length,quality:Object.values(PACK.quality).flat().length,constraints:Object.values(PACK.constraints).flat().length}}
 return{PACK,classify,buildCodeIR,buildImageIR,buildVoiceIR,buildDocumentIR,detectCodeLanguage,detectDocumentFormat,lexiconStats,quoted,filenameHint};
