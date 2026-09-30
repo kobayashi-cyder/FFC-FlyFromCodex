@@ -47,8 +47,7 @@ public class MainActivity extends Activity {
 
         webShell.configure(bridges);
 
-        WebBackForwardList restored = state == null ? null : webView.restoreState(state);
-        if (restored == null) webShell.loadCurrentPage();
+        webShell.loadCurrentPage();
     }
 
     private void evalJs(String script) {
