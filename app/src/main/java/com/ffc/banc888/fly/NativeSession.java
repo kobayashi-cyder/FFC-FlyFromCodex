@@ -9,6 +9,7 @@ import java.security.SecureRandom;
 final class NativeSession {
     private final SecureRandom random = new SecureRandom();
     private volatile String token = "";
+    private volatile long epoch = 0L;
 
     NativeSession() {
         rotate();
@@ -18,11 +19,16 @@ final class NativeSession {
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
         token = Base64.encodeToString(bytes, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
+        epoch++;
         return token;
     }
 
     String token() {
         return token;
+    }
+
+    long epoch() {
+        return epoch;
     }
 
     boolean valid(String supplied) {
