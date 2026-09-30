@@ -1,0 +1,71 @@
+name: BANC888 Domain Pack Evaluation
+
+on:
+  push:
+    branches:
+      - banc888-domain-eval-v3-1
+    paths:
+      - "tools/banc888_domain_pack.py"
+      - "tests/test_banc888_domain_pack.py"
+      - ".github/workflows/banc888-domain-eval.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python version
+        run: python3 --version
+
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -p "test_banc888_domain_pack.py" -v
+
+      - name: Generate full 9-domain output lists
+        run: python3 tools/banc888_domain_pack.py --out dist
+
+      - name: Verify generated report
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("dist/evaluation_report.json")
+          d=json.loads(p.read_text())
+          assert d["status"]=="PASS", d
+          assert d["domains"]==9, d
+          assert d["concepts"]==45, d
+          assert d["jobs"]==2880, d
+          assert all(v==320 for v in d["per_domain"].values()), d
+          print(json.dumps(d, indent=2))
+          PY
+
+      - name: Check deterministic regeneration
+        run: |
+          cp dist/BANC888_All9Domains_ExecutedLists.json /tmp/first.json
+          rm -rf dist2
+          python3 tools/banc888_domain_pack.py --out dist2
+          cmp /tmp/first.json dist2/BANC888_All9Domains_ExecutedLists.json
+
+      - name: Artifact inventory
+        run: |
+          wc -l dist/BANC888_All9Domains_ExecutedLists.csv
+          wc -c dist/BANC888_All9Domains_ExecutedLists.json
+          sha256sum dist/*
+
+      - name: Upload evaluation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: banc888-domain-evaluation
+          path: |
+            dist/BANC888_All9Domains_ExecutedLists.json
+            dist/BANC888_All9Domains_ExecutedLists.csv
+            dist/evaluation_report.json
+            dist/evaluation_report.md
+          if-no-files-found: error
+          retention-days: 30
