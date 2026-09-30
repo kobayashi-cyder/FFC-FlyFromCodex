@@ -390,16 +390,19 @@ final class SpeechController {
     }
 
     private String ttsErrorDetails(int errorCode) {
-        String engine = "";
+        String defaultVoice = "";
         String voice = "";
-        try { engine = tts == null ? "" : String.valueOf(tts.getCurrentEngine()); } catch (Throwable ignored) {}
+        try {
+            Voice v = ttsDefaultVoice;
+            defaultVoice = v == null ? "" : v.getName();
+        } catch (Throwable ignored) {}
         try {
             Voice v = tts == null ? null : tts.getVoice();
             voice = v == null ? "" : v.getName();
         } catch (Throwable ignored) {}
         return "TextToSpeech error code=" + errorCode
                 + " / langStatus=" + ttsLanguageStatus
-                + (engine.isEmpty() ? "" : " / engine=" + engine)
+                + (defaultVoice.isEmpty() ? "" : " / defaultVoice=" + defaultVoice)
                 + (voice.isEmpty() ? "" : " / voice=" + voice);
     }
 
@@ -443,7 +446,7 @@ final class SpeechController {
             o.put("ttsFallbackAttempted", ttsFallbackAttempted);
             o.put("lastTtsErrorCode", lastTtsErrorCode);
             o.put("lastTtsError", lastTtsError);
-            o.put("ttsEngine", ttsReady && tts != null ? tts.getCurrentEngine() : JSONObject.NULL);
+            o.put("ttsDefaultVoice", ttsDefaultVoice == null ? JSONObject.NULL : ttsDefaultVoice.getName());
             Voice v = ttsReady && tts != null ? tts.getVoice() : null;
             o.put("ttsVoice", v == null ? JSONObject.NULL : v.getName());
             o.put("ttsVoiceNetworkRequired", v == null ? JSONObject.NULL : v.isNetworkConnectionRequired());
