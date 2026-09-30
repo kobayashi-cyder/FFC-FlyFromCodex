@@ -3,6 +3,7 @@ package com.ffc.banc888.fly;
 import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.webkit.WebBackForwardList;
 import android.webkit.WebView;
 
 public class MainActivity extends Activity {
@@ -36,6 +37,7 @@ public class MainActivity extends Activity {
                 webView,
                 nativeSession,
                 webShell::isTrustedMainFrame,
+                webShell::diagnosticsJson,
                 speech,
                 documents,
                 research,
@@ -44,7 +46,9 @@ public class MainActivity extends Activity {
         );
 
         webShell.configure(bridges);
-        webShell.loadCurrentPage();
+
+        WebBackForwardList restored = state == null ? null : webView.restoreState(state);
+        if (restored == null) webShell.loadCurrentPage();
     }
 
     private void evalJs(String script) {
@@ -53,12 +57,37 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if (webView != null) webView.saveState(outState);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onPause() {
+        if (webView != null) webView.onPause();
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) webView.onResume();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView != null && webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode != REQ_MIC || speech == null) return;
         boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
         speech.onPermissionResult(granted);
-        evalJs("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onStatus&&window.BANC888_NATIVE_VOICE.onStatus(AndroidVoice.status())");
+        evalJs("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onStatus"
+                + "&&window.BANC888_NATIVE_VOICE.onStatus(AndroidVoice.status())");
     }
 
     @Override
