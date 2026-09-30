@@ -5522,10 +5522,13 @@ function flyVoiceRecognitionReason(code){
 }
 function flyVoiceRenderDiag(d){
   FLYVOICE.lastDiag=d;const el=$('#flyVoiceDiag');if(el)el.textContent=JSON.stringify(d,null,2);
-  const ready=d?.micReady===true&&d?.speechRecognition===true;
-  if(ready)flyVoiceSetState('idle','🟢 ハエの耳: マイク許可済み / 音声認識開始可能');
-  else if(d?.blockedReason)flyVoiceSetState('error','🔴 '+d.blockedReason);
-  else if(d?.speechRecognition===false)flyVoiceSetState('error','🔴 SpeechRecognition非対応。テキスト入力を使用してください。');
+  const permissionOk=d?.androidPermission==='granted'||d?.permission==='granted';
+  const pcmOk=d?.micProbe?.ok===true&&Number(d?.micProbe?.readSamples||0)>0;
+  const recognizerOk=d?.speechRecognition===true;
+  if(d?.blockedReason)flyVoiceSetState('error','🔴 '+d.blockedReason);
+  else if(pcmOk&&recognizerOk)flyVoiceSetState('idle','🟢 ハエの耳: PCM取得OK / 音声認識サービス利用可能');
+  else if(permissionOk&&recognizerOk)flyVoiceSetState('idle','🟡 権限OK / 音声データ取得は未検証');
+  else if(d?.speechRecognition===false)flyVoiceSetState('error','🔴 SpeechRecognizer非対応');
   else flyVoiceSetState('idle','🟡 ハエの耳: 権限確認待ち');
   return d
 }
@@ -5537,9 +5540,21 @@ async function flyVoiceDiagnose({request=false}={}){
   const nativeVoice=!!window.AndroidVoice;
   if(nativeVoice){
     let ns={};try{ns=JSON.parse(String(window.AndroidVoice.status?.()||'{}'))}catch(e){ns={error:String(e)}}
-    const d={time:new Date().toISOString(),protocol:location.protocol,secureContext:!!window.isSecureContext,embedded:window.top!==window.self,nativeBridge:true,androidPermission:ns.permission||'unknown',speechRecognition:ns.speechRecognizerAvailable!==false,speechSynthesis:true,micReady:ns.permission==='granted',requested:!!request,detail:'Android native SpeechRecognizer/TextToSpeech bridge',native:ns};
-    FLYVOICE.micReady=d.micReady;FLYVOICE.micPermission=d.androidPermission;
-    if(request&&ns.permission!=='granted'){try{window.AndroidVoice.requestMicPermission()}catch(e){d.blockedReason='Android microphone permission request failed: '+e}}
+    const d={time:new Date().toISOString(),protocol:location.protocol,secureContext:!!window.isSecureContext,embedded:window.top!==window.self,nativeBridge:true,androidPermission:ns.permission||'unknown',speechRecognition:ns.speechRecognizerAvailable!==false,speechSynthesis:true,micReady:false,requested:!!request,detail:'Android native SpeechRecognizer/TextToSpeech bridge',native:ns,micProbe:null};
+    FLYVOICE.micPermission=d.androidPermission;
+    if(request&&ns.permission!=='granted'){
+      try{window.AndroidVoice.requestMicPermission()}catch(e){d.blockedReason='Android microphone permission request failed: '+e}
+    }else if(request&&ns.permission==='granted'&&window.AndroidDiagnostics?.probeMicrophone){
+      try{
+        d.micProbe=JSON.parse(String(window.AndroidDiagnostics.probeMicrophone()||'{}'));
+        d.micReady=!!(d.micProbe?.ok&&Number(d.micProbe?.readSamples||0)>0);
+        FLYVOICE.micReady=d.micReady;
+        if(!d.micReady)d.blockedReason='Android AudioRecordでマイクPCMを取得できませんでした。';
+      }catch(e){
+        d.micProbe={ok:false,error:String(e)};
+        d.blockedReason='マイクPCM診断に失敗: '+String(e);
+      }
+    }
     return flyVoiceRenderDiag(d);
   }
   const policy=flyVoicePolicyAllows(),SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -5646,7 +5661,7 @@ function flyDeliver(packet,{dryRun=false}={}){if(!packet)return null;const displ
 
 
 window.BANC888_NATIVE_VOICE={
-  onStatus(raw){let d={};try{d=typeof raw==='string'?JSON.parse(raw):raw||{}}catch(e){d={error:String(e)}};const x={time:new Date().toISOString(),protocol:location.protocol,secureContext:!!window.isSecureContext,embedded:window.top!==window.self,nativeBridge:true,androidPermission:d.permission||'unknown',speechRecognition:d.speechRecognizerAvailable!==false,speechSynthesis:true,micReady:d.permission==='granted',native:d};FLYVOICE.micReady=x.micReady;FLYVOICE.micPermission=x.androidPermission;flyVoiceRenderDiag(x)},
+  onStatus(raw){let d={};try{d=typeof raw==='string'?JSON.parse(raw):raw||{}}catch(e){d={error:String(e)}};const x={time:new Date().toISOString(),protocol:location.protocol,secureContext:!!window.isSecureContext,embedded:window.top!==window.self,nativeBridge:true,androidPermission:d.permission||'unknown',speechRecognition:d.speechRecognizerAvailable!==false,speechSynthesis:true,micReady:!!FLYVOICE.micReady,micProbe:FLYVOICE.lastDiag?.micProbe||null,native:d};FLYVOICE.micPermission=x.androidPermission;flyVoiceRenderDiag(x)},
   onListening(){FLYVOICE.listening=true;flyVoiceSetState('listening','Androidマイクで聞いています…')},
   onPartial(text){FLYVOICE.interim=String(text||'');const shown=[FLYVOICE.lastHeard,FLYVOICE.interim].filter(Boolean).join(' ');if($('#flyVoiceTranscript'))$('#flyVoiceTranscript').textContent=shown||'—'},
   onResult(text){const q=String(text||'').trim();FLYVOICE.listening=false;FLYVOICE.interim='';FLYVOICE.lastHeard=q;if($('#flyVoiceTranscript'))$('#flyVoiceTranscript').textContent=q||'—';if($('#agentGoal'))$('#agentGoal').value=q;if(q&&$('#flyVoiceAutoSend')?.checked){FLYVOICE.lastHeard='';setTimeout(()=>agentRun(q,+($('#agentMaxSteps')?.value||3),{dryRun:!!$('#agentDryRun')?.checked,logChat:!!$('#agentLogChat')?.checked}),20)}else flyVoiceSetState('idle','聞き取り完了')},
