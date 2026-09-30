@@ -172,9 +172,9 @@ final class SpeechController {
         }
 
         @Override public void onPartialResults(Bundle partialResults) {
-            recognitionActivityAtMs = System.currentTimeMillis();
             ArrayList<String> list = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             String text = list != null && !list.isEmpty() ? list.get(0) : "";
+            if (!text.trim().isEmpty()) recognitionActivityAtMs = System.currentTimeMillis();
             js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onPartial&&window.BANC888_NATIVE_VOICE.onPartial("
                     + JSONObject.quote(text) + ")");
         }
@@ -211,6 +211,7 @@ final class SpeechController {
         recognizerReadyAtMs = 0L;
         speechBeganAtMs = 0L;
         recognitionActivityAtMs = 0L;
+        recognitionResultCount = 0;
         maxRmsDb = -120f;
         lastRecognitionErrorCode = 0;
         lastRecognitionError = "";
