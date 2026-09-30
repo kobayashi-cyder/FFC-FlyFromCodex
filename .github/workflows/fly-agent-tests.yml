@@ -5,12 +5,14 @@ on:
     paths:
       - 'fly_agent/**'
       - 'config/connectome_minimal.json'
+      - 'tools/connectome_project.py'
       - 'tests/test_fly_agent.py'
       - '.github/workflows/fly-agent-tests.yml'
   pull_request:
     paths:
       - 'fly_agent/**'
       - 'config/connectome_minimal.json'
+      - 'tools/connectome_project.py'
       - 'tests/test_fly_agent.py'
       - '.github/workflows/fly-agent-tests.yml'
 

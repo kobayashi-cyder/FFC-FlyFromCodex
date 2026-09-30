@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Callable, Protocol
+
+from .models import OutputMode
 
 
 class SpeechInput(Protocol):
@@ -15,8 +17,41 @@ class SpeechOutput(Protocol):
     def speak(self, text: str) -> None: ...
 
 
+class CallableScreenOutput:
+    def __init__(self, fn: Callable[[str], None]):
+        self.fn = fn
+
+    def write(self, text: str) -> None:
+        self.fn(text)
+
+
+class CallableSpeechOutput:
+    def __init__(self, fn: Callable[[str], None]):
+        self.fn = fn
+
+    def speak(self, text: str) -> None:
+        self.fn(text)
+
+
+class HumanChannel:
+    def __init__(self, screen: HumanOutput | None = None, speech: SpeechOutput | None = None):
+        self.screen = screen
+        self.speech = speech
+
+    def emit(self, text: str, mode: OutputMode = OutputMode.BOTH) -> None:
+        if mode == OutputMode.SILENT:
+            return
+        if mode in (OutputMode.SCREEN, OutputMode.BOTH) and self.screen:
+            self.screen.write(text)
+        if mode in (OutputMode.SPEECH, OutputMode.BOTH) and self.speech:
+            self.speech.speak(text)
+
+    def __call__(self, text: str) -> None:
+        self.emit(text, OutputMode.BOTH)
+
+
 class MultiOutput:
-    """Fan-out sink for screen plus optional speech without coupling the agent to one UI."""
+    """Backward-compatible fan-out sink."""
 
     def __init__(self, *outputs: HumanOutput | SpeechOutput):
         self.outputs = outputs
