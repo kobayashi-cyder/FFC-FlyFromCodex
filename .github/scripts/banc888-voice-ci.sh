@@ -23,8 +23,12 @@ rm -f /tmp/ci-audio-sync.log
 ) >/tmp/ci-audio-sync.log 2>&1 &
 AUDIO_SYNC_PID=$!
 
+# Build outside the instrumentation timeout so compile time cannot be
+# confused with speech/dictation time.
+gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+
 set +e
-gradle --no-daemon connectedDebugAndroidTest
+timeout --signal=TERM 90s gradle --no-daemon :app:connectedDebugAndroidTest
 STATUS=$?
 set -e
 
