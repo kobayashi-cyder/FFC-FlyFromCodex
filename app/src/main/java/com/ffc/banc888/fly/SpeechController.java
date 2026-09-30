@@ -39,6 +39,10 @@ final class SpeechController {
     private boolean ttsReady = false;
     private boolean onDeviceRecognizer = false;
     private String pendingLanguage = "ja-JP";
+    private String pendingSpeechText = null;
+    private String pendingSpeechLanguage = "ja-JP";
+    private double pendingSpeechRate = 1.0;
+    private double pendingSpeechPitch = 1.0;
     private State state = State.IDLE;
     private int ttsRemaining = 0;
 
@@ -181,7 +185,19 @@ final class SpeechController {
     private void initTts() {
         tts = new TextToSpeech(activity, status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
-            if (!ttsReady) return;
+            if (!ttsReady) {
+                String dropped;
+                synchronized (SpeechController.this) {
+                    dropped = pendingSpeechText;
+                    pendingSpeechText = null;
+                    state = State.IDLE;
+                }
+                if (dropped != null) {
+                    js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onTtsError"
+                            + "&&window.BANC888_NATIVE_VOICE.onTtsError('TextToSpeech initialization failed')");
+                }
+                return;
+            }
             tts.setLanguage(Locale.JAPAN);
             tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                 @Override public void onStart(String utteranceId) {
@@ -207,11 +223,38 @@ final class SpeechController {
             });
             js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onStatus&&window.BANC888_NATIVE_VOICE.onStatus("
                     + JSONObject.quote(statusJson()) + ")");
+
+            String queuedText;
+            String queuedLanguage;
+            double queuedRate;
+            double queuedPitch;
+            synchronized (SpeechController.this) {
+                queuedText = pendingSpeechText;
+                queuedLanguage = pendingSpeechLanguage;
+                queuedRate = pendingSpeechRate;
+                queuedPitch = pendingSpeechPitch;
+                pendingSpeechText = null;
+            }
+            if (queuedText != null && !queuedText.trim().isEmpty()) {
+                speak(queuedText, queuedLanguage, queuedRate, queuedPitch);
+            }
         });
     }
 
     synchronized boolean speak(String text, String lang, double rate, double pitch) {
-        if (!ttsReady || tts == null) return false;
+        if (tts == null) {
+            js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onTtsError"
+                    + "&&window.BANC888_NATIVE_VOICE.onTtsError('TextToSpeech unavailable')");
+            return false;
+        }
+        if (!ttsReady) {
+            pendingSpeechText = text == null ? "" : text;
+            pendingSpeechLanguage = lang == null ? "ja-JP" : lang;
+            pendingSpeechRate = rate;
+            pendingSpeechPitch = pitch;
+            state = State.STARTING;
+            return true;
+        }
         try {
             if (recognizer != null) recognizer.cancel();
             state = State.SPEAKING;
@@ -286,6 +329,7 @@ final class SpeechController {
             o.put("recognizerBackend", onDeviceRecognizer ? "on-device" : "system");
             o.put("state", state.name());
             o.put("ttsReady", ttsReady);
+            o.put("ttsPending", pendingSpeechText != null);
             Voice v = ttsReady && tts != null ? tts.getVoice() : null;
             o.put("ttsVoice", v == null ? JSONObject.NULL : v.getName());
             o.put("sdkInt", Build.VERSION.SDK_INT);
