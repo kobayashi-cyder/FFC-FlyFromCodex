@@ -48,6 +48,7 @@ final class SpeechController {
     private long listenGeneration = 0L;
     private long recognizerReadyAtMs = 0L;
     private long speechBeganAtMs = 0L;
+    private long recognitionActivityAtMs = 0L;
     private float maxRmsDb = -120f;
     private int recognitionResultCount = 0;
     private int lastRecognitionErrorCode = 0;
@@ -122,6 +123,7 @@ final class SpeechController {
         }
         @Override public void onBeginningOfSpeech() {
             speechBeganAtMs = System.currentTimeMillis();
+            recognitionActivityAtMs = speechBeganAtMs;
         }
         @Override public void onRmsChanged(float rmsdB) {
             if (Float.isFinite(rmsdB)) maxRmsDb = Math.max(maxRmsDb, rmsdB);
@@ -160,6 +162,7 @@ final class SpeechController {
             String best = list != null && !list.isEmpty() ? list.get(0) : "";
             float bestConfidence = conf != null && conf.length > 0 ? conf[0] : -1f;
             recognitionResultCount++;
+            recognitionActivityAtMs = System.currentTimeMillis();
             lastRecognitionErrorCode = 0;
             lastRecognitionError = "";
             setState(State.IDLE);
@@ -169,6 +172,7 @@ final class SpeechController {
         }
 
         @Override public void onPartialResults(Bundle partialResults) {
+            recognitionActivityAtMs = System.currentTimeMillis();
             ArrayList<String> list = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             String text = list != null && !list.isEmpty() ? list.get(0) : "";
             js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onPartial&&window.BANC888_NATIVE_VOICE.onPartial("
@@ -206,6 +210,7 @@ final class SpeechController {
         setState(State.STARTING);
         recognizerReadyAtMs = 0L;
         speechBeganAtMs = 0L;
+        recognitionActivityAtMs = 0L;
         maxRmsDb = -120f;
         lastRecognitionErrorCode = 0;
         lastRecognitionError = "";
@@ -227,6 +232,20 @@ final class SpeechController {
                     }
                 }
             }, 3500L);
+
+            mainHandler.postDelayed(() -> {
+                synchronized (SpeechController.this) {
+                    if (generation != listenGeneration) return;
+                    if (state == State.IDLE || state == State.ERROR || state == State.SPEAKING) return;
+                    if (recognitionActivityAtMs > 0L || recognitionResultCount > 0) return;
+                    ++listenGeneration;
+                    try { if (recognizer != null) recognizer.cancel(); } catch (Throwable ignored) {}
+                    lastRecognitionErrorCode = -4;
+                    lastRecognitionError = "no speech activity within 5 seconds";
+                    setState(State.IDLE);
+                    js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onError&&window.BANC888_NATIVE_VOICE.onError('speech-activity-timeout','no speech activity within 5 seconds')");
+                }
+            }, 5000L);
             return true;
         } catch (Throwable e) {
             lastRecognitionErrorCode = -3;
@@ -624,6 +643,7 @@ final class SpeechController {
             o.put("recognizerFallbackAttempted", recognizerFallbackAttempted);
             o.put("recognizerReadyAtMs", recognizerReadyAtMs);
             o.put("speechBeganAtMs", speechBeganAtMs);
+            o.put("recognitionActivityAtMs", recognitionActivityAtMs);
             o.put("maxRmsDb", maxRmsDb);
             o.put("recognitionResultCount", recognitionResultCount);
             o.put("lastRecognitionErrorCode", lastRecognitionErrorCode);
