@@ -44,15 +44,14 @@ jobs:
           pulseaudio --check || pulseaudio --start --exit-idle-time=-1
           PULSE_SOCKET="$(pactl info | sed -n 's/^Server String: //p')"
           test -n "$PULSE_SOCKET"
-          echo "PULSE_SERVER=unix:$PULSE_SOCKET" >> "$GITHUB_ENV"
-          cat > "$HOME/.asoundrc" <<'EOF'
-pcm.!default {
-  type pulse
-}
-ctl.!default {
-  type pulse
-}
-EOF
+          echo "PULSE_SERVER=$PULSE_SOCKET" >> "$GITHUB_ENV"
+          printf '%s\n' \
+            'pcm.!default {' \
+            '  type pulse' \
+            '}' \
+            'ctl.!default {' \
+            '  type pulse' \
+            '}' > "$HOME/.asoundrc"
           echo "QEMU_AUDIO_DRV=alsa" >> "$GITHUB_ENV"
           echo "QEMU_AUDIO_IN_DRV=alsa" >> "$GITHUB_ENV"
           echo "QEMU_AUDIO_OUT_DRV=alsa" >> "$GITHUB_ENV"
