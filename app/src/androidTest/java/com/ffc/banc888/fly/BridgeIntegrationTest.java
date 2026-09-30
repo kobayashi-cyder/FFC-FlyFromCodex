@@ -68,7 +68,7 @@ public class BridgeIntegrationTest {
                     "JSON.parse(AndroidVoice.status()).permission==='granted'", 10000));
 
             assertTrue(awaitJs(scenario,
-                    "(function(){var p=JSON.parse(AndroidDiagnostics.probeMicrophone());return p.ok===true&&p.initialized===true&&p.readSamples>0})()", 10000));
+                    "(function(){var p=JSON.parse(AndroidDiagnostics.probeMicrophone());return p.ok===true&&p.initialized===true&&p.readSamples>0&&p.nonZeroSamples>0&&p.peakAbs>0})()", 10000));
 
             assertTrue(awaitJs(scenario,
                     "(function(){"
