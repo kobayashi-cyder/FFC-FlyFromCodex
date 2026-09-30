@@ -9,6 +9,9 @@ on:
       - 'apkbuild2/**'
       - '.github/workflows/build-banc888-v1.9-apk.yml'
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
