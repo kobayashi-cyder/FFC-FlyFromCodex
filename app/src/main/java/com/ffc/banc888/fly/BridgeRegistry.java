@@ -9,12 +9,14 @@ import android.webkit.WebView;
 import org.json.JSONObject;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 final class BridgeRegistry {
     private final Activity activity;
     private final WebView webView;
     private final NativeSession session;
     private final BooleanSupplier trustedMainFrame;
+    private final Supplier<String> shellDiagnostics;
     private final SpeechController speech;
     private final DocumentExporter documents;
     private final ResearchClient research;
@@ -26,6 +28,7 @@ final class BridgeRegistry {
             WebView webView,
             NativeSession session,
             BooleanSupplier trustedMainFrame,
+            Supplier<String> shellDiagnostics,
             SpeechController speech,
             DocumentExporter documents,
             ResearchClient research,
@@ -36,6 +39,7 @@ final class BridgeRegistry {
         this.webView = webView;
         this.session = session;
         this.trustedMainFrame = trustedMainFrame;
+        this.shellDiagnostics = shellDiagnostics;
         this.speech = speech;
         this.documents = documents;
         this.research = research;
@@ -155,6 +159,7 @@ final class BridgeRegistry {
                 o.put("bridgeSchema", AppConfig.BRIDGE_SCHEMA);
                 o.put("assetSchema", AppConfig.ASSET_SCHEMA);
                 o.put("trustedMainFrame", trustedMainFrame.getAsBoolean());
+                o.put("webShell", new JSONObject(shellDiagnostics.get()));
                 o.put("sdkInt", Build.VERSION.SDK_INT);
                 PackageInfo pkg = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0);
                 o.put("versionName", pkg.versionName == null ? "" : pkg.versionName);
