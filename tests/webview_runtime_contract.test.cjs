@@ -6,6 +6,7 @@ function must(cond,msg){if(!cond)throw new Error(msg)}
 const config=read('app/src/main/java/com/ffc/banc888/fly/AppConfig.java');
 const shell=read('app/src/main/java/com/ffc/banc888/fly/WebShellController.java');
 const activity=read('app/src/main/java/com/ffc/banc888/fly/MainActivity.java');
+const session=read('app/src/main/java/com/ffc/banc888/fly/NativeSession.java');
 const bridge=read('app/src/main/assets/native-bridge.js');
 const runtime=read('app/src/main/assets/webview-runtime.js');
 const manifest=JSON.parse(read('app/src/main/assets/live-manifest.json'));
@@ -27,13 +28,23 @@ must(shell.includes('WebRecoveryGuard.tryAcquire'),'bounded recovery guard missi
 must(shell.includes('WebViewRenderProcessClient'),'renderer responsiveness monitor missing');
 must(shell.includes('NavigationListener'),'native navigation metrics missing');
 must(shell.includes('WebResourceErrorCompat'),'compat error callback missing');
+must(shell.includes('__BANC_NATIVE_EPOCH'),'native session epoch injection missing');
+must(shell.includes('runtime.capabilities'),'native capability handshake missing');
+must(shell.includes('__nativeDispatch'),'Java-to-WebView event dispatch missing');
+must(shell.includes('stale-native-session'),'stale WebView session rejection missing');
+must(session.includes('long epoch()'),'native session epoch accessor missing');
 
 must(activity.includes('WebViewCompat.saveState'),'bounded state save missing');
 must(activity.includes('128 * 1024'),'saved state cap changed unexpectedly');
 
 must(bridge.includes('window.AndroidRuntime'),'async native runtime API missing');
 must(bridge.includes("post('runtime.status')"),'runtime status message missing');
+must(bridge.includes("post('runtime.capabilities')"),'runtime capability request missing');
+must(bridge.includes('__nativeDispatch'),'native push receiver missing');
+must(bridge.includes('epoch'),'bridge session epoch missing');
 must(runtime.includes('window.FFC_WEBVIEW_RUNTIME'),'WebView health runtime missing');
+must(runtime.includes('uiSettingsBody'),'WebView diagnostics must live inside settings drawer');
+must(runtime.includes('WebView / Java連携'),'integrated Java/WebView panel missing');
 must(runtime.includes("runtime.heartbeat"),'runtime heartbeat missing');
 must(runtime.includes('unhandledrejection'),'promise error monitoring missing');
 must(runtime.includes("PerformanceObserver"),'long-task monitoring missing');
