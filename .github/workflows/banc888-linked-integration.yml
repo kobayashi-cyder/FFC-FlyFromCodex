@@ -40,18 +40,29 @@ jobs:
       - name: Configure virtual microphone
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y pulseaudio pulseaudio-utils espeak-ng
+          sudo apt-get install -y pulseaudio pulseaudio-utils espeak-ng libasound2-plugins alsa-utils
           pulseaudio --check || pulseaudio --start --exit-idle-time=-1
           PULSE_SOCKET="$(pactl info | sed -n 's/^Server String: //p')"
           test -n "$PULSE_SOCKET"
           echo "PULSE_SERVER=unix:$PULSE_SOCKET" >> "$GITHUB_ENV"
-          echo "QEMU_AUDIO_DRV=pa" >> "$GITHUB_ENV"
+          cat > "$HOME/.asoundrc" <<'EOF'
+pcm.!default {
+  type pulse
+}
+ctl.!default {
+  type pulse
+}
+EOF
+          echo "QEMU_AUDIO_DRV=alsa" >> "$GITHUB_ENV"
+          echo "QEMU_AUDIO_IN_DRV=alsa" >> "$GITHUB_ENV"
+          echo "QEMU_AUDIO_OUT_DRV=alsa" >> "$GITHUB_ENV"
           pactl load-module module-null-sink sink_name=ci_mic_sink sink_properties=device.description=CI_Microphone
           pactl set-default-source ci_mic_sink.monitor
           espeak-ng -v ja -s 125 -a 180 -w /tmp/ci-mic-speech.wav "こんにちは。これは おんせい てすと です。"
           test -s /tmp/ci-mic-speech.wav
           pactl info
           pactl list short sources
+          aplay -L | head -40
 
       - name: Real linked Android/WebView + audio-path test
         uses: reactivecircus/android-emulator-runner@v2
