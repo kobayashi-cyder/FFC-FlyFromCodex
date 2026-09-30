@@ -5583,7 +5583,21 @@ async function flyVoiceStartListening(){
   if(window.AndroidVoice){
     FLYVOICE.lastHeard='';FLYVOICE.interim='';
     const lang=$('#flyVoiceLang')?.value||'ja-JP';
-    try{FLYVOICE.listening=true;flyVoiceSetState('listening','Androidマイクで聞いています…');window.AndroidVoice.startListening(lang);return true}catch(e){FLYVOICE.listening=false;flyVoiceSetState('error','Android音声認識開始失敗: '+(e?.message||e));return false}
+    try{
+      const accepted=window.AndroidVoice.startListening(lang);
+      if(!accepted){
+        FLYVOICE.listening=false;
+        flyVoiceSetState('error','Android音声認識を開始できませんでした');
+        return false;
+      }
+      FLYVOICE.listening=true;
+      flyVoiceSetState('listening','Androidマイクを開始しています…');
+      return true;
+    }catch(e){
+      FLYVOICE.listening=false;
+      flyVoiceSetState('error','Android音声認識開始失敗: '+(e?.message||e));
+      return false;
+    }
   }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   const d=await flyVoiceDiagnose({request:true});
@@ -5605,7 +5619,21 @@ function flySpeak(text){
   const clean=flySpeechClean(text);if(!clean)return{spoken:false,reason:'empty'};FLYVOICE.lastSpoken=clean;
   if(window.AndroidVoice){
     const lang=$('#flyVoiceLang')?.value||'ja-JP',rate=+($('#flyVoiceRate')?.value||1),pitch=+($('#flyVoicePitch')?.value||1);
-    try{FLYVOICE.speaking=true;flyVoiceStopListening();window.AndroidVoice.speak(clean,lang,rate,pitch);return{spoken:true,native:true,chars:clean.length,lang,rate,pitch}}catch(e){FLYVOICE.speaking=false;return{spoken:false,native:true,reason:String(e)}}
+    try{
+      FLYVOICE.speaking=true;
+      flyVoiceStopListening();
+      const accepted=window.AndroidVoice.speak(clean,lang,rate,pitch);
+      if(!accepted){
+        FLYVOICE.speaking=false;
+        flyVoiceSetState('error','Android音声出力を開始できませんでした');
+        return{spoken:false,native:true,reason:'native speak rejected'};
+      }
+      return{spoken:true,native:true,chars:clean.length,lang,rate,pitch};
+    }catch(e){
+      FLYVOICE.speaking=false;
+      flyVoiceSetState('error','Android音声出力開始失敗: '+String(e));
+      return{spoken:false,native:true,reason:String(e)};
+    }
   }
   if(!('speechSynthesis'in window))return{spoken:false,reason:'speechSynthesis unavailable'};
   FLYVOICE.speaking=true;flyVoiceStopListening();speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(clean);u.lang=$('#flyVoiceLang')?.value||'ja-JP';u.rate=+($('#flyVoiceRate')?.value||1);u.pitch=+($('#flyVoicePitch')?.value||1);const ix=+($('#flyVoiceSelect')?.value);if(Number.isInteger(ix)&&FLYVOICE.voices[ix])u.voice=FLYVOICE.voices[ix];
