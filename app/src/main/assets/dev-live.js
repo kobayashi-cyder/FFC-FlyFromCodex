@@ -11,8 +11,9 @@ function render(){
   box=document.createElement('div');box.id='bancDevLiveBox';
   box.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0;padding:7px 9px;border:1px dashed #355a82;border-radius:10px;font-size:11px';
   box.innerHTML='<b>DEV LIVE</b><span id="bancDevLiveState"></span><button id="bancDevSync">🔄 Live更新</button><button id="bancDevReload">↻ 再読込</button><button id="bancDevRollback">↩ Rollback</button><button id="bancDevBundled">📦 APK内蔵</button><button id="bancDevDiag">診断</button><pre id="bancDevDiagOut" style="display:none;width:100%;max-height:200px;overflow:auto;white-space:pre-wrap"></pre>';
-  const host=document.getElementById('ffcThreadHub')||document.getElementById('flyAgentCard')||document.body;
-  host.insertBefore(box,host.firstChild);
+  const settings=document.getElementById('uiSettingsBody');
+  const host=settings||document.getElementById('ffcThreadHub')||document.getElementById('flyAgentCard')||document.body;
+  if(settings){const d=document.createElement('details');d.className='agentSubDetails';d.id='bancDevLiveDetails';d.innerHTML='<summary>Dev Live / Native診断</summary><div class="agentSubBody"></div>';d.querySelector('.agentSubBody').append(box);settings.prepend(d)}else host.insertBefore(box,host.firstChild);
   document.getElementById('bancDevSync').onclick=()=>{const s=document.getElementById('bancDevLiveState');if(s)s.textContent='同期中…';AndroidDev.syncAndReload()};
   document.getElementById('bancDevReload').onclick=()=>AndroidDev.reload();
   document.getElementById('bancDevRollback').onclick=()=>AndroidDev.rollbackAndReload();
