@@ -42,14 +42,27 @@ public class BridgeIntegrationTest {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             assertTrue(awaitJs(scenario,
                     "!!(window.FFC_THREADS&&window.FFC_PROXY_AGENT&&window.FFC_CAPABILITIES&&window.FFCConversationOutput)", 30000));
+
             assertTrue(awaitJs(scenario,
-                    "typeof AndroidVoice!=='undefined'&&typeof AndroidFiles!=='undefined'&&typeof AndroidResearch!=='undefined'&&typeof AndroidDev!=='undefined'", 10000));
+                    "typeof AndroidVoice!=='undefined'&&typeof AndroidFiles!=='undefined'&&typeof AndroidResearch!=='undefined'&&typeof AndroidDev!=='undefined'&&typeof AndroidDiagnostics!=='undefined'", 10000));
+
             assertTrue(awaitJs(scenario,
                     "JSON.parse(AndroidVoice.status()).threadRouter===true", 10000));
+
             assertTrue(awaitJs(scenario,
-                    "JSON.parse(AndroidDev.status()).canLive===true", 10000));
+                    "JSON.parse(AndroidDiagnostics.status()).shellVersion===61&&JSON.parse(AndroidDiagnostics.status()).bridgeSchema===3", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "JSON.parse(__BancVoice.status('wrong-token')).error==='native bridge denied'", 10000));
+
             assertTrue(awaitJs(scenario,
                     "window.FFCConversationOutput.speech({threadIds:[1],reason:'same',confidence:1},'こんにちは',window.FFCThreadCore.excelCode,{includeRoute:false})==='こんにちは'", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){var x=document.getElementById('flyVoiceSpeak');if(x)x.checked=false;return AndroidDiagnostics.simulateVoiceResult('こんにちは',0.95)===true})()", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "document.getElementById('flyVoiceTranscript')&&document.getElementById('flyVoiceTranscript').textContent==='こんにちは'", 10000));
         }
     }
 }
