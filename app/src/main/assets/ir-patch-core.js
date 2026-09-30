@@ -49,7 +49,12 @@
    if(/被写体.*そのまま|構図だけ/.test(t))ops=ops.filter(x=>['composition','aspect','size'].includes(x.path));
   }
   if(previous.kind==='DocumentIR'){
-   const m=String(request||'').match(/(?:章|セクション)[「『"]?([^」』"]{2,40})[」』"]?(?:を)?追加/);if(m)ops.push({op:'append',path:'sections',value:m[1]});
+   const raw=String(request||'');
+   const m=raw.match(/[「『"]([^」』"]{2,40})[」』"](?:章|セクション)(?:を)?追加/)||raw.match(/(?:章|セクション)[「『"]?([^」』"]{2,40})[」』"]?(?:を)?追加/);
+   if(m){
+    ops=ops.filter(x=>!['sections','title','type','format','audience','tone'].includes(x.path));
+    ops.push({op:'append',path:'sections',value:m[1]});
+   }
   }
   if(previous.kind==='CodeIR'&&/言語はそのまま|同じ言語/.test(t))ops=ops.filter(x=>x.path!=='language');
   const uniq=[];const seen=new Set();for(let i=ops.length-1;i>=0;i--){if(!seen.has(ops[i].path)){seen.add(ops[i].path);uniq.unshift(ops[i])}}
