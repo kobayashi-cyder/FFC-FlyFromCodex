@@ -1,9 +1,9 @@
 (() => {
 'use strict';
-const C=window.FFCProxyCore,P=window.FFCIrPatch,V=window.FFCCapabilityVocabulary,Agent=window.BANC888_FLY_AGENT,Caps=window.FFC_CAPABILITIES;
+const C=window.FFCProxyCore,P=window.FFCIrPatch,V=window.FFCCapabilityVocabulary,RP=window.FFCResearchPhysics,Agent=window.BANC888_FLY_AGENT,Caps=window.FFC_CAPABILITIES;
 if(!C||!P||!V||!Agent||!Caps||window.FFC_PROXY_AGENT)return;
 const KEY='FFC_PROXY_CHECKPOINT_V2',BAK=KEY+'_BAK',TMP=KEY+'_TMP';
-const policy=new C.ToolPolicy(new Set(['compute','read_state','write_state','human_output','code.write','image.write','voice.input','document.write']));
+const policy=new C.ToolPolicy(new Set(['compute','read_state','write_state','human_output','code.write','image.write','voice.input','document.write','network.read']));
 const executive=new C.Executive({policy,maxPlanSteps:16}),arbiter=new C.BodyArbiter();
 const now=()=>Date.now(),id=()=>Math.random().toString(36).slice(2,14);
 function safeParse(s,d){try{const x=JSON.parse(s);return x&&typeof x==='object'?x:d}catch{return d}}
@@ -32,7 +32,7 @@ function shouldPatch(plan,text){
  return /さっき|前の|これを|続きを|そのまま|もう少し|だけ変|修正|改善/.test(String(text||''));
 }
 function proposal(text,ctx){
- const plan=V.classify(text);if(!plan.handled)return{handled:false,plan};
+ const rp=RP?.classify?.(text);const plan=rp?.handled?rp:V.classify(text);if(!plan.handled)return{handled:false,plan};
  let ir=plan.ir,patch=null;
  if(shouldPatch(plan,text)){
   const k=artifactKind(plan.domain),last=k&&Caps.last?Caps.last(ctx.threadCode,k):null;
