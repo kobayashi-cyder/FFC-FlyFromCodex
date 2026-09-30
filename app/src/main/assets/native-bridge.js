@@ -26,7 +26,8 @@ window.AndroidDev={
  rollbackAndReload:()=>window.__BancDev?__BancDev.rollbackAndReload(token):false
 };
 window.AndroidDiagnostics={
- status:()=>window.__BancDiagnostics?__BancDiagnostics.status(token):denied()
+ status:()=>window.__BancDiagnostics?__BancDiagnostics.status(token):denied(),
+ simulateVoiceResult:(text,confidence)=>window.__BancDiagnostics?__BancDiagnostics.simulateVoiceResult(token,String(text||''),Number(confidence||0)):false
 };
 window.__BANC_NATIVE_WRAPPED=true;
 })();
