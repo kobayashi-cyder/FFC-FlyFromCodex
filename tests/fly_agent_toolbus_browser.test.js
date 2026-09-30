@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('assert');
+const {FlyAgentToolBus,InvalidToolRequest}=require('../tools/fly_agent_toolbus_browser.js');
+const bus=new FlyAgentToolBus({graph:{a:['b','c'],b:['d']}});
+assert.strictEqual(bus.execute('compute.math',{expression:'2+3*4'}).value,14);
+const first=bus.execute('memory.put',{key:'x',value:1},{idempotencyKey:'same'});
+const second=bus.execute('memory.put',{key:'x',value:999},{idempotencyKey:'same'});
+assert.strictEqual(!!first.replayed,false);
+assert.strictEqual(second.replayed,true);
+assert.strictEqual(bus.execute('memory.get',{key:'x'}).value,1);
+assert.strictEqual(bus.execute('memory.delete',{key:'x'}).value.existed,true);
+assert.deepStrictEqual(bus.execute('graph.hops',{node:'a',depth:2}).value.layers,[['a'],['b','c'],['d']]);
+assert.throws(()=>bus.execute('graph.hops',{node:'a',depth:4}),InvalidToolRequest);
+assert.strictEqual(bus.execute('bridge.propose',{action:'screen.click'}).value.execution,'NOT_PERFORMED');
+console.log('fly_agent_toolbus_browser.test.js: PASS');
