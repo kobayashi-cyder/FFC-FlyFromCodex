@@ -1,0 +1,73 @@
+name: Build BANC888 v1.9 APK
+
+on:
+  push:
+    branches:
+      - build/banc888-v1.9-apk
+    paths:
+      - 'apkbuild2/**'
+      - '.github/workflows/build-banc888-v1.9-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+
+      - name: Reconstruct exact Android source
+        shell: bash
+        run: |
+          cat apkbuild2/source.b64.part* | base64 --decode > /tmp/BANC888_Android_v1.9_source.zip
+          echo "23fb426d2d873ec8aa45d66b7e29d1e7a7159fc9b4f6103e8dbfb180b33a1715  /tmp/BANC888_Android_v1.9_source.zip" | sha256sum -c -
+          mkdir -p /tmp/banc888-src
+          unzip -q /tmp/BANC888_Android_v1.9_source.zip -d /tmp/banc888-src
+          test -f /tmp/banc888-src/app/src/main/assets/index.html
+          test -f /tmp/banc888-src/app/src/main/java/jp/banc888/offline/MainActivity.java
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35
+        shell: bash
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build debug APK
+        working-directory: /tmp/banc888-src
+        shell: bash
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: Collect APK and checksum
+        shell: bash
+        run: |
+          cp /tmp/banc888-src/app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/BANC888-v1.9-debug.apk"
+          cd "$GITHUB_WORKSPACE"
+          sha256sum BANC888-v1.9-debug.apk > BANC888-v1.9-debug.apk.sha256
+          ls -lh BANC888-v1.9-debug.apk
+          cat BANC888-v1.9-debug.apk.sha256
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BANC888-v1.9-debug-apk
+          path: |
+            BANC888-v1.9-debug.apk
+            BANC888-v1.9-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
