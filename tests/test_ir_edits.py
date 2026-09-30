@@ -280,3 +280,64 @@ def test_ir_capability_can_be_revoked(tmp_path):
     controller.install(bus)
     result = bus.execute("ir.create", {"kind": "state", "data": {"x": 1}})
     assert result.status == ResultStatus.BLOCKED
+
+
+def test_scale_classifier_counts_large_replaced_target(tmp_path):
+    store = IRStore(tmp_path / "ir.json")
+    large = {"objects": ["x" * 100_000]}
+    doc = store.create("scene", large)
+    with pytest.raises(IRValidationError, match="too small"):
+        store.apply(transaction(
+            doc.id,
+            [{"op": "replace", "path": "/objects", "value": None}],
+            "MICRO",
+            0,
+            "erase-large-target",
+        ))
+    preview_txn = transaction(
+        doc.id,
+        [{"op": "replace", "path": "/objects", "value": None}],
+        "GLOBAL",
+        0,
+        "erase-large-target-global",
+    )
+    assert store.preview(preview_txn)["required_scale"] == "GLOBAL"
+
+
+def test_transaction_id_survives_bounded_undo_history_and_restart(tmp_path):
+    path = tmp_path / "ir.json"
+    store = IRStore(path, history_limit=3)
+    doc = store.create("state", {"items": [], "counter": 0})
+
+    original = IRTransaction(
+        document_id=doc.id,
+        patches=[IRPatch.from_dict({"op": "append", "path": "/items", "value": "once"})],
+        scale=EditScale.LOCAL,
+        expected_version=None,
+        id="durable-id",
+    )
+    first = store.apply(original)
+    assert first.transaction_id == "durable-id"
+
+    for i in range(6):
+        current = store.get(doc.id)
+        store.apply(IRTransaction(
+            document_id=doc.id,
+            patches=[IRPatch.from_dict({"op": "replace", "path": "/counter", "value": i + 1})],
+            scale=EditScale.MICRO,
+            expected_version=current.version,
+            id=f"counter-{i}",
+        ))
+
+    assert all(row["transaction_id"] != "durable-id" for row in store.history_summaries(doc.id))
+    version_before_retry = store.get(doc.id).version
+    repeated = store.apply(original)
+    assert repeated.transaction_id == "durable-id"
+    assert store.get(doc.id).version == version_before_retry
+    assert store.get(doc.id).data["items"] == ["once"]
+
+    reopened = IRStore(path, history_limit=3)
+    version_before_restart_retry = reopened.get(doc.id).version
+    reopened.apply(original)
+    assert reopened.get(doc.id).version == version_before_restart_retry
+    assert reopened.get(doc.id).data["items"] == ["once"]
