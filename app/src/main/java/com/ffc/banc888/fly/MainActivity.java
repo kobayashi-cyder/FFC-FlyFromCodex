@@ -3,6 +3,7 @@ package com.ffc.banc888.fly;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.ClipData;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -18,17 +19,22 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class MainActivity extends Activity {
     private static final int REQ_MIC = 888;
@@ -60,6 +66,7 @@ public class MainActivity extends Activity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         webView.setBackgroundColor(0xff050a13);
         webView.addJavascriptInterface(new AndroidVoiceBridge(), "AndroidVoice");
+        webView.addJavascriptInterface(new AndroidFilesBridge(), "AndroidFiles");
 
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
@@ -84,6 +91,8 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 injectAsset("thread-router-core.js");
+                injectAsset("capability-vocabulary-core.js");
+                injectAsset("capability-tools.js");
                 injectAsset("thread-router.js");
                 view.postDelayed(() -> callJsStatus(), 250);
             }
@@ -261,6 +270,114 @@ public class MainActivity extends Activity {
         }
     }
 
+
+    private static String xmlEscape(String s) {
+        return (s == null ? "" : s)
+                .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&apos;");
+    }
+
+    private static String safeFileName(String name, String fallback, String ext) {
+        String n = (name == null || name.trim().isEmpty()) ? fallback : name.trim();
+        n = n.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_").replace("..", "_");
+        if (!n.toLowerCase(Locale.ROOT).endsWith("." + ext)) n += "." + ext;
+        return n;
+    }
+
+    private static void zipText(ZipOutputStream zip, String path, String text) throws Exception {
+        ZipEntry e = new ZipEntry(path);
+        zip.putNextEntry(e);
+        zip.write(text.getBytes(StandardCharsets.UTF_8));
+        zip.closeEntry();
+    }
+
+    private void writeDocx(File file, String title, String body) throws Exception {
+        String types = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+                + "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">"
+                + "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>"
+                + "<Default Extension=\"xml\" ContentType=\"application/xml\"/>"
+                + "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>"
+                + "</Types>";
+        String rels = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+                + "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
+                + "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/>"
+                + "</Relationships>";
+        StringBuilder doc = new StringBuilder();
+        doc.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>")
+                .append("<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>");
+        if (title != null && !title.trim().isEmpty()) {
+            doc.append("<w:p><w:r><w:rPr><w:b/><w:sz w:val=\"32\"/></w:rPr><w:t xml:space=\"preserve\">")
+                    .append(xmlEscape(title.trim())).append("</w:t></w:r></w:p>");
+        }
+        String[] lines = (body == null ? "" : body).replace("\r\n", "\n").replace('\r', '\n').split("\n", -1);
+        for (String line : lines) {
+            if (line.isEmpty()) doc.append("<w:p/>");
+            else doc.append("<w:p><w:r><w:t xml:space=\"preserve\">").append(xmlEscape(line)).append("</w:t></w:r></w:p>");
+        }
+        doc.append("<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr>")
+                .append("</w:body></w:document>");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(file))) {
+            zipText(zip, "[Content_Types].xml", types);
+            zipText(zip, "_rels/.rels", rels);
+            zipText(zip, "word/document.xml", doc.toString());
+        }
+    }
+
+    private void shareFile(File file, String mime) {
+        runOnUiThread(() -> {
+            try {
+                Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".files", file);
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType(mime);
+                send.putExtra(Intent.EXTRA_STREAM, uri);
+                send.setClipData(ClipData.newRawUri(file.getName(), uri));
+                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(send, "BANC888 から共有"));
+            } catch (Exception e) {
+                Toast.makeText(this, "Share failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    public class AndroidFilesBridge {
+        @JavascriptInterface
+        public String createDocx(String title, String body, String filename) {
+            JSONObject o = new JSONObject();
+            try {
+                File dir = new File(getCacheDir(), "exports");
+                if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("exports directory");
+                File f = new File(dir, safeFileName(filename, "BANC888_document", "docx"));
+                writeDocx(f, title, body);
+                o.put("ok", true); o.put("name", f.getName()); o.put("bytes", f.length()); o.put("shared", true);
+                shareFile(f, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+            } catch (Exception e) {
+                try { o.put("ok", false); o.put("error", e.getMessage() == null ? e.toString() : e.getMessage()); } catch (Exception ignored) {}
+            }
+            return o.toString();
+        }
+
+        @JavascriptInterface
+        public String shareText(String text, String filename, String mime) {
+            JSONObject o = new JSONObject();
+            try {
+                File dir = new File(getCacheDir(), "exports");
+                if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("exports directory");
+                String ext = "txt";
+                int dot = filename == null ? -1 : filename.lastIndexOf('.');
+                if (dot >= 0 && dot < filename.length() - 1) ext = filename.substring(dot + 1).replaceAll("[^A-Za-z0-9]", "");
+                File f = new File(dir, safeFileName(filename, "BANC888_export", ext.isEmpty() ? "txt" : ext));
+                try (FileOutputStream out = new FileOutputStream(f)) {
+                    out.write((text == null ? "" : text).getBytes(StandardCharsets.UTF_8));
+                }
+                o.put("ok", true); o.put("name", f.getName()); o.put("bytes", f.length()); o.put("shared", true);
+                shareFile(f, mime == null || mime.isEmpty() ? "text/plain" : mime);
+            } catch (Exception e) {
+                try { o.put("ok", false); o.put("error", e.getMessage() == null ? e.toString() : e.getMessage()); } catch (Exception ignored) {}
+            }
+            return o.toString();
+        }
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -277,6 +394,7 @@ public class MainActivity extends Activity {
         if (tts != null) { tts.stop(); tts.shutdown(); }
         if (webView != null) {
             webView.removeJavascriptInterface("AndroidVoice");
+            webView.removeJavascriptInterface("AndroidFiles");
             webView.destroy();
         }
         super.onDestroy();

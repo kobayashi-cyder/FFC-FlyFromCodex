@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict');
+const V=require('../app/src/main/assets/capability-vocabulary-core.js');
+let x=V.classify('PythonでCSVを読むコードを書いて');
+assert.equal(x.tool,'code.generate'); assert.equal(x.args.language,'python');
+x=V.classify('このJavaScriptコードのバグを修正して');
+assert.equal(x.tool,'code.revise');
+x=V.classify('1024x1024で猫の画像を生成して');
+assert.equal(x.tool,'image.generate'); assert.equal(x.args.size,'1024x1024');
+x=V.classify('マイクの権限状態を診断して');
+assert.equal(x.tool,'voice.status.native');
+x=V.classify('音声入力を開始して');
+assert.equal(x.tool,'voice.listen');
+x=V.classify('Wordの仕様書をDOCXで作って');
+assert.equal(x.tool,'document.create.docx');
+x=V.classify('普通に雑談しよう');
+assert.equal(x.handled,false);
+console.log('capability-vocabulary: PASS');
