@@ -1001,7 +1001,7 @@ DNp65の出力で一番強い接続は？
     <div class="row">
       <label class="pill"><input id="flyVoiceAutoSend" type="checkbox" checked> 認識後に自動送信</label>
       <label class="pill"><input id="flyVoiceSpeak" type="checkbox" checked> ハエが音声で返答</label>
-      <label class="pill"><input id="flyVoiceLoop" type="checkbox"> 返答後に再聴取</label>
+      <label class="pill"><input id="flyVoiceLoop" type="checkbox" checked> 返答後に再聴取</label>
     </div>
     <div class="row">
       <label>速度 <input id="flyVoiceRate" type="range" min="0.6" max="1.6" step="0.05" value="1"></label>
@@ -1009,7 +1009,7 @@ DNp65の出力で一番強い接続は？
     </div>
     <div id="flyVoiceStatus" class="statusline"><span id="flyVoiceLed" class="flyvoiceled" data-state="idle"></span><span id="flyVoiceStatusText">耳の診断待ち</span></div>
     <pre id="flyVoiceDiag" class="expmono" style="margin-top:8px;max-height:220px;overflow:auto">診断未実行</pre>
-    <div class="muted tiny" style="margin-top:6px">「耳を診断・権限取得」は getUserMedia({audio:true}) でページのマイク権限を明示的に要求し、その後 SpeechRecognition を開始できるか確認します。埋め込み表示・WebView・ブラウザ設定側で禁止されている場合は原因をここに表示します。</div>
+    <div class="muted tiny" style="margin-top:6px">APKではAndroidネイティブ音声認識を優先します。「耳を診断・権限取得」でマイク権限と認識/TTS状態を確認できます。返答後の再聴取は初期ONです。</div>
     <h3 style="margin-top:10px">聞き取った内容</h3>
     <div id="flyVoiceTranscript" class="flytranscript">—</div>
   </section>
