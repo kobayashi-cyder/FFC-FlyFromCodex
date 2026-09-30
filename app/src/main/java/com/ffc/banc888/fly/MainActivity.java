@@ -96,6 +96,7 @@ public class MainActivity extends Activity {
                 injectAsset("proxy-agent-core.js");
                 injectAsset("capability-tools.js");
                 injectAsset("proxy-agent.js");
+                injectAsset("conversation-output-core.js");
                 injectAsset("thread-router.js");
                 view.postDelayed(() -> callJsStatus(), 250);
             }

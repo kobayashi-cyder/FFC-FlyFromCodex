@@ -12,6 +12,7 @@ on:
       - "tests/ir_patch_core.test.cjs"
       - "tests/proxy_agent_core.test.cjs"
       - "tests/proxy_apk_integration.test.cjs"
+      - "tests/conversation_output_core.test.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
 
@@ -58,6 +59,7 @@ jobs:
           node --check app/src/main/assets/proxy-agent-core.js
           node --check app/src/main/assets/capability-tools.js
           node --check app/src/main/assets/proxy-agent.js
+          node --check app/src/main/assets/conversation-output-core.js
           node --check app/src/main/assets/thread-router.js
           node tests/thread_router_core.test.cjs
           node tests/capability_vocabulary.test.cjs
@@ -65,6 +67,7 @@ jobs:
           node tests/ir_patch_core.test.cjs
           node tests/proxy_agent_core.test.cjs
           node tests/proxy_apk_integration.test.cjs
+          node tests/conversation_output_core.test.cjs
 
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug
@@ -77,7 +80,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v5.6-proxy-executive-debug
+          name: BANC888-v5.7-route-plus-reply-debug
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/debug/app-debug.apk.sha256

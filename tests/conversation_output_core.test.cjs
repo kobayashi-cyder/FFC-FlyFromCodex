@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const O=require('../app/src/main/assets/conversation-output-core.js');
+const excel=n=>{let s='';while(n>0){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s};
+const r={threadIds:[1],reason:'context',confidence:.78};
+let x=O.display(r,'こんにちは。今日は何を進めますか？',excel);
+assert.match(x.route.label,/Routing → A/);
+assert.match(x.combined,/こんにちは/);
+assert.equal(O.speech(r,'こんにちは。',excel),'スレッドA。こんにちは。');
+assert.equal(O.isRouteOnly('VOICE → A · context · confidence 78%'),true);
+assert.equal(O.isRouteOnly('こんにちは。何を進めますか？'),false);
+console.log('conversation-output-core: PASS');
