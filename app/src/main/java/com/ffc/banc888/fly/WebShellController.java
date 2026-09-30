@@ -60,6 +60,7 @@ final class WebShellController {
     private volatile int rendererUnresponsiveCount = 0;
     private volatile long rendererStateChangedAt = 0L;
     private NavigationListener navigationListener;
+    private volatile boolean webMessageBridgeAvailable = false;
 
     WebShellController(Activity activity, WebView webView, DevLiveManager devLive, NativeSession session) {
         this.activity = activity;
@@ -172,9 +173,12 @@ final class WebShellController {
                 if (!trustedMainFrame) return;
 
                 String token = session.rotate();
+                long epoch = session.epoch();
                 view.evaluateJavascript("window.__BANC_NATIVE_TOKEN=" + JSONObject.quote(token)
+                        + ";window.__BANC_NATIVE_EPOCH=" + epoch
                         + ";window.__BANC_NATIVE_WRAPPED=false;", null);
                 for (String name : AppConfig.RUNTIME_SCRIPTS) injectAsset(name);
+                view.postDelayed(() -> emitNativeEvent("native.session", sessionPayload()), 220);
 
                 view.postDelayed(() -> eval(
                         "window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onStatus"
@@ -231,6 +235,7 @@ final class WebShellController {
                 rendererUnresponsive = false;
                 rendererStateChangedAt = SystemClock.elapsedRealtime();
                 Log.i(TAG, "renderer responsive");
+                emitNativeEvent("renderer.state", rendererPayload("responsive"));
             }
 
             @Override
@@ -239,6 +244,7 @@ final class WebShellController {
                 rendererUnresponsiveCount++;
                 rendererStateChangedAt = SystemClock.elapsedRealtime();
                 Log.w(TAG, "renderer unresponsive count=" + rendererUnresponsiveCount);
+                emitNativeEvent("renderer.state", rendererPayload("unresponsive"));
             }
         });
     }
@@ -285,9 +291,11 @@ final class WebShellController {
 
     private void installMessageBridge() {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            webMessageBridgeAvailable = false;
             Log.w(TAG, "WEB_MESSAGE_LISTENER unavailable; token-gated legacy bridges remain");
             return;
         }
+        webMessageBridgeAvailable = true;
 
         WebViewCompat.addWebMessageListener(
                 webView,
@@ -305,14 +313,26 @@ final class WebShellController {
                         JSONObject req = new JSONObject(raw);
                         String id = req.optString("id", "");
                         String type = req.optString("type", "");
+                        long expectedEpoch = session.epoch();
+                        long requestEpoch = req.optLong("epoch", expectedEpoch);
                         if (!id.isEmpty()) reply.put("id", id);
                         reply.put("type", type);
+                        reply.put("epoch", expectedEpoch);
+                        if (req.has("epoch") && requestEpoch != expectedEpoch) {
+                            reply.put("ok", false);
+                            reply.put("error", "stale-native-session");
+                            replyProxy.postMessage(reply.toString());
+                            return;
+                        }
                         reply.put("ok", true);
 
                         switch (type) {
                             case "ping":
                             case "runtime.status":
                                 reply.put("status", new JSONObject(diagnosticsJson()));
+                                break;
+                            case "runtime.capabilities":
+                                reply.put("capabilities", new JSONObject(capabilitiesJson()));
                                 break;
                             case "runtime.ready":
                                 runtimeReady = true;
@@ -360,6 +380,65 @@ final class WebShellController {
                     catch (Throwable e) { Log.w(TAG, "WebMessage reply failed", e); }
                 }
         );
+    }
+
+    private JSONObject sessionPayload() {
+        JSONObject o = new JSONObject();
+        try {
+            o.put("epoch", session.epoch());
+            o.put("shellVersion", AppConfig.SHELL_VERSION);
+            o.put("runtimeVersion", AppConfig.WEB_RUNTIME_VERSION);
+            o.put("bridgeSchema", AppConfig.BRIDGE_SCHEMA);
+            o.put("sessionEpoch", session.epoch());
+            o.put("webMessageBridge", webMessageBridgeAvailable);
+        } catch (Exception ignored) {}
+        return o;
+    }
+
+    private JSONObject rendererPayload(String state) {
+        JSONObject o = new JSONObject();
+        try {
+            o.put("state", state);
+            o.put("unresponsive", rendererUnresponsive);
+            o.put("count", rendererUnresponsiveCount);
+            o.put("changedAtElapsedMs", rendererStateChangedAt);
+        } catch (Exception ignored) {}
+        return o;
+    }
+
+    private void emitNativeEvent(String type, JSONObject data) {
+        if (!trustedMainFrame) return;
+        JSONObject envelope = new JSONObject();
+        try {
+            envelope.put("type", type == null ? "" : type);
+            envelope.put("epoch", session.epoch());
+            envelope.put("nativePush", true);
+            envelope.put("tsElapsedMs", SystemClock.elapsedRealtime());
+            if (data != null) envelope.put("data", data);
+        } catch (Exception ignored) {
+            return;
+        }
+        eval("window.AndroidRuntime&&window.AndroidRuntime.__nativeDispatch"
+                + "&&window.AndroidRuntime.__nativeDispatch("
+                + JSONObject.quote(envelope.toString()) + ")");
+    }
+
+    String capabilitiesJson() {
+        JSONObject o = new JSONObject();
+        try {
+            o.put("ok", true);
+            o.put("epoch", session.epoch());
+            o.put("webMessage", webMessageBridgeAvailable);
+            o.put("legacyTokenBridges", true);
+            o.put("nativePushEvents", true);
+            o.put("maxMessageBytes", 65_536);
+            o.put("voice", true);
+            o.put("files", true);
+            o.put("research", true);
+            o.put("devLive", true);
+            o.put("diagnostics", true);
+        } catch (Exception ignored) {}
+        return o.toString();
     }
 
     private void requestRecovery(String reason) {
