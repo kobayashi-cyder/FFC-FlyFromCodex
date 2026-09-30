@@ -1,0 +1,24 @@
+{
+  "contract": "fly-agent-toolbus-core",
+  "version": "0.2",
+  "selection": {
+    "activation": "(excitation - inhibition) * confidence",
+    "min_activation": 0.05,
+    "tie_break": ["activation_desc", "confidence_desc", "tool_name_asc"]
+  },
+  "idempotency": {
+    "scope": "tool_name + idempotency_key",
+    "replay_flag": "replayed",
+    "cache_result": true
+  },
+  "tools": [
+    {"name":"bridge.propose","capability":"bridge.propose","side_effect":"external-proposal","required_args":["action"],"optional_args":["target","parameters","reason"]},
+    {"name":"compute.math","capability":"compute","side_effect":"none","required_args":["expression"],"optional_args":[]},
+    {"name":"graph.hops","capability":"graph.read","side_effect":"none","required_args":["node","depth"],"optional_args":["limit"]},
+    {"name":"graph.neighbors","capability":"graph.read","side_effect":"none","required_args":["node"],"optional_args":["limit"]},
+    {"name":"memory.delete","capability":"memory.write","side_effect":"local","required_args":["key"],"optional_args":[]},
+    {"name":"memory.get","capability":"memory.read","side_effect":"none","required_args":["key"],"optional_args":["default"]},
+    {"name":"memory.put","capability":"memory.write","side_effect":"local","required_args":["key","value"],"optional_args":[]},
+    {"name":"system.manifest","capability":"compute","side_effect":"none","required_args":[],"optional_args":[]}
+  ]
+}
