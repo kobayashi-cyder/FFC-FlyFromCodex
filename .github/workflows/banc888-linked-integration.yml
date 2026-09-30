@@ -44,7 +44,13 @@ jobs:
           pulseaudio --check || pulseaudio --start --exit-idle-time=-1
           PULSE_SOCKET="$(pactl info | sed -n 's/^Server String: //p')"
           test -n "$PULSE_SOCKET"
-          echo "PULSE_SERVER=$PULSE_SOCKET" >> "$GITHUB_ENV"
+          case "$PULSE_SOCKET" in
+            unix:*) PULSE_SERVER_VALUE="$PULSE_SOCKET" ;;
+            /*) PULSE_SERVER_VALUE="unix:$PULSE_SOCKET" ;;
+            *) PULSE_SERVER_VALUE="$PULSE_SOCKET" ;;
+          esac
+          echo "PULSE_SERVER=$PULSE_SERVER_VALUE" >> "$GITHUB_ENV"
+          echo "XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" >> "$GITHUB_ENV"
           printf '%s\n' \
             'pcm.!default {' \
             '  type pulse' \
@@ -52,9 +58,7 @@ jobs:
             'ctl.!default {' \
             '  type pulse' \
             '}' > "$HOME/.asoundrc"
-          echo "QEMU_AUDIO_DRV=alsa" >> "$GITHUB_ENV"
-          echo "QEMU_AUDIO_IN_DRV=alsa" >> "$GITHUB_ENV"
-          echo "QEMU_AUDIO_OUT_DRV=alsa" >> "$GITHUB_ENV"
+          echo "QEMU_AUDIO_DRV=pa" >> "$GITHUB_ENV"
           pactl load-module module-null-sink sink_name=ci_mic_sink sink_properties=device.description=CI_Microphone
           pactl set-default-source ci_mic_sink.monitor
           espeak-ng -v ja -s 125 -a 180 -w /tmp/ci-mic-speech.wav "こんにちは。これは おんせい てすと です。"
