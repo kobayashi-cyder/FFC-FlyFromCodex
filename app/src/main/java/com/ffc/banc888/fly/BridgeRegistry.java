@@ -3,11 +3,15 @@ package com.ffc.banc888.fly;
 import android.app.Activity;
 import android.content.pm.PackageInfo;
 import android.os.Build;
+import android.os.Looper;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
 import org.json.JSONObject;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -71,6 +75,23 @@ final class BridgeRegistry {
         return "{\"ok\":false,\"error\":\"native bridge denied\"}";
     }
 
+    private boolean callUiBoolean(BooleanSupplier action) {
+        if (Looper.myLooper() == Looper.getMainLooper()) return action.getAsBoolean();
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicBoolean result = new AtomicBoolean(false);
+        activity.runOnUiThread(() -> {
+            try { result.set(action.getAsBoolean()); }
+            finally { latch.countDown(); }
+        });
+        try {
+            if (!latch.await(5, TimeUnit.SECONDS)) return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+        return result.get();
+    }
+
     public final class VoiceBridge {
         @JavascriptInterface public String status(String token) {
             return allow(token) ? speech.statusJson() : denied();
@@ -82,18 +103,18 @@ final class BridgeRegistry {
         }
         @JavascriptInterface public boolean startListening(String token, String language) {
             if (!allow(token)) return false;
-            activity.runOnUiThread(() -> speech.startListening(language));
-            return true;
+            return callUiBoolean(() -> speech.startListening(language));
         }
         @JavascriptInterface public boolean stopListening(String token) {
             if (!allow(token)) return false;
-            activity.runOnUiThread(speech::stopListening);
-            return true;
+            return callUiBoolean(() -> {
+                speech.stopListening();
+                return true;
+            });
         }
         @JavascriptInterface public boolean speak(String token, String text, String language, double rate, double pitch) {
             if (!allow(token)) return false;
-            activity.runOnUiThread(() -> speech.speak(text, language, rate, pitch));
-            return true;
+            return callUiBoolean(() -> speech.speak(text, language, rate, pitch));
         }
     }
 
@@ -144,6 +165,11 @@ final class BridgeRegistry {
     }
 
     public final class DiagnosticsBridge {
+        @JavascriptInterface public String probeMicrophone(String token) {
+            if (!allow(token)) return denied();
+            return speech.probeMicrophoneJson();
+        }
+
         @JavascriptInterface public boolean simulateVoiceResult(String token, String text, double confidence) {
             if (!allow(token)) return false;
             boolean debug = (activity.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
