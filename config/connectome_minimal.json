@@ -1,0 +1,22 @@
+{
+  "ticks": 4,
+  "leak": 0.30,
+  "nodes": [
+    {"id": "s_danger", "kind": "sensory", "channel": "danger"},
+    {"id": "s_novelty", "kind": "sensory", "channel": "novelty"},
+    {"id": "s_command", "kind": "sensory", "channel": "human_command"},
+    {"id": "i_escape", "kind": "interneuron", "bias": -0.05},
+    {"id": "i_orient", "kind": "interneuron", "bias": 0.05},
+    {"id": "m_evade", "kind": "motor", "action": "evade", "bias": -0.10},
+    {"id": "m_inspect", "kind": "motor", "action": "inspect", "bias": -0.05},
+    {"id": "m_delegate", "kind": "motor", "action": "delegate", "bias": 0.00}
+  ],
+  "edges": [
+    {"src": "s_danger", "dst": "i_escape", "weight": 2.4},
+    {"src": "i_escape", "dst": "m_evade", "weight": 2.2},
+    {"src": "s_novelty", "dst": "i_orient", "weight": 1.4},
+    {"src": "i_orient", "dst": "m_inspect", "weight": 1.6},
+    {"src": "s_command", "dst": "m_delegate", "weight": 2.3},
+    {"src": "s_danger", "dst": "m_delegate", "weight": -1.2}
+  ]
+}

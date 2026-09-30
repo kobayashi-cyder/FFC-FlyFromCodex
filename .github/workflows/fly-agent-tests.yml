@@ -1,0 +1,28 @@
+name: fly-agent-tests
+
+on:
+  push:
+    paths:
+      - 'fly_agent/**'
+      - 'config/connectome_minimal.json'
+      - 'tools/connectome_project.py'
+      - 'tests/test_fly_agent.py'
+      - '.github/workflows/fly-agent-tests.yml'
+  pull_request:
+    paths:
+      - 'fly_agent/**'
+      - 'config/connectome_minimal.json'
+      - 'tools/connectome_project.py'
+      - 'tests/test_fly_agent.py'
+      - '.github/workflows/fly-agent-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: python -m pip install --upgrade pip pytest
+      - run: python -m pytest -q tests/test_fly_agent.py

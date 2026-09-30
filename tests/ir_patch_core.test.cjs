@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const P=require('../app/src/main/assets/ir-patch-core.js');
+const V=require('../app/src/main/assets/capability-vocabulary-core.js');
+let ir=V.buildImageIR('猫を写真風、16:9で生成');
+let r=P.apply(ir,[{op:'set',path:'aspect',value:'1:1'}],'micro');
+assert.equal(r.ir.aspect,'1:1');assert.equal(r.ir.kind,'ImageIR');assert.equal(r.changed.length,1);
+assert.throws(()=>P.apply(ir,[{op:'set',path:'kind',value:'CodeIR'}],'micro'));
+r=P.infer(ir,'もっと明るくして',V,'meso');assert.ok(r.ir.lighting.includes('brighter'));
+let d=V.buildDocumentIR('仕様書をDOCXで作る');r=P.infer(d,'「運用監視」章を追加',V,'meso');assert.ok(r.ir.sections.includes('運用監視'));
+console.log('ir-patch-core: PASS');

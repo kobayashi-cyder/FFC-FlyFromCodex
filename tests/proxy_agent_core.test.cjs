@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const C=require('../app/src/main/assets/proxy-agent-core.js');
+let p=new C.ToolPolicy(new Set());assert.equal(p.allows('compute'),false);
+p=new C.ToolPolicy();assert.equal(p.allows('network'),false);assert.equal(p.allows('device'),false);assert.equal(p.allows('code.write'),true);
+const a=new C.BodyArbiter(),x=a.acquire('speaker','A');assert.ok(x);assert.equal(a.acquire('speaker','B'),null);const x2=a.acquire('speaker','A');assert.equal(x2.leaseId,x.leaseId);a.release(x2);a.release(x);assert.ok(a.acquire('speaker','B'));
+const ex=new C.Executive({policy:new C.ToolPolicy(new Set(['compute']))});
+let v=ex.evaluate({steps:[{tool:'x'}]},n=>({capability:'compute'}));assert.equal(v.accepted,true);
+v=ex.evaluate({steps:[{tool:'net'}]},n=>({capability:'network'}));assert.equal(v.status,C.Result.BLOCKED);
+let gs=C.recoverGoals([{id:1,status:C.Status.RUNNING}]);assert.equal(gs[0].status,C.Status.QUEUED);
+const g=C.nextGoal([{id:1,status:'queued',priority:50,threadId:'A',createdAt:1},{id:2,status:'queued',priority:50,threadId:'B',createdAt:2}],'A');assert.equal(g.id,2);
+console.log('proxy-agent-core: PASS');
