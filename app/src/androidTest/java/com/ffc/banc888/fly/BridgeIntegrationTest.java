@@ -72,11 +72,14 @@ public class BridgeIntegrationTest {
 
             assertTrue(awaitJs(scenario,
                     "(function(){"
-                            + "window.__bancListenReady=false;window.__bancListenError='';"
+                            + "window.__bancListenReady=false;window.__bancListenError='';window.__bancRealTranscript='';"
+                            + "var auto=document.getElementById('flyVoiceAutoSend');if(auto)auto.checked=false;"
+                            + "var loop=document.getElementById('flyVoiceLoop');if(loop)loop.checked=false;"
                             + "var n=window.BANC888_NATIVE_VOICE;"
-                            + "var ready=n.onListening,err=n.onError;"
+                            + "var ready=n.onListening,err=n.onError,res=n.onResult;"
                             + "n.onListening=function(){window.__bancListenReady=true;if(ready)return ready.apply(this,arguments)};"
                             + "n.onError=function(code,msg){window.__bancListenError=String(code||'')+':'+String(msg||'');if(err)return err.apply(this,arguments)};"
+                            + "n.onResult=function(text){window.__bancRealTranscript=String(text||'').trim();if(res)return res.apply(this,arguments)};"
                             + "return AndroidVoice.startListening('ja-JP')===true"
                             + "})()", 5000));
 
@@ -84,10 +87,13 @@ public class BridgeIntegrationTest {
                     "window.__bancListenReady===true", 12000));
 
             assertTrue(awaitJs(scenario,
+                    "window.__bancRealTranscript.length>0", 25000));
+
+            assertTrue(awaitJs(scenario,
                     "window.__bancListenError===''", 2000));
 
             assertTrue(awaitJs(scenario,
-                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.recognizerReadyAtMs>0&&(s.recognizerBackend==='on-device'||s.recognizerBackend==='system')})()", 5000));
+                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.recognizerReadyAtMs>0&&s.recognitionResultCount>0&&(s.recognizerBackend==='on-device'||s.recognizerBackend==='system')})()", 5000));
 
             assertTrue(awaitJs(scenario,
                     "AndroidVoice.stopListening()===true", 5000));
