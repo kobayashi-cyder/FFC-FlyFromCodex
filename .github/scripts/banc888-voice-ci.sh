@@ -4,6 +4,9 @@ set -euo pipefail
 adb emu avd hostmicon
 pactl info
 adb logcat -c
+rm -f /tmp/device-logcat.txt /tmp/ci-audio-sync.log
+adb logcat -v threadtime > /tmp/device-logcat.txt 2>&1 &
+DEVICE_LOGCAT_PID=$!
 
 rm -f /tmp/ci-audio-sync.log
 (
@@ -34,8 +37,14 @@ set -e
 
 kill "$AUDIO_SYNC_PID" 2>/dev/null || true
 wait "$AUDIO_SYNC_PID" 2>/dev/null || true
+kill "$DEVICE_LOGCAT_PID" 2>/dev/null || true
+wait "$DEVICE_LOGCAT_PID" 2>/dev/null || true
 
 echo "=== audio sync log ==="
 cat /tmp/ci-audio-sync.log || true
+echo "=== device crash / speech log ==="
+grep -E -n -C 12 'FATAL EXCEPTION|AndroidRuntime|Process: com\.ffc\.banc888\.fly|BANC_VOICE_TEST|SpeechRecognizer|speech-activity-timeout|TransactionTooLargeException' /tmp/device-logcat.txt || true
+echo "=== instrumentation XML ==="
+find app/build -type f \( -name '*.xml' -o -name '*.txt' \) -path '*androidTest*' -print -exec sh -c 'echo "--- $1"; tail -n 160 "$1"' _ {} \; 2>/dev/null || true
 
 exit "$STATUS"
