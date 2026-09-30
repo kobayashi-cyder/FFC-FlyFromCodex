@@ -61,6 +61,17 @@ public class BridgeIntegrationTest {
                     "window.__bancRuntimePingOk===true", 10000));
 
             assertTrue(awaitJs(scenario,
+                    "AndroidRuntime.transport().mode==='webmessage'&&AndroidRuntime.transport().epoch>=1", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){window.__bancRuntimeCapsOk=false;AndroidRuntime.capabilities().then(function(r){window.__bancRuntimeCapsOk=!!(r&&r.ok&&r.capabilities&&r.capabilities.nativePushEvents&&r.epoch>=1)});return true})()", 10000));
+            assertTrue(awaitJs(scenario,
+                    "window.__bancRuntimeCapsOk===true", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "document.getElementById('uiSettingsBody')&&document.getElementById('bancWebRuntimePanel')&&document.getElementById('uiSettingsBody').contains(document.getElementById('bancWebRuntimePanel'))", 10000));
+
+            assertTrue(awaitJs(scenario,
                     "window.FFCConversationOutput.speech({threadIds:[1],reason:'same',confidence:1},'こんにちは',window.FFCThreadCore.excelCode,{includeRoute:false})==='こんにちは'", 10000));
 
             assertTrue(awaitJs(scenario,
