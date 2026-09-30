@@ -3,7 +3,13 @@ name: BANC888 Domain Pack Evaluation
 on:
   push:
     branches:
-      - banc888-domain-eval-v3-1
+      - main
+      - "banc888-*"
+    paths:
+      - "tools/banc888_domain_pack.py"
+      - "tests/test_banc888_domain_pack.py"
+      - ".github/workflows/banc888-domain-eval.yml"
+  pull_request:
     paths:
       - "tools/banc888_domain_pack.py"
       - "tests/test_banc888_domain_pack.py"
