@@ -8,6 +8,7 @@ on:
       - "app/**"
       - "tests/thread_router_core.test.cjs"
       - "tests/capability_vocabulary.test.cjs"
+      - "tests/specialist_capability_v2.test.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
 
@@ -54,6 +55,7 @@ jobs:
           node --check app/src/main/assets/thread-router.js
           node tests/thread_router_core.test.cjs
           node tests/capability_vocabulary.test.cjs
+          node tests/specialist_capability_v2.test.cjs
 
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug
@@ -66,7 +68,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v5.4-capability-tools-debug
+          name: BANC888-v5.5-specialist-tools-debug
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/debug/app-debug.apk.sha256

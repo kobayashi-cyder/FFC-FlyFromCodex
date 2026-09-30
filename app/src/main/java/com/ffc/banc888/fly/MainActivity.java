@@ -310,9 +310,31 @@ public class MainActivity extends Activity {
                     .append(xmlEscape(title.trim())).append("</w:t></w:r></w:p>");
         }
         String[] lines = (body == null ? "" : body).replace("\r\n", "\n").replace('\r', '\n').split("\n", -1);
-        for (String line : lines) {
-            if (line.isEmpty()) doc.append("<w:p/>");
-            else doc.append("<w:p><w:r><w:t xml:space=\"preserve\">").append(xmlEscape(line)).append("</w:t></w:r></w:p>");
+        boolean codeBlock = false;
+        for (String raw : lines) {
+            String line = raw == null ? "" : raw;
+            String trimmed = line.trim();
+            if (trimmed.length() >= 3 && trimmed.charAt(0) == 96 && trimmed.charAt(1) == 96 && trimmed.charAt(2) == 96) { codeBlock = !codeBlock; continue; }
+            if (line.isEmpty()) { doc.append("<w:p/>"); continue; }
+            int heading = 0;
+            if (line.startsWith("### ")) heading = 3;
+            else if (line.startsWith("## ")) heading = 2;
+            else if (line.startsWith("# ")) heading = 1;
+            if (heading > 0) {
+                String text = line.substring(heading + 1).trim();
+                int size = heading == 1 ? 30 : heading == 2 ? 26 : 23;
+                doc.append("<w:p><w:pPr><w:spacing w:before=\"180\" w:after=\"80\"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val=\"")
+                        .append(size).append("\"/></w:rPr><w:t xml:space=\"preserve\">").append(xmlEscape(text)).append("</w:t></w:r></w:p>");
+                continue;
+            }
+            boolean bullet = line.startsWith("- ") || line.startsWith("* ");
+            boolean numbered = line.matches("^\\d+[.)]\\s+.*");
+            String text = bullet ? "• " + line.substring(2).trim() : line;
+            doc.append("<w:p><w:pPr>");
+            if (bullet || numbered) doc.append("<w:ind w:left=\"480\" w:hanging=\"240\"/>");
+            doc.append("</w:pPr><w:r><w:rPr>");
+            if (codeBlock) doc.append("<w:rFonts w:ascii=\"Consolas\" w:hAnsi=\"Consolas\"/><w:sz w:val=\"19\"/>");
+            doc.append("</w:rPr><w:t xml:space=\"preserve\">").append(xmlEscape(text)).append("</w:t></w:r></w:p>");
         }
         doc.append("<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr>")
                 .append("</w:body></w:document>");
