@@ -1,0 +1,30 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.ffc.banc888.fly'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.ffc.banc888.fly'
+        minSdk 26
+        targetSdk 35
+        versionCode 53
+        versionName '5.3-thread-router'
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}
