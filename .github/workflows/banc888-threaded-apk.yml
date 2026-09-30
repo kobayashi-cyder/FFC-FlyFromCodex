@@ -14,6 +14,7 @@ on:
       - "tests/proxy_apk_integration.test.cjs"
       - "tests/conversation_output_core.test.cjs"
       - "tests/research_physics_core.test.cjs"
+      - "tests/research_physics_core.test.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
 
@@ -57,9 +58,11 @@ jobs:
           node --check app/src/main/assets/thread-router-core.js
           node --check app/src/main/assets/capability-vocabulary-core.js
           node --check app/src/main/assets/research-physics-core.js
+          node --check app/src/main/assets/research-physics-core.js
           node --check app/src/main/assets/ir-patch-core.js
           node --check app/src/main/assets/proxy-agent-core.js
           node --check app/src/main/assets/capability-tools.js
+          node --check app/src/main/assets/research-physics-tools.js
           node --check app/src/main/assets/research-physics-tools.js
           node --check app/src/main/assets/proxy-agent.js
           node --check app/src/main/assets/conversation-output-core.js
@@ -71,6 +74,7 @@ jobs:
           node tests/proxy_agent_core.test.cjs
           node tests/proxy_apk_integration.test.cjs
           node tests/conversation_output_core.test.cjs
+          node tests/research_physics_core.test.cjs
           node tests/research_physics_core.test.cjs
 
       - name: Build debug APK
