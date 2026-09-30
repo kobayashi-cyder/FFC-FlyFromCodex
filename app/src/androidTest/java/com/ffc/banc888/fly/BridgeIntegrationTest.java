@@ -41,7 +41,7 @@ public class BridgeIntegrationTest {
     public void nativeBridgesAndAgentRuntimeAreActuallyLinked() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             assertTrue(awaitJs(scenario,
-                    "!!(window.FFC_THREADS&&window.FFC_PROXY_AGENT&&window.FFC_CAPABILITIES&&window.FFCConversationOutput)", 30000));
+                    "!!(window.FFC_THREADS&&window.FFC_PROXY_AGENT&&window.FFC_CAPABILITIES&&window.FFCConversationOutput&&window.FFC_WEBVIEW_RUNTIME&&window.AndroidRuntime)", 30000));
 
             assertTrue(awaitJs(scenario,
                     "typeof AndroidVoice!=='undefined'&&typeof AndroidFiles!=='undefined'&&typeof AndroidResearch!=='undefined'&&typeof AndroidDev!=='undefined'&&typeof AndroidDiagnostics!=='undefined'", 10000));
@@ -50,10 +50,15 @@ public class BridgeIntegrationTest {
                     "JSON.parse(AndroidVoice.status()).threadRouter===true", 10000));
 
             assertTrue(awaitJs(scenario,
-                    "JSON.parse(AndroidDiagnostics.status()).shellVersion===61&&JSON.parse(AndroidDiagnostics.status()).bridgeSchema===3", 10000));
+                    "JSON.parse(AndroidDiagnostics.status()).shellVersion===70&&JSON.parse(AndroidDiagnostics.status()).bridgeSchema===4&&JSON.parse(AndroidDiagnostics.status()).webShell.runtimeVersion===7", 10000));
 
             assertTrue(awaitJs(scenario,
                     "JSON.parse(__BancVoice.status('wrong-token')).error==='native bridge denied'", 10000));
+
+            assertTrue(awaitJs(scenario,
+                    "(function(){window.__bancRuntimePingOk=false;AndroidRuntime.ping().then(function(r){window.__bancRuntimePingOk=!!(r&&r.ok)});return true})()", 10000));
+            assertTrue(awaitJs(scenario,
+                    "window.__bancRuntimePingOk===true", 10000));
 
             assertTrue(awaitJs(scenario,
                     "window.FFCConversationOutput.speech({threadIds:[1],reason:'same',confidence:1},'こんにちは',window.FFCThreadCore.excelCode,{includeRoute:false})==='こんにちは'", 10000));
