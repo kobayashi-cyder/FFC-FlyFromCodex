@@ -41,6 +41,11 @@ must(registry.includes('activity.runOnUiThread(speech::stopListening)'),'native 
 must(registry.includes('activity.runOnUiThread(() -> speech.speak(text, language, rate, pitch))'),'native TTS must be dispatched to Android main thread');
 must(speech.includes('pendingSpeechText'),'TTS readiness queue missing');
 must(speech.includes('ttsPending'),'TTS pending diagnostics missing');
+must(speech.includes('findFallbackVoice'),'TTS fallback voice selection missing');
+must(speech.includes('handleTtsFailure'),'TTS retry/error handler missing');
+must(speech.includes('ttsLanguageStatus'),'TTS language diagnostics missing');
+must(speech.includes('tts.getCurrentEngine()'),'TTS engine diagnostics missing');
+must(speech.includes('tts.speak(')&&speech.includes('TextToSpeech.ERROR'),'TTS immediate enqueue failure detection missing');
 must(index.includes('id="flyVoiceLoop" type="checkbox" checked'),'hands-free voice loop must default on');
 
 must(activity.includes('WebViewCompat.saveState'),'bounded state save missing');
