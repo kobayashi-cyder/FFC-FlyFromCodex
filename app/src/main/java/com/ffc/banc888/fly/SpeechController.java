@@ -257,7 +257,9 @@ final class SpeechController {
                 || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE
                 || error == SpeechRecognizer.ERROR_SERVER
                 || error == SpeechRecognizer.ERROR_SERVER_DISCONNECTED
-                || error == SpeechRecognizer.ERROR_CLIENT;
+                || error == SpeechRecognizer.ERROR_CLIENT
+                || error == SpeechRecognizer.ERROR_NO_MATCH
+                || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT;
     }
 
     private synchronized void fallbackToSystemRecognizer(String reason) {
