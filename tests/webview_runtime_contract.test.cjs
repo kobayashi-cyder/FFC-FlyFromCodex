@@ -60,8 +60,8 @@ must(index.includes('PCM取得OK'),'UI must distinguish real PCM capture from pe
 must(index.includes('micProbe'),'UI microphone probe diagnostics missing');
 must(index.includes('id="flyVoiceLoop" type="checkbox" checked'),'hands-free voice loop must default on');
 
-must(activity.includes('WebViewCompat.saveState'),'bounded state save missing');
-must(activity.includes('128 * 1024'),'saved state cap changed unexpectedly');
+must(!activity.includes('webView.saveState('),'WebView state must not be serialized into Activity bundles');
+must(!activity.includes('webView.restoreState('),'oversized Chromium state restore path must remain disabled');
 
 must(bridge.includes('window.AndroidRuntime'),'async native runtime API missing');
 must(bridge.includes("post('runtime.status')"),'runtime status message missing');
