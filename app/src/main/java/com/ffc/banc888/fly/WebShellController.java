@@ -11,12 +11,15 @@ import android.webkit.WebView;
 
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
 
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 final class WebShellController {
     private final Activity activity;
@@ -48,6 +51,21 @@ final class WebShellController {
         webView.setBackgroundColor(0xff050a13);
 
         bridges.install();
+
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            WebViewCompat.addWebMessageListener(
+                    webView,
+                    "BancNative",
+                    Collections.singleton(AppConfig.APP_ORIGIN),
+                    (view, message, sourceOrigin, isMainFrame, replyProxy) -> {
+                        if (!isMainFrame || !AppConfig.isTrustedOrigin(sourceOrigin)) return;
+                        String data = message.getData();
+                        if ("ping".equals(data)) {
+                            replyProxy.postMessage("{\"ok\":true,\"bridgeSchema\":" + AppConfig.BRIDGE_SCHEMA + "}");
+                        }
+                    }
+            );
+        }
 
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .setDomain(AppConfig.APP_HOST)
