@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
 import android.os.ParcelFileDescriptor;
+import android.util.Log;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 
@@ -67,9 +68,12 @@ public class BridgeIntegrationTest {
             assertTrue(awaitJs(scenario,
                     "JSON.parse(AndroidVoice.status()).permission==='granted'", 10000));
 
-            assertTrue(awaitJs(scenario,
-                    "(function(){var p=JSON.parse(AndroidDiagnostics.probeMicrophone());return p.ok===true&&p.initialized===true&&p.readSamples>0&&p.nonZeroSamples>0&&p.peakAbs>0})()", 10000));
+            Log.i("BANC_VOICE_TEST", "VOICE_PCM_PROBE_ARMED");
+            assertTrue("Raw microphone path returned only silence",
+                    awaitJs(scenario,
+                    "(function(){var p=JSON.parse(AndroidDiagnostics.probeMicrophone());return p.ok===true&&p.initialized===true&&p.readSamples>0&&p.nonZeroSamples>0&&p.peakAbs>0})()", 5000));
 
+            Log.i("BANC_VOICE_TEST", "VOICE_CAPTURE_ARMED");
             assertTrue("SpeechRecognizer.startListening was rejected",
                     awaitJs(scenario,
                     "(function(){"
@@ -84,7 +88,7 @@ public class BridgeIntegrationTest {
                             + "return AndroidVoice.startListening('ja-JP')===true"
                             + "})()", 2000));
 
-            assertTrue("No transcript or recognizer error within 5 seconds of continuous test audio",
+            assertTrue("No transcript or recognizer error within 5 seconds of synchronized test utterance",
                     awaitJs(scenario,
                     "window.__bancRealTranscript.length>0||window.__bancListenError!==''", 5000));
 
