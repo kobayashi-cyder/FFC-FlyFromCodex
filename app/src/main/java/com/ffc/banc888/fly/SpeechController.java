@@ -4,8 +4,13 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -34,10 +39,19 @@ final class SpeechController {
 
     private final Activity activity;
     private final JsSink js;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private SpeechRecognizer recognizer;
     private TextToSpeech tts;
     private boolean ttsReady = false;
     private boolean onDeviceRecognizer = false;
+    private boolean recognizerFallbackAttempted = false;
+    private long listenGeneration = 0L;
+    private long recognizerReadyAtMs = 0L;
+    private long speechBeganAtMs = 0L;
+    private float maxRmsDb = -120f;
+    private int recognitionResultCount = 0;
+    private int lastRecognitionErrorCode = 0;
+    private String lastRecognitionError = "";
     private String pendingLanguage = "ja-JP";
     private String pendingSpeechText = null;
     private String pendingSpeechLanguage = "ja-JP";
@@ -71,9 +85,15 @@ final class SpeechController {
     }
 
     void initRecognizer() {
+        initRecognizer(true);
+    }
+
+    private void initRecognizer(boolean preferOnDevice) {
         destroyRecognizer();
         try {
-            if (Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(activity)) {
+            if (preferOnDevice
+                    && Build.VERSION.SDK_INT >= 31
+                    && SpeechRecognizer.isOnDeviceRecognitionAvailable(activity)) {
                 recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(activity);
                 onDeviceRecognizer = true;
             } else if (SpeechRecognizer.isRecognitionAvailable(activity)) {
@@ -93,20 +113,30 @@ final class SpeechController {
 
     private final RecognitionListener listener = new RecognitionListener() {
         @Override public void onReadyForSpeech(Bundle params) {
+            recognizerReadyAtMs = System.currentTimeMillis();
             setState(State.LISTENING);
             js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onListening&&window.BANC888_NATIVE_VOICE.onListening()");
         }
-        @Override public void onBeginningOfSpeech() {}
-        @Override public void onRmsChanged(float rmsdB) {}
+        @Override public void onBeginningOfSpeech() {
+            speechBeganAtMs = System.currentTimeMillis();
+        }
+        @Override public void onRmsChanged(float rmsdB) {
+            if (Float.isFinite(rmsdB)) maxRmsDb = Math.max(maxRmsDb, rmsdB);
+        }
         @Override public void onBufferReceived(byte[] buffer) {}
         @Override public void onEndOfSpeech() { setState(State.WAIT_RESULT); }
         @Override public void onEvent(int eventType, Bundle params) {}
 
         @Override public void onError(int error) {
+            lastRecognitionErrorCode = error;
+            lastRecognitionError = recognitionErrorText(error);
+            if (shouldFallbackRecognizer(error)) {
+                fallbackToSystemRecognizer("error-" + error);
+                return;
+            }
             setState(State.ERROR);
-            String message = recognitionErrorText(error);
             js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onError&&window.BANC888_NATIVE_VOICE.onError("
-                    + JSONObject.quote(String.valueOf(error)) + "," + JSONObject.quote(message) + ")");
+                    + JSONObject.quote(String.valueOf(error)) + "," + JSONObject.quote(lastRecognitionError) + ")");
             setState(State.IDLE);
         }
 
@@ -126,6 +156,9 @@ final class SpeechController {
             }
             String best = list != null && !list.isEmpty() ? list.get(0) : "";
             float bestConfidence = conf != null && conf.length > 0 ? conf[0] : -1f;
+            recognitionResultCount++;
+            lastRecognitionErrorCode = 0;
+            lastRecognitionError = "";
             setState(State.IDLE);
             js.eval("(function(){var n=window.BANC888_NATIVE_VOICE;if(!n)return;"
                     + "n.onAlternatives&&n.onAlternatives(" + alternatives.toString() + ");"
@@ -146,41 +179,179 @@ final class SpeechController {
     }
 
     synchronized boolean startListening(String language) {
+        recognizerFallbackAttempted = false;
+        return startListeningInternal(language);
+    }
+
+    private synchronized boolean startListeningInternal(String language) {
         if (state != State.IDLE && state != State.ERROR) return false;
+        pendingLanguage = language == null ? "ja-JP" : language;
         if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            pendingLanguage = language == null ? "ja-JP" : language;
             requestMicPermission();
             return false;
         }
-        if (recognizer == null) initRecognizer();
+        if (recognizer == null) initRecognizer(!recognizerFallbackAttempted);
         if (recognizer == null) {
             setState(State.ERROR);
+            lastRecognitionErrorCode = -1;
+            lastRecognitionError = "Android SpeechRecognizer is unavailable";
             js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onError&&window.BANC888_NATIVE_VOICE.onError('unavailable','Android SpeechRecognizer is unavailable')");
             return false;
         }
+
         if (tts != null) tts.stop();
         setState(State.STARTING);
+        recognizerReadyAtMs = 0L;
+        speechBeganAtMs = 0L;
+        maxRmsDb = -120f;
+        lastRecognitionErrorCode = 0;
+        lastRecognitionError = "";
+
+        Intent intent = recognitionIntent(pendingLanguage);
+        final long generation = ++listenGeneration;
+        try {
+            recognizer.startListening(intent);
+            mainHandler.postDelayed(() -> {
+                synchronized (SpeechController.this) {
+                    if (generation != listenGeneration || state != State.STARTING) return;
+                    if (onDeviceRecognizer && !recognizerFallbackAttempted) {
+                        fallbackToSystemRecognizer("ready-timeout");
+                    } else {
+                        lastRecognitionErrorCode = -2;
+                        lastRecognitionError = "recognizer did not reach onReadyForSpeech";
+                        setState(State.IDLE);
+                        js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onError&&window.BANC888_NATIVE_VOICE.onError('ready-timeout','recognizer did not reach onReadyForSpeech')");
+                    }
+                }
+            }, 3500L);
+            return true;
+        } catch (Throwable e) {
+            lastRecognitionErrorCode = -3;
+            lastRecognitionError = e.getMessage() == null ? e.toString() : e.getMessage();
+            if (onDeviceRecognizer && !recognizerFallbackAttempted) {
+                fallbackToSystemRecognizer("start-exception");
+                return true;
+            }
+            setState(State.ERROR);
+            js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onError&&window.BANC888_NATIVE_VOICE.onError('start',"
+                    + JSONObject.quote(lastRecognitionError) + ")");
+            setState(State.IDLE);
+            return false;
+        }
+    }
+
+    private Intent recognitionIntent(String language) {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language == null ? "ja-JP" : language);
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
         intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, activity.getPackageName());
-        try {
-            recognizer.startListening(intent);
-            return true;
-        } catch (Throwable e) {
-            setState(State.ERROR);
-            js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onError&&window.BANC888_NATIVE_VOICE.onError('start',"
-                    + JSONObject.quote(e.getMessage() == null ? e.toString() : e.getMessage()) + ")");
-            setState(State.IDLE);
-            return false;
-        }
+        return intent;
+    }
+
+    private boolean shouldFallbackRecognizer(int error) {
+        if (!onDeviceRecognizer || recognizerFallbackAttempted) return false;
+        if (Build.VERSION.SDK_INT < 31) return false;
+        return error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
+                || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE
+                || error == SpeechRecognizer.ERROR_SERVER
+                || error == SpeechRecognizer.ERROR_SERVER_DISCONNECTED
+                || error == SpeechRecognizer.ERROR_CLIENT;
+    }
+
+    private synchronized void fallbackToSystemRecognizer(String reason) {
+        if (recognizerFallbackAttempted) return;
+        recognizerFallbackAttempted = true;
+        ++listenGeneration;
+        try { if (recognizer != null) recognizer.cancel(); } catch (Throwable ignored) {}
+        destroyRecognizer();
+        setState(State.IDLE);
+        initRecognizer(false);
+        js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onStatus"
+                + "&&window.BANC888_NATIVE_VOICE.onStatus(" + JSONObject.quote(statusJson()) + ")");
+        startListeningInternal(pendingLanguage);
     }
 
     synchronized void stopListening() {
+        ++listenGeneration;
         try { if (recognizer != null) recognizer.cancel(); } catch (Throwable ignored) {}
         if (state != State.SPEAKING) setState(State.IDLE);
+    }
+
+    String probeMicrophoneJson() {
+        JSONObject o = new JSONObject();
+        AudioRecord record = null;
+        try {
+            if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                o.put("ok", false);
+                o.put("permission", "denied");
+                return o.toString();
+            }
+            synchronized (this) {
+                if (state == State.LISTENING || state == State.STARTING || state == State.WAIT_RESULT) {
+                    o.put("ok", false);
+                    o.put("error", "recognizer-active");
+                    return o.toString();
+                }
+            }
+
+            final int rate = 16000;
+            int min = AudioRecord.getMinBufferSize(
+                    rate,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT
+            );
+            int bufferSize = Math.max(min > 0 ? min : 0, rate / 2);
+            record = new AudioRecord(
+                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                    rate,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    bufferSize
+            );
+            boolean initialized = record.getState() == AudioRecord.STATE_INITIALIZED;
+            o.put("initialized", initialized);
+            o.put("sampleRate", record.getSampleRate());
+            o.put("bufferSize", bufferSize);
+            if (!initialized) {
+                o.put("ok", false);
+                o.put("error", "AudioRecord not initialized");
+                return o.toString();
+            }
+
+            short[] pcm = new short[Math.max(1600, bufferSize / 2)];
+            record.startRecording();
+            int read = record.read(pcm, 0, pcm.length, AudioRecord.READ_BLOCKING);
+            long sumSq = 0L;
+            int nonZero = 0;
+            int peak = 0;
+            if (read > 0) {
+                for (int i = 0; i < read; i++) {
+                    int v = pcm[i];
+                    if (v != 0) nonZero++;
+                    peak = Math.max(peak, Math.abs(v));
+                    sumSq += (long)v * (long)v;
+                }
+            }
+            double rms = read > 0 ? Math.sqrt((double)sumSq / read) : 0.0;
+            o.put("ok", read > 0);
+            o.put("readSamples", read);
+            o.put("nonZeroSamples", nonZero);
+            o.put("peakAbs", peak);
+            o.put("rms", rms);
+        } catch (Throwable e) {
+            try {
+                o.put("ok", false);
+                o.put("error", e.getMessage() == null ? e.toString() : e.getMessage());
+            } catch (Exception ignored) {}
+        } finally {
+            if (record != null) {
+                try { record.stop(); } catch (Throwable ignored) {}
+                try { record.release(); } catch (Throwable ignored) {}
+            }
+        }
+        return o.toString();
     }
 
     void onPermissionResult(boolean granted) {
@@ -439,6 +610,13 @@ final class SpeechController {
             o.put("speechRecognizerAvailable", recognizer != null);
             o.put("onDeviceRecognitionAvailable", Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(activity));
             o.put("recognizerBackend", onDeviceRecognizer ? "on-device" : "system");
+            o.put("recognizerFallbackAttempted", recognizerFallbackAttempted);
+            o.put("recognizerReadyAtMs", recognizerReadyAtMs);
+            o.put("speechBeganAtMs", speechBeganAtMs);
+            o.put("maxRmsDb", maxRmsDb);
+            o.put("recognitionResultCount", recognitionResultCount);
+            o.put("lastRecognitionErrorCode", lastRecognitionErrorCode);
+            o.put("lastRecognitionError", lastRecognitionError);
             o.put("state", state.name());
             o.put("ttsReady", ttsReady);
             o.put("ttsPending", pendingSpeechText != null);
@@ -483,6 +661,9 @@ final class SpeechController {
             case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: return "recognizer busy";
             case SpeechRecognizer.ERROR_SERVER: return "recognizer server error";
             case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: return "speech timeout";
+            case SpeechRecognizer.ERROR_SERVER_DISCONNECTED: return "recognizer server disconnected";
+            case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED: return "language not supported by recognizer";
+            case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: return "language supported but model unavailable";
             default: return "speech recognizer error " + error;
         }
     }
