@@ -30,6 +30,7 @@ window.AndroidDev={
 };
 window.AndroidDiagnostics={
  status:()=>window.__BancDiagnostics?__BancDiagnostics.status(token):denied(),
+ probeMicrophone:()=>window.__BancDiagnostics?__BancDiagnostics.probeMicrophone(token):denied(),
  simulateVoiceResult:(text,confidence)=>window.__BancDiagnostics?__BancDiagnostics.simulateVoiceResult(token,String(text||''),Number(confidence||0)):false
 };
 
