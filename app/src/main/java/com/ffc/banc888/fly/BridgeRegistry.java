@@ -82,16 +82,18 @@ final class BridgeRegistry {
         }
         @JavascriptInterface public boolean startListening(String token, String language) {
             if (!allow(token)) return false;
-            return speech.startListening(language);
+            activity.runOnUiThread(() -> speech.startListening(language));
+            return true;
         }
         @JavascriptInterface public boolean stopListening(String token) {
             if (!allow(token)) return false;
-            speech.stopListening();
+            activity.runOnUiThread(speech::stopListening);
             return true;
         }
         @JavascriptInterface public boolean speak(String token, String text, String language, double rate, double pitch) {
             if (!allow(token)) return false;
-            return speech.speak(text, language, rate, pitch);
+            activity.runOnUiThread(() -> speech.speak(text, language, rate, pitch));
+            return true;
         }
     }
 
