@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BANC888 Agent</string>
+    <string name="accessibility_description">BANC888 Agentが、ユーザーの明示コマンドに応じて画面要素の取得、タップ、スワイプ、戻る等を実行します。パスワード欄の文字列は取得しません。</string>
+</resources>
