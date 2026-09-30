@@ -1,0 +1,1598 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BANC888 Offline Concept Connectome v1.9</title>
+<style>
+:root{--bg:#09101e;--panel:#111a2d;--line:#293754;--text:#edf2ff;--muted:#98aac7;--accent:#82a7ff;--good:#67da9e;--warn:#ffd16f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.48 system-ui,sans-serif}
+header{padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#09101ef2;z-index:5}
+main{max-width:1450px;margin:auto;padding:18px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}button,input,select,textarea{background:#0b1528;color:var(--text);border:1px solid #324563;border-radius:9px;padding:9px;font:inherit}
+button{cursor:pointer}button.primary{background:#1d3d7a;border-color:#446fc9}input{min-width:220px}textarea{width:100%;min-height:70px}
+.note{padding:10px;border:1px solid #2c3d5d;border-radius:10px;background:#0c1526}.muted{color:var(--muted)}.good{color:var(--good)}.warn{color:var(--warn)}
+.stat{border:1px solid var(--line);padding:10px;border-radius:10px}.stat b{display:block;font-size:20px}pre{background:#07101e;border:1px solid #263650;border-radius:10px;padding:10px;white-space:pre-wrap;word-break:break-word;max-height:480px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:7px;border-bottom:1px solid #253550;text-align:left}.scroll{max-height:520px;overflow:auto}
+canvas{width:100%;height:auto;border:1px solid #253550;border-radius:12px;background:#07101e}.pill{display:inline-block;border:1px solid #355078;border-radius:999px;padding:3px 8px}
+@media(max-width:900px){.grid,.grid3{grid-template-columns:1fr}}
+
+.chatlog{height:430px;overflow:auto;background:#07101e;border:1px solid #263650;border-radius:12px;padding:12px}
+.msg{display:flex;margin:8px 0}.msg.user{justify-content:flex-end}.bubble{max-width:82%;padding:9px 11px;border-radius:12px;white-space:pre-wrap;word-break:break-word}
+.msg.user .bubble{background:#1d3d7a}.msg.bot .bubble{background:#18243a}.msg.system .bubble{background:#25202d;color:#d8cce5}
+.msgmeta{font-size:11px;color:var(--muted);margin-top:3px}.attachbar{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.attachchip{border:1px solid #3a4d6c;border-radius:999px;padding:4px 8px;background:#0d182b;color:#cbd7eb}
+.mmgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.mmpanel{border:1px solid #263650;border-radius:10px;padding:8px;min-height:110px;background:#0a1425}
+.mmpanel img{max-width:100%;max-height:160px;border-radius:8px;display:block;margin:auto}.mmpanel audio{width:100%}
+.chatinput{width:100%;min-height:86px}.tiny{font-size:11px}.statusline{font-size:12px;color:var(--muted)}
+@media(max-width:900px){.mmgrid{grid-template-columns:1fr}}
+
+
+.cdlgrid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}
+.cdlinput{min-height:360px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.graphbox{min-height:280px}
+.conceptList{max-height:220px;overflow:auto;border:1px solid #263650;border-radius:10px;padding:8px}
+.conceptItem{padding:7px 8px;border-bottom:1px solid #23314b;cursor:pointer}
+.conceptItem:hover{background:#13203a}.conceptItem:last-child{border-bottom:0}
+.codeout{min-height:330px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+@media(max-width:900px){.cdlgrid{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body>
+<header><h1>BANC888 Offline Extract Translator <span class="pill">v1.9 FULL OFFLINE + STRUCTURAL AUTO IR</span></h1>
+<div class="muted">実BANC抽出回路＋自然言語会話＋マルチモーダル＋概念定義言語(CDL)＋単一HTML生成。通信・CDN・外部ライブラリ 0。</div></header>
+<main>
+<div class="card">
+<h2>完全オフライン構成</h2>
+<div class="note"><b>このHTMLだけで動作します。</b> 内蔵データは模擬回路ではなく、BANC公式プロジェクトの論文用vignette CSVから取得した実root_id・細胞型・集約接続数です。
+edgeは個々のroot_id間ではなく、vignetteで使われた<b>display_name群間の集約接続</b>です。</div>
+<div class="grid3" style="margin-top:10px">
+<div class="stat"><span class="muted">内蔵実回路</span><b>1</b><span>Figure 3g — visceral control</span></div>
+<div class="stat"><span class="muted">実root_id</span><b id="rootN">—</b><span>BANC neuron metadata</span></div>
+<div class="stat"><span class="muted">実aggregate edges</span><b id="edgeN">—</b><span>synapse counts</span></div>
+</div>
+</div>
+
+
+
+<div class="card">
+<h2>概念定義言語（CDL）</h2>
+<div class="note">
+  BANC888が知らない語でも、<b>意味・構成要素・状態・入力・規則・状態遷移・禁止条件・成立条件・終了条件・出力</b>を定義すると、
+  その構造全体を1つの概念として保存できます。自然文CDLの未知セクションも保持し、変数シグネチャから実行IRを自動合成します。【実行定義JSON】は任意の上書き指定です。概念名ではなく、状態・数値・入力・時間更新・衝突・条件・状態遷移を解析して実行HTMLへ変換します。
+</div>
+<div class="cdlgrid" style="margin-top:10px">
+  <div>
+    <textarea id="cdlInput" class="cdlinput" placeholder="概念: テトリス
+語釈: 4個の正方形からなるピースを落下・回転させ、完成行を消去するゲーム。
+
+【対象】
+格子状の盤面で動く落下型パズルゲーム。
+
+【構成要素】
+盤面: 幅10、高さ20
+ピース: I,O,T,S,Z,J,L
+現在ピース
+次ピース
+スコア
+ゲーム状態
+
+【状態】
+盤面セル = 空 または 固定ブロック
+現在ピース = 種類,X,Y,回転
+ゲーム状態 = playing または gameover
+
+【入力】
+左 = 1マス左
+右 = 1マス右
+下 = ソフトドロップ
+上 = 90度回転
+Space = ハードドロップ
+R = 再スタート
+
+【規則】
+一定時間ごとに現在ピースを1マス下へ移動する。
+移動できない場合は固定する。
+横10マスがすべて埋まった行を消去する。
+
+【状態遷移】
+falling -> locked : 下へ移動できない
+locked -> line_clear : 完成行がある
+line_clear -> spawn : 行消去後
+spawn -> gameover : 新しいピースを配置できない
+spawn -> falling : 配置できる
+
+【禁止条件】
+盤面外へ移動しない。
+固定ブロックと重ならない。
+
+【成立条件】
+完成行 = 横10マスすべて埋まっている。
+
+【終了条件】
+新しいピースを初期位置へ配置できない。
+
+【出力】
+完全オフライン単一HTML
+HTML/CSS/JavaScript
+キーボード操作
+次ピース表示
+スコア表示"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button id="cdlParse" class="primary">解析</button>
+      <button id="cdlSave">概念として保存</button>
+      <button id="cdlGenerate">単一HTML生成</button>
+      <button id="cdlExample">テトリス例を入れる</button><button id="cdlExecHelp">実行CDL仕様</button>
+    </div>
+  </div>
+  <div>
+    <h3>Concept IR</h3>
+    <pre id="cdlIR">未解析</pre>
+    <h3>概念グラフ</h3>
+    <canvas id="cdlGraph" class="graphbox" width="900" height="420"></canvas>
+  </div>
+</div>
+<div class="grid" style="margin-top:10px">
+  <div>
+    <h3>保存済み概念</h3>
+    <div id="conceptList" class="conceptList"></div>
+  </div>
+  <div>
+    <h3>生成結果</h3>
+    <textarea id="generatedConceptCode" class="codeout" placeholder="単一HTML生成結果"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button id="downloadConceptCode">生成HTMLを保存</button>
+      <button id="conceptSelfTest">概念セルフテスト</button>
+    </div>
+    <pre id="conceptTestOut">未実行</pre>
+  </div>
+</div>
+</div>
+
+<div class="card">
+<h2>自然言語・マルチモーダル会話</h2>
+<div class="note">
+  888会話層を復元しました。テキストだけでなく、<b>画像・音声・TXT/CSV/JSON・現在のBANC回路</b>を同時に会話コンテキストへ入れられます。
+  完全オフラインのため、画像は画素特徴、音声は波形特徴をブラウザ内で解析します。一般物体認識・OCR・音声文字起こしを行ったとは扱いません。
+</div>
+<div id="chatlog" class="chatlog" style="margin-top:10px"></div>
+<div id="attachBar" class="attachbar"></div>
+<textarea id="chatInput" class="chatinput" placeholder="例:
+こんにちは。BANCについて話そう。
+DNp65の出力で一番強い接続は？
+この画像と現在の回路をまとめて説明して。
+この音声の特徴は？
+語彙を教える: 粗視化 = coarse-graining"></textarea>
+<div class="row">
+  <button id="chatSend" class="primary">送信</button>
+  <label class="pill">画像 <input id="chatImage" type="file" accept="image/*" capture="environment" style="display:none"></label>
+  <label class="pill">音声 <input id="chatAudio" type="file" accept="audio/*" style="display:none"></label>
+  <label class="pill">文書/JSON <input id="chatFile" type="file" accept=".txt,.md,.csv,.json,text/*,application/json" style="display:none"></label>
+  <label class="pill"><input id="useBancContext" type="checkbox" checked> 現在のBANC回路</label>
+  <button id="clearAttachments">添付解除</button>
+  <button id="clearChat">会話消去</button>
+</div>
+<div class="statusline" id="chatStatus">テキスト、画像、音声、文書を同時に入力できます。「テトリスをHTMLファイルで作成して」のような生成命令も会話から直接実行できます。</div>
+<div class="mmgrid" style="margin-top:10px">
+  <div class="mmpanel"><b>画像コンテキスト</b><div id="imagePreview" class="muted tiny">未添付</div></div>
+  <div class="mmpanel"><b>音声コンテキスト</b><div id="audioPreview" class="muted tiny">未添付</div></div>
+  <div class="mmpanel"><b>文書コンテキスト</b><div id="filePreview" class="muted tiny">未添付</div></div>
+</div>
+</div>
+
+<div class="grid">
+<div>
+<div class="card">
+<h2>検索 / 翻訳</h2>
+<div class="row">
+<input id="query" placeholder="root_id または display_name" style="flex:1">
+<select id="direction"><option value="both">入出力</option><option value="out">出力</option><option value="in">入力</option></select>
+<select id="hops"><option value="1">1 hop</option><option value="2">2 hops</option><option value="3">3 hops</option></select>
+<input id="minCount" type="number" min="1" value="1" title="最小synapse count">
+</div>
+<textarea id="natural" placeholder="例: DNp65 の出力を2 hop / root 720575941439633983 の入力 / show outgoing oxygen_sensory"></textarea>
+<div class="row">
+<button id="parse">自然言語→条件</button><button id="run" class="primary">翻訳</button><button id="export">Frame JSON保存</button>
+<label>追加extract <input id="importFile" type="file" accept=".json"></label>
+</div>
+</div>
+<div class="card"><h2>実BANC抽出回路</h2><canvas id="graph" width="1000" height="700"></canvas></div>
+</div>
+
+<div>
+<div class="card"><h2>888 Translation Frame</h2><pre id="frame">未実行</pre></div>
+<div class="card"><h2>自然言語化</h2>
+<div class="row"><select id="lang"><option value="ja">日本語</option><option value="en">English</option><option value="zh">中文</option><option value="ko">한국어</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ru">Русский</option><option value="hi">हिन्दी</option></select><button id="rerender">再翻訳</button></div>
+<pre id="human">未実行</pre></div>
+</div>
+</div>
+
+<div class="card"><h2>接続一覧</h2><div class="scroll"><table><thead><tr><th>dir</th><th>from</th><th>to</th><th>synapses</th><th>pre NT</th><th>weight</th></tr></thead><tbody id="edgeBody"></tbody></table></div></div>
+<div class="grid">
+<div class="card"><h2>対象群の実root_id</h2><div class="scroll" id="rootTable"></div></div>
+<div class="card"><h2>Provenance</h2><pre id="prov"></pre></div>
+</div>
+</main>
+
+<script>
+const RAW={name:"Figure 3g — visceral control",source:"htem/BANC-project / figures/vignettes/network_fig3g_edges.csv + network_fig3g_neurons.csv",edges:`from,to,count,pre_top_nt
+AN27X017,DNp65,329,serotonin
+AN27X017,MNad21,27,acetylcholine
+AN27X017,m_NSC_DILP,989,serotonin
+AN27X017,oxygen_sensory,11,serotonin
+DNp65,AN27X017,191,gaba
+DNp65,MNad21,618,gaba
+DNp65,m_NSC_DILP,52,gaba
+MNad21,AN27X017,6,"Dh44,Lk"
+MNad21,oxygen_sensory,3,"Dh44,Lk"
+aorta_sensory,AN27X017,7,serotonin
+aorta_sensory,m_NSC_DILP,1062,serotonin
+m_NSC_DILP,DNp65,3,"dARC1,Ilp2,Ilp3,Ilp5"
+oxygen_sensory,AN27X017,769,serotonin
+oxygen_sensory,DNp65,12,serotonin
+oxygen_sensory,MNad21,28,serotonin
+oxygen_sensory,m_NSC_DILP,3,acetylcholine
+`,neurons:`display_name,root_id,cell_type,cell_class,cell_sub_class,super_class,super_cluster,side,neurotransmitter,body_part_sensory,body_part_effector
+DNp65,720575941526723940,DNp65,descending_neuron,descending_neuron,descending,visceral control,left,gaba,unknown,NA
+DNp65,720575941439633983,DNp65,descending_neuron,descending_neuron,descending,visceral control,right,gaba,unknown,NA
+AN27X017,720575941435998094,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,left,serotonin,unknown,NA
+AN27X017,720575941589747012,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,left,glutamate,unknown,NA
+AN27X017,720575941517447571,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,right,glutamate,unknown,NA
+AN27X017,720575941548867252,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,left,acetylcholine,unknown,NA
+AN27X017,720575941630349094,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,left,glutamate,unknown,NA
+AN27X017,720575941534463107,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,left,serotonin,unknown,NA
+AN27X017,720575941481470883,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,right,glutamate,unknown,NA
+AN27X017,720575941439151378,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,right,serotonin,unknown,NA
+AN27X017,720575941589746756,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,right,serotonin,unknown,NA
+AN27X017,720575941605509054,AN27X017,ascending_neuron,ascending_neuron,ascending,visceral control,right,acetylcholine,unknown,NA
+MNad21,720575941478745921,MNad21,ventral_nerve_cord_neurosecretory_cell,abdomen_neurosecretory_cell,visceral_circulatory,energy homeostasis,left,"Dh44,Lk",unknown,abdomen
+MNad21,720575941574222152,MNad21,ventral_nerve_cord_neurosecretory_cell,abdomen_neurosecretory_cell,visceral_circulatory,energy homeostasis,left,"Dh44,Lk",unknown,abdomen
+MNad21,720575941573474230,MNad21,ventral_nerve_cord_neurosecretory_cell,abdomen_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"Dh44,Lk",unknown,abdomen
+MNad21,720575941595761445,MNad21,ventral_nerve_cord_neurosecretory_cell,abdomen_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"Dh44,Lk",unknown,abdomen
+m_NSC_DILP,720575941552141191,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941479077738,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941511277840,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941591629566,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941547282620,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941484554237,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941478184478,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941525217867,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,left,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941484353277,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,left,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941533961091,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,left,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941669036531,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941439626028,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941453789511,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941550006817,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941688529903,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,left,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+m_NSC_DILP,720575941562564397,m_NSC_DILP,pars_intercerebralis_neurosecretory_cell,retrocerebral_complex_neurosecretory_cell,visceral_circulatory,energy homeostasis,right,"dARC1,Ilp2,Ilp3,Ilp5",unknown,retrocerebral_complex
+oxygen_sensory,720575941552165255,SA_MDA_1,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,left,acetylcholine,abdomen,NA
+oxygen_sensory,720575941538256355,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,right,acetylcholine,abdomen,NA
+oxygen_sensory,720575941587152862,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,right,serotonin,abdomen,NA
+oxygen_sensory,720575941472130315,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,left,serotonin,abdomen,NA
+oxygen_sensory,720575941565008384,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,left,acetylcholine,abdomen,NA
+oxygen_sensory,720575941586999518,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,right,acetylcholine,abdomen,NA
+oxygen_sensory,720575941576782774,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,right,serotonin,abdomen,NA
+oxygen_sensory,720575941570119162,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,left,acetylcholine,abdomen,NA
+oxygen_sensory,720575941534146994,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,right,serotonin,abdomen,NA
+oxygen_sensory,720575941733201963,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,right,serotonin,abdomen,NA
+oxygen_sensory,720575941574946299,SAxx01,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,right,serotonin,abdomen,NA
+oxygen_sensory,720575941412778897,SA_MDA_4,orphan_neuron,abdomen_oxygenation_neuron,sensory_ascending,NA,left,serotonin,abdomen,NA
+oxygen_sensory,720575941589084471,SNxx16,orphan_neuron,abdomen_oxygenation_neuron,sensory,NA,left,serotonin,abdomen,NA
+oxygen_sensory,720575941466699798,SNxx16,orphan_neuron,abdomen_oxygenation_neuron,sensory,NA,left,serotonin,abdomen,NA
+oxygen_sensory,720575941440686171,SNxx16,orphan_neuron,abdomen_oxygenation_neuron,sensory,NA,left,serotonin,abdomen,NA
+oxygen_sensory,720575941612314076,SNxx16,orphan_neuron,abdomen_oxygenation_neuron,sensory,NA,right,serotonin,abdomen,NA
+oxygen_sensory,720575941573468424,SNxx16,orphan_neuron,abdomen_oxygenation_neuron,sensory,NA,right,serotonin,abdomen,NA
+aorta_sensory,720575941573599646,CB0991,aorta_sensory_neuron,aorta_sensory_neuron,sensory,NA,left,serotonin,aorta,NA
+aorta_sensory,720575941612304873,CB0991,aorta_sensory_neuron,aorta_sensory_neuron,sensory,NA,right,serotonin,aorta,NA
+aorta_sensory,720575941520532078,CB0991,aorta_sensory_neuron,aorta_sensory_neuron,sensory,NA,right,serotonin,aorta,NA
+aorta_sensory,720575941616011929,CB0991,aorta_sensory_neuron,aorta_sensory_neuron,sensory,NA,left,serotonin,aorta,NA
+aorta_sensory,720575941537147841,CB0991,aorta_neuron,aorta_sensory_neuron,sensory,NA,NA,serotonin,aorta,NA
+`};
+function parseLine(line){const a=[];let s="",q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){s+='"';i++}else q=!q}else if(c===','&&!q){a.push(s);s=""}else s+=c}a.push(s);return a}
+function csv(text){const lines=text.trim().split(/\r?\n/),head=parseLine(lines[0]);return lines.slice(1).filter(Boolean).map(line=>{const v=parseLine(line),o={};head.forEach((h,i)=>o[h]=v[i]??"");return o})}
+const DATA={id:"fig3g",name:RAW.name,provenance:RAW.source,neurons:csv(RAW.neurons),edges:csv(RAW.edges).map(e=>({...e,count:+e.count}))};
+const EXTRA={}; let last=null;
+const $=s=>document.querySelector(s);
+
+
+const CDL_KEY="banc888_v19_concepts";
+let CONCEPTS=(()=>{try{return JSON.parse(localStorage.getItem(CDL_KEY)||"{}")}catch{return {}}})();
+let CURRENT_CONCEPT=null;
+
+const CDL_SECTIONS={
+  "対象":"target","構成要素":"components","状態":"states","入力":"inputs","規則":"rules",
+  "状態遷移":"transitions","禁止条件":"constraints","成立条件":"success","終了条件":"termination","出力":"outputs",
+  "target":"target","components":"components","state":"states","states":"states","input":"inputs","inputs":"inputs",
+  "rules":"rules","transitions":"transitions","constraints":"constraints","success":"success","termination":"termination","output":"outputs","outputs":"outputs"
+};
+function linesOf(s){return String(s||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean)}
+function splitKV(line){
+  let m=line.match(/^([^:=：]{1,60})\s*[:：=]\s*(.+)$/);
+  return m?{key:m[1].trim(),value:m[2].trim()}:null;
+}
+function parseCDL(text){
+  text=String(text||"").replace(/\r/g,"");
+  let execSpec=null;
+  const execBlock=text.match(/【実行定義JSON】\s*([\s\S]*?)(?=\n【[^】]+】|\s*$)/);
+  if(execBlock){
+    try{execSpec=JSON.parse(execBlock[1].trim())}
+    catch(e){execSpec={__parseError:String(e.message),__raw:execBlock[1].trim()}}
+  }
+  const concept=(text.match(/^(?:概念|concept)\s*[:：]\s*(.+)$/mi)||[])[1]?.trim()||"UnnamedConcept";
+  const gloss=(text.match(/^(?:語釈|definition|gloss)\s*[:：]\s*(.+)$/mi)||[])[1]?.trim()||"";
+  const ir={
+    format:"BANC888-CDL-v1.9",
+    concept,gloss,execSpec,
+    target:[],components:[],states:[],inputs:[],rules:[],transitions:[],
+    constraints:[],success:[],termination:[],outputs:[],
+    extraSections:{},
+    entities:[],relations:[],capabilities:[],inferred:{}
+  };
+  let current=null;
+  for(const raw of text.split("\n")){
+    const line=raw.trim(); if(!line)continue;
+    const head=line.match(/^【(.+?)】$/)||line.match(/^\[(.+?)\]$/);
+    if(head){
+      const rawName=head[1].trim();
+      const key=CDL_SECTIONS[rawName.toLowerCase()]||CDL_SECTIONS[rawName];
+      if(key){current={kind:"core",key};}
+      else{
+        ir.extraSections[rawName]??=[];
+        current={kind:"extra",key:rawName};
+      }
+      continue;
+    }
+    if(/^(概念|concept|語釈|definition|gloss)\s*[:：]/i.test(line))continue;
+    if(line==="【実行定義JSON】" || line.startsWith("{") || line.startsWith("}"))continue;
+    const cleaned=line.replace(/^[-・*]\s*/,"");
+    if(current?.kind==="core" && Array.isArray(ir[current.key]))ir[current.key].push(cleaned);
+    else if(current?.kind==="extra")ir.extraSections[current.key].push(cleaned);
+  }
+
+  // Build entities from components/states and explicit KVs.
+  for(const [section,items] of Object.entries(ir)){
+    if(!Array.isArray(items))continue;
+    if(["entities","relations","capabilities"].includes(section))continue;
+    for(const item of items){
+      const kv=splitKV(item);
+      if(kv){
+        ir.entities.push({id:`${section}:${kv.key}`,section,name:kv.key,value:kv.value});
+        ir.relations.push({type:"defines",from:concept,to:kv.key,section,value:kv.value});
+      }else{
+        ir.entities.push({id:`${section}:${item}`,section,name:item,value:null});
+        ir.relations.push({type:"contains",from:concept,to:item,section});
+      }
+    }
+  }
+
+  for(const [section,items] of Object.entries(ir.extraSections||{})){
+    for(const item of items){
+      const kv=splitKV(item);
+      if(kv){
+        ir.entities.push({id:`extra:${section}:${kv.key}`,section,name:kv.key,value:kv.value});
+        ir.relations.push({type:"defines",from:section,to:kv.key,section,value:kv.value});
+      }else{
+        ir.entities.push({id:`extra:${section}:${item}`,section,name:item,value:null});
+        ir.relations.push({type:"contains",from:section,to:item,section});
+      }
+    }
+  }
+
+  // Transition parser A -> B : condition
+  ir.transitionGraph=[];
+  for(const t of ir.transitions){
+    const m=t.match(/(.+?)\s*(?:->|→)\s*(.+?)(?:\s*[:：]\s*(.+))?$/);
+    if(m)ir.transitionGraph.push({from:m[1].trim(),to:m[2].trim(),condition:(m[3]||"").trim()});
+  }
+
+  const corpus=[concept,gloss,...ir.target,...ir.components,...ir.states,...ir.inputs,...ir.rules,...ir.transitions,...ir.constraints,...ir.success,...ir.termination,...ir.outputs].join("\n").toLowerCase();
+
+  // Capability inference.
+  if(/ゲーム|game|盤面|board/.test(corpus))ir.capabilities.push("interactive_game");
+  if(/html/.test(corpus))ir.capabilities.push("html");
+  if(/javascript|js/.test(corpus))ir.capabilities.push("javascript");
+  if(/css/.test(corpus))ir.capabilities.push("css");
+  if(/オフライン|offline/.test(corpus))ir.capabilities.push("offline");
+  if(/キーボード|keyboard|キー/.test(corpus))ir.capabilities.push("keyboard");
+  if(/落下|fall|drop/.test(corpus))ir.capabilities.push("gravity");
+  if(/回転|rotate|rotation/.test(corpus))ir.capabilities.push("rotation");
+  if(/ライン|行.*消|line clear|clear line/.test(corpus))ir.capabilities.push("line_clear");
+  if(/スコア|score/.test(corpus))ir.capabilities.push("score");
+  if(/次.*ピース|next piece/.test(corpus))ir.capabilities.push("next_piece");
+  if(/ゲームオーバー|gameover|game over/.test(corpus))ir.capabilities.push("game_over");
+
+  // Detect tetromino-like rules without relying on the word "Tetris".
+  const width=(corpus.match(/(?:幅|横|width)\s*[:=：]?\s*(\d+)/)||[])[1];
+  const height=(corpus.match(/(?:高さ|縦|height)\s*[:=：]?\s*(\d+)/)||[])[1];
+  const hasSeven=/\bi\s*[,、]\s*o\s*[,、]\s*t\s*[,、]\s*s\s*[,、]\s*z\s*[,、]\s*j\s*[,、]\s*l\b/i.test(corpus)||
+                 (/I/.test(corpus)&&/O/.test(corpus)&&/T/.test(corpus)&&/S/.test(corpus)&&/Z/.test(corpus)&&/J/.test(corpus)&&/L/.test(corpus));
+  ir.inferred={
+    boardWidth:width?+width:null,
+    boardHeight:height?+height:null,
+    sevenTetrominoes:hasSeven,
+    tetrominoLike:!!(hasSeven && ir.capabilities.includes("gravity") && ir.capabilities.includes("line_clear") && ir.capabilities.includes("rotation")),
+    canCompileSingleHTML:false
+  };
+  ir.inferred.canCompileSingleHTML=ir.inferred.tetrominoLike || (ir.capabilities.includes("html")&&ir.capabilities.includes("javascript"));
+  return ir;
+}
+function saveConcept(ir){
+  if(!ir?.concept)return;
+  CONCEPTS[ir.concept]={...ir,savedAt:new Date().toISOString()};
+  localStorage.setItem(CDL_KEY,JSON.stringify(CONCEPTS));
+  renderConceptList();
+if($("#cdlInput") && !$("#cdlInput").value.trim())$("#cdlInput").value=defaultTetrisCDL();
+}
+function renderConceptList(){
+  const box=$("#conceptList"); if(!box)return;
+  const items=Object.values(CONCEPTS).sort((a,b)=>String(b.savedAt||"").localeCompare(String(a.savedAt||"")));
+  box.innerHTML=items.length?items.map(c=>`<div class="conceptItem" data-concept="${hesc(c.concept)}"><b>${hesc(c.concept)}</b><div class="tiny muted">${hesc(c.gloss||"")}</div></div>`).join(""):`<div class="muted">保存済み概念なし</div>`;
+  for(const el of box.querySelectorAll("[data-concept]")){
+    el.onclick=()=>{
+      const c=CONCEPTS[el.dataset.concept]; if(!c)return;
+      CURRENT_CONCEPT=c; $("#cdlIR").textContent=JSON.stringify(c,null,2); drawConceptGraph(c);
+    };
+  }
+}
+function drawConceptGraph(ir){
+  const c=$("#cdlGraph");if(!c||!ir)return;
+  const ctx=c.getContext("2d"),W=c.width,H=c.height;ctx.clearRect(0,0,W,H);
+  const sections=["components","states","inputs","rules","transitions","constraints","success","termination","outputs"];
+  const center={x:W/2,y:H/2}; const pos=new Map([[ir.concept,center]]);
+  const active=sections.filter(s=>ir[s]?.length);
+  active.forEach((s,i)=>{
+    const a=2*Math.PI*i/Math.max(1,active.length)-Math.PI/2;
+    pos.set(s,{x:center.x+Math.cos(a)*250,y:center.y+Math.sin(a)*150});
+  });
+  ctx.lineWidth=1;
+  for(const s of active){
+    const p=pos.get(s);ctx.strokeStyle="rgba(130,167,255,.35)";ctx.beginPath();ctx.moveTo(center.x,center.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+  }
+  ctx.beginPath();ctx.arc(center.x,center.y,16,0,Math.PI*2);ctx.fillStyle="#ffd16f";ctx.fill();
+  ctx.fillStyle="#edf2ff";ctx.font="13px system-ui";ctx.fillText(ir.concept,center.x+20,center.y+4);
+  for(const s of active){
+    const p=pos.get(s);ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fillStyle="#82a7ff";ctx.fill();
+    ctx.fillStyle="#edf2ff";ctx.font="11px system-ui";ctx.fillText(`${s} (${ir[s].length})`,p.x+13,p.y+4);
+  }
+}
+function conceptMention(text){
+  const names=[...new Set([...Object.keys(CONCEPTS),...Object.keys(BUILTIN_CONCEPTS),CURRENT_CONCEPT?.concept].filter(Boolean))].sort((a,b)=>b.length-a.length);
+  const hit=names.find(n=>String(text).includes(n));
+  if(hit)return hit;
+  try{
+    const txt=$("#cdlInput")?.value||"";
+    if(txt.trim()){
+      const c=parseCDL(txt);
+      if(c.concept && String(text).includes(c.concept))return c.concept;
+    }
+  }catch{}
+  return null;
+}
+function describeConcept(ir){
+  if(!ir)return"";
+  const p=[];
+  p.push(`概念「${ir.concept}」: ${ir.gloss||"語釈なし"}`);
+  if(ir.components.length)p.push(`構成要素: ${ir.components.slice(0,8).join(" / ")}`);
+  if(ir.states.length)p.push(`状態: ${ir.states.slice(0,6).join(" / ")}`);
+  if(ir.inputs.length)p.push(`入力: ${ir.inputs.slice(0,6).join(" / ")}`);
+  if(ir.transitions.length)p.push(`状態遷移: ${ir.transitions.slice(0,6).join(" / ")}`);
+  if(ir.termination.length)p.push(`終了条件: ${ir.termination.join(" / ")}`);
+  return p.join("\n");
+}
+
+function cdlCorpus(ir){
+  const extras=Object.entries(ir.extraSections||{}).flatMap(([name,items])=>[`【${name}】`,...items]);
+  return [ir.gloss,...ir.target,...ir.components,...ir.states,...ir.inputs,...ir.rules,...ir.transitions,...ir.constraints,...ir.success,...ir.termination,...ir.outputs,...extras].join("\n");
+}
+function numberNear(text,labels,def=null){
+  for(const l of labels){
+    const re=new RegExp(l+"\\s*(?:=|:|：)?\\s*([0-9]+(?:\\.[0-9]+)?)","i");
+    const m=String(text).match(re); if(m)return +m[1];
+  }
+  return def;
+}
+function hasAny(text,arr){text=String(text).toLowerCase();return arr.some(x=>text.includes(String(x).toLowerCase()))}
+function inferExecutionProfile(ir){
+  const text=cdlCorpus(ir);
+  const profile={
+    mode:"document",
+    confidence:0,
+    reasons:[],
+    dimensions:{width:null,height:null},
+    features:{
+      grid:false,continuous2d:false,velocity:false,deltaTime:false,
+      circle:false,rect:false,collision:false,randomPlacement:false,
+      reveal:false,flags:false,flood:false,score:false,lives:false,
+      keyboard:false,win:false,loss:false,blocks:false,paddleLike:false,projectileLike:false
+    }
+  };
+  const f=profile.features;
+  f.grid=hasAny(text,["格子","マス","セル","grid","cell"]);
+  f.continuous2d=hasAny(text,["二次元","x座標","y座標","2d","座標系"]);
+  f.velocity=hasAny(text,["vx","vy","速度ベクトル","velocity"]);
+  f.deltaTime=hasAny(text,["deltatime","deltaTime","フレームレート","時間ごと"]);
+  f.circle=hasAny(text,["円","半径","radius","ball"]);
+  f.rect=hasAny(text,["矩形","rectangle","width","height"]);
+  f.collision=hasAny(text,["衝突","collision","反射"]);
+  f.randomPlacement=hasAny(text,["ランダム","random"]);
+  f.reveal=hasAny(text,["開く","開封","reveal"]);
+  f.flags=hasAny(text,["フラグ","flag"]);
+  f.flood=hasAny(text,["再帰","反復","flood","自動的に開"]);
+  f.score=hasAny(text,["スコア","score","得点"]);
+  f.lives=hasAny(text,["残機","lives","life"]);
+  f.keyboard=hasAny(text,["キー","keyboard","左","右","space"]);
+  f.win=hasAny(text,["勝利","win","クリア"]);
+  f.loss=hasAny(text,["敗北","game_over","gameover","ゲームオーバー"]);
+  f.blocks=hasAny(text,["block[]","ブロック","blocks"]);
+  f.paddleLike=hasAny(text,["パドル","paddle"]);
+  f.projectileLike=hasAny(text,["ボール","ball","projectile"]);
+  profile.dimensions.width=numberNear(text,["game\\.width","width","幅","横"],null);
+  profile.dimensions.height=numberNear(text,["game\\.height","height","高さ","縦"],null);
+
+  const physicsScore=[f.continuous2d,f.velocity,f.circle,f.rect,f.collision].filter(Boolean).length;
+  const gridScore=[f.grid,f.reveal,f.flags,f.flood].filter(Boolean).length;
+  if(physicsScore>=4){
+    profile.mode="physics2d";profile.confidence=physicsScore/5;
+    profile.reasons.push("continuous coordinates + velocity + shapes + collision");
+  }else if(gridScore>=2){
+    profile.mode="grid";profile.confidence=gridScore/4;
+    profile.reasons.push("grid/cell state semantics");
+  }else if(ir.capabilities?.includes("interactive_game")){
+    profile.mode="state_app";profile.confidence=.45;profile.reasons.push("interactive state-machine concept");
+  }
+  return profile;
+}
+
+function sectionTextMap(ir){
+  const out={};
+  for(const [name,items] of Object.entries(ir.extraSections||{}))out[name]=items.join("\n");
+  return out;
+}
+function variableSignature(text){
+  const s=String(text||"").toLowerCase();
+  const vars=new Set();
+  const tokens=["x","y","vx","vy","radius","width","height","speed","active","hitpoints","scorevalue","columns","rows","blockwidth","blockheight","gap"];
+  for(const v of tokens){
+    const re=new RegExp("(^|[^a-z0-9_])"+v+"([^a-z0-9_]|$)","i");
+    if(re.test(s))vars.add(v);
+  }
+  return vars;
+}
+function numericAssignments(text){
+  const out={};
+  const re=/\\b([A-Za-z_][A-Za-z0-9_.]*)\\s*=\\s*(-?\\d+(?:\\.\\d+)?)/g;
+  let m;while((m=re.exec(String(text||""))))out[m[1].toLowerCase()]=+m[2];
+  return out;
+}
+function inferPhysicalSections(ir){
+  const sections=sectionTextMap(ir), found={dynamicCircle:null,controlledRect:null,breakableRect:null,placement:null};
+  for(const [name,text] of Object.entries(sections)){
+    const sig=variableSignature(text), nums=numericAssignments(text), low=(name+"\\n"+text).toLowerCase();
+
+    // Pure structural signatures: no concept-name check.
+    if(!found.dynamicCircle && sig.has("x")&&sig.has("y")&&sig.has("vx")&&sig.has("vy")&&sig.has("radius")){
+      found.dynamicCircle={name,text,sig,nums};
+      continue;
+    }
+    if(!found.breakableRect && sig.has("x")&&sig.has("y")&&sig.has("width")&&sig.has("height")&&sig.has("active")&&(sig.has("hitpoints")||sig.has("scorevalue"))){
+      found.breakableRect={name,text,sig,nums};
+      continue;
+    }
+    if(!found.controlledRect && sig.has("x")&&sig.has("y")&&sig.has("width")&&sig.has("height")&&sig.has("speed")&&/左右|left|right|horizontal/.test(low)){
+      found.controlledRect={name,text,sig,nums};
+      continue;
+    }
+    if(!found.placement && sig.has("columns")&&sig.has("rows")&&(sig.has("blockwidth")||sig.has("width"))&&(sig.has("blockheight")||sig.has("height"))){
+      found.placement={name,text,sig,nums};
+    }
+  }
+  return found;
+}
+function firstNum(obj,keys,def){
+  for(const k of keys)if(Number.isFinite(obj?.[k]))return obj[k];
+  return def;
+}
+
+function inferPhysics2DSpec(ir){
+  const text=cdlCorpus(ir);
+  const P=inferExecutionProfile(ir);
+  if(P.mode!=="physics2d")return null;
+
+  const phys=inferPhysicalSections(ir);
+  const allNums=numericAssignments(text);
+  const W=firstNum(allNums,["game.width","width"],P.dimensions.width||800);
+  const H=firstNum(allNums,["game.height","height"],P.dimensions.height||600);
+  const spec={
+    engine:"physics2d",
+    width:W,height:H,
+    background:"#07101e",
+    state:{score:0,lives:firstNum(allNums,["lives","life"],3),status:"READY"},
+    input:{left:["ArrowLeft","a","A"],right:["ArrowRight","d","D"],launch:[" "],pause:["p","P"],restart:["r","R"]},
+    objects:[],
+    rules:{},
+    transitions:ir.transitionGraph||[],
+    inference:{sections:{
+      dynamicCircle:phys.dynamicCircle?.name||null,
+      controlledRect:phys.controlledRect?.name||null,
+      breakableRect:phys.breakableRect?.name||null,
+      placement:phys.placement?.name||null
+    }}
+  };
+
+  if(phys.dynamicCircle){
+    const n=phys.dynamicCircle.nums;
+    spec.objects.push({
+      id:"dynamic_0",kind:"circle",role:"dynamic_projectile",
+      x:firstNum(n,["x"],W/2),y:firstNum(n,["y"],H*.72),
+      radius:firstNum(n,["radius"],8),
+      vx:firstNum(n,["vx"],240),vy:firstNum(n,["vy"],-240),
+      active:false,color:"#f4f7ff"
+    });
+  }
+
+  if(phys.controlledRect){
+    const n=phys.controlledRect.nums;
+    const pw=firstNum(n,["width"],100),ph=firstNum(n,["height"],16);
+    spec.objects.push({
+      id:"controller_0",kind:"rect",role:"player_horizontal",
+      x:firstNum(n,["x"],(W-pw)/2),y:firstNum(n,["y"],H-50),
+      width:pw,height:ph,
+      speed:firstNum(n,["speed"],500),color:"#82a7ff"
+    });
+  }
+
+  if(phys.breakableRect){
+    const n=phys.breakableRect.nums, q=phys.placement?.nums||{};
+    spec.objects.push({
+      id:"targets_0",kind:"rect_grid",role:"breakable_targets",
+      columns:firstNum(q,["columns"],10),
+      rows:firstNum(q,["rows"],6),
+      width:firstNum(q,["blockwidth","width"],firstNum(n,["width"],68)),
+      height:firstNum(q,["blockheight","height"],firstNum(n,["height"],22)),
+      gap:firstNum(q,["gap"],6),
+      top:70,
+      hitPoints:firstNum(n,["hitpoints"],1),
+      scoreValue:firstNum(n,["scorevalue"],100),
+      color:"#65d79d"
+    });
+  }
+
+  const hasBall=spec.objects.some(o=>o.role==="dynamic_projectile");
+  const hasController=spec.objects.some(o=>o.role==="player_horizontal");
+  const hasTargets=spec.objects.some(o=>o.role==="breakable_targets");
+  spec.rules={
+    reflectWalls:hasBall&&P.features.collision,
+    bottomLoseLife:hasBall&&P.features.lives,
+    controllerReflect:hasBall&&hasController&&P.features.collision,
+    targetCollisions:hasBall&&hasTargets&&P.features.collision,
+    scoreOnTarget:hasTargets&&P.features.score,
+    winWhenNoTargets:hasTargets&&P.features.win,
+    gameOverWhenNoLives:P.features.loss&&P.features.lives,
+    pause:hasAny(text,["paused","一時停止","pause"])
+  };
+  return spec;
+}
+function autoExecSpec(ir){
+  if(ir.execSpec && !ir.execSpec.__parseError)return ir.execSpec;
+  const p=inferExecutionProfile(ir);
+  if(p.mode==="physics2d")return inferPhysics2DSpec(ir);
+  return null;
+}
+function compilePhysics2D(ir,spec){
+  const payload=safeScriptText(JSON.stringify({title:ir.concept||"CDL Physics App",gloss:ir.gloss||"",spec}));
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${hesc(ir.concept||"CDL Physics App")}</title>
+<style>
+body{margin:0;background:#0b1020;color:#eef2ff;font-family:system-ui;display:grid;place-items:center;min-height:100vh}.wrap{background:#121a2d;border:1px solid #293754;border-radius:16px;padding:18px;max-width:96vw}.top{display:flex;gap:16px;justify-content:space-between;align-items:center;flex-wrap:wrap}.stats{display:flex;gap:14px}.cv{max-width:92vw;height:auto;border:1px solid #32415f;background:#07101e}.muted{color:#9daac1;font-size:12px}button{padding:8px 12px;border-radius:8px;background:#1d3d7a;color:white;border:1px solid #416cc5}
+</style></head><body><div class="wrap"><div class="top"><div><h1 id="title"></h1><div id="status"></div></div><div class="stats"><span>Score <b id="score"></b></span><span>Lives <b id="lives"></b></span><button id="restart">Restart</button></div></div><canvas id="cv" class="cv"></canvas><div class="muted" id="note"></div></div>
+<script>
+const APP=${payload},S=APP.spec,cv=document.getElementById("cv"),x=cv.getContext("2d");cv.width=S.width;cv.height=S.height;
+let G,ball,pad,targets,keys={},last=0,paused=false;
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function obj(role){return S.objects.find(o=>o.role===role)}
+function init(){
+  G=clone(S.state||{score:0,lives:3,status:"READY"});paused=false;
+  const b=obj("dynamic_projectile"),p=obj("player_horizontal"),t=obj("breakable_targets");
+  ball=b?clone(b):null;pad=p?clone(p):null;targets=[];
+  if(t){for(let r=0;r<t.rows;r++)for(let c=0;c<t.columns;c++){const total=t.columns*t.width+(t.columns-1)*t.gap,ox=(S.width-total)/2;targets.push({x:ox+c*(t.width+t.gap),y:t.top+r*(t.height+t.gap),width:t.width,height:t.height,hp:t.hitPoints||1,score:t.scoreValue||100,active:true,color:t.color})}}
+  if(ball)ball.active=false;render();sync();
+}
+function sync(){document.getElementById("title").textContent=APP.title;document.getElementById("status").textContent=G.status;document.getElementById("score").textContent=G.score??0;document.getElementById("lives").textContent=G.lives??"";document.getElementById("note").textContent=APP.gloss||""}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function circleRect(c,r){const qx=clamp(c.x,r.x,r.x+r.width),qy=clamp(c.y,r.y,r.y+r.height),dx=c.x-qx,dy=c.y-qy;return dx*dx+dy*dy<=c.radius*c.radius}
+function reflectRect(c,r){
+  const cx=clamp(c.x,r.x,r.x+r.width),cy=clamp(c.y,r.y,r.y+r.height),dx=c.x-cx,dy=c.y-cy;
+  if(Math.abs(dx)>Math.abs(dy))c.vx*=-1;else c.vy*=-1;
+}
+function loseLife(){
+  if(!S.rules.bottomLoseLife)return;
+  G.lives=(G.lives??1)-1;
+  if(S.rules.gameOverWhenNoLives&&G.lives<=0){G.status="GAME_OVER";ball.active=false;return}
+  resetBall();G.status="READY";
+}
+function resetBall(){if(!ball||!pad)return;ball.x=pad.x+pad.width/2;ball.y=pad.y-ball.radius-3;ball.vx=Math.abs(ball.vx||240);ball.vy=-Math.abs(ball.vy||240);ball.active=false}
+function update(dt){
+  if(paused||G.status==="GAME_OVER"||G.status==="WIN")return;
+  if(pad){
+    const left=(S.input.left||[]).some(k=>keys[k]),right=(S.input.right||[]).some(k=>keys[k]);
+    pad.x=clamp(pad.x+(right-left)*pad.speed*dt,0,S.width-pad.width);
+  }
+  if(ball&&!ball.active&&pad){ball.x=pad.x+pad.width/2;ball.y=pad.y-ball.radius-3}
+  if(!ball||!ball.active)return;
+  ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;
+  if(S.rules.reflectWalls){
+    if(ball.x-ball.radius<0){ball.x=ball.radius;ball.vx=Math.abs(ball.vx)}
+    if(ball.x+ball.radius>S.width){ball.x=S.width-ball.radius;ball.vx=-Math.abs(ball.vx)}
+    if(ball.y-ball.radius<0){ball.y=ball.radius;ball.vy=Math.abs(ball.vy)}
+  }
+  if(ball.y-ball.radius>S.height){loseLife();return}
+  if(S.rules.controllerReflect&&pad&&ball.vy>0&&circleRect(ball,pad)){
+    ball.y=pad.y-ball.radius-1;const rel=clamp((ball.x-(pad.x+pad.width/2))/(pad.width/2),-1,1),spd=Math.hypot(ball.vx,ball.vy)||340,ang=rel*1.05;
+    ball.vx=spd*Math.sin(ang);ball.vy=-Math.abs(spd*Math.cos(ang));
+  }
+  if(S.rules.targetCollisions){
+    for(const t of targets){if(!t.active)continue;if(circleRect(ball,t)){reflectRect(ball,t);t.hp--;if(t.hp<=0){t.active=false;if(S.rules.scoreOnTarget)G.score=(G.score||0)+t.score}break}}
+  }
+  if(S.rules.winWhenNoTargets&&targets.length&&targets.every(t=>!t.active)){G.status="WIN";ball.active=false}
+}
+function render(){
+  x.fillStyle=S.background||"#07101e";x.fillRect(0,0,cv.width,cv.height);
+  for(const t of targets)if(t.active){x.fillStyle=t.color||"#65d79d";x.fillRect(t.x,t.y,t.width,t.height)}
+  if(pad){x.fillStyle=pad.color||"#82a7ff";x.fillRect(pad.x,pad.y,pad.width,pad.height)}
+  if(ball){x.fillStyle=ball.color||"#fff";x.beginPath();x.arc(ball.x,ball.y,ball.radius,0,Math.PI*2);x.fill()}
+  sync();
+}
+document.addEventListener("keydown",e=>{
+  keys[e.key]=true;if((S.input.launch||[]).includes(e.key)&&ball&&!ball.active&&G.status!=="GAME_OVER"&&G.status!=="WIN"){ball.active=true;G.status="PLAYING"}
+  if((S.input.pause||[]).includes(e.key)&&S.rules.pause){paused=!paused;G.status=paused?"PAUSED":"PLAYING"}
+  if((S.input.restart||[]).includes(e.key))init();
+  if(["ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
+});
+document.addEventListener("keyup",e=>keys[e.key]=false);document.getElementById("restart").onclick=init;
+function loop(t){const dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);render();requestAnimationFrame(loop)}
+init();requestAnimationFrame(loop);
+<\/script><script>
+window.BANC888AndroidAgent={
+  available:function(){return !!(window.AndroidAgent&&typeof window.AndroidAgent.runCommand==="function");},
+  run:function(command){return this.available()?window.AndroidAgent.runCommand(String(command)):'{"ok":false,"error":"android_agent_unavailable"}';},
+  snapshot:function(){return this.available()?window.AndroidAgent.getScreenSnapshot():'{"ok":false,"error":"android_agent_unavailable"}';},
+  openAccessibilitySettings:function(){if(this.available())window.AndroidAgent.openAccessibilitySettings();}
+};
+</script></body></html>`;
+}
+
+function compilerKind(ir){
+  if(ir?.execSpec && !ir.execSpec.__parseError)return ir.execSpec.engine||"executable";
+  const p=inferExecutionProfile(ir);
+  if(p.mode==="physics2d")return"physics2d:auto";
+  if(ir?.inferred?.tetrominoLike)return"tetromino_game";
+  if(ir?.capabilities?.includes("interactive_game"))return"generic_game";
+  return"concept_page";
+}
+
+function compileExecutableCDL(ir){
+  const spec=ir.execSpec;
+  if(!spec || spec.__parseError)throw new Error(spec?.__parseError||"実行定義JSONがありません");
+  if(spec.engine!=="grid")throw new Error(`未対応engine: ${spec.engine}. v1.7は汎用grid runtimeを提供します。`);
+  const payload=safeScriptText(JSON.stringify({title:ir.concept||spec.title||"CDL App",gloss:ir.gloss||"",spec}));
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${hesc(ir.concept||spec.title||"CDL App")}</title>
+<style>
+body{margin:0;background:#0b1020;color:#edf2ff;font-family:system-ui;display:grid;place-items:center;min-height:100vh}
+.app{background:#121a2d;border:1px solid #293754;border-radius:16px;padding:18px;max-width:96vw}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}.stats{display:flex;gap:12px;flex-wrap:wrap}
+.grid{display:grid;gap:2px;background:#253550;padding:2px;user-select:none;touch-action:manipulation}.cell{display:grid;place-items:center;font-weight:700;background:#172238;border:0;color:#eef2ff;cursor:pointer}
+.cell.revealed{background:#0e1728}.cell.flagged{background:#233554}.cell.mine{background:#53252d}.cell.exploded{background:#8a2733}
+button{padding:8px 12px;background:#1c3d78;color:#fff;border:1px solid #416cc5;border-radius:8px;cursor:pointer}
+.note{color:#9eacc5;font-size:12px;max-width:720px;margin-top:10px}
+</style></head><body><div class="app"><div class="top"><div><h1 id="title"></h1><div id="state"></div></div><div class="stats" id="stats"></div><button id="restart">Restart</button></div><div id="grid" class="grid"></div><div class="note" id="note"></div></div>
+<script>
+const APP=${payload},S=APP.spec;
+const W=+S.grid.width,H=+S.grid.height,SIZE=+S.grid.cellSize||32;
+let G={},cells=[],stopAction=false;
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function init(){
+  G=clone(S.globals||{});
+  cells=Array.from({length:H},(_,y)=>Array.from({length:W},(_,x)=>({x,y,...clone(S.grid.cell||{})})));
+  if(S.init)runActions(S.init,{x:0,y:0,cell:cells[0][0],event:"init"});
+  render();
+}
+function inb(x,y){return x>=0&&x<W&&y>=0&&y<H}
+function neighbors(x,y,diag=true){
+  const out=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;if(!diag&&Math.abs(dx)+Math.abs(dy)!==1)continue;const X=x+dx,Y=y+dy;if(inb(X,Y))out.push(cells[Y][X])}return out;
+}
+function countCells(expr,ctx={}){let n=0;for(const row of cells)for(const cell of row)if(test(expr,{...ctx,cell,x:cell.x,y:cell.y}))n++;return n}
+function value(expr,ctx){
+  if(expr===null||typeof expr==="number"||typeof expr==="boolean")return expr;
+  if(Array.isArray(expr))return expr.map(x=>value(x,ctx));
+  if(typeof expr==="object")return expr;
+  const s=String(expr);
+  if(s.startsWith("$"))return pathGet(s.slice(1),ctx);
+  if(/^[-+]?\d+(?:\.\d+)?$/.test(s))return +s;
+  if(s==="true")return true;if(s==="false")return false;if(s==="null")return null;
+  return s;
+}
+function pathGet(path,ctx){
+  const parts=path.split(".");
+  let root;
+  if(parts[0]==="cell"){root=ctx.cell;parts.shift()}
+  else if(parts[0]==="global"){root=G;parts.shift()}
+  else if(parts[0]==="event"){root=ctx;parts.shift()}
+  else return undefined;
+  for(const p of parts){if(root==null)return undefined;root=root[p]}
+  return root;
+}
+function cmp(a,op,b){if(op==="==")return a==b;if(op==="===")return a===b;if(op==="!=")return a!=b;if(op==="!==")return a!==b;if(op===">")return a>b;if(op===">=")return a>=b;if(op==="<")return a<b;if(op==="<=")return a<=b;return false}
+function test(cond,ctx){
+  if(cond==null)return true;
+  if(typeof cond==="boolean")return cond;
+  if(Array.isArray(cond))return cond.every(c=>test(c,ctx));
+  if(cond.all)return cond.all.every(c=>test(c,ctx));
+  if(cond.any)return cond.any.some(c=>test(c,ctx));
+  if(cond.not)return !test(cond.not,ctx);
+  if(cond.eq)return cmp(value(cond.eq[0],ctx),"==",value(cond.eq[1],ctx));
+  if(cond.ne)return cmp(value(cond.ne[0],ctx),"!=",value(cond.ne[1],ctx));
+  if(cond.gt)return cmp(value(cond.gt[0],ctx),">",value(cond.gt[1],ctx));
+  if(cond.gte)return cmp(value(cond.gte[0],ctx),">=",value(cond.gte[1],ctx));
+  if(cond.lt)return cmp(value(cond.lt[0],ctx),"<",value(cond.lt[1],ctx));
+  if(cond.lte)return cmp(value(cond.lte[0],ctx),"<=",value(cond.lte[1],ctx));
+  if(cond.countCells){
+    const n=countCells(cond.countCells.where,ctx);
+    return cmp(n,cond.countCells.op||"==",value(cond.countCells.value,ctx));
+  }
+  return false;
+}
+function setPath(target,val,ctx){
+  const parts=target.split(".");
+  let root;
+  if(parts[0]==="cell"){root=ctx.cell;parts.shift()}
+  else if(parts[0]==="global"){root=G;parts.shift()}
+  else return;
+  for(let i=0;i<parts.length-1;i++){root[parts[i]]??={};root=root[parts[i]]}
+  root[parts.at(-1)]=val;
+}
+function randomCells(count,where,excludeCtx){
+  const pool=[];for(const row of cells)for(const cell of row)if(test(where,{...excludeCtx,cell,x:cell.x,y:cell.y}))pool.push(cell);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+  return pool.slice(0,Math.max(0,Math.min(count,pool.length)));
+}
+function flood(start,pass,apply){
+  const q=[start],seen=new Set();
+  while(q.length){const c=q.shift(),k=c.x+","+c.y;if(seen.has(k))continue;seen.add(k);const ctx={cell:c,x:c.x,y:c.y,event:"flood"};
+    if(!test(pass,ctx))continue;runActions(apply,ctx);if(stopAction)stopAction=false;
+    for(const n of neighbors(c.x,c.y,true))if(!seen.has(n.x+","+n.y))q.push(n);
+  }
+}
+function runActions(actions,ctx){
+  if(!Array.isArray(actions))actions=[actions];
+  for(const a of actions){
+    if(!a||stopAction)break;
+    if(a.if && !test(a.if,ctx))continue;
+    if(a.stop){stopAction=true;break}
+    if(a.set){for(const [k,v] of Object.entries(a.set))setPath(k,value(v,ctx),ctx)}
+    if(a.inc){for(const [k,v] of Object.entries(a.inc)){const cur=value("$"+k,ctx)||0;setPath(k,cur+(+value(v,ctx)||0),ctx)}}
+    if(a.toggle){const cur=!!value("$"+a.toggle,ctx);setPath(a.toggle,!cur,ctx)}
+    if(a.randomSet){
+      const rr=a.randomSet,cnt=+value(rr.count,ctx)||0;
+      for(const c of randomCells(cnt,rr.where||true,ctx)){c[rr.field]=value(rr.value,ctx)}
+    }
+    if(a.computeNeighborCount){
+      const rr=a.computeNeighborCount;
+      for(const row of cells)for(const c of row)c[rr.field]=neighbors(c.x,c.y,rr.diagonal!==false).filter(n=>test(rr.where,{...ctx,cell:n,x:n.x,y:n.y})).length;
+    }
+    if(a.forEachCell){
+      for(const row of cells)for(const c of row)if(test(a.forEachCell.where||true,{...ctx,cell:c,x:c.x,y:c.y}))runActions(a.forEachCell.do,{...ctx,cell:c,x:c.x,y:c.y});
+    }
+    if(a.forEachNeighbor){
+      for(const c of neighbors(ctx.x,ctx.y,a.forEachNeighbor.diagonal!==false))if(test(a.forEachNeighbor.where||true,{...ctx,cell:c,x:c.x,y:c.y}))runActions(a.forEachNeighbor.do,{...ctx,cell:c,x:c.x,y:c.y});
+    }
+    if(a.floodFill)flood(ctx.cell,a.floodFill.pass||true,a.floodFill.do||[]);
+    if(a.callEvent)fire(a.callEvent,ctx.x,ctx.y);
+    if(a.when){
+      const yes=test(a.when.condition,ctx);runActions(yes?a.when.then:(a.when.else||[]),ctx);
+    }
+  }
+}
+function fire(name,x,y){
+  if(!inb(x,y))return;const cell=cells[y][x],ctx={x,y,cell,event:name};stopAction=false;
+  const rules=S.events?.[name]||[];for(const r of rules){if(r.if&&!test(r.if,ctx))continue;runActions(r.do||r,ctx);if(stopAction){stopAction=false;break}}
+  if(S.postEvent)runActions(S.postEvent,ctx);
+  render();
+}
+function textFor(cell){
+  for(const r of S.view?.text||[])if(test(r.when,{cell,x:cell.x,y:cell.y}))return r.value==="@value"?String(value(r.from,{cell,x:cell.x,y:cell.y})??""):String(r.value??"");
+  return "";
+}
+function classFor(cell){
+  const a=["cell"];for(const r of S.view?.classes||[])if(test(r.when,{cell,x:cell.x,y:cell.y}))a.push(r.class);return a.join(" ");
+}
+function render(){
+  document.getElementById("title").textContent=APP.title;document.getElementById("state").textContent=String(G.state??"");
+  const stats=document.getElementById("stats");stats.innerHTML=(S.view?.stats||[]).map(r=>"<span>"+r.label+": <b>"+(value(r.value,{cell:cells[0][0],x:0,y:0})??"")+"</b></span>").join("");
+  const g=document.getElementById("grid");g.style.gridTemplateColumns="repeat("+W+","+SIZE+"px)";g.innerHTML="";
+  for(const row of cells)for(const cell of row){const b=document.createElement("button");b.className=classFor(cell);b.style.width=b.style.height=SIZE+"px";b.textContent=textFor(cell);
+    b.onclick=()=>fire("left",cell.x,cell.y);b.oncontextmenu=e=>{e.preventDefault();fire("right",cell.x,cell.y)};g.appendChild(b)}
+  document.getElementById("note").textContent=APP.gloss||"";
+}
+document.getElementById("restart").onclick=()=>init();init();
+<\/script></body></html>`;
+}
+
+function compileConcept(ir){
+  const spec=autoExecSpec(ir);
+  if(spec?.engine==="grid")return compileExecutableCDL({...ir,execSpec:spec});
+  if(spec?.engine==="physics2d")return compilePhysics2D(ir,spec);
+  const kind=compilerKind(ir);
+  if(kind==="tetromino_game")return compileTetrominoGame(ir);
+  if(kind==="generic_game")return compileGenericGame(ir);
+  return compileConceptPage(ir);
+}
+function safeScriptText(s){return String(s).replace(/<\/script/gi,"<\\/script")}
+function compileConceptPage(ir){
+  const data=safeScriptText(JSON.stringify(ir));
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${hesc(ir.concept)}</title>
+<style>body{font-family:system-ui;max-width:900px;margin:40px auto;padding:0 16px;background:#111827;color:#eee}pre{white-space:pre-wrap;background:#0b1220;padding:16px;border-radius:12px}</style></head>
+<body><h1>${hesc(ir.concept)}</h1><p>${hesc(ir.gloss||"")}</p><pre id="out"></pre>
+<script>const concept=${data};document.getElementById("out").textContent=JSON.stringify(concept,null,2);<\/script></body></html>`;
+}
+function compileGenericGame(ir){
+  const comp=ir.components.map(x=>`<li>${hesc(x)}</li>`).join("");
+  const rules=ir.rules.map(x=>`<li>${hesc(x)}</li>`).join("");
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${hesc(ir.concept)}</title>
+<style>body{font-family:system-ui;background:#101827;color:#eee;max-width:900px;margin:40px auto;padding:16px}section{background:#172238;border-radius:14px;padding:16px;margin:12px 0}</style></head>
+<body><h1>${hesc(ir.concept)}</h1><p>${hesc(ir.gloss||"")}</p><section><h2>構成要素</h2><ul>${comp}</ul></section><section><h2>規則</h2><ul>${rules}</ul></section>
+<p>この概念は汎用ゲーム骨格として生成されました。実行ロジックへ変換するには、動作プリミティブの対応定義を追加してください。</p></body></html>`;
+}
+function compileTetrominoGame(ir){
+  const W=ir.inferred.boardWidth||10,H=ir.inferred.boardHeight||20;
+  const title=ir.concept||"Block Drop Game";
+  return `<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${hesc(title)}</title>
+<style>
+body{margin:0;background:#0b1020;color:#eef2ff;font-family:system-ui;display:grid;place-items:center;min-height:100vh}
+.wrap{display:flex;gap:20px;align-items:flex-start;background:#121a2d;padding:20px;border-radius:16px}
+canvas{background:#07101e;border:1px solid #33415f}.side{min-width:190px}button{padding:9px 12px;font:inherit}
+.k{font-size:12px;color:#aab8d0;line-height:1.7}@media(max-width:700px){.wrap{flex-direction:column}}
+</style></head><body>
+<div class="wrap"><canvas id="game" width="${W*28}" height="${H*28}"></canvas>
+<div class="side"><h1>${hesc(title)}</h1><div>Score: <b id="score">0</b></div><h3>Next</h3><canvas id="next" width="120" height="120"></canvas>
+<p id="state">PLAYING</p><button id="restart">Restart</button>
+<p class="k">← → : move<br>↓ : soft drop<br>↑ : rotate<br>Space : hard drop<br>R : restart</p></div></div>
+<script>
+const COLS=${W},ROWS=${H},S=28;
+const SHAPES={
+ I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],O:[[1,1],[1,1]],T:[[0,1,0],[1,1,1],[0,0,0]],
+ S:[[0,1,1],[1,1,0],[0,0,0]],Z:[[1,1,0],[0,1,1],[0,0,0]],J:[[1,0,0],[1,1,1],[0,0,0]],L:[[0,0,1],[1,1,1],[0,0,0]]
+};
+const TYPES=Object.keys(SHAPES),C={I:"#65d9e8",O:"#f4d35e",T:"#aa7cff",S:"#64d69b",Z:"#ff747c",J:"#6e9cff",L:"#ffad5e"};
+let board,piece,next,score,over,lastDrop,bag=[];
+const cv=document.getElementById("game"),ctx=cv.getContext("2d"),nx=document.getElementById("next").getContext("2d");
+function clone(m){return m.map(r=>r.slice())}
+function refill(){bag=TYPES.slice();for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]]}}
+function take(){if(!bag.length)refill();const type=bag.pop();return{type,m:clone(SHAPES[type]),x:Math.floor((COLS-SHAPES[type][0].length)/2),y:-1}}
+function reset(){board=Array.from({length:ROWS},()=>Array(COLS).fill(""));score=0;over=false;bag=[];piece=take();next=take();lastDrop=performance.now();document.getElementById("score").textContent=score;document.getElementById("state").textContent="PLAYING"}
+function coll(p,dx=0,dy=0,m=p.m){for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++)if(m[y][x]){const X=p.x+x+dx,Y=p.y+y+dy;if(X<0||X>=COLS||Y>=ROWS)return true;if(Y>=0&&board[Y][X])return true}return false}
+function rotate(m){return m[0].map((_,i)=>m.map(r=>r[i]).reverse())}
+function lock(){for(let y=0;y<piece.m.length;y++)for(let x=0;x<piece.m[y].length;x++)if(piece.m[y][x]){const Y=piece.y+y;if(Y<0){gameOver();return}board[Y][piece.x+x]=piece.type}clearLines();piece=next;piece.x=Math.floor((COLS-piece.m[0].length)/2);piece.y=-1;next=take();if(coll(piece,0,1)&&coll(piece)){gameOver()}}
+function clearLines(){let n=0;for(let y=ROWS-1;y>=0;y--){if(board[y].every(Boolean)){board.splice(y,1);board.unshift(Array(COLS).fill(""));n++;y++}}if(n){score+=[0,100,300,500,800][n]||n*250;document.getElementById("score").textContent=score}}
+function gameOver(){over=true;document.getElementById("state").textContent="GAME OVER"}
+function drop(){if(!coll(piece,0,1))piece.y++;else lock()}
+function hard(){while(!coll(piece,0,1))piece.y++;lock()}
+function move(dx){if(!over&&!coll(piece,dx,0))piece.x+=dx}
+function turn(){if(over)return;const r=rotate(piece.m);for(const kick of [0,-1,1,-2,2])if(!coll(piece,kick,0,r)){piece.x+=kick;piece.m=r;break}}
+function drawCell(c,x,y,g=ctx){g.fillStyle=C[c]||"#889";g.fillRect(x*S+1,y*S+1,S-2,S-2)}
+function draw(){ctx.clearRect(0,0,cv.width,cv.height);for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(board[y][x])drawCell(board[y][x],x,y);if(piece)for(let y=0;y<piece.m.length;y++)for(let x=0;x<piece.m[y].length;x++)if(piece.m[y][x]&&piece.y+y>=0)drawCell(piece.type,piece.x+x,piece.y+y);ctx.strokeStyle="#18243a";for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(x*S,0);ctx.lineTo(x*S,ROWS*S);ctx.stroke()}for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*S);ctx.lineTo(COLS*S,y*S);ctx.stroke()}nx.clearRect(0,0,120,120);if(next){for(let y=0;y<next.m.length;y++)for(let x=0;x<next.m[y].length;x++)if(next.m[y][x]){nx.fillStyle=C[next.type];nx.fillRect(18+x*22,18+y*22,20,20)}}}
+document.addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key))e.preventDefault();if(e.key==="ArrowLeft")move(-1);else if(e.key==="ArrowRight")move(1);else if(e.key==="ArrowDown")drop();else if(e.key==="ArrowUp")turn();else if(e.key===" ")hard();else if(e.key.toLowerCase()==="r")reset();draw()});
+document.getElementById("restart").onclick=()=>{reset();draw()};
+function loop(t){if(!over&&t-lastDrop>650){drop();lastDrop=t}draw();requestAnimationFrame(loop)}
+reset();requestAnimationFrame(loop);
+<\/script></body></html>`;
+}
+function conceptSelfTest(ir){
+  const rows=[];let pass=0,total=0;
+  const test=(name,ok)=>{total++;if(ok)pass++;rows.push(`${ok?"PASS":"FAIL"} ${name}`)};
+  test("concept name",!!ir?.concept);
+  test("section parser",["components","states","inputs","rules","transitions","constraints","termination","outputs"].some(k=>ir?.[k]?.length));
+  test("graph relations",Array.isArray(ir?.relations)&&ir.relations.length>0);
+  test("transition graph",Array.isArray(ir?.transitionGraph));
+  const autoP=inferExecutionProfile(ir);
+  if(autoP.mode==="physics2d"){
+    const ps=inferPhysics2DSpec(ir), code=compilePhysics2D(ir,ps), phys=inferPhysicalSections(ir);
+    test("auto physics2d inference",!!ps&&ps.engine==="physics2d");
+    test("physics2d runtime",/function circleRect/.test(code)&&/requestAnimationFrame/.test(code));
+    test("concept name independent",!code.includes('compileBreakout')&&!code.includes('ブロック崩し専用'));
+    if(phys.dynamicCircle)test("dynamic circle recovered",ps.objects.some(o=>o.role==="dynamic_projectile"));
+    if(phys.controlledRect)test("controlled rect recovered",ps.objects.some(o=>o.role==="player_horizontal"));
+    if(phys.breakableRect)test("breakable rect recovered",ps.objects.some(o=>o.role==="breakable_targets"));
+    if(phys.placement)test("rect-grid placement recovered",ps.objects.some(o=>o.role==="breakable_targets"&&o.columns>0&&o.rows>0));
+  }
+  if(ir?.execSpec && !ir.execSpec.__parseError){
+    test("executable CDL spec",ir.execSpec.engine==="grid");
+    const code=compileExecutableCDL(ir);
+    test("generic runtime compiled",/function runActions/.test(code)&&/function fire/.test(code));
+    test("no concept-name branch in generated runtime",!code.includes('tetromino_game')&&!code.includes('minesweeper'));
+  }
+  if(ir?.inferred?.tetrominoLike){
+    test("tetromino primitives",ir.capabilities.includes("gravity")&&ir.capabilities.includes("rotation")&&ir.capabilities.includes("line_clear"));
+    const code=compileTetrominoGame(ir);
+    test("compiled HTML",/<html/i.test(code)&&/<script/i.test(code)&&/<canvas/i.test(code));
+    test("collision primitive",/function coll\(/.test(code));
+    test("line clear primitive",/function clearLines\(/.test(code));
+    test("game over primitive",/function gameOver\(/.test(code));
+  }
+  return{pass,total,rows};
+}
+function defaultTetrisCDL(){return `概念: テトリス
+語釈: 4個の正方形からなるピースを落下・回転させ、完成行を消去するゲーム。
+
+【対象】
+格子状の盤面で動く落下型パズルゲーム。
+
+【構成要素】
+盤面: 幅10、高さ20
+ピース: I,O,T,S,Z,J,L
+現在ピース
+次ピース
+スコア
+ゲーム状態
+
+【状態】
+盤面セル = 空 または 固定ブロック
+現在ピース = 種類,X,Y,回転
+ゲーム状態 = playing または gameover
+
+【入力】
+左 = 1マス左
+右 = 1マス右
+下 = ソフトドロップ
+上 = 90度回転
+Space = ハードドロップ
+R = 再スタート
+
+【規則】
+一定時間ごとに現在ピースを1マス下へ移動する。
+移動できない場合は固定する。
+横10マスがすべて埋まった行を消去する。
+I,O,T,S,Z,J,Lの7種類を生成する。
+
+【状態遷移】
+falling -> locked : 下へ移動できない
+locked -> line_clear : 完成行がある
+line_clear -> spawn : 行消去後
+spawn -> gameover : 新しいピースを配置できない
+spawn -> falling : 配置できる
+
+【禁止条件】
+盤面外へ移動しない。
+固定ブロックと重ならない。
+
+【成立条件】
+完成行 = 横10マスすべて埋まっている。
+
+【終了条件】
+新しいピースを初期位置へ配置できない。
+
+【出力】
+完全オフライン単一HTML
+HTML/CSS/JavaScript
+キーボード操作
+次ピース表示
+スコア表示`;}
+
+const BUILTIN_CONCEPTS={};
+function ensureBuiltinConcepts(){
+  try{
+    const t=parseCDL(defaultTetrisCDL());
+    BUILTIN_CONCEPTS[t.concept]=t;
+  }catch{}
+}
+ensureBuiltinConcepts();
+
+function normalizeConceptName(s){
+  return String(s||"").trim().replace(/[「」『』"'“”‘’]/g,"").replace(/\s+/g," ");
+}
+function requestedArtifactKind(text){
+  const t=String(text||"").toLowerCase();
+  if(/html|ｈｔｍｌ|ウェブ|web|ブラウザ/.test(t))return"html";
+  if(/ゲーム|game/.test(t))return"game";
+  if(/コード|code|プログラム|program/.test(t))return"code";
+  return null;
+}
+function extractRequestedConceptName(text){
+  const s=String(text||"").trim();
+
+  // First prefer an exact known concept mention. This prevents artifact words such as
+  // "HTMLファイル" from being misread as the concept name.
+  const known=[...new Set([
+    ...Object.keys(CONCEPTS),
+    ...Object.keys(BUILTIN_CONCEPTS),
+    CURRENT_CONCEPT?.concept
+  ].filter(Boolean))].sort((a,b)=>b.length-a.length);
+  const knownHit=known.find(n=>s.includes(n));
+  if(knownHit)return knownHit;
+
+  // Japanese generation forms:
+  //   XをHTMLファイルで作成して
+  //   Xを単一HTMLとして生成して
+  //   Xをゲームとして作って
+  //   Xを作って
+  let m=s.match(/^(?:今教えた|保存した|定義した)?\s*[「『]?(.+?)[」』]?\s*を\s*(?:(?:完全オフライン|オフライン)\s*(?:で|の)?\s*)?(?:単一\s*)?(?:(?:html|ｈｔｍｌ|htmlファイル|ウェブ|web|ゲーム|コード|プログラム)\s*(?:ファイル)?\s*(?:で|として|に)?\s*)?(?:作って|作成して|生成して|実装して)(?:ください|下さい)?[。.!！]?$/i);
+  if(m){
+    let name=normalizeConceptName(m[1]);
+    name=name.replace(/^(?:今教えた|保存した|定義した)\s*/,"").trim();
+    if(name)return name;
+  }
+
+  // Inverted forms:
+  //   HTMLでXを作って
+  m=s.match(/^(?:単一\s*)?(?:html|ｈｔｍｌ|htmlファイル|ウェブ|web|ゲーム|コード|プログラム)\s*(?:で|として)?\s*[「『]?(.+?)[」』]?\s*を?\s*(?:作って|作成して|生成して|実装して)(?:ください|下さい)?[。.!！]?$/i);
+  if(m){
+    const name=normalizeConceptName(m[1]);
+    if(name)return name;
+  }
+
+  // English forms: create/build/generate X as HTML
+  m=s.match(/^(?:please\s+)?(?:create|build|generate|implement)\s+(.+?)(?:\s+as\s+(?:a\s+)?(?:single\s+)?html(?:\s+file)?)?[.!]?$/i);
+  if(m){
+    const name=normalizeConceptName(m[1]).replace(/\s+as\s+.*$/i,"").trim();
+    if(name)return name;
+  }
+
+  return null;
+}
+function activeConceptCandidate(name){
+  name=normalizeConceptName(name);
+  if(!name)return null;
+  if(CONCEPTS[name])return CONCEPTS[name];
+  if(CURRENT_CONCEPT && CURRENT_CONCEPT.concept===name)return CURRENT_CONCEPT;
+  if(BUILTIN_CONCEPTS[name])return BUILTIN_CONCEPTS[name];
+
+  // Parse whatever is currently visible in the CDL editor, even if the user did not press Save.
+  try{
+    const txt=$("#cdlInput")?.value||"";
+    if(txt.trim()){
+      const parsed=parseCDL(txt);
+      if(parsed.concept===name)return parsed;
+    }
+  }catch{}
+
+  // Learned one-line vocabulary can at least be surfaced, but it is not enough for code generation.
+  const learned=(CHAT.learned||[]).find(x=>normalizeConceptName(x.surface)===name);
+  if(learned){
+    return {
+      format:"BANC888-CDL-v1.9-vocabulary-only",
+      concept:name, gloss:learned.meaning,
+      target:[],components:[],states:[],inputs:[],rules:[],transitions:[],
+      constraints:[],success:[],termination:[],outputs:[],
+      entities:[],relations:[],capabilities:[],transitionGraph:[],
+      inferred:{canCompileSingleHTML:false,tetrominoLike:false},
+      vocabularyOnly:true
+    };
+  }
+  return null;
+}
+function resolveGenerationRequest(text){
+  const t=String(text||"");
+  if(!/(作って|作成して|生成して|実装して|build|create|generate)/i.test(t))return null;
+  const name=extractRequestedConceptName(t);
+  if(!name)return null;
+  const concept=activeConceptCandidate(name);
+  return {name,concept,artifact:requestedArtifactKind(t)||"html"};
+}
+function compileFromChatRequest(text){
+  const req=resolveGenerationRequest(text);
+  if(!req)return null;
+  if(!req.concept){
+    return {
+      ok:false,
+      reply:`「${req.name}」の構造定義がまだありません。CDL欄で【構成要素】【状態】【入力】【規則】【状態遷移】【禁止条件】【終了条件】【出力】まで定義すると生成できます。`
+    };
+  }
+  const autoProfile=inferExecutionProfile(req.concept);
+  const executable=!!autoExecSpec(req.concept) || req.concept.inferred?.canCompileSingleHTML;
+  if(req.concept.vocabularyOnly || !executable){
+    return {
+      ok:false,
+      reply:`「${req.name}」の語釈はありますが、実行可能な状態・数値・入力・更新・衝突・条件の対応がまだ抽出できません。CDLに実際の状態変数と更新規則を追加してください。`
+    };
+  }
+  CURRENT_CONCEPT=req.concept;
+  const code=compileConcept(req.concept);
+  $("#generatedConceptCode").value=code;
+  $("#cdlIR").textContent=JSON.stringify(req.concept,null,2);
+  drawConceptGraph(req.concept);
+  $("#conceptTestOut").textContent=`chat compile\ncompiler=${compilerKind(req.concept)}\nchars=${code.length}`;
+  return {
+    ok:true,
+    reply:`概念「${req.name}」を構造定義から展開し、単一HTMLを生成しました。生成判定は概念名ではなく、CDLから抽出した実行プロファイルと状態・物理プリミティブで行っています。画面上の「生成結果」にコードを出力しています。「生成HTMLを保存」を押すと、そのままHTMLファイルとして保存できます。`
+  };
+}
+
+// UI handlers
+$("#cdlParse").onclick=()=>{
+  CURRENT_CONCEPT=parseCDL($("#cdlInput").value);
+  $("#cdlIR").textContent=JSON.stringify(CURRENT_CONCEPT,null,2);
+  drawConceptGraph(CURRENT_CONCEPT);
+};
+$("#cdlSave").onclick=()=>{
+  CURRENT_CONCEPT=parseCDL($("#cdlInput").value);
+  saveConcept(CURRENT_CONCEPT);
+  $("#cdlIR").textContent=JSON.stringify(CURRENT_CONCEPT,null,2);
+  drawConceptGraph(CURRENT_CONCEPT);
+  addChat("system",`概念「${CURRENT_CONCEPT.concept}」を構造定義として保存しました。`,`CDL`);
+};
+$("#cdlGenerate").onclick=()=>{
+  CURRENT_CONCEPT=parseCDL($("#cdlInput").value);
+  const code=compileConcept(CURRENT_CONCEPT);
+  $("#generatedConceptCode").value=code;
+  $("#conceptTestOut").textContent=`compiler=${compilerKind(CURRENT_CONCEPT)}\nchars=${code.length}`;
+};
+$("#cdlExample").onclick=()=>{$("#cdlInput").value=defaultTetrisCDL();$("#cdlParse").click()};
+
+$("#cdlExecHelp").onclick=()=>{
+  alert(`v1.7 実行CDL:
+【実行定義JSON】に engine:grid のJSONを記述します。
+概念名では分岐しません。
+
+主要要素:
+grid.width / grid.height / grid.cell
+globals
+init
+events.left / events.right
+postEvent
+view.text / view.classes / view.stats
+
+汎用アクション:
+set, inc, toggle, randomSet,
+computeNeighborCount, forEachCell,
+forEachNeighbor, floodFill, when,
+callEvent, stop
+
+汎用条件:
+all, any, not, eq, ne, gt, gte, lt, lte,
+countCells
+
+値参照:
+$cell.field
+$global.field
+$event.x / $event.y
+
+これらの組合せからゲーム固有ロジックを構成します。`);
+};
+
+$("#downloadConceptCode").onclick=()=>{
+  const code=$("#generatedConceptCode").value;if(!code)return;
+  const name=(CURRENT_CONCEPT?.concept||"concept").replace(/[^\w\u3040-\u30ff\u4e00-\u9fff-]+/g,"_");
+  const filename=`${name}_generated.html`;
+  if(window.AndroidBridge&&typeof window.AndroidBridge.saveText==="function"){
+    window.AndroidBridge.saveText(filename,code,"text/html");
+    return;
+  }
+  const u=URL.createObjectURL(new Blob([code],{type:"text/html"})),a=document.createElement("a");
+  a.href=u;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
+};
+$("#conceptSelfTest").onclick=()=>{
+  CURRENT_CONCEPT=CURRENT_CONCEPT||parseCDL($("#cdlInput").value);
+  const r=conceptSelfTest(CURRENT_CONCEPT);
+  $("#conceptTestOut").textContent=`${r.pass}/${r.total} PASS\n`+r.rows.join("\n");
+};
+renderConceptList();
+
+const CHAT_KEY="banc888_v19_chat_state";
+const CHAT_DEFAULT={
+  history:[],
+  memory:{name:"",likes:[],lastTopic:"",turns:0},
+  learned:[],
+  multimodal:{image:null,audio:null,file:null}
+};
+let CHAT=(()=>{try{return {...CHAT_DEFAULT,...JSON.parse(localStorage.getItem(CHAT_KEY)||"{}")}}catch{return structuredClone(CHAT_DEFAULT)}})();
+CHAT.multimodal={image:null,audio:null,file:null}; // binary/media context is session-local
+function saveChat(){
+  const slim={history:CHAT.history.slice(-60),memory:CHAT.memory,learned:CHAT.learned};
+  try{localStorage.setItem(CHAT_KEY,JSON.stringify(slim))}catch{}
+}
+function hesc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function addChat(role,text,meta=""){
+  CHAT.history.push({role,text,meta,t:Date.now()});
+  CHAT.history=CHAT.history.slice(-60);saveChat();renderChat();
+}
+function renderChat(){
+  const box=$("#chatlog"); if(!box)return;
+  box.innerHTML=CHAT.history.map(m=>`<div class="msg ${m.role}"><div class="bubble">${hesc(m.text)}</div>${m.meta?`<div class="msgmeta">${hesc(m.meta)}</div>`:""}</div>`).join("");
+  if(!CHAT.history.length)box.innerHTML=`<div class="muted">888: 「こんにちは」または「DNp65について教えて」から始められます。</div>`;
+  box.scrollTop=box.scrollHeight;
+}
+function detectHumanLanguage(t){
+  t=String(t||"");
+  if(/[\u3040-\u30ff]/.test(t))return"ja";
+  if(/[\uac00-\ud7af]/.test(t))return"ko";
+  if(/[\u0900-\u097f]/.test(t))return"hi";
+  if(/[\u0400-\u04ff]/.test(t))return"ru";
+  if(/[\u4e00-\u9fff]/.test(t))return"zh";
+  const x=t.toLowerCase();
+  if(/\b(hola|gracias|qué|como|cómo|por qué|archivo|imagen)\b/.test(x))return"es";
+  if(/\b(bonjour|merci|pourquoi|comment|image|fichier)\b/.test(x))return"fr";
+  if(/\b(hallo|danke|warum|wie|bild|datei)\b/.test(x))return"de";
+  if(/\b(olá|obrigado|porque|como|imagem|arquivo)\b/.test(x))return"pt";
+  return /[A-Za-z]/.test(t)?"en":"ja";
+}
+const RESP={
+ ja:{
+   greeting:["こんにちは。BANC回路、画像、音声、文書を同じ会話で扱えます。","はい。会話機能を復元しています。何から見ますか？"],
+   thanks:["どういたしまして。続けられます。"],
+   bye:["またどうぞ。会話履歴はこのブラウザ内だけに保存されます。"],
+   identity:["私はこの単一HTML内で動く888オフライン会話・BANC翻訳エンジンです。"],
+   capability:["テキスト会話、実BANC抽出回路の検索、画像の画素特徴解析、音声の波形特徴解析、TXT/CSV/JSONの読込を完全オフラインで統合できます。"],
+   unknown:["受け取りました。いまのオフライン知識だけでは断定できない部分があります。対象をBANC回路、画像、音声、文書のどれかに結び付けると具体化できます。"]
+ },
+ en:{
+   greeting:["Hello. I can combine BANC circuit context, images, audio, documents, and text in one offline conversation."],
+   thanks:["You're welcome. We can continue."],
+   bye:["See you. Conversation state remains local to this browser."],
+   identity:["I am the offline 888 conversation and BANC translation engine embedded in this single HTML file."],
+   capability:["I can converse, inspect the embedded real-BANC extract, analyze image pixels, analyze audio waveforms, and read local text/CSV/JSON without a network."],
+   unknown:["I received that. The offline knowledge here is limited, so connect the question to the BANC circuit, an image, audio, or a document for a more concrete answer."]
+ },
+ zh:{greeting:["你好。可以在一次离线对话中同时使用BANC回路、图像、音频和文档。"],thanks:["不客气，可以继续。"],bye:["再见。会话状态只保存在本机浏览器。"],identity:["我是嵌入在这个单一HTML中的888离线会话与BANC翻译引擎。"],capability:["可以进行文本会话、BANC抽取回路查询、图像像素分析、音频波形分析和本地文档读取。"],unknown:["已收到。离线知识有限；如果把问题关联到BANC回路、图像、音频或文档，我可以给出更具体的回答。"]},
+ ko:{greeting:["안녕하세요. BANC 회로, 이미지, 오디오, 문서를 하나의 오프라인 대화에서 함께 다룰 수 있습니다."],thanks:["천만에요. 계속할 수 있습니다."],bye:["다음에 또 보겠습니다. 대화 상태는 로컬 브라우저에만 저장됩니다."],identity:["이 단일 HTML 안에서 동작하는 888 오프라인 대화/BANC 번역 엔진입니다."],capability:["텍스트 대화, BANC 추출 회로 검색, 이미지 픽셀 분석, 오디오 파형 분석, 로컬 문서 읽기를 오프라인으로 통합합니다."],unknown:["입력을 받았습니다. 오프라인 지식은 제한적이므로 BANC 회로, 이미지, 오디오 또는 문서와 연결하면 더 구체적으로 답할 수 있습니다."]},
+ es:{greeting:["Hola. Puedo combinar circuito BANC, imagen, audio, documentos y texto en una conversación totalmente offline."],thanks:["De nada. Podemos continuar."],bye:["Hasta luego. El estado de la conversación queda sólo en este navegador."],identity:["Soy el motor offline 888 de conversación y traducción BANC incluido en este HTML."],capability:["Puedo conversar, consultar el extracto BANC, analizar píxeles de imágenes, formas de onda de audio y documentos locales."],unknown:["Recibido. El conocimiento offline es limitado; vincula la pregunta con BANC, una imagen, audio o documento para concretarla."]},
+ fr:{greeting:["Bonjour. Je peux combiner circuit BANC, image, audio, documents et texte dans une conversation hors ligne."],thanks:["Avec plaisir. On peut continuer."],bye:["À bientôt. L'état de la conversation reste local au navigateur."],identity:["Je suis le moteur 888 hors ligne de conversation et de traduction BANC intégré à ce fichier HTML."],capability:["Je peux converser, interroger l'extrait BANC, analyser les pixels d'une image, la forme d'onde audio et des documents locaux."],unknown:["Reçu. Les connaissances hors ligne sont limitées; reliez la question à BANC, une image, un audio ou un document pour une réponse plus concrète."]},
+ de:{greeting:["Hallo. Ich kann BANC-Schaltkreise, Bilder, Audio, Dokumente und Text in einer vollständig Offline-Unterhaltung zusammenführen."],thanks:["Gern. Wir können fortfahren."],bye:["Bis bald. Der Gesprächsstatus bleibt nur lokal im Browser."],identity:["Ich bin die in dieser HTML-Datei eingebettete Offline-888-Konversations- und BANC-Übersetzungsengine."],capability:["Ich kann Gespräche führen, den BANC-Auszug abfragen, Bildpixel, Audiowellenformen und lokale Dokumente analysieren."],unknown:["Verstanden. Das Offline-Wissen ist begrenzt; beziehen Sie die Frage auf BANC, ein Bild, Audio oder ein Dokument, um sie zu konkretisieren."]},
+ pt:{greeting:["Olá. Posso combinar circuito BANC, imagem, áudio, documentos e texto em uma conversa totalmente offline."],thanks:["De nada. Podemos continuar."],bye:["Até logo. O estado da conversa fica apenas no navegador local."],identity:["Sou o motor offline 888 de conversa e tradução BANC incorporado neste HTML."],capability:["Posso conversar, consultar o extrato BANC, analisar pixels de imagem, forma de onda de áudio e documentos locais."],unknown:["Recebido. O conhecimento offline é limitado; relacione a pergunta ao BANC, imagem, áudio ou documento para obter algo mais concreto."]},
+ ru:{greeting:["Здравствуйте. Я могу объединять контекст BANC, изображения, аудио, документы и текст в полностью офлайн-разговоре."],thanks:["Пожалуйста. Можем продолжать."],bye:["До встречи. Состояние разговора хранится только локально в браузере."],identity:["Я офлайн-движок 888 для диалога и перевода BANC, встроенный в этот HTML."],capability:["Я могу вести диалог, анализировать встроенный BANC-фрагмент, пиксели изображений, аудиоволну и локальные документы."],unknown:["Принято. Офлайн-знания ограничены; свяжите вопрос с BANC, изображением, аудио или документом для более конкретного ответа."]},
+ hi:{greeting:["नमस्ते। मैं BANC सर्किट, चित्र, ऑडियो, दस्तावेज़ और टेक्स्ट को एक पूरी तरह ऑफलाइन बातचीत में जोड़ सकता हूँ।"],thanks:["स्वागत है। हम आगे बढ़ सकते हैं।"],bye:["फिर मिलेंगे। बातचीत की स्थिति केवल स्थानीय ब्राउज़र में रहती है।"],identity:["मैं इस एकल HTML में निहित 888 ऑफलाइन वार्तालाप और BANC अनुवाद इंजन हूँ।"],capability:["मैं बातचीत, BANC extract क्वेरी, image pixel analysis, audio waveform analysis और local documents पढ़ सकता हूँ।"],unknown:["प्राप्त हुआ। ऑफलाइन ज्ञान सीमित है; प्रश्न को BANC, image, audio या document से जोड़ने पर अधिक ठोस उत्तर मिलेगा।"]}
+};
+function pick(arr,key){let h=0;for(const c of String(key))h=((h<<5)-h+c.charCodeAt(0))|0;return arr[Math.abs(h)%arr.length]}
+function learnedMeaning(text){
+  for(const x of CHAT.learned||[])if(text.includes(x.surface))return x;
+  return null;
+}
+function teachFrom(text){
+  let m=text.match(/(?:語彙を教える\s*[:：]\s*)?(.{1,40}?)\s*[=＝]\s*(.{1,120})$/);
+  if(!m)m=text.match(/(.{1,40}?)は(.{1,120}?)という意味/);
+  if(!m)return null;
+  const surface=m[1].trim(),meaning=m[2].trim();
+  if(!surface||!meaning)return null;
+  const old=CHAT.learned.find(x=>x.surface===surface);
+  if(old)old.meaning=meaning;else CHAT.learned.push({surface,meaning});
+  CHAT.learned=CHAT.learned.slice(-100);saveChat();
+  return `学習しました。「${surface}」→「${meaning}」としてこのブラウザ内に保存しました。`;
+}
+function updateChatMemory(text){
+  let m=text.match(/(?:私|僕|俺)の名前は\s*([^\s。、！？!?]{1,30})/);
+  if(m)CHAT.memory.name=m[1];
+  m=text.match(/(?:私|僕|俺)は(.{1,40}?)が好き/);
+  if(m&&!CHAT.memory.likes.includes(m[1].trim()))CHAT.memory.likes.push(m[1].trim());
+  CHAT.memory.likes=CHAT.memory.likes.slice(-20);CHAT.memory.turns=(CHAT.memory.turns||0)+1;saveChat();
+}
+function memoryAnswer(text){
+  if(/私の名前|名前.*覚えて|my name/i.test(text))return CHAT.memory.name?`記憶している名前は「${CHAT.memory.name}」です。`:"名前はまだ記憶していません。";
+  if(/好きなもの|何.*好き|好み/.test(text))return CHAT.memory.likes.length?`記憶している好みは「${CHAT.memory.likes.join("、")}」です。`:"好みはまだ記憶していません。";
+  return null;
+}
+function classifyIntent(text){
+  const t=text.toLowerCase();
+  if(/こんにちは|こんばんは|おはよう|hello|hi\b|hola|bonjour|hallo|olá|привет|नमस्ते|你好|안녕/.test(t))return"greeting";
+  if(/ありがとう|thanks|thank you|gracias|merci|danke|obrigad|спасибо|धन्यवाद|谢谢|감사/.test(t))return"thanks";
+  if(/さようなら|またね|bye|goodbye|adiós|au revoir|tschüss|до свидания|再见|안녕히/.test(t))return"bye";
+  if(/あなたは誰|何者|who are you|正体|identity/.test(t))return"identity";
+  if(/何ができ|できること|capabil|what can you do|何をでき/.test(t))return"capability";
+  if(/画像|image|picture|写真|图像|이미지|imagen|bild/.test(t))return"image";
+  if(/音声|音|audio|sound|声音|오디오|sonido|ton/.test(t))return"audio";
+  if(/文書|ファイル|document|file|csv|json|文件|문서/.test(t))return"file";
+  if(/banc|root_id|root id|synapse|シナプス|コネクトーム|connectome|dnp65|an27x017|mnad21|m_nsc_dilp|oxygen_sensory|aorta_sensory/.test(t))return"banc";
+  if(/なぜ|どうして|why|porque|pourquoi|warum|почему|为什么|왜/.test(t))return"why";
+  if(/どうやって|どのように|how|comment|wie|como|как|怎么|어떻게/.test(t))return"how";
+  if(/[?？]|教えて|what|which|何|qué|quoi|was|что|什么|무엇/.test(t))return"question";
+  if(/どう思う|意見|opinion|think/.test(t))return"opinion";
+  return"unknown";
+}
+function findEntityAcrossData(text){
+  const id=String(text).match(/\b\d{10,20}\b/);
+  if(id){const x=findDataAndGroup(id[0]);if(x)return x}
+  for(const d of allData()){
+    const names=[...new Set(d.neurons.flatMap(n=>[n.display_name,n.cell_type]).filter(Boolean))].sort((a,b)=>b.length-a.length);
+    const q=names.find(n=>String(text).toLowerCase().includes(String(n).toLowerCase()));
+    if(q){const n=d.neurons.find(n=>n.display_name===q||n.cell_type===q);if(n)return{d,g:n.display_name}}
+  }
+  return null;
+}
+function bancFacts(text){
+  const found=findEntityAcrossData(text);
+  if(!found){
+    if(last && $("#useBancContext")?.checked)return summarizeFrame(last,text);
+    return null;
+  }
+  const {d,g}=found,ins=d.edges.filter(e=>e.to===g),outs=d.edges.filter(e=>e.from===g);
+  const strongestOut=[...outs].sort((a,b)=>b.count-a.count)[0],strongestIn=[...ins].sort((a,b)=>b.count-a.count)[0];
+  const roots=members(d,g);
+  const asksStrong=/一番|最強|最大|strongest|largest|max|最多/.test(text.toLowerCase());
+  const asksOut=/出力|outgoing|output/.test(text.toLowerCase());
+  const asksIn=/入力|incoming|input/.test(text.toLowerCase());
+  if(asksStrong&&asksOut&&strongestOut)return `${g} のこの実BANC抽出回路で最も強い出力は ${strongestOut.to} への ${strongestOut.count} synapses です。pre側NTは ${strongestOut.pre_top_nt} です。`;
+  if(asksStrong&&asksIn&&strongestIn)return `${g} へのこの実BANC抽出回路で最も強い入力は ${strongestIn.from} からの ${strongestIn.count} synapses です。pre側NTは ${strongestIn.pre_top_nt} です。`;
+  return `${g} はこの実BANC抽出に root_id ${roots.length} 個あります。群間edgeは出力 ${outs.length} 本（合計 ${outs.reduce((s,e)=>s+e.count,0)} synapses）、入力 ${ins.length} 本（合計 ${ins.reduce((s,e)=>s+e.count,0)} synapses）です。${strongestOut?`最大出力は ${strongestOut.to}=${strongestOut.count}。`:""}${strongestIn?`最大入力は ${strongestIn.from}=${strongestIn.count}。`:""}`;
+}
+function summarizeFrame(f,text=""){
+  if(!f)return null;
+  const o=f.edges.filter(e=>e.source===f.focal_group),i=f.edges.filter(e=>e.target===f.focal_group);
+  const strongest=[...f.edges].sort((a,b)=>b.weight_raw-a.weight_raw)[0];
+  return `現在のBANC会話コンテキストは ${f.focal_group} です。表示edge ${f.edges.length}、root_id ${f.focal_roots.length} 個。${strongest?`表示範囲で最大edgeは ${strongest.source} → ${strongest.target} = ${strongest.weight_raw} synapses。`:""}`;
+}
+function imageSummary(img){
+  if(!img)return null;
+  return `画像「${img.name}」: ${img.width}×${img.height}px、平均色 rgb(${img.avg.join(",")})、明るさ ${img.brightness.toFixed(1)}/255、コントラスト ${img.contrast.toFixed(1)}、平均彩度 ${(img.saturation*100).toFixed(0)}%、エッジ密度 ${(img.edgeDensity*100).toFixed(1)}%。${img.orientation}。`;
+}
+function audioSummary(a){
+  if(!a)return null;
+  return `音声「${a.name}」: ${a.duration.toFixed(2)}秒、${a.sampleRate}Hz、${a.channels}ch、RMS ${a.rms.toFixed(4)}、peak ${a.peak.toFixed(4)}、zero-crossing ${(a.zcr*100).toFixed(2)}%、概算spectral centroid ${Math.round(a.centroid)}Hz。`;
+}
+function fileSummary(f){
+  if(!f)return null;
+  return `文書「${f.name}」: ${f.kind}、${f.chars.toLocaleString()}文字、${f.lines.toLocaleString()}行。${f.summary}`;
+}
+function multimodalAnswer(text,lang){
+  const parts=[];
+  if(CHAT.multimodal.image)parts.push(imageSummary(CHAT.multimodal.image));
+  if(CHAT.multimodal.audio)parts.push(audioSummary(CHAT.multimodal.audio));
+  if(CHAT.multimodal.file)parts.push(fileSummary(CHAT.multimodal.file));
+  if($("#useBancContext")?.checked&&last)parts.push(summarizeFrame(last,text));
+  if(!parts.length)return null;
+  let pre="現在のマルチモーダル文脈を統合すると、";
+  if(lang==="en")pre="Combining the current multimodal context: ";
+  if(lang==="zh")pre="综合当前多模态上下文：";
+  if(lang==="ko")pre="현재 멀티모달 문맥을 합치면: ";
+  return pre+parts.join("\n");
+}
+function generateConversation(text){
+  text=String(text||"").trim();
+  const lang=detectHumanLanguage(text),r=RESP[lang]||RESP.en;
+  const taught=teachFrom(text);if(taught)return{reply:taught,lang,intent:"teach"};
+  const mem=memoryAnswer(text);if(mem)return{reply:mem,lang,intent:"memory"};
+  updateChatMemory(text);
+  const intent=classifyIntent(text);
+  const genReq=compileFromChatRequest(text);
+  if(genReq)return{reply:genReq.reply,lang,intent:genReq.ok?"concept.generate":"concept.needs_definition"};
+  const cName=conceptMention(text);
+  if(cName){
+    const c=activeConceptCandidate(cName);
+    if(c)return{reply:describeConcept(c),lang,intent:"concept.lookup"};
+  }
+  if(/概念を定義|構造定義|concept definition/i.test(text)){
+    return{reply:"概念定義言語(CDL)欄へ、概念・語釈・構成要素・状態・入力・規則・状態遷移・禁止条件・成立条件・終了条件・出力を記述してください。解析後に概念として保存できます。",lang,intent:"concept.help"};
+  }
+  if(intent==="banc"){
+    const b=bancFacts(text);if(b)return{reply:b,lang,intent};
+  }
+  if(intent==="image"&&CHAT.multimodal.image)return{reply:imageSummary(CHAT.multimodal.image)+"\n完全オフライン版なので、ここで述べているのは画素統計であり、物体を認識したという意味ではありません。",lang,intent};
+  if(intent==="audio"&&CHAT.multimodal.audio)return{reply:audioSummary(CHAT.multimodal.audio)+"\nこれは波形特徴で、音声文字起こしや話者・内容認識ではありません。",lang,intent};
+  if(intent==="file"&&CHAT.multimodal.file)return{reply:fileSummary(CHAT.multimodal.file),lang,intent};
+  const learned=learnedMeaning(text);
+  if(learned)return{reply:`学習済み語彙では「${learned.surface}」は「${learned.meaning}」です。`,lang,intent:"learned"};
+  const mm=multimodalAnswer(text,lang);
+  if(mm && (intent==="question"||intent==="unknown"||/まとめ|統合|together|combine|context/.test(text.toLowerCase())))return{reply:mm,lang,intent:"multimodal"};
+  if(intent==="why" && last)return{reply:`現在のBANC回路についてなら、強さは埋込vignetteの集約synapse countを基準にしています。生理学的な因果や機能までを接続数だけから断定はしません。`,lang,intent};
+  if(intent==="how")return{reply:lang==="ja"?"このHTMLでは、入力を会話意図・BANC実データ・画像特徴・音声特徴・文書特徴へ分け、それらを1つの会話コンテキストに再結合しています。外部通信は使いません。":(r.capability?.[0]||RESP.en.capability[0]),lang,intent};
+  if(intent==="opinion")return{reply:lang==="ja"?"評価や意見は、観測できる情報と推測を分けて返します。BANCなら接続数などの事実を先に示し、機能解釈は別扱いにします。":(r.unknown?.[0]||RESP.en.unknown[0]),lang,intent};
+  if(r[intent])return{reply:pick(r[intent],text),lang,intent};
+  if(mm)return{reply:mm,lang,intent:"multimodal"};
+  return{reply:pick(r.unknown,text),lang,intent:"unknown"};
+}
+function attachmentMeta(){
+  const a=[];
+  if(CHAT.multimodal.image)a.push("image");
+  if(CHAT.multimodal.audio)a.push("audio");
+  if(CHAT.multimodal.file)a.push("file");
+  if($("#useBancContext")?.checked&&last)a.push("BANC");
+  return a.length?"modalities="+a.join("+"):"text";
+}
+function sendChat(){
+  const text=$("#chatInput").value.trim();
+  if(!text && !CHAT.multimodal.image && !CHAT.multimodal.audio && !CHAT.multimodal.file)return;
+  const shown=text||"(添付コンテキストを解析)";
+  addChat("user",shown,attachmentMeta());
+  const x=generateConversation(shown);
+  addChat("bot",x.reply,`intent=${x.intent} / lang=${x.lang} / ${attachmentMeta()}`);
+  $("#chatInput").value="";
+}
+$("#chatSend").onclick=sendChat;
+$("#chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});
+$("#clearChat").onclick=()=>{CHAT.history=[];saveChat();renderChat()};
+function renderAttachBar(){
+  const a=[];
+  if(CHAT.multimodal.image)a.push(`画像: ${CHAT.multimodal.image.name}`);
+  if(CHAT.multimodal.audio)a.push(`音声: ${CHAT.multimodal.audio.name}`);
+  if(CHAT.multimodal.file)a.push(`文書: ${CHAT.multimodal.file.name}`);
+  if($("#useBancContext")?.checked&&last)a.push(`BANC: ${last.focal_group}`);
+  $("#attachBar").innerHTML=a.map(x=>`<span class="attachchip">${hesc(x)}</span>`).join("")||`<span class="muted tiny">添付なし</span>`;
+}
+$("#useBancContext").onchange=renderAttachBar;
+$("#clearAttachments").onclick=()=>{
+  CHAT.multimodal={image:null,audio:null,file:null};
+  $("#imagePreview").innerHTML="未添付";$("#audioPreview").innerHTML="未添付";$("#filePreview").innerHTML="未添付";
+  $("#chatImage").value="";$("#chatAudio").value="";$("#chatFile").value="";
+  renderAttachBar();
+};
+function colorStats(data,w,h){
+  let sr=0,sg=0,sb=0,sl=0,sl2=0,ss=0,n=0,edge=0,edgeN=0;
+  const lum=new Float32Array(w*h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const i=(y*w+x)*4,r=data[i],g=data[i+1],b=data[i+2],a=data[i+3]/255;
+    if(a<.05)continue;
+    const l=.2126*r+.7152*g+.0722*b;lum[y*w+x]=l;
+    sr+=r;sg+=g;sb+=b;sl+=l;sl2+=l*l;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b);ss+=(mx===0?0:(mx-mn)/mx);n++;
+  }
+  for(let y=1;y<h;y++)for(let x=1;x<w;x++){const l=lum[y*w+x];if(!l)continue;const d=Math.max(Math.abs(l-lum[y*w+x-1]),Math.abs(l-lum[(y-1)*w+x]));if(d>28)edge++;edgeN++}
+  const avg=[sr/n,sg/n,sb/n].map(x=>Math.round(x)),mean=sl/n,variance=Math.max(0,sl2/n-mean*mean);
+  return{avg,brightness:mean,contrast:Math.sqrt(variance),saturation:ss/n,edgeDensity:edge/Math.max(1,edgeN)};
+}
+async function analyzeImageFile(file){
+  $("#chatStatus").textContent="画像をブラウザ内で解析中…";
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+    const max=192,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
+    const c=document.createElement("canvas");c.width=w;c.height=h;const ctx=c.getContext("2d",{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);
+    const st=colorStats(ctx.getImageData(0,0,w,h).data,w,h);
+    CHAT.multimodal.image={name:file.name,width:img.naturalWidth,height:img.naturalHeight,...st,orientation:img.naturalWidth>img.naturalHeight?"横長":img.naturalHeight>img.naturalWidth?"縦長":"正方形"};
+    $("#imagePreview").innerHTML=`<img src="${url}" alt=""><div class="tiny">${hesc(imageSummary(CHAT.multimodal.image))}</div>`;
+    $("#chatStatus").textContent="画像特徴をオフライン解析しました。";
+    renderAttachBar();
+  }catch(e){URL.revokeObjectURL(url);$("#chatStatus").textContent="画像解析失敗: "+e.message}
+}
+$("#chatImage").onchange=e=>{const f=e.target.files?.[0];if(f)analyzeImageFile(f)};
+$("#chatInput").addEventListener("paste",e=>{for(const item of e.clipboardData?.items||[]){if(item.type.startsWith("image/")){const f=item.getAsFile();if(f){analyzeImageFile(f);break}}}});
+async function analyzeAudioFile(file){
+  $("#chatStatus").textContent="音声をブラウザ内で解析中…";
+  const url=URL.createObjectURL(file);
+  try{
+    const buf=await file.arrayBuffer(),AC=window.AudioContext||window.webkitAudioContext,ac=new AC();
+    const audio=await ac.decodeAudioData(buf.slice(0));
+    const ch=audio.getChannelData(0),step=Math.max(1,Math.floor(ch.length/200000));
+    let s2=0,peak=0,z=0,n=0,prev=ch[0]||0;
+    for(let i=0;i<ch.length;i+=step){const v=ch[i];s2+=v*v;peak=Math.max(peak,Math.abs(v));if((v>=0)!=(prev>=0))z++;prev=v;n++}
+    const N=512,start=Math.max(0,Math.floor(ch.length/2-N/2)),sample=new Float32Array(N);
+    for(let i=0;i<N;i++)sample[i]=(ch[start+i]||0)*(.5-.5*Math.cos(2*Math.PI*i/(N-1)));
+    let num=0,den=0;
+    for(let k=0;k<N/2;k++){let re=0,im=0;for(let j=0;j<N;j++){const a=2*Math.PI*k*j/N;re+=sample[j]*Math.cos(a);im-=sample[j]*Math.sin(a)}const mag=Math.hypot(re,im),freq=k*audio.sampleRate/N;num+=freq*mag;den+=mag}
+    CHAT.multimodal.audio={name:file.name,duration:audio.duration,sampleRate:audio.sampleRate,channels:audio.numberOfChannels,rms:Math.sqrt(s2/Math.max(1,n)),peak,zcr:z/Math.max(1,n),centroid:den?num/den:0};
+    $("#audioPreview").innerHTML=`<audio controls src="${url}"></audio><div class="tiny">${hesc(audioSummary(CHAT.multimodal.audio))}</div>`;
+    await ac.close();$("#chatStatus").textContent="音声波形特徴をオフライン解析しました。";renderAttachBar();
+  }catch(e){URL.revokeObjectURL(url);$("#chatStatus").textContent="音声解析失敗: "+e.message}
+}
+$("#chatAudio").onchange=e=>{const f=e.target.files?.[0];if(f)analyzeAudioFile(f)};
+async function analyzeTextFile(file){
+  $("#chatStatus").textContent="文書をブラウザ内で解析中…";
+  try{
+    if(file.size>4*1024*1024)throw new Error("会話用文書は4MB以下にしてください");
+    const text=await file.text(),lines=text.split(/\r?\n/),ext=(file.name.split(".").pop()||"").toLowerCase();
+    let kind=ext||file.type||"text",summary="";
+    if(ext==="json"){
+      try{const o=JSON.parse(text);summary=Array.isArray(o)?`JSON array ${o.length} items`:`JSON keys: ${Object.keys(o).slice(0,12).join(", ")}`}catch{summary="JSONとしては解析不能"}
+    }else if(ext==="csv"){const head=lines[0]||"";summary=`CSV columns: ${head.slice(0,180)}`}
+    else summary=`先頭: ${lines.filter(Boolean).slice(0,3).join(" / ").slice(0,240)}`;
+    CHAT.multimodal.file={name:file.name,kind,chars:text.length,lines:lines.length,summary,text:text.slice(0,50000)};
+    $("#filePreview").innerHTML=`<div class="tiny">${hesc(fileSummary(CHAT.multimodal.file))}</div>`;
+    $("#chatStatus").textContent="文書をオフライン読込しました。";renderAttachBar();
+  }catch(e){$("#chatStatus").textContent="文書解析失敗: "+e.message}
+}
+$("#chatFile").onchange=e=>{const f=e.target.files?.[0];if(f)analyzeTextFile(f)};
+renderChat();renderAttachBar();
+
+$("#rootN").textContent=DATA.neurons.length;$("#edgeN").textContent=DATA.edges.length;
+function allData(){return [DATA,...Object.values(EXTRA)]}
+function findDataAndGroup(q){q=q.trim();for(const d of allData()){const n=d.neurons.find(n=>n.root_id===q)||d.neurons.find(n=>n.display_name.toLowerCase()===q.toLowerCase())||d.neurons.find(n=>n.cell_type.toLowerCase()===q.toLowerCase());if(n)return {d,g:n.display_name}}return null}
+function members(d,g){return d.neurons.filter(n=>n.display_name===g)}
+function traverse(d,start,hops,dir,min){const nodes=new Set([start]),front=new Set([start]),selected=[];for(let depth=1;depth<=hops;depth++){const next=new Set();for(const e of d.edges){if(e.count<min)continue;let ok=false,target=null;if((dir==="out"||dir==="both")&&front.has(e.from)){ok=true;target=e.to}if((dir==="in"||dir==="both")&&front.has(e.to)){ok=true;target=e.from}if(ok){selected.push({...e,depth});if(!nodes.has(target))next.add(target);nodes.add(target)}}front.clear();for(const x of next)front.add(x);if(!front.size)break}return {nodes:[...nodes],edges:[...new Map(selected.map(e=>[e.from+"|"+e.to,e])).values()]}}
+function makeFrame(d,g,res){const max=Math.max(1,...res.edges.map(e=>e.count));return {format:"BANC888-offline-multimodal→888-semantic-v1.3",provenance:{materialization:888,offline:true,source:d.provenance,edge_granularity:"display_name aggregate",note:"Real BANC manuscript vignette extract; not full connectome and not root-to-root edge table."},focal_group:g,focal_roots:members(d,g),nodes:res.nodes.map(name=>({id:name,role:name===g?"FOCAL_GROUP":"CONNECTED_GROUP",member_roots:members(d,name)})),edges:res.edges.map(e=>({source:e.from,target:e.to,weight_raw:e.count,weight_model:e.count/max,transmitter:e.pre_top_nt,depth:e.depth})),motifs:res.edges.filter(e=>res.edges.some(x=>x.from===e.to&&x.to===e.from)).map(e=>({type:"RECIPROCAL",a:e.from,b:e.to}))}}
+function desc(f,l){const o=f.edges.filter(e=>e.source===f.focal_group),i=f.edges.filter(e=>e.target===f.focal_group),so=o.reduce((s,e)=>s+e.weight_raw,0),si=i.reduce((s,e)=>s+e.weight_raw,0),r=f.focal_roots.length;const t={ja:`${f.focal_group} はこの実BANC抽出回路でroot_id ${r}個を含む群です。表示範囲の出力edge ${o.length}、入力edge ${i.length}、集約synapse countは出力 ${so}、入力 ${si}。`,en:`${f.focal_group} contains ${r} real BANC root IDs. Displayed edges: ${o.length} outgoing and ${i.length} incoming; aggregate synapse counts are ${so} out and ${si} in.`,zh:`${f.focal_group} 在该BANC抽取回路中包含 ${r} 个真实root_id。输出边 ${o.length}、输入边 ${i.length}；聚合突触数输出 ${so}、输入 ${si}。`,ko:`${f.focal_group} 그룹에는 실제 BANC root_id ${r}개가 있습니다. 출력 edge ${o.length}, 입력 edge ${i.length}, 집계 synapse count는 출력 ${so}, 입력 ${si}입니다.`,es:`${f.focal_group} contiene ${r} root_id BANC reales. Aristas: ${o.length} salientes y ${i.length} entrantes; sinapsis agregadas ${so} salida y ${si} entrada.`,fr:`${f.focal_group} contient ${r} root_id BANC réels. Arêtes: ${o.length} sortantes, ${i.length} entrantes; synapses agrégées ${so} sorties et ${si} entrées.`,de:`${f.focal_group} enthält ${r} echte BANC-root_ids. Kanten: ${o.length} ausgehend, ${i.length} eingehend; aggregierte Synapsen ${so} ausgehend und ${si} eingehend.`,pt:`${f.focal_group} contém ${r} root_ids BANC reais. Arestas: ${o.length} de saída, ${i.length} de entrada; sinapses agregadas ${so} saída e ${si} entrada.`,ru:`Группа ${f.focal_group} содержит ${r} реальных BANC root_id. Рёбра: выход ${o.length}, вход ${i.length}; агрегированные синапсы: ${so} выход, ${si} вход.`,hi:`${f.focal_group} समूह में ${r} वास्तविक BANC root_id हैं। आउटपुट edge ${o.length}, इनपुट edge ${i.length}; aggregate synapse count आउट ${so}, इन ${si}।`};return t[l]||t.ja}
+function draw(f){const c=$("#graph"),x=c.getContext("2d"),W=c.width,H=c.height;x.clearRect(0,0,W,H);const pos=new Map();f.nodes.forEach((n,k,a)=>{if(n.id===f.focal_group)pos.set(n.id,{x:W/2,y:H/2});else{const others=a.filter(z=>z.id!==f.focal_group),j=others.findIndex(z=>z.id===n.id),ang=2*Math.PI*j/Math.max(1,others.length)-Math.PI/2;pos.set(n.id,{x:W/2+Math.cos(ang)*260,y:H/2+Math.sin(ang)*260})}});for(const e of f.edges){const a=pos.get(e.source),b=pos.get(e.target);if(!a||!b)continue;x.strokeStyle="rgba(130,167,255,.5)";x.lineWidth=.7+5*e.weight_model;x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke()}for(const n of f.nodes){const p=pos.get(n.id);x.beginPath();x.arc(p.x,p.y,n.id===f.focal_group?13:7,0,Math.PI*2);x.fillStyle=n.id===f.focal_group?"#ffd16f":"#82a7ff";x.fill();x.fillStyle="#edf2ff";x.font="12px system-ui";x.fillText(n.id,p.x+10,p.y+4)}}
+function render(f){last=f;$("#frame").textContent=JSON.stringify(f,null,2);$("#human").textContent=desc(f,$("#lang").value);draw(f);$("#edgeBody").innerHTML=f.edges.map(e=>`<tr><td>${e.source===f.focal_group?"out":e.target===f.focal_group?"in":"hop"}</td><td>${e.source}</td><td>${e.target}</td><td>${e.weight_raw}</td><td>${e.transmitter}</td><td>${e.weight_model.toFixed(3)}</td></tr>`).join("");$("#rootTable").innerHTML=`<table><thead><tr><th>root_id</th><th>cell_type</th><th>class</th><th>side</th><th>NT</th></tr></thead><tbody>${f.focal_roots.map(n=>`<tr><td>${n.root_id}</td><td>${n.cell_type}</td><td>${n.cell_class}</td><td>${n.side}</td><td>${n.neurotransmitter}</td></tr>`).join("")}</tbody></table>`;$("#prov").textContent=JSON.stringify(f.provenance,null,2);renderAttachBar()}
+$("#run").onclick=()=>{const x=findDataAndGroup($("#query").value);if(!x)return alert("内蔵/追加extractに該当するroot_id/display_nameがありません");render(makeFrame(x.d,x.g,traverse(x.d,x.g,+$("#hops").value,$("#direction").value,+$("#minCount").value||1)))};
+$("#parse").onclick=()=>{const t=$("#natural").value.trim(),id=t.match(/\b\d{10,20}\b/);if(id)$("#query").value=id[0];else{for(const d of allData()){const names=[...new Set(d.neurons.map(n=>n.display_name))],g=names.find(n=>t.toLowerCase().includes(n.toLowerCase()));if(g){$("#query").value=g;break}}}if(/incoming|input|入力|输入|입력/.test(t.toLowerCase()))$("#direction").value="in";else if(/outgoing|output|出力|输出|출력/.test(t.toLowerCase()))$("#direction").value="out";const h=t.match(/([123])\s*[- ]?hop/i);if(h)$("#hops").value=h[1]};
+$("#rerender").onclick=()=>{if(last)$("#human").textContent=desc(last,$("#lang").value)};
+$("#export").onclick=()=>{if(!last)return;const data=JSON.stringify(last,null,2),filename="BANC888_offline_extract_frame.json";if(window.AndroidBridge&&typeof window.AndroidBridge.saveText==="function"){window.AndroidBridge.saveText(filename,data,"application/json");return;}const u=URL.createObjectURL(new Blob([data],{type:"application/json"})),a=document.createElement("a");a.href=u;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+$("#importFile").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!o.name||!Array.isArray(o.neurons)||!Array.isArray(o.edges))throw 0;const id="local_"+Date.now();EXTRA[id]={id,name:o.name,neurons:o.neurons,edges:o.edges,provenance:o.provenance||"local offline extract"};alert("ローカルextractを追加しました。root_id/display_nameで検索できます。")}catch{alert("JSON形式 {name, neurons:[], edges:[]} が必要です")}};
+$("#prov").textContent=JSON.stringify({materialization:888,offline:true,source:RAW.source,embedded_roots:DATA.neurons.length,embedded_edges:DATA.edges.length},null,2);
+</script></body></html>
