@@ -16,6 +16,7 @@ on:
       - "tests/research_physics_core.test.cjs"
       - "tests/route_on_switch_only.test.cjs"
       - "tests/live_manifest_verify.test.cjs"
+      - "tests/webview_runtime_contract.test.cjs"
       - "tests/research_physics_core.test.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
@@ -80,6 +81,7 @@ jobs:
           node tests/research_physics_core.test.cjs
           node tests/route_on_switch_only.test.cjs
           node tests/live_manifest_verify.test.cjs
+          node tests/webview_runtime_contract.test.cjs
           node tests/research_physics_core.test.cjs
 
       - name: Build debug APK
