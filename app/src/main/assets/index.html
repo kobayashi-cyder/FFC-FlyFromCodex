@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BANC888 v5.2 Fly Agent Mic Permission UI</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><meta name="theme-color" content="#09101e"><meta name="color-scheme" content="dark"><meta name="referrer" content="no-referrer">
+<title>BANC888 Fly Agent · WebView Runtime v7</title>
 <style>
 :root{--bg:#09101e;--panel:#111a2d;--line:#293754;--text:#edf2ff;--muted:#98aac7;--accent:#82a7ff;--good:#67da9e;--warn:#ffd16f}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.48 system-ui,sans-serif}
-header{padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#09101ef2;z-index:5}
+*{box-sizing:border-box}html{scrollbar-gutter:stable;scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.48 system-ui,sans-serif;padding-bottom:env(safe-area-inset-bottom);overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
+header{padding:calc(12px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));border-bottom:1px solid var(--line);position:sticky;top:0;background:#09101ef2;z-index:5;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 main{max-width:1450px;margin:auto;padding:18px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}button,input,select,textarea{background:#0b1528;color:var(--text);border:1px solid #324563;border-radius:9px;padding:9px;font:inherit}
-button{cursor:pointer}button.primary{background:#1d3d7a;border-color:#446fc9}input{min-width:220px}textarea{width:100%;min-height:70px}
+button{cursor:pointer;min-height:42px;touch-action:manipulation}button:active{transform:translateY(1px)}button.primary{background:#1d3d7a;border-color:#446fc9}input{min-width:220px}textarea{width:100%;min-height:70px}
 .note{padding:10px;border:1px solid #2c3d5d;border-radius:10px;background:#0c1526}.muted{color:var(--muted)}.good{color:var(--good)}.warn{color:var(--warn)}
 .stat{border:1px solid var(--line);padding:10px;border-radius:10px}.stat b{display:block;font-size:20px}pre{background:#07101e;border:1px solid #263650;border-radius:10px;padding:10px;white-space:pre-wrap;word-break:break-word;max-height:480px;overflow:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:7px;border-bottom:1px solid #253550;text-align:left}.scroll{max-height:520px;overflow:auto}
@@ -94,7 +94,7 @@ body.ui-compact #v50UnifiedBanner{display:none}
 
 </head>
 <body>
-<header><h1>🪰 BANC888 Fly Agent <span class="pill">v5.3 FFC APK NATIVE VOICE</span></h1>
+<header><h1>🪰 BANC888 Fly Agent <span class="pill">v7 WEBVIEW CORE</span></h1>
 <div class="muted">音声会話 + Human Display + ToolBus + BANC/O0 + F38/F42/F46。通常操作はFly Consoleへ集約し、専門パネルは用途別に折りたたみます。</div></header>
 <main>
 <div class="card" id="v50UnifiedBanner"><h2>BANC888 v5.0 Fly Voice + Human Display Agent <span class="pill">v4.8 unified + ears + voice + human display</span></h2><div class="note"><b>操作主体は代理人としてのハエ。</b> v4.8のToolBus/F38/F42/F46を保持したまま、人間→ハエの音声入力、ハエ→人間の音声出力、ハエ→人間向け画面出力を追加。O0は不変です。</div></div>
