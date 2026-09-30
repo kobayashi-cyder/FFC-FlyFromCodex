@@ -3,9 +3,9 @@
   "minShellVersion": 70,
   "bridgeSchema": 4,
   "assetSchema": 4,
-  "commit": "8291b1d464ec4fc180bd668ab2253a86838d983c",
+  "commit": "87aed33885e92fdf5fe20a0a60ede3141d60a173",
   "files": {
-    "index.html": "d19e0038bf912667f0e98cdd0f184c174da16ca3ac7d0319cfb0e61affcd2394",
+    "index.html": "2cce7429bd4c96a19573a1100d37e3bbc15faf6bd120929a18b9450bd2d44cd8",
     "native-bridge.js": "b9e597e1b511bde7dda555e311327a93933e7e1e293a39caaec170dbcd4cb6cb",
     "webview-runtime.js": "05c30e25c4779fd9211d9a6ade8a603a9fbc916743080de63fee1af98cdedbd2",
     "thread-router-core.js": "b19931c8f24397ce781bd9408132cefb5addf959f9fa09779f2a9b9d63731cb9",
