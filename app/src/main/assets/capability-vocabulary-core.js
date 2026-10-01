@@ -133,6 +133,14 @@ function buildCodeIR(text){
  const ext={python:'py',javascript:'js',typescript:'ts',kotlin:'kt',java:'java',cpp:'cpp',rust:'rs',html:'html',css:'css',sql:'sql'}[language]||'txt';
  return{kind:'CodeIR',action,language,frameworks,recipes:codeRecipes(t),constraints:detectConstraints(t),quality,export:/ファイル|保存|共有|download|export/.test(t),filename:filenameHint(text,ext),request:String(text||'').trim(),validation:['syntax','requirements','edge-cases']};
 }
+function imageSubject(text){
+ const raw=String(text||'').trim(),q=quoted(raw);if(q)return q;
+ let m=raw.match(/^(.{1,240}?)(?:の)?(?:画像|イラスト|絵|写真)(?:を)?(?:作成|生成|作って|作成して|生成して|描いて|描画して|ください|お願い)(?:ください|下さい)?[。！？!?]*$/);
+ if(m&&m[1].trim())return m[1].trim();
+ m=raw.match(/(?:画像|イラスト|絵|写真)(?:を)?(?:作成|生成|作って|作成して|生成して|描いて|描画して)(?:ください|下さい)?[：:\s]*(.{1,240})$/);
+ if(m&&m[1].trim())return m[1].trim();
+ return raw.replace(/(?:の)?(?:画像|イラスト|絵|写真)(?:を)?(?:作成|生成|作って|作成して|生成して|描いて|描画して)(?:ください|下さい)?[。！？!?]*$/,'').trim()||raw;
+}
 function buildImageIR(text){
  const t=norm(text);const lighting=uniq([
  /自然光|daylight/.test(t)?'daylight':null,/逆光|backlight/.test(t)?'backlight':null,/柔らかい光|soft light/.test(t)?'soft':null,
@@ -149,7 +157,7 @@ function buildImageIR(text){
  const palette=uniq([
  /暖色|warm/.test(t)?'warm':null,/寒色|cool/.test(t)?'cool':null,/モノクロ|monochrome/.test(t)?'monochrome':null,/鮮やか|vivid/.test(t)?'vivid':null
  ]);
- return{kind:'ImageIR',action:hits(t,PACK.image.refine)?'refine':'generate',request:String(text||'').trim(),subject:quoted(text)||String(text||'').trim(),size:sizeHint(t),aspect:aspectHint(t),composition,lighting,style,palette,quality:detectQuality(t),negative:uniq([/文字なし|no text/.test(t)?'no-text':null,/透かしなし|no watermark/.test(t)?'no-watermark':null]),validation:['scene-nonempty','dimensions','request-coverage']};
+ return{kind:'ImageIR',action:hits(t,PACK.image.refine)?'refine':'generate',request:String(text||'').trim(),subject:imageSubject(text),size:sizeHint(t),aspect:aspectHint(t),composition,lighting,style,palette,quality:detectQuality(t),negative:uniq([/文字なし|no text/.test(t)?'no-text':null,/透かしなし|no watermark/.test(t)?'no-watermark':null]),validation:['scene-nonempty','dimensions','request-coverage','geometry','composition','clarity','score-threshold']};
 }
 function buildVoiceIR(text){
  const t=norm(text);let operation='speak';
@@ -200,5 +208,5 @@ function classify(text){
  const args=ir?Object.assign({ir,prompt:raw},ir):{prompt:raw};return{raw,normalized:t,domain,action,tool,args,ir,confidence,scores,handled:!!tool,packVersion:'2.0'};
 }
 function lexiconStats(){return{code:Object.values(PACK.code).flat().length,image:Object.values(PACK.image).flat().length,voice:Object.values(PACK.voice).flat().length,document:Object.values(PACK.document).flat().length,quality:Object.values(PACK.quality).flat().length,constraints:Object.values(PACK.constraints).flat().length}}
-return{PACK,classify,buildCodeIR,buildImageIR,buildVoiceIR,buildDocumentIR,detectCodeLanguage,detectDocumentFormat,lexiconStats,quoted,filenameHint};
+return{PACK,classify,buildCodeIR,buildImageIR,buildVoiceIR,buildDocumentIR,detectCodeLanguage,detectDocumentFormat,lexiconStats,quoted,filenameHint,imageSubject};
 });
