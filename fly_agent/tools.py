@@ -80,6 +80,20 @@ class ToolBus:
         spec = self._tools.get(name)
         return bool(spec and self.policy.allows(spec.capability))
 
+    def manifest(self) -> list[dict[str, Any]]:
+        """Describe every registered tool so planners/learners can discover capabilities dynamically."""
+        return [
+            {
+                "name": spec.name,
+                "capability": spec.capability.value,
+                "description": spec.description,
+                "resource": spec.resource,
+                "side_effect": bool(spec.side_effect),
+                "executable": self.policy.allows(spec.capability),
+            }
+            for spec in sorted(self._tools.values(), key=lambda item: item.name)
+        ]
+
     def execute(
         self,
         name: str,
