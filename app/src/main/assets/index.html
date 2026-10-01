@@ -5494,19 +5494,45 @@ class AgentMath {
 
 const AGENT={
   tools:new Map(),memory:new Map(),trace:[],last:null,running:false,stop:false,
+  feedback:{bias:{},events:[]},
   capabilities:new Set(['compute','memory.read','memory.write','banc.read','cpf.read','research.read','micro.write','o2.write','o3.write','chat.compose','bridge.propose','f38.write','f42.write','f46.write','human.output','voice.input'])
 };
 const AGENT_ROUTE_ROLE=Object.freeze({
   'banc.neighbors':'o1p1','cpf.inspect':'o1p1','research.wiki':'o1p3','memory.get':'o1p2','memory.put':'o1p3','compute.math':'o1p1',
   'micro.compile':'o1p0','micro.step':'o1p2','micro.status':'o1p2','o2.generate':'o1p0','o3.generate':'o1p0',
-  'chat.compose':'o1p3','bridge.propose':'o1p3','human.display':'o1p3','voice.speak':'o1p3','voice.status':'o1p3','f38.compile':'o1p0','f38.step':'o1p2','f38.status':'o1p2','f42.compile':'o1p0','f42.step':'o1p2','f42.status':'o1p2','f42.adapt':'o1p1','f42.rewire':'o1p1','f46.tune':'o1p0','f46.evolve':'o1p1','f46.replay':'o1p2','f46.status':'o1p2','system.manifest':'o1p3'
+  'chat.compose':'o1p3','bridge.propose':'o1p3','human.display':'o1p3','voice.speak':'o1p3','voice.status':'o1p3','f38.compile':'o1p0','f38.step':'o1p2','f38.status':'o1p2','f42.compile':'o1p0','f42.step':'o1p2','f42.status':'o1p2','f42.adapt':'o1p1','f42.rewire':'o1p1','f46.tune':'o1p0','f46.evolve':'o1p1','f46.replay':'o1p2','f46.status':'o1p2','feedback.ingest':'o1p1','feedback.status':'o1p2','system.manifest':'o1p3'
 });
 
 function agentRegister(name,description,capability,sideEffect,handler){AGENT.tools.set(name,{name,description,capability,sideEffect,handler})}
 function agentManifest(){return [...AGENT.tools.values()].map(({handler,...x})=>x).sort((a,b)=>a.name.localeCompare(b.name))}
 function agentRoute(name){const id=AGENT_ROUTE_ROLE[name];return typeof O1P_SHORTCUTS!=='undefined'?O1P_SHORTCUTS.find(x=>x.id===id):null}
-function agentRouteBoost(name){const r=agentRoute(name);if(!r||!O1P_SHORTCUTS?.length)return 0;const mx=Math.max(...O1P_SHORTCUTS.map(x=>+x.mean||0),1e-9),a=(typeof O23!=='undefined'&&O23.routeActivity?.get(r.id))||0;return .12*(r.mean/mx)+.06*a}
+function agentClamp(v,a=-1,b=1){return Math.max(a,Math.min(b,Number(v)||0))}
+function agentFeedbackBias(name){return agentClamp(AGENT.feedback?.bias?.[name]||0,-.18,.18)}
+function agentRouteBoost(name){const learned=agentFeedbackBias(name),r=agentRoute(name);if(!r||!O1P_SHORTCUTS?.length)return learned;const mx=Math.max(...O1P_SHORTCUTS.map(x=>+x.mean||0),1e-9),a=(typeof O23!=='undefined'&&O23.routeActivity?.get(r.id))||0;return .12*(r.mean/mx)+.06*a+learned}
 function agentFire(name,amount=.75){const r=agentRoute(name);if(r&&typeof o23Fire==='function')o23Fire(r,amount)}
+function agentSaveFeedback(){try{localStorage.setItem('banc888_fly_agent_feedback_v1',JSON.stringify(AGENT.feedback))}catch(e){}}
+function agentLoadFeedback(){try{const x=JSON.parse(localStorage.getItem('banc888_fly_agent_feedback_v1')||'null');if(x&&typeof x==='object'){AGENT.feedback.bias=x.bias&&typeof x.bias==='object'?x.bias:{};AGENT.feedback.events=Array.isArray(x.events)?x.events.slice(-96):[]}}catch(e){}}
+function agentIngestFeedback(a={}){
+  const ev=a.event&&typeof a.event==='object'?a.event:a;
+  const target=String(a.targetTool||ev.targetTool||ev.action||'delegate');
+  const tier=String(ev.tier||'training');
+  const vector=ev.vector&&typeof ev.vector==='object'?ev.vector:{};
+  const learnable=ev.learnable!==false&&tier!=='holdout';
+  const scale=agentClamp(ev.learningScale==null?(tier==='regression'?.35:1):ev.learningScale,0,1);
+  const reward=agentClamp(ev.reward||0);
+  const repairPressure=agentClamp((+.55*(Number(vector.hardFailure)||0))+(+.30*(Number(vector.regression)||0)),0,1);
+  const novelty=agentClamp(Number(vector.novelty)||0,0,1);
+  const applied=learnable?agentClamp(reward*scale + novelty*.04*scale - repairPressure*.08*scale):0;
+  const before=agentFeedbackBias(target);
+  if(learnable&&target){
+    AGENT.feedback.bias[target]=agentClamp(before+applied*.08,-.18,.18);
+  }
+  const record={time:new Date().toISOString(),target,tier,reward,applied,learnable,vector,source:ev.source||'feedback',senses:ev.senses||null,bias:target?agentFeedbackBias(target):0};
+  AGENT.feedback.events.push(record);if(AGENT.feedback.events.length>96)AGENT.feedback.events.splice(0,AGENT.feedback.events.length-96);
+  agentSaveFeedback();
+  if(target)agentFire(target,agentClamp(.55+applied*.35,.15,1));
+  return record;
+}
 function agentControl(goal){try{return typeof microFlyControl==='function'?microFlyControl(goal):{routeBias:{}}}catch(e){return{routeBias:{},error:e.message}}}
 function agentJsonSafe(v){try{JSON.stringify(v);return true}catch{return false}}
 function agentSaveMemory(){try{localStorage.setItem('banc888_fly_agent_memory_v01',JSON.stringify(Object.fromEntries(AGENT.memory)))}catch(e){}}
@@ -5705,7 +5731,9 @@ agentRegister('f46.tune','budget-aware F46 configuration tuner','f46.write','loc
 agentRegister('f46.evolve','evaluate multiple sparse routes and retain best objective route','f46.write','local',()=>f46Evolve(true));
 agentRegister('f46.replay','replay recent episodes with bounded plasticity','f46.write','local',()=>f46Replay(true));
 agentRegister('f46.status','read F46 evolutionary route/replay/body-bus state','compute','none',()=>({running:F46.running,best:F46.best,lastTune:F46.lastTune,replayCount:F46.replayCount,trials:F46.trials.slice(-8),model:F42.model?{n:F42.model.n,epoch:F42.model.epoch,routeEpoch:F42.model.routeEpoch}:null,bodyBus:F42.program?f46BodyBus(F42.program):null,handoff:BANC888_V46_HANDOFF}));
-agentRegister('system.manifest','list available agent body tools','compute','none',()=>({tools:agentManifest(),stack:{v38:BANC888_V38_HANDOFF,v42:BANC888_V42_HANDOFF,v46:BANC888_V46_HANDOFF,agent:AGENT_HANDOFF}}));
+agentRegister('feedback.ingest','consume multidimensional quality/test feedback and adapt tool-route bias','compute','local',a=>agentIngestFeedback(a));
+agentRegister('feedback.status','read recent reward vectors and learned tool-route bias','compute','none',()=>({bias:{...AGENT.feedback.bias},events:AGENT.feedback.events.slice(-24)}));
+agentRegister('system.manifest','list available agent body tools','compute','none',()=>({tools:agentManifest(),stack:{v38:BANC888_V38_HANDOFF,v42:BANC888_V42_HANDOFF,v46:BANC888_V46_HANDOFF,agent:AGENT_HANDOFF},feedback:{bias:{...AGENT.feedback.bias},events:AGENT.feedback.events.length}}));
 
 
 const FLYVOICE={recognition:null,listening:false,speaking:false,lastHeard:'',lastSpoken:'',interim:'',restartTimer:0,suppressRestart:false,voices:[],micReady:false,micPermission:'unknown',micError:null,lastDiag:null};
@@ -5916,7 +5944,7 @@ function agentRun(goal,maxSteps=3,{oneStep=false,dryRun=false,logChat=true}={}){
   if(logChat&&finalText)addChat('bot',finalText,`fly-agent / v5.0 / steps=${steps.length} / tool=${lastStep?.tool||'none'} / route=${lastStep?.route||'none'}`);flyDeliver(packet,{dryRun});agentRender(packet);return packet
 }
 
-function agentUIInit(){agentLoadMemory();const goal=$('#agentGoal');if(goal&&!goal.value)goal.value='BANCの接続を見て、結果を説明して';flyVoicePopulate();if('speechSynthesis'in window)speechSynthesis.onvoiceschanged=flyVoicePopulate;
+function agentUIInit(){agentLoadMemory();agentLoadFeedback();const goal=$('#agentGoal');if(goal&&!goal.value)goal.value='BANCの接続を見て、結果を説明して';flyVoicePopulate();if('speechSynthesis'in window)speechSynthesis.onvoiceschanged=flyVoicePopulate;
   const run=()=>agentRun(goal?.value,+($('#agentMaxSteps')?.value||3),{dryRun:!!$('#agentDryRun')?.checked,logChat:!!$('#agentLogChat')?.checked});
   if($('#agentRun'))$('#agentRun').onclick=run;if($('#agentStep'))$('#agentStep').onclick=()=>agentRun(goal?.value,1,{oneStep:true,dryRun:!!$('#agentDryRun')?.checked,logChat:false});if($('#agentStop'))$('#agentStop').onclick=()=>{AGENT.stop=true;AGENT.running=false};
   if($('#agentUseChat'))$('#agentUseChat').onclick=()=>{if(goal)goal.value=$('#chatInput')?.value||''};
