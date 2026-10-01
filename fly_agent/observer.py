@@ -14,7 +14,7 @@ class Observer:
         self.executive = executive
         self.feedback = FeedbackEncoder()
 
-    def record(self, observation: Observation) -> None:
+    def record(self, observation: Observation) -> FeedbackEvent:
         result = observation.result
         self.memory.append(
             AgentEvent(
@@ -33,6 +33,7 @@ class Observer:
         )
         event = self.feedback.from_tool_result("delegate", observation.tool, result)
         self._record_feedback(event, observation.thread_id, observation.goal_id)
+        return event
 
     def record_test(
         self,
@@ -43,8 +44,9 @@ class Observer:
         thread_id: str | None = None,
         goal_id: str | None = None,
         failure: str | None = None,
+        action: str = "delegate",
     ) -> FeedbackEvent:
-        event = self.feedback.from_test(name, passed, tier=tier, failure=failure)
+        event = self.feedback.from_test(name, passed, tier=tier, failure=failure, action=action)
         self._record_feedback(event, thread_id, goal_id)
         return event
 
