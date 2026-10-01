@@ -55,6 +55,9 @@ jobs:
           - name: Image candidate ranking
             class: com.ffc.banc888.fly.ImageQualityIntegrationTest
             fixture: false
+          - name: Autonomous capability learning
+            class: com.ffc.banc888.fly.AutonomyIntegrationTest
+            fixture: false
           - name: Conversation knowledge
             class: com.ffc.banc888.fly.ConversationKnowledgeIntegrationTest
             fixture: false
