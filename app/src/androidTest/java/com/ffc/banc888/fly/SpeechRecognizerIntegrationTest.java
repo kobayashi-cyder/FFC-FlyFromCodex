@@ -20,6 +20,8 @@ public class SpeechRecognizerIntegrationTest {
         TestSupport.grantMicrophone();
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             assertTrue(TestSupport.awaitJs(scenario,
+                    "!!(window.AndroidVoice&&window.FFC_THREADS&&window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.__ffcThreadBound)", 15000));
+            assertTrue(TestSupport.awaitJs(scenario,
                     "(function(){window.__voiceErr='';window.__voiceText='';var n=window.BANC888_NATIVE_VOICE;var e=n.onError,r=n.onResult;n.onError=function(c,m){window.__voiceErr=String(c||'')+':'+String(m||'');if(e)return e.apply(this,arguments)};n.onResult=function(t){window.__voiceText=String(t||'').trim();if(r)return r.apply(this,arguments)};return true})()", 3000));
 
             File pcm = new File("/data/local/tmp/ci-mic-speech.raw");

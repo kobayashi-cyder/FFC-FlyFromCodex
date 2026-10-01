@@ -15,6 +15,8 @@ public class MicrophoneIntegrationTest {
         TestSupport.grantMicrophone();
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             assertTrue(TestSupport.awaitJs(scenario,
+                    "!!(window.AndroidVoice&&window.AndroidDiagnostics)", 15000));
+            assertTrue(TestSupport.awaitJs(scenario,
                     "JSON.parse(AndroidVoice.status()).permission==='granted'", 5000));
             assertTrue(TestSupport.awaitJs(scenario,
                     "(function(){var p=JSON.parse(AndroidDiagnostics.probeMicrophone());return p.initialized===true})()", 5000));

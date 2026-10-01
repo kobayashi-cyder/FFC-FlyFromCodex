@@ -40,6 +40,14 @@ final class TestSupport {
             if ("true".equals(value.get())) return true;
             Thread.sleep(150);
         }
+        scenario.onActivity(activity -> {
+            ViewGroup root = activity.findViewById(android.R.id.content);
+            WebView webView = (WebView) root.getChildAt(0);
+            webView.evaluateJavascript(
+                    "JSON.stringify({ready:document.readyState,voice:typeof AndroidVoice,"
+                            + "diagnostics:typeof AndroidDiagnostics==='undefined'?null:AndroidDiagnostics.status()})",
+                    result -> android.util.Log.e("BANC888-WebView", "TEST timeout: " + expression + " actual: " + result));
+        });
         return false;
     }
 }
