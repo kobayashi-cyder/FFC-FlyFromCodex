@@ -15,6 +15,9 @@ fi
 echo "::endgroup::"
 
 echo "::group::TEST $TEST_NAME"
+# Touch tests need the app window, rather than the emulator lock screen.
+adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard
 adb logcat -c
 rm -f /tmp/device-logcat.txt
 adb logcat -v threadtime > /tmp/device-logcat.txt 2>&1 &

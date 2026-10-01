@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.view.MotionEvent;
+import android.view.InputDevice;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import androidx.core.content.FileProvider;
@@ -33,9 +34,9 @@ public class ChatControlsIntegrationTest {
             assertTrue(TestSupport.awaitJs(scenario,"['conversationSidebarToggle','uiGearButton','ffcAttachButton','ffcQuickListen','ffcQuickStop','ffcExecutionMode','ffcThreadSend'].every(function(id){var e=document.getElementById(id),r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return r.height>=44&&r.width>=44&&r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&(hit===e||e.contains(hit))})",3000));
             assertTrue(TestSupport.awaitJs(scenario,"(function(){window.__oldConfigure=FFCA1111Video.configure;FFCA1111Video.configure=function(){throw Error('invalid stored endpoint')};FFCExecution.setMode('offline');return true})()",3000));
             tap(scenario,"ffcExecutionMode");
-            assertTrue(TestSupport.awaitJs(scenario,"FFCExecution.status().mode==='online'",3000));
+            assertTrue("Mode button did not become online",TestSupport.awaitJs(scenario,"FFCExecution.status().mode==='online'",3000));
             tap(scenario,"ffcExecutionMode");
-            assertTrue(TestSupport.awaitJs(scenario,"FFCExecution.status().mode==='offline'",3000));
+            assertTrue("Mode button did not return offline",TestSupport.awaitJs(scenario,"FFCExecution.status().mode==='offline'",3000));
             tap(scenario,"uiGearButton");
             assertTrue(TestSupport.awaitJs(scenario,"document.getElementById('uiSettingsDrawer').classList.contains('open')&&document.getElementById('ffcInstalledVersion').textContent.indexOf('7.10')>=0&&document.getElementById('ffcInternalRuntime').hidden",3000));
             tap(scenario,"uiSettingsClose");
@@ -79,6 +80,7 @@ public class ChatControlsIntegrationTest {
         float[] screen=new float[2];scenario.onActivity(activity->{WebView view=(WebView)((ViewGroup)activity.findViewById(android.R.id.content)).getChildAt(0);int[] location=new int[2];view.getLocationOnScreen(location);float scale=view.getWidth()/(float)point.optDouble(2);screen[0]=location[0]+(float)point.optDouble(0)*scale;screen[1]=location[1]+(float)point.optDouble(1)*scale;});
         long time=SystemClock.uptimeMillis();Instrumentation instrument=InstrumentationRegistry.getInstrumentation();
         MotionEvent down=MotionEvent.obtain(time,time,MotionEvent.ACTION_DOWN,screen[0],screen[1],0),up=MotionEvent.obtain(time,time+50,MotionEvent.ACTION_UP,screen[0],screen[1],0);
-        try{instrument.sendPointerSync(down);instrument.sendPointerSync(up);instrument.waitForIdleSync();}finally{down.recycle();up.recycle();}
+        down.setSource(InputDevice.SOURCE_TOUCHSCREEN);up.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        try{assertTrue("Touch down was rejected for "+id,instrument.getUiAutomation().injectInputEvent(down,true));assertTrue("Touch up was rejected for "+id,instrument.getUiAutomation().injectInputEvent(up,true));instrument.waitForIdleSync();}finally{down.recycle();up.recycle();}
     }
 }
