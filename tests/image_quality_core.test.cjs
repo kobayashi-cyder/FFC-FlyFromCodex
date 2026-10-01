@@ -90,4 +90,10 @@ assert.ok(evolved1.every(x=>x.generation===1&&x.parentId));
 assert.equal(new Set(evolved1.map(x=>x.seed)).size,8);
 assert.ok(evolved1.some(x=>x.detail!==5||x.blur!==1||x.atmosphere!==1));
 
+const brokenParent={...parentA,quality:{score:40,pass:false,hardIssues:['category-structure:cat:tail','entity-out-of-bounds'],issues:['weak-composition']}};
+const repaired=Q.evolve([brokenParent],ir,2,3);
+assert.ok(repaired.every(x=>x.prompt.includes('repair anatomy')));
+assert.ok(repaired.every(x=>x.prompt.includes('entire subject inside frame')));
+assert.ok(repaired.every(x=>x.prompt.includes('rebalance focal placement')));
+
 console.log('image-quality-core: PASS');
