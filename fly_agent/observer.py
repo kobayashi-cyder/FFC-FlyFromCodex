@@ -39,7 +39,7 @@ class Observer:
             )
         )
         event = self.feedback.from_tool_result("delegate", observation.tool, result)
-        self._record_feedback(event, observation.thread_id, observation.goal_id)
+        self._record_feedback(event, observation.thread_id, observation.goal_id, skill_key=observation.tool)
 
     def record_test(
         self,
@@ -52,7 +52,7 @@ class Observer:
         failure: str | None = None,
     ) -> FeedbackEvent:
         event = self.feedback.from_test(name, passed, tier=tier, failure=failure)
-        self._record_feedback(event, thread_id, goal_id)
+        self._record_feedback(event, thread_id, goal_id, skill_key=event.action)
         return event
 
     def record_quality(
@@ -73,7 +73,7 @@ class Observer:
             tier=tier,
             source=source,
         )
-        self._record_feedback(event, thread_id, goal_id)
+        self._record_feedback(event, thread_id, goal_id, skill_key=action)
         return event
 
     def _record_feedback(
@@ -81,9 +81,10 @@ class Observer:
         event: FeedbackEvent,
         thread_id: str | None,
         goal_id: str | None,
+        skill_key: str | None = None,
     ) -> None:
         applied, decision = self.executive.consume_feedback(event)
-        profile = self.learner.observe(event.source, event) if self.learner is not None else None
+        profile = self.learner.observe(skill_key or event.action, event) if self.learner is not None else None
         self.memory.append(
             AgentEvent(
                 "feedback",
