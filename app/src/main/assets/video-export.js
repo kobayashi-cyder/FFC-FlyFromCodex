@@ -7,6 +7,7 @@ const yieldFrame=()=>new Promise(resolve=>setTimeout(resolve,0));
 function publish(job,patch){Object.assign(job,patch);last=job;try{window.dispatchEvent(new CustomEvent('ffc-video-export',{detail:status()}))}catch{}const el=document.getElementById('videoMp4Status');if(el)el.textContent=job.status==='complete'?'MP4保存完了: '+job.name+' / '+job.bytes+' bytes':job.status==='encoding'?'MP4保存中: '+job.framesWritten+' / '+job.frameCount+' frames':job.status==='cancelled'?'MP4保存を取り消しました。':job.error||'MP4を保存できます。';const share=document.getElementById('videoMp4Share');if(share)share.disabled=job.status!=='complete';const cancel=document.getElementById('videoMp4Cancel');if(cancel)cancel.disabled=job.status!=='encoding';const save=document.getElementById('videoMp4Save');if(save)save.disabled=job.status==='encoding';}
 function fail(error){return{ok:false,status:'failed',error:String(error||'MP4 export failed')}}
 function start(options={}){
+ if(window.FFCA1111Video?.status?.().status==='generating')return fail('A1111動画生成中です。');
  if(active)return fail('MP4保存中です。完了を待つか取り消してください。');
  if(!window.AndroidVideo?.begin)return fail('MP4保存には対応するAndroid APKが必要です。');
  let spec;try{spec=source&&source()}catch(e){return fail(e.message)}
@@ -17,12 +18,15 @@ function start(options={}){
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)return fail('frame canvas unavailable');
  let began;try{began=parse(AndroidVideo.begin(width,height,fps,frameCount,String(options.filename||'BANC888_video.mp4')))}catch(e){return fail(e.message)}if(!began.ok)return fail(began.error);
  const job={...began,ok:true,status:'encoding',jobId:began.jobId,fps,width,height,frameCount,framesWritten:0,durationMs:frameCount*1000/fps,requestId:++sequence,cancelled:false};active=job;publish(job,{});
+ const probe=window.FFCVideoQuality?document.createElement('canvas'):null,backup=probe?document.createElement('canvas'):null;let previousSample=null;if(probe){probe.width=probe.height=32;backup.width=width;backup.height=height;job.quality={kind:'technical-luminance-continuity',scores:[],improved:0};}
  // A single frame remains live; native append acknowledges it before the next is rendered.
  job.completion=(async()=>{
   try{
    for(let index=0;index<frameCount;index++){
     await yieldFrame();if(job.cancelled)throw new Error('cancelled');
-    spec.render(index/fps*1000/durationMs,ctx);let jpeg=canvas.toDataURL('image/jpeg',.86).split(',')[1];
+    spec.render(index/fps*1000/durationMs,ctx);
+    if(probe){const pc=probe.getContext('2d',{willReadFrequently:true}),bc=backup.getContext('2d',{alpha:false});pc.drawImage(canvas,0,0,32,32);let q=FFCVideoQuality.evaluate(pc.getImageData(0,0,32,32).data,previousSample);if(!q.pass&&q.contrast<.15){bc.drawImage(canvas,0,0);ctx.save();ctx.filter='contrast(1.2) brightness(1.05)';ctx.drawImage(backup,0,0);ctx.restore();pc.drawImage(canvas,0,0,32,32);const improved=FFCVideoQuality.evaluate(pc.getImageData(0,0,32,32).data,previousSample);if(improved.score>q.score){q=improved;job.quality.improved++}else ctx.drawImage(backup,0,0);}previousSample=q.sample;job.quality.scores.push(q.score);}
+    let jpeg=canvas.toDataURL('image/jpeg',.86).split(',')[1];
     if(!jpeg||jpeg.length>2097152)throw new Error('frame payload exceeds limit');
     const result=parse(AndroidVideo.append(job.jobId,index,jpeg));jpeg=null;if(!result.ok)throw new Error(result.error||'frame encoding failed');
     publish(job,{framesWritten:index+1});
@@ -31,7 +35,7 @@ function start(options={}){
    const result=parse(AndroidVideo.finish(job.jobId));if(!result.ok)throw new Error(result.error||'MP4 finalization failed');
    publish(job,{...result,status:'complete',ok:true});
   }catch(e){try{AndroidVideo.cancel(job.jobId)}catch{}publish(job,{ok:false,status:job.cancelled?'cancelled':'failed',error:job.cancelled?null:String(e.message||e)});}
-  finally{canvas.width=0;canvas.height=0;active=null;}
+  finally{if(probe){probe.width=probe.height=backup.width=backup.height=0;}canvas.width=0;canvas.height=0;active=null;}
   return status();
  })();
  return{ok:true,status:'encoding',jobId:job.jobId,name:began.name||options.filename||'BANC888_video.mp4',frameCount,fps,width,height,durationMs:job.durationMs};

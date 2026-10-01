@@ -129,7 +129,7 @@ function finalText(tool,value,status,patch){
  if(status===C.Status.FAILED)return'生成または検証に失敗しました。'+patchNote;
  if(tool==='content.understand')return String(value?.summary||'本文から回答を抽出できませんでした。');
  if(tool==='chat.compose')return String(value?.reply||'');
- if(tool==='o3.generate')return value?.exported?.ok?'MP4を保存しています。動画パネルで進捗と共有を確認できます。':'動画シーンを生成しました。MP4保存: '+String(value?.exported?.error||'利用できません');
+ if(tool==='o3.generate')return value?.exported?.ok?'MP4を保存しています。動画パネルで進捗と共有を確認できます。':'MP4生成を開始できませんでした: '+String(value?.exported?.error||'利用できません');
  if(/^code\./.test(tool))return'コード処理を完了しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+patchNote;
  if(/^image\./.test(tool))return'画像処理を完了しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+patchNote;
  if(/^document\./.test(tool))return String(value&&value.format||'DOCUMENT').toUpperCase()+'資料を作成しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+patchNote;

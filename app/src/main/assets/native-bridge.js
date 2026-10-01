@@ -19,7 +19,13 @@ window.AndroidFiles={
  createDocx:(title,body,filename)=>window.__BancFiles?__BancFiles.createDocx(token,String(title||''),String(body||''),String(filename||'')):denied(),
  shareText:(text,filename,mime)=>window.__BancFiles?__BancFiles.shareText(token,String(text||''),String(filename||''),String(mime||'text/plain')):denied()
 };
+window.AndroidA1111={
+ start:(endpoint,path,payload)=>window.__BancA1111?__BancA1111.start(token,String(endpoint),String(path),String(payload)):denied(),
+ poll:id=>window.__BancA1111?__BancA1111.poll(token,String(id)):denied(),
+ cancel:id=>window.__BancA1111?__BancA1111.cancel(token,String(id)):denied()
+};
 window.AndroidVideo={
+ beginExternal:(w,h,fps,frames,name)=>window.__BancVideo?__BancVideo.beginExternal(token,Number(w),Number(h),Number(fps),Number(frames),String(name||'BANC888_A1111.mp4')):denied(),
  begin:(w,h,fps,frames,name)=>window.__BancVideo?__BancVideo.begin(token,Number(w),Number(h),Number(fps),Number(frames),String(name||'BANC888_video.mp4')):denied(),
  append:(id,index,jpeg)=>window.__BancVideo?__BancVideo.append(token,String(id),Number(index),String(jpeg)):denied(),
  finish:(id)=>window.__BancVideo?__BancVideo.finish(token,String(id)):denied(),

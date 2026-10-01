@@ -24,6 +24,7 @@ final class BridgeRegistry {
     private final SpeechController speech;
     private final DocumentExporter documents;
     private final VideoExporter videos;
+    private final A1111Client a1111;
     private final ResearchClient research;
     private final DevLiveManager devLive;
     private final Runnable reload;
@@ -37,6 +38,7 @@ final class BridgeRegistry {
             SpeechController speech,
             DocumentExporter documents,
             VideoExporter videos,
+            A1111Client a1111,
             ResearchClient research,
             DevLiveManager devLive,
             Runnable reload
@@ -49,6 +51,7 @@ final class BridgeRegistry {
         this.speech = speech;
         this.documents = documents;
         this.videos = videos;
+        this.a1111 = a1111;
         this.research = research;
         this.devLive = devLive;
         this.reload = reload;
@@ -57,6 +60,7 @@ final class BridgeRegistry {
     void install() {
         webView.addJavascriptInterface(new VoiceBridge(), "__BancVoice");
         webView.addJavascriptInterface(new FilesBridge(), "__BancFiles");
+        webView.addJavascriptInterface(new A1111Bridge(), "__BancA1111");
         webView.addJavascriptInterface(new VideoBridge(), "__BancVideo");
         webView.addJavascriptInterface(new ResearchBridge(), "__BancResearch");
         webView.addJavascriptInterface(new DevBridge(), "__BancDev");
@@ -68,6 +72,7 @@ final class BridgeRegistry {
         webView.removeJavascriptInterface("__BancFiles");
         webView.removeJavascriptInterface("__BancResearch");
         webView.removeJavascriptInterface("__BancVideo");
+        webView.removeJavascriptInterface("__BancA1111");
         webView.removeJavascriptInterface("__BancDev");
         webView.removeJavascriptInterface("__BancDiagnostics");
     }
@@ -138,9 +143,17 @@ final class BridgeRegistry {
         }
     }
 
+    public final class A1111Bridge {
+        @JavascriptInterface public String start(String token,String endpoint,String path,String payload) {return allow(token)?a1111.start(endpoint,path,payload):denied();}
+        @JavascriptInterface public String poll(String token,String id) {return allow(token)?a1111.poll(id):denied();}
+        @JavascriptInterface public String cancel(String token,String id) {return allow(token)?a1111.cancel(id):denied();}
+    }
     public final class VideoBridge {
         @JavascriptInterface public String begin(String token, int width, int height, int fps, int frames, String filename) {
             return allow(token) ? videos.begin(width, height, fps, frames, filename) : denied();
+        }
+        @JavascriptInterface public String beginExternal(String token,int width,int height,int fps,int frames,String name) {
+            return allow(token)?videos.beginExternal(width,height,fps,frames,name):denied();
         }
         @JavascriptInterface public String append(String token, String id, int index, String jpeg) {
             return allow(token) ? videos.append(id, index, jpeg) : denied();

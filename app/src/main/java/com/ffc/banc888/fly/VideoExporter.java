@@ -61,6 +61,7 @@ final class VideoExporter {
         MediaMuxer muxer;
         boolean muxerStarted, outputEos;
         long started = SystemClock.elapsedRealtime(), touched = started;
+        long idleTimeout=IDLE_TIMEOUT_MS,totalTimeout=JOB_TIMEOUT_MS;
         final MediaCodec.BufferInfo outputInfo = new MediaCodec.BufferInfo();
     }
 
@@ -103,6 +104,13 @@ final class VideoExporter {
             fail(job, "H.264 encoder unavailable or initialization failed: " + message(e));
             return error(job.error, job);
         }
+    }
+
+    synchronized String beginExternal(int width,int height,int fps,int frames,String filename) {
+        if(frames>24)return error("A1111 video is limited to 24 generated frames",null);
+        String result=begin(width,height,fps,frames,filename);
+        try{if(new JSONObject(result).optBoolean("ok")&&active!=null){active.idleTimeout=150000;active.totalTimeout=900000;}}catch(Exception ignored){}
+        return result;
     }
 
     synchronized String append(String jobId, int frameIndex, String base64Jpeg) {
@@ -408,7 +416,7 @@ final class VideoExporter {
 
     private void expire() {
         long now = SystemClock.elapsedRealtime();
-        if (active != null && (now - active.touched > IDLE_TIMEOUT_MS || now - active.started > JOB_TIMEOUT_MS)) {
+        if (active != null && (now - active.touched > active.idleTimeout || now - active.started > active.totalTimeout)) {
             fail(active, "video export timed out");
         }
     }
