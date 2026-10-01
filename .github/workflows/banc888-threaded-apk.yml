@@ -19,6 +19,7 @@ on:
       - "tests/webview_runtime_contract.test.cjs"
       - "tests/image_quality_core.test.cjs"
       - "tests/feedback_core.test.cjs"
+      - "tests/unified_autonomy_integration.test.cjs"
       - "tests/research_physics_core.test.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
@@ -83,6 +84,7 @@ jobs:
           node tests/capability_vocabulary.test.cjs
           node tests/image_quality_core.test.cjs
           node tests/feedback_core.test.cjs
+          node tests/unified_autonomy_integration.test.cjs
           node tests/specialist_capability_v2.test.cjs
           node tests/ir_patch_core.test.cjs
           node tests/proxy_agent_core.test.cjs
