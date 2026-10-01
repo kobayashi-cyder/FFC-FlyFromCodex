@@ -5,6 +5,7 @@ from fly_agent import (
     AutonomousSkillLearner,
     BodyArbiter,
     Capability,
+    CompositeSkillFabric,
     FlyMachineAgent,
     FeedbackEncoder,
     Goal,
