@@ -14,6 +14,8 @@ window.AndroidVoice={
  speak:(text,language,rate,pitch)=>window.__BancVoice?__BancVoice.speak(token,String(text||''),String(language||'ja-JP'),Number(rate||1),Number(pitch||1)):false
 };
 window.AndroidFiles={
+ saveText:(text,filename,mime)=>window.__BancFiles?__BancFiles.saveText(token,String(text||''),String(filename||'BANC888_conversation.json'),String(mime||'application/json')):denied(),
+ shareSaved:(filename,mime)=>window.__BancFiles?__BancFiles.shareSaved(token,String(filename||''),String(mime||'application/json')):denied(),
  createDocx:(title,body,filename)=>window.__BancFiles?__BancFiles.createDocx(token,String(title||''),String(body||''),String(filename||'')):denied(),
  shareText:(text,filename,mime)=>window.__BancFiles?__BancFiles.shareText(token,String(text||''),String(filename||''),String(mime||'text/plain')):denied()
 };

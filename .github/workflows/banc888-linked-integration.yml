@@ -67,6 +67,9 @@ jobs:
           - name: Connectome mobile
             class: com.ffc.banc888.fly.ConnectomeMobileIntegrationTest
             fixture: false
+          - name: Chat JSON export
+            class: com.ffc.banc888.fly.ChatJsonIntegrationTest
+            fixture: false
           - name: MP4 export
             class: com.ffc.banc888.fly.VideoExportIntegrationTest
             fixture: false

@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 83
-        versionName '7.6.0-connectome-mp4'
+        versionCode 84
+        versionName '7.7.0-chat-json'
     }
 
     buildTypes {

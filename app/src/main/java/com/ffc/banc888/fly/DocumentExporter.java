@@ -78,6 +78,45 @@ final class DocumentExporter {
         return o.toString();
     }
 
+    String saveText(String text, String filename, String mime) {
+        JSONObject result = new JSONObject();
+        try {
+            if (text == null || text.length() > 4 * 1024 * 1024) throw new IllegalArgumentException("text export exceeds limit");
+            byte[] data = text.getBytes(StandardCharsets.UTF_8);
+            if (data.length > 8 * 1024 * 1024) throw new IllegalArgumentException("UTF-8 export exceeds 8 MiB");
+            File directory = new File(activity.getCacheDir(), "exports");
+            if (!directory.exists() && !directory.mkdirs()) throw new IllegalStateException("cannot create exports directory");
+            String extension = filename != null && filename.endsWith(".ndjson") ? "ndjson" : "json";
+            String name = safeFileName(filename, "BANC888_conversation", extension);
+            File target = new File(directory, name), temp = new File(directory, name + ".tmp");
+            try (FileOutputStream stream = new FileOutputStream(temp)) { stream.write(data); }
+            if (target.exists() && !target.delete()) throw new IllegalStateException("cannot replace export");
+            if (!temp.renameTo(target)) { temp.delete(); throw new IllegalStateException("cannot finalize export"); }
+            Uri uri = FileProvider.getUriForFile(activity, activity.getPackageName() + ".files", target);
+            result.put("ok", true); result.put("shared", false); result.put("name", name);
+            result.put("bytes", target.length()); result.put("fileUri", uri.toString()); result.put("mime", extension.equals("ndjson") ? "application/x-ndjson" : "application/json");
+        } catch (Exception error) {
+            try { result.put("ok", false); result.put("error", error.getMessage()); } catch (Exception ignored) {}
+        }
+        return result.toString();
+    }
+
+    String shareSaved(String filename, String mime) {
+        JSONObject result = new JSONObject();
+        try {
+            if (filename == null || !(filename.endsWith(".json") || filename.endsWith(".ndjson")) || !filename.equals(new File(filename).getName()) || filename.contains("..")) {
+                throw new IllegalArgumentException("invalid saved export name");
+            }
+            File target = new File(new File(activity.getCacheDir(), "exports"), filename);
+            if (!target.isFile()) throw new IllegalArgumentException("saved JSON export not found");
+            shareFile(target, filename.endsWith(".ndjson") ? "application/x-ndjson" : "application/json");
+            result.put("ok", true); result.put("shared", true); result.put("name", filename);
+        } catch (Exception error) {
+            try { result.put("ok", false); result.put("error", error.getMessage()); } catch (Exception ignored) {}
+        }
+        return result.toString();
+    }
+
     private void shareFile(File file, String mime) {
         activity.runOnUiThread(() -> {
             try {

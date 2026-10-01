@@ -107,6 +107,7 @@ jobs:
           node tests/task_review.test.cjs
           node tests/video_export.test.cjs
           node tests/adaptive_quality.test.cjs
+          node tests/conversation_export.test.cjs
           node tests/proxy_apk_integration.test.cjs
           node tests/conversation_output_core.test.cjs
           node tests/research_physics_core.test.cjs
@@ -123,17 +124,17 @@ jobs:
 
       - name: APK inventory
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.6-connectome-mp4-debug.apk
-          ls -lh BANC888-v7.6-connectome-mp4-debug.apk
-          sha256sum BANC888-v7.6-connectome-mp4-debug.apk > BANC888-v7.6-connectome-mp4-debug.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.7-chat-json-debug.apk
+          ls -lh BANC888-v7.7-chat-json-debug.apk
+          sha256sum BANC888-v7.7-chat-json-debug.apk > BANC888-v7.7-chat-json-debug.apk.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.6-connectome-mp4-debug
+          name: BANC888-v7.7-chat-json-debug
           path: |
-            BANC888-v7.6-connectome-mp4-debug.apk
-            BANC888-v7.6-connectome-mp4-debug.apk.sha256
+            BANC888-v7.7-chat-json-debug.apk
+            BANC888-v7.7-chat-json-debug.apk.sha256
             connectome-mobile-benchmark.json
           if-no-files-found: error
           retention-days: 30

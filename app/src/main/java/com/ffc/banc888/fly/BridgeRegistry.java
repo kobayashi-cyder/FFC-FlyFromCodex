@@ -124,6 +124,12 @@ final class BridgeRegistry {
     }
 
     public final class FilesBridge {
+        @JavascriptInterface public String saveText(String token, String text, String filename, String mime) {
+            return allow(token) ? documents.saveText(text, filename, mime) : denied();
+        }
+        @JavascriptInterface public String shareSaved(String token, String filename, String mime) {
+            return allow(token) ? documents.shareSaved(filename, mime) : denied();
+        }
         @JavascriptInterface public String createDocx(String token, String title, String body, String filename) {
             return allow(token) ? documents.createDocx(title, body, filename) : denied();
         }
