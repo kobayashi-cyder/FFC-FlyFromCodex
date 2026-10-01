@@ -5,7 +5,7 @@
   "assetSchema": 5,
   "commit": "670b033ae3c4fab9e3965cbae837b335ab8af720",
   "files": {
-    "index.html": "cb66d6bac806e280c47d8140c4f90c3b2844012d1aaef00d8e12c66c4855f4b2",
+    "index.html": "43b24b377fb430c0469a60a2fcdaf9c04081b1fe893d88870e87422b514155c0",
     "native-bridge.js": "72e7d7fac8c5127f62edffa30b32151aa2488b7ebbc5c31c44f2a2369a623a90",
     "webview-runtime.js": "05c30e25c4779fd9211d9a6ade8a603a9fbc916743080de63fee1af98cdedbd2",
     "thread-router-core.js": "b19931c8f24397ce781bd9408132cefb5addf959f9fa09779f2a9b9d63731cb9",

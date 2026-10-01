@@ -52,3 +52,11 @@ Pythonの `default_connectome()` と `config/connectome_minimal.json` は合成�
 APK versionCode 81 / versionName `7.2.0-connectome-topology`。Actions artifact名は `BANC888-v7.2-connectome-topology-debug`。ローカル環境にはAndroid SDK/Gradleがなく、APK生成・実機検証の結果は別途Actionsで確認する。
 
 構文検査で既存の `capability-tools.js` の配列閉じ括弧不足と、`index.html` の2箇所の不正なtemplate literalエスケープを検出・修正した。追加回路テストで全inline scriptのパースも検査し、APK画面の起動を妨げる構文エラーを再検出できるようにした。
+
+## 起動処理の改善
+
+Android統合検査の初期化失敗を調査し、デモ画像生成・教師リスト生成・演算体の事前コンパイル・自己テストが起動時に重なる問題を確認した。生成や自己テストは既存のユーザー操作・ツール要求で実行し、起動時は軽量なUIと保存状態の復元を行う。
+
+CPUを6倍に制限したローカルChromiumで、同じ読み込み手順が約18秒から約1.6秒になった（単一試行の診断値。実機の性能保証ではない）。実ブラウザーで計算2+3=5、回路trace、2回の成功からの獲得スキル再利用を確認した。
+
+CIでは外側タイムアウトを120秒にし、ADB終了コードに加えてinstrumentationの明示的な成功要約を必須にした。これにより以前の検査が見逃していたassertion failureも失敗として報告する。

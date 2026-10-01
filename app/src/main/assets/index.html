@@ -3582,7 +3582,7 @@ $('#o3v0Play').onclick=o3v0Play;
 $('#o3v0Pause').onclick=o3v0Pause;
 $('#o3v0Reset').onclick=o3v0Reset;
 $('#o3v0Export').onclick=()=>o23Save('BANC888_O3_v0_scenegraph.json','application/json',$('#o3v0Json').value);
-setTimeout(()=>{ try{o3v0BuildFromSemantic(); o3v0RenderScene(); o3v0SyncUI();}catch(e){ $('#o3v0Status').textContent='O3 init error: '+e.message } }, 0);
+// Demo generation is performed by the existing user/tool action, not during cold startup.
 // ---- end O3 v0 ----
 
 
@@ -3727,7 +3727,7 @@ $('#o2pGenerate').onclick=o2pBuildScene;
 $('#o2pSyncSem').onclick=()=>{ if($('#semPrompt')) $('#o2pPrompt').value=$('#semPrompt').value; };
 $('#o2pSavePng').onclick=()=>$('#o2pCanvas').toBlob(b=>{const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='BANC888_O2_faux_photo.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)},'image/png');
 $('#o2pExportJson').onclick=()=>o23Save('BANC888_O2_faux_photo_scene.json','application/json',$('#o2pJson').value);
-setTimeout(()=>{try{o2pBuildScene()}catch(e){$('#o2pStatus').textContent='O2P init error: '+e.message}},0);
+// Demo generation is performed by the existing user/tool action, not during cold startup.
 // ---- end O2 faux-photo / illustration renderer ----
 
 
@@ -3961,7 +3961,7 @@ function o2xEntityVisualMetrics(){
 function o2xRender(){ const scene=O2X.scene; if(!scene) return; const c=$('#o2xCanvas'),ctx=c.getContext('2d'); c.width=scene.width; c.height=scene.height; ctx.clearRect(0,0,c.width,c.height); o2xSky(ctx,scene); o2xLandscape(ctx,scene); const ents=[...scene.entities].sort((a,b)=>a.z-b.z); for(const e of ents) o2xDraw(ctx,e,scene); ctx.save(); ctx.fillStyle='rgba(8,14,24,.38)'; ctx.fillRect(14,14,360,52); ctx.fillStyle='rgba(248,250,255,.96)'; ctx.font='700 19px system-ui'; ctx.fillText('O2 Photo+ Renderer',24,34); ctx.font='12px system-ui'; ctx.fillText(`${scene.mode} · blur ${scene.blur} · atmosphere ${scene.atmosphere}`,24,52); ctx.restore(); o2xPost(ctx,scene); }
 function o2xSync(){ $('#o2xJson').value=JSON.stringify(O2X.scene,null,2); $('#o2xAnalysis').textContent=JSON.stringify(O2X.analysis,null,2); $('#o2xRoutes').textContent=['o1p1 DNp65→AN27X017 :: semantic parse / relation extraction','o1p0 DNp65→MNad21 :: scene layout / photo-like synthesis','o1p2 AN27X017→DNp65 :: revision path (reserved)','o1p3 AN27X017→m_NSC_DILP :: compositing / export'].join('\n'); }
 $('#o2xGenerate').onclick=o2xBuild; $('#o2xFromPrev').onclick=()=>{ if($('#o2pPrompt')) $('#o2xPrompt').value=$('#o2pPrompt').value; else if($('#semPrompt')) $('#o2xPrompt').value=$('#semPrompt').value; }; $('#o2xSavePng').onclick=()=>$('#o2xCanvas').toBlob(b=>{const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='BANC888_O2_photo_plus.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)},'image/png'); $('#o2xExport').onclick=()=>o23Save('BANC888_O2_photo_plus_scene.json','application/json',$('#o2xJson').value);
-setTimeout(()=>{try{o2xBuild()}catch(e){$('#o2xStatus').textContent='O2X init error: '+e.message}},0);
+// Demo generation is performed by the existing user/tool action, not during cold startup.
 // ---- end O2 Photo+ renderer ----
 
 
@@ -4091,7 +4091,7 @@ $("#teachFromO2").onclick=()=>{
 };
 $("#teachSaveJson").onclick=teachSaveJson;
 $("#teachSaveCsv").onclick=teachSaveCsv;
-setTimeout(()=>{try{teachBuild()}catch(e){$("#teachStatus").textContent="teacher list init error: "+e.message}},0);
+// Demo generation is performed by the existing user/tool action, not during cold startup.
 // ---- end teacher lists ----
 
 
@@ -4283,7 +4283,7 @@ function trExport(){
 }
 async function trClear(){trPause();TR.experiences=[];await trDbClear();$("#trRows").innerHTML="";$("#trMean").textContent="—";trUpdateStats();trLog("experience cleared.");}
 $("#trTest").onclick=trTest;$("#trRun").onclick=()=>{if(!TR.running)trRunLoop()};$("#trPause").onclick=trPause;$("#trOne").onclick=trOne;$("#trExport").onclick=trExport;$("#trClear").onclick=trClear;
-setTimeout(async()=>{try{await trOpenDb();TR.experiences=await trLoadDb();for(const r of TR.experiences)trAddRow(r);if(!TEACH.bundle)teachBuild();trUpdateStats();trLog(`experience DB ready: ${TR.experiences.length} records`)}catch(e){trLog("IndexedDB unavailable: "+e.message)}},0);
+setTimeout(async()=>{try{await trOpenDb();TR.experiences=await trLoadDb();for(const r of TR.experiences)trAddRow(r);trUpdateStats();trLog(`experience DB ready: ${TR.experiences.length} records`)}catch(e){trLog("IndexedDB unavailable: "+e.message)}},0);
 // ---- end teacher runner ----
 
 
@@ -4583,7 +4583,7 @@ $("#o2cStep").onclick=()=>{ if(!O2C.running){ if(!O2C.history.length) o2cResetRu
 $("#o2cStop").onclick=()=>{ O2C.running=false; $("#o2cStatusLite").textContent="stopped"; o2cLog("runner stopped"); };
 $("#o2cApplyBest").onclick=o2cApplyBest;
 $("#o2cExport").onclick=o2cExport;
-setTimeout(()=>{ try{ o2cResetRun(true); } catch(e){ console.warn(e); } }, 0);
+// Demo generation is performed by the existing user/tool action, not during cold startup.
 // ---- end O2 convergence evaluator / refiner ----
 
 
@@ -4849,7 +4849,7 @@ $("#packAll").onclick=()=>packBuild(["FOOD","LANDSCAPE","ANIMAL"]);
 $("#packApply").onclick=packApplyToTeacher;
 $("#packSaveJson").onclick=packSaveJson;
 $("#packSaveCsv").onclick=packSaveCsv;
-setTimeout(()=>{ try{ packBuild(["FOOD"]); } catch(e){ packLog("init error: "+e.message); } }, 0);
+// Demo generation is performed by the existing user/tool action, not during cold startup.
 // ---- end Domain Output Pack Generator ----
 
 
@@ -5072,7 +5072,7 @@ if($('#cpfCompile'))$('#cpfCompile').onclick=cpfCompileCurrent;
 if($('#cpfLearn'))$('#cpfLearn').onclick=cpfLearnSafe;
 if($('#cpfReset'))$('#cpfReset').onclick=cpfResetPlasticity;
 for(const id of ['cpfSteps','cpfLeak','cpfGain'])if($('#'+id))$('#'+id).onchange=()=>{const p=$('#o2xPrompt')?.value||$('#o2pPrompt')?.value||'';cpfUI(cpfPropagate(p,true))};
-setTimeout(()=>{try{const p=$('#o2xPrompt')?.value||$('#o2pPrompt')?.value||'';cpfUI(cpfPropagate(p,true));if($('#o2xGenerate'))o2xBuild()}catch(e){if($('#cpfTrace'))$('#cpfTrace').textContent='CPF init error: '+e.message}},0);
+setTimeout(()=>{try{const p=$('#o2xPrompt')?.value||$('#o2pPrompt')?.value||'';cpfUI(cpfPropagate(p,true));/* Image generation remains available through the existing action. */}catch(e){if($('#cpfTrace'))$('#cpfTrace').textContent='CPF init error: '+e.message}},0);
 // ---- end v3.4 CPF ----
 
 
@@ -5222,7 +5222,7 @@ if($('#microRun'))$('#microRun').onclick=microRun;
 if($('#microStop'))$('#microStop').onclick=microStop;
 if($('#microStep'))$('#microStep').onclick=microStep;
 if($('#microReset'))$('#microReset').onclick=microReset;
-setTimeout(()=>{try{microCompile()}catch(e){if($('#microTrace'))$('#microTrace').textContent='Micro-op init error: '+e.message}},0);
+setTimeout(()=>{try{microUI();microDraw(true)}catch(e){if($('#microTrace'))$('#microTrace').textContent='Micro-op init error: '+e.message}},0);
 // ---- end v3.6 Fly Micro-Op Fabric ----
 
 // ---- v3.8 Fly Compute Organism: Memory Fabric + DAG + Tensor compiler + modality bodies ----
@@ -5425,7 +5425,7 @@ function f38SelfTest(){
   const pass=results.every(x=>x.pass),el=$('#f38Tests');if(el){el.dataset.status=pass?'pass':'fail';el.textContent=JSON.stringify({pass,results},null,2)}return {pass,results};
 }
 if($('#f38Compile'))$('#f38Compile').onclick=f38Compile;if($('#f38Run'))$('#f38Run').onclick=f38Run;if($('#f38Step'))$('#f38Step').onclick=f38Step;if($('#f38Stop'))$('#f38Stop').onclick=f38Stop;if($('#f38Reset'))$('#f38Reset').onclick=f38Reset;if($('#f38Audio'))$('#f38Audio').onclick=f38PlayAudio;if($('#f38SelfTest'))$('#f38SelfTest').onclick=f38SelfTest;
-setTimeout(()=>{try{f38Compile();const t=f38SelfTest();if(!t.pass)console.warn('BANC888 v3.8 self-test failed',t)}catch(e){const el=$('#f38Tests');if(el){el.dataset.status='fail';el.textContent='v3.8 init error: '+e.message}}},40);
+setTimeout(()=>{try{f38UI();f38Render(true)}catch(e){const el=$('#f38Tests');if(el){el.dataset.status='fail';el.textContent='v3.8 init error: '+e.message}}},40);
 // ---- end v3.8 Fly Compute Organism ----
 
 
@@ -5509,7 +5509,7 @@ function f42UI(){const p=F42.program;if(!p){if($('#f42Genome'))$('#f42Genome').t
 function f42Direct(p){const n=p.n,fan=p.fanIn,m=p.memories,model=F42.model||f42MakeModel(n,p.control.seed),mat=(src,w,tag,routeEpoch)=>{const out=new Float64Array(n*n);for(let r=0;r<n;r++)for(let c=0;c<n;c++){let x=0;for(const k of f42RouteIndices(n,fan,r,c,p.control.seed,tag,routeEpoch))x+=src[r*n+k]*w[k*n+c];out[r*n+c]=Math.tanh(x)}return out};let x=Float64Array.from(m[p.ids.IN].data);x=mat(x,model.wEnc,'encode',model.routeEpoch);for(let q=0;q<p.control.actualPasses;q++)x=mat(x,model.wRec,'recur'+q,model.routeEpoch);const dec=mat(x,model.wDec,'decode',model.routeEpoch),out=new Float64Array(n*n),a=F42.plasticity.residual;for(let i=0;i<out.length;i++)out[i]=f42Clamp(dec[i]*(1-a)+m[p.ids.IN].data[i]*a,-1,1);return out}
 function f42SelfTest(){const results=[],ok=(name,pass,detail='')=>results.push({name,pass:!!pass,detail});const snap={program:F42.program,model:F42.model,running:F42.running,current:F42.current,pc:F42.pc,regs:F42.regs,executed:F42.executed,done:F42.done,trace:F42.trace,error:F42.error,episodes:F42.episodes.slice(),plasticity:{...F42.plasticity},uiN:$('#f42N')?.value};try{const model=f42MakeModel(8,123456),p=f42CompileProgram('v42 self test','text',8,3,2,500000,model);F42.model=model;F42.program=p;f42ResetRuntime();ok('sparse compiler',p.fanIn===3&&p.organs.length===p.control.actualPasses+3,`organs=${p.organs.length} ops=${p.totalOps}`);ok('resource budget',p.totalOps<=p.budget,`${p.totalOps}/${p.budget}`);const a=f42RouteIndices(8,3,2,4,77,'x',0).join(','),b=f42RouteIndices(8,3,2,4,77,'x',0).join(','),c=f42RouteIndices(8,3,2,4,77,'x',1).join(',');ok('deterministic sparse route',a===b&&a!==c,`${a} -> ${c}`);let guard=0;while(!f42Complete()&&!F42.error&&guard++<10000)f42RunSlice(8192);ok('scheduler complete',f42Complete()&&!F42.error,`iterations=${guard} executed=${F42.executed}`);const ref=f42Direct(p),got=p.memories[p.outputMem].data;let err=0;for(let i=0;i<got.length;i++)err=Math.max(err,Math.abs(got[i]-ref[i]));ok('numeric reference',err<3e-5,'max_abs_error='+err.toExponential(3));const before=Float32Array.from(model.wDec),ep=f42Adapt(true),changed=before.some((v,i)=>v!==model.wDec[i]);ok('local plasticity',changed&&ep?.weightsChanged>0,`changed=${ep?.weightsChanged} maxDelta=${ep?.maxDelta}`);const oldRoute=model.routeEpoch;f42Rewire(true);ok('rewiring epoch',model.routeEpoch===oldRoute+1,`${oldRoute}->${model.routeEpoch}`);const cp=f42Checkpoint(),clone=JSON.parse(JSON.stringify(cp));f42RestoreCheckpoint(clone);ok('checkpoint round-trip',F42.model.n===8&&F42.model.wDec.length===64&&F42.model.epoch===clone.model.epoch,`epoch=${F42.model.epoch}`);for(const mode of ['text','code','image','audio','video']){const q=f42CompileProgram('mode '+mode,mode,8,2,1,500000,f42MakeModel(8,99));ok('adapter '+mode,q.memories[q.ids.IN].data.length===64,q.inputSource)} }catch(e){ok('exception',false,e.stack||e.message)}finally{F42.program=snap.program;F42.model=snap.model;F42.running=snap.running;F42.current=snap.current;F42.pc=snap.pc;F42.regs=snap.regs;F42.executed=snap.executed;F42.done=snap.done;F42.trace=snap.trace;F42.error=snap.error;F42.episodes=snap.episodes;F42.plasticity=snap.plasticity;if($('#f42N')&&snap.uiN!=null)$('#f42N').value=snap.uiN}const pass=results.every(x=>x.pass),el=$('#f42Tests');if(el){el.dataset.status=pass?'pass':'fail';el.textContent=JSON.stringify({pass,results},null,2)}f42UI();return{pass,results}}
 if($('#f42Compile'))$('#f42Compile').onclick=f42Compile;if($('#f42Run'))$('#f42Run').onclick=f42Run;if($('#f42Step'))$('#f42Step').onclick=f42Step;if($('#f42Stop'))$('#f42Stop').onclick=f42Stop;if($('#f42Adapt'))$('#f42Adapt').onclick=()=>f42Adapt(false);if($('#f42Rewire'))$('#f42Rewire').onclick=()=>f42Rewire(false);if($('#f42Auto'))$('#f42Auto').onclick=f42Auto;if($('#f42Audio'))$('#f42Audio').onclick=f42PlayAudio;if($('#f42Save'))$('#f42Save').onclick=f42Save;if($('#f42Export'))$('#f42Export').onclick=f42Export;if($('#f42Import'))$('#f42Import').onchange=e=>f42ImportFile(e.target.files?.[0]);if($('#f42SelfTest'))$('#f42SelfTest').onclick=f42SelfTest;
-setTimeout(()=>{try{if(!f42LoadSaved())f42Compile();const t=f42SelfTest();if(!t.pass)console.warn('BANC888 v4.2 self-test failed',t)}catch(e){const el=$('#f42Tests');if(el){el.dataset.status='fail';el.textContent='v4.2 init error: '+e.message}}},80);
+setTimeout(()=>{try{f42LoadSaved();f42UI()}catch(e){const el=$('#f42Tests');if(el){el.dataset.status='fail';el.textContent='v4.2 init error: '+e.message}}},80);
 // ---- end v4.2 Fly Self-Compiling Organism ----
 
 
@@ -5531,7 +5531,7 @@ async function f46Full(){if(F46.running)return;F46.running=true;try{f46Autotune(
 function f46UI(){const c=f46Cfg(),best=F46.best;$('#f46Trials').textContent=String(F46.trials.filter(x=>x.routeEpoch!==undefined).length);$('#f46Best').textContent=best?`route ${best.routeEpoch} · MSE ${best.score.mse.toFixed(5)}`:'best —';$('#f46ReplayCount').textContent=String(F46.replayCount);$('#f46Config').textContent=`N${c.n} F${c.fan} P${c.passes}`;let use='budget —';try{const m=F42.model&&F42.model.n===c.n?F42.model:f42MakeModel(c.n,f42Hash(c.goal)),p=f42CompileProgram(c.goal,c.mode,c.n,c.fan,c.passes,c.budget,m);use=`${p.totalOps.toLocaleString()} / ${c.budget.toLocaleString()}`}catch(e){use='over budget'}$('#f46BudgetUse').textContent=use;$('#f46Log').textContent=F46.trials.length?JSON.stringify(F46.trials.slice(-12),null,2):'未実行';const p=F42.program;$('#f46State').textContent=JSON.stringify({status:F46.running?'running':'idle',tune:F46.lastTune,best:F46.best?{routeEpoch:F46.best.routeEpoch,objective:F46.best.objective,score:F46.best.score}:null,model:F42.model?{n:F42.model.n,epoch:F42.model.epoch,routeEpoch:F42.model.routeEpoch}:null,episodes:F42.episodes.slice(-6),bodyBus:p?f46BodyBus(p):null,handoff:BANC888_V46_HANDOFF},null,2)}
 function f46SelfTest(){const results=[],ok=(n,p,d='')=>results.push({name:n,pass:!!p,detail:d});try{const cfg={n:8,fan:3,passes:2,budget:500000,goal:'v46 test',mode:'text'},model=f42MakeModel(8,424242);const trials=f46EvaluateCandidates(cfg.goal,cfg.mode,cfg,model,4);ok('candidate execution',trials.length===4&&trials.every(x=>x.ok),trials.map(x=>x.routeEpoch+':'+x.score.mse.toFixed(5)).join(','));const best=[...trials].sort((a,b)=>a.objective-b.objective)[0];ok('best selection',Number.isFinite(best.objective)&&trials.includes(best),'route='+best.routeEpoch);const p=f42CompileProgram(cfg.goal,cfg.mode,cfg.n,cfg.fan,cfg.passes,cfg.budget,f46CloneModel(model,best.routeEpoch)),ex=f46ExecProgram(p);ok('independent executor',ex.ok&&ex.executed===p.totalOps,`${ex.executed}/${p.totalOps}`);const before=model.epoch,runs=f46ReplayPrograms([{goal:'a',mode:'text'},{goal:'b',mode:'code'}],cfg,model,2);ok('episode replay',runs.every(x=>x.ok)&&model.epoch===before+2,'epoch '+before+'->'+model.epoch);for(const mode of ['text','code','image','audio','video']){const q=f42CompileProgram('bus '+mode,mode,8,2,1,500000,f42MakeModel(8,1)),bus=f46BodyBus(q);ok('body bus '+mode,!!bus.channel&&bus.length===64,bus.channel)}}catch(e){ok('exception',false,e.stack||e.message)}const pass=results.every(x=>x.pass),el=$('#f46Tests');if(el){el.dataset.status=pass?'pass':'fail';el.textContent=JSON.stringify({pass,results},null,2)}f46UI();return{pass,results}}
 if($('#f46Tune'))$('#f46Tune').onclick=()=>{try{f46Autotune(true)}catch(e){F46.trials.push({event:'tune-error',error:e.message});f46UI()}};if($('#f46Evolve'))$('#f46Evolve').onclick=()=>{try{f46Evolve(true)}catch(e){F46.trials.push({event:'evolve-error',error:e.message});f46UI()}};if($('#f46Replay'))$('#f46Replay').onclick=()=>{try{f46Replay(true)}catch(e){F46.trials.push({event:'replay-error',error:e.message});f46UI()}};if($('#f46Full'))$('#f46Full').onclick=f46Full;if($('#f46SelfTest'))$('#f46SelfTest').onclick=f46SelfTest;
-setTimeout(()=>{try{f46UI();const t=f46SelfTest();if(!t.pass)console.warn('BANC888 v4.6 self-test failed',t)}catch(e){const el=$('#f46Tests');if(el){el.dataset.status='fail';el.textContent='v4.6 init error: '+e.message}}},140);
+setTimeout(()=>{try{f46UI()}catch(e){const el=$('#f46Tests');if(el){el.dataset.status='fail';el.textContent='v4.6 init error: '+e.message}}},140);
 // ---- end v4.6 Fly Evolutionary Fabric ----
 
 
