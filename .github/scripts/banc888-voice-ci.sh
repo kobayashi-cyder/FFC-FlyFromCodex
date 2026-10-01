@@ -18,7 +18,7 @@ echo "::endgroup::"
 
 echo "::group::VOICE TEST"
 set +e
-timeout --signal=TERM 45s adb shell am instrument -w -r \
+timeout --signal=TERM 35s adb shell am instrument -w -r \
   -e class com.ffc.banc888.fly.BridgeIntegrationTest \
   com.ffc.banc888.fly.test/androidx.test.runner.AndroidJUnitRunner
 STATUS=$?
@@ -29,6 +29,6 @@ kill "$DEVICE_LOGCAT_PID" 2>/dev/null || true
 wait "$DEVICE_LOGCAT_PID" 2>/dev/null || true
 
 echo "=== device crash / speech log ==="
-grep -E -n -C 12 'FATAL EXCEPTION|AndroidRuntime|Process: com\.ffc\.banc888\.fly|BANC_VOICE_TEST|SpeechRecognizer|speech-activity-timeout|AssertionError|TransactionTooLargeException' /tmp/device-logcat.txt || true
+grep -E -n -C 12 'FATAL EXCEPTION|AndroidRuntime|Process: com\.ffc\.banc888\.fly|BANC_VOICE|BANC_VOICE_TEST|SpeechRecognizer|RecognitionService|SodaSpeechRecognizer|NetworkSpeechRecognizer|speech-activity-timeout|AssertionError|TransactionTooLargeException' /tmp/device-logcat.txt || true
 
 exit "$STATUS"
