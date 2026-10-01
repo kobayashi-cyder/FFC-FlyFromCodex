@@ -5,10 +5,12 @@ from pathlib import Path
 import time
 from typing import Callable, Iterable
 
+from .autonomy import LearnedSkillPlanner, SkillFabric
 from .body import BodyArbiter
 from .checkpoint import AtomicCheckpointStore
 from .connectome import GraphConnectomeKernel, default_connectome
 from .executive import ConnectomeExecutive, DecisionType
+from .feedback import FeedbackEvent, TestTier
 from .memory import MemoryFabric
 from .models import (
     AgentEvent,
@@ -37,6 +39,9 @@ class RequirementContract:
     reflex_threshold: float = 0.82
     max_plan_steps: int = 16
     resource_timeout: float = 0.0
+    autonomy_enabled: bool = True
+    learned_skill_min_successes: int = 2
+    learned_skill_min_reward: float = 0.05
 
 
 class FlyMachineAgent:
@@ -63,12 +68,22 @@ class FlyMachineAgent:
         self.threads = ThreadRouter()
         self.body = tools.arbiter if tools is not None else BodyArbiter()
         self.tools = tools or default_tools(output=output, policy=policy, arbiter=self.body)
+        self.skills = SkillFabric(
+            self.state_dir / "skills.json",
+            min_successes=self.contract.learned_skill_min_successes,
+            min_reward=self.contract.learned_skill_min_reward,
+        )
+        self.skills.sync_tools(self.tools)
         self.executive = ConnectomeExecutive(
             connectome or default_connectome(),
             reflex_threshold=self.contract.reflex_threshold,
             max_plan_steps=self.contract.max_plan_steps,
         )
-        self.planner = planner or CompositePlanner(RulePlanner(), MachinePlannerAdapter())
+        self.planner = planner or CompositePlanner(
+            LearnedSkillPlanner(self.skills),
+            RulePlanner(),
+            MachinePlannerAdapter(context_provider=self.skills.planner_context),
+        )
         self.voice = VoiceRouter(self.threads)
         self.observer = Observer(self.memory, self.executive)
         self.goals: list[Goal] = []
@@ -182,7 +197,9 @@ class FlyMachineAgent:
             ToolContext(thread_id=thread_id),
             resource_timeout=self.contract.resource_timeout,
         )
-        self.observer.record(Observation(None, thread_id, device_tool, result))
+        event = self.observer.record(Observation(None, thread_id, device_tool, result))
+        if self.contract.autonomy_enabled:
+            self.skills.consume_feedback(device_tool, event)
         self.emit("tool", f"{device_tool}: {result.status.value}", thread_id=thread_id, error=result.error)
 
     def step(self) -> bool:
@@ -196,6 +213,7 @@ class FlyMachineAgent:
         goal.attempts += 1
         goal.updated_at = time.time()
         self._last_thread_id = goal.thread_id
+        self.skills.sync_tools(self.tools)
         memory = self.memory.recall(goal.text, thread_id=goal.thread_id)
         planning = self.planner.propose(goal, memory, self.tools)
         if not planning.ok:
@@ -223,6 +241,9 @@ class FlyMachineAgent:
             rationale=proposal.rationale,
         )
 
+        episode_rewards: list[float] = []
+        episode_learnable = True
+
         for index, plan_step in enumerate(proposal.steps):
             self.emit(
                 "act",
@@ -238,8 +259,21 @@ class FlyMachineAgent:
                 ToolContext(thread_id=goal.thread_id, goal_id=goal.id),
                 resource_timeout=self.contract.resource_timeout,
             )
-            self.observer.record(Observation(goal.id, goal.thread_id, plan_step.tool, result, index))
+            event = self.observer.record(Observation(goal.id, goal.thread_id, plan_step.tool, result, index))
+            episode_learnable = episode_learnable and event.learnable
+            if event.learnable:
+                episode_rewards.append(event.reward * event.learning_scale)
+            if self.contract.autonomy_enabled:
+                self.skills.consume_feedback(plan_step.tool, event)
             if not result.ok:
+                if self.contract.autonomy_enabled:
+                    self.skills.observe_plan(
+                        goal,
+                        proposal,
+                        success=False,
+                        reward=(sum(episode_rewards) / max(1, len(episode_rewards))) if episode_rewards else -0.5,
+                        learnable=episode_learnable,
+                    )
                 self._apply_tool_failure(goal, result, plan_step.max_retries)
                 self._save()
                 return True
@@ -249,6 +283,22 @@ class FlyMachineAgent:
         goal.updated_at = time.time()
         self.threads.record(goal.thread_id or self.threads.active_thread_id or "", f"DONE {goal.text}")
         self.executive.reinforce("delegate", 0.2)
+        if self.contract.autonomy_enabled:
+            promoted = self.skills.observe_plan(
+                goal,
+                proposal,
+                success=True,
+                reward=(sum(episode_rewards) / max(1, len(episode_rewards))) if episode_rewards else 0.2,
+                learnable=episode_learnable,
+            )
+            if promoted is not None:
+                self.emit(
+                    "skill-acquired",
+                    f"acquired {promoted.id}: {promoted.label}",
+                    thread_id=goal.thread_id,
+                    goal_id=goal.id,
+                    skill=promoted.to_dict(),
+                )
         self.emit("done", f"goal completed: {goal.text}", thread_id=goal.thread_id, goal_id=goal.id)
         self._save()
         return True
@@ -262,6 +312,53 @@ class FlyMachineAgent:
             if not self.contract.continue_until_terminal:
                 break
         return count
+
+    def ingest_test_feedback(
+        self,
+        name: str,
+        passed: bool,
+        *,
+        tier: TestTier = TestTier.TRAINING,
+        target_tool: str = "delegate",
+        thread_id: str | None = None,
+        goal_id: str | None = None,
+        failure: str | None = None,
+    ) -> FeedbackEvent:
+        event = self.observer.record_test(
+            name,
+            passed,
+            tier=tier,
+            thread_id=thread_id,
+            goal_id=goal_id,
+            failure=failure,
+            action=target_tool,
+        )
+        if self.contract.autonomy_enabled:
+            self.skills.consume_feedback(target_tool, event)
+        return event
+
+    def ingest_quality_feedback(
+        self,
+        target_tool: str,
+        quality: dict,
+        *,
+        previous_score: float | None = None,
+        tier: TestTier = TestTier.TRAINING,
+        thread_id: str | None = None,
+        goal_id: str | None = None,
+    ) -> FeedbackEvent:
+        event = self.observer.record_quality(
+            target_tool,
+            quality,
+            previous_score=previous_score,
+            tier=tier,
+            thread_id=thread_id,
+            goal_id=goal_id,
+            source=target_tool,
+        )
+        if self.contract.autonomy_enabled:
+            self.skills.consume_feedback(target_tool, event)
+        return event
 
     def status(self) -> dict:
         def goals_with(*statuses: GoalStatus) -> list[dict]:
@@ -280,6 +377,7 @@ class FlyMachineAgent:
             "tools": self.tools.names(),
             "capabilities": sorted(cap.value for cap in self.tools.policy.allowed),
             "body": self.body.snapshot(),
+            "autonomy": self.skills.status(),
         }
 
     def _apply_planning_failure(self, goal: Goal, planning: PlannerResult) -> None:
