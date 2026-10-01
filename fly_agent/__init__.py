@@ -2,6 +2,7 @@ from .autonomy import AutonomousSkillLearner, SkillProfile
 from .body import BodyArbiter, BodyLease
 from .checkpoint import AtomicCheckpointStore
 from .connectome import GraphConnectomeKernel, default_connectome
+from .composite_skills import CompositeSkillFabric, CompositeSkillPlanner, LearnedSkill
 from .executive import ConnectomeExecutive, DecisionType
 from .feedback import FeedbackEncoder, FeedbackEvent, RewardVector, TestTier
 from .memory import MemoryFabric
@@ -19,6 +20,8 @@ __all__ = [
     "BodyLease",
     "Capability",
     "CompositePlanner",
+    "CompositeSkillFabric",
+    "CompositeSkillPlanner",
     "ConnectomeExecutive",
     "DecisionType",
     "FlyMachineAgent",
@@ -28,6 +31,7 @@ __all__ = [
     "GoalStatus",
     "GraphConnectomeKernel",
     "Intent",
+    "LearnedSkill",
     "MachinePlannerAdapter",
     "MemoryFabric",
     "OutputMode",
