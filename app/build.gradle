@@ -12,7 +12,7 @@ android {
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         versionCode 80
-        versionName '7.0.10-autonomous-connectome'
+        versionName '7.1.0-autonomous-connectome'
     }
 
     buildTypes {
