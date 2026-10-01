@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "minShellVersion": 70,
-  "bridgeSchema": 4,
-  "assetSchema": 5,
-  "commit": "5fffb91f9bddc1c2af844fac0e340791e90da1da",
+  "minShellVersion": 71,
+  "bridgeSchema": 5,
+  "assetSchema": 6,
+  "commit": "a11ff1027233c771ecc09ea2c3b3f36c0acd8d1a",
   "files": {
-    "index.html": "617d12a966a739a590401d694d3afbc017982d2e202a9c66f3c5ede3aee9577f",
-    "native-bridge.js": "72e7d7fac8c5127f62edffa30b32151aa2488b7ebbc5c31c44f2a2369a623a90",
+    "index.html": "ee9680b170873f7777918714694955b735866190e143bdf8edc34415cda9f9a3",
+    "native-bridge.js": "ec236d2bf41017a8f0799f4b083edea11db141f007ec5a8191e226e5f28a47cb",
     "webview-runtime.js": "05c30e25c4779fd9211d9a6ade8a603a9fbc916743080de63fee1af98cdedbd2",
     "thread-router-core.js": "b19931c8f24397ce781bd9408132cefb5addf959f9fa09779f2a9b9d63731cb9",
     "capability-vocabulary-core.js": "058c05be4be4381619c1b3cf961758f9580c55003834200e71bb66ae1899e9fe",
@@ -15,12 +15,13 @@
     "research-physics-core.js": "ab7cb284c5f71d3a935eed4155ce57fd59aeac120640ae8d41e351fe2c3d9fb4",
     "ir-patch-core.js": "9e8ceee84eff2413659d38b14b5fd39f3cced78e17b8d93d0a1d72962af47966",
     "proxy-agent-core.js": "338520dc5a08082f30b69b1808f963e2a7ef4b9b04d034155f8cef76c5e84694",
-    "capability-tools.js": "2ea0f0b55c8adf1670c9a23d51c2683ff66f3e856ef08b720db626048f93c6c9",
+    "capability-tools.js": "09dad5091d6ed8edd0dd16448ffbfe41de235e0df6437a79dd7723acd559a5e1",
     "research-physics-tools.js": "9163f15bdd1a5806bc3d6a7e6bbfc34933b8804534a30fa6f44686fdc539c778",
-    "proxy-agent.js": "852a8d8b996ce38779cc94795a543ac018c5bde870d200b8870f0d1387beeff1",
+    "proxy-agent.js": "a796fe466ecd72220b7ca2e82281a4363223b24ac8cf169ed7448e97f69444ba",
     "conversation-output-core.js": "79ecf9c03fb3dbc2a02701442748539fec25c280a3a6cf62558c38552bd8f6a2",
     "thread-router.js": "26b048f6d6f99e1302b45d4d8afad1b2a95f643347188629299b41559536b9ac",
     "dev-live.js": "f7fab43f4d92ef8d6a97414d2a41089ba74648cf38435ea772c90b8b8ce4b73c",
-    "autonomy-core.js": "a2d6c18cdfaa818851d50c0bba816d0b74244cfce5f62e97358a3a827f2408ce"
+    "autonomy-core.js": "a2d6c18cdfaa818851d50c0bba816d0b74244cfce5f62e97358a3a827f2408ce",
+    "video-export.js": "f22581c6c00f4f6c50a634283f054698b9106646df0a9d8f1c87c5f1a896e3b4"
   }
 }
