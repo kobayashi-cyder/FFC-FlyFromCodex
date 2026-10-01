@@ -3,7 +3,7 @@
   "minShellVersion": 70,
   "bridgeSchema": 4,
   "assetSchema": 4,
-  "commit": "2eddde1e18003d6d2fc776121d5df495b894d379",
+  "commit": "3b758cdea76df2c05709dc9250c1f30b7af23ce7",
   "files": {
     "index.html": "0a6598a7d7e44ecb5d19fd8aa224122e2342b31ab283c4beec6bb9a2706d3084",
     "native-bridge.js": "72e7d7fac8c5127f62edffa30b32151aa2488b7ebbc5c31c44f2a2369a623a90",
@@ -15,7 +15,7 @@
     "research-physics-core.js": "ab7cb284c5f71d3a935eed4155ce57fd59aeac120640ae8d41e351fe2c3d9fb4",
     "ir-patch-core.js": "9e8ceee84eff2413659d38b14b5fd39f3cced78e17b8d93d0a1d72962af47966",
     "proxy-agent-core.js": "e99e49bdabb46bd6f5a049c5ee98fd09052919f5e816d09f08550607e9e358e2",
-    "capability-tools.js": "4ba74c98a9a66170cf5d2aed6356efff96b180feb94c5d9cb8f18488d83cd4c9",
+    "capability-tools.js": "dae9a769701b32325e50aebbf96b0eee8977fe5986e62b4bdaa3e31316e3d8d7",
     "research-physics-tools.js": "9163f15bdd1a5806bc3d6a7e6bbfc34933b8804534a30fa6f44686fdc539c778",
     "proxy-agent.js": "69f4f6100c57b9ba63e549f90bdfee78f839989704f5fcfcfb13a60b45248b70",
     "conversation-output-core.js": "79ecf9c03fb3dbc2a02701442748539fec25c280a3a6cf62558c38552bd8f6a2",
