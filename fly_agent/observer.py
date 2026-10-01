@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .executive import ConnectomeExecutive
+from .feedback import FeedbackEncoder, FeedbackEvent, TestTier
 from .memory import MemoryFabric
 from .models import AgentEvent, Observation, ResultStatus
 
@@ -11,6 +12,7 @@ class Observer:
     def __init__(self, memory: MemoryFabric, executive: ConnectomeExecutive):
         self.memory = memory
         self.executive = executive
+        self.feedback = FeedbackEncoder()
 
     def record(self, observation: Observation) -> None:
         result = observation.result
@@ -29,7 +31,56 @@ class Observer:
                 },
             )
         )
-        if result.status == ResultStatus.SUCCESS:
-            self.executive.reinforce("delegate", 0.1)
-        elif result.status == ResultStatus.FAILED:
-            self.executive.reinforce("delegate", -0.05)
+        event = self.feedback.from_tool_result("delegate", observation.tool, result)
+        self._record_feedback(event, observation.thread_id, observation.goal_id)
+
+    def record_test(
+        self,
+        name: str,
+        passed: bool,
+        *,
+        tier: TestTier,
+        thread_id: str | None = None,
+        goal_id: str | None = None,
+        failure: str | None = None,
+    ) -> FeedbackEvent:
+        event = self.feedback.from_test(name, passed, tier=tier, failure=failure)
+        self._record_feedback(event, thread_id, goal_id)
+        return event
+
+    def record_quality(
+        self,
+        action: str,
+        quality: dict,
+        *,
+        previous_score: float | None = None,
+        tier: TestTier = TestTier.TRAINING,
+        thread_id: str | None = None,
+        goal_id: str | None = None,
+        source: str = "quality",
+    ) -> FeedbackEvent:
+        event = self.feedback.from_quality(
+            action,
+            quality,
+            previous_score=previous_score,
+            tier=tier,
+            source=source,
+        )
+        self._record_feedback(event, thread_id, goal_id)
+        return event
+
+    def _record_feedback(
+        self,
+        event: FeedbackEvent,
+        thread_id: str | None,
+        goal_id: str | None,
+    ) -> None:
+        applied = self.executive.reinforce_feedback(event)
+        self.memory.append(
+            AgentEvent(
+                "feedback",
+                f"{event.source}: reward={event.reward:.3f} applied={applied:.3f}",
+                thread_id=thread_id,
+                data={"goal_id": goal_id, **event.to_dict(), "applied_reward": applied},
+            )
+        )
