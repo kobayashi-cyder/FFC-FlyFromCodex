@@ -14,7 +14,7 @@ const feedbackIngest=(event,targetTool)=>{
     return r&&r.ok?r.value:{ok:false,error:(r&&r.error)||'feedback.ingest failed',event:ev};
   }catch(e){return{ok:false,error:String(e&&e.message||e),event:ev}}
 };
-const feedbackTest=(name,passed,tier='training',failure=null,targetTool='delegate')=>
+const feedbackTest=(name,passed,tier='training',failure=null,targetTool='chat.compose')=>
   feedbackIngest(FB.fromTest(String(name||'test'),!!passed,{tier,action:String(targetTool||'delegate'),failure}),targetTool);
 let EXP=load(EXP_KEY,[]),LAST=load(LAST_KEY,{});
 const remember=(tool,ok,meta)=>{EXP.push({time:Date.now(),tool,ok:!!ok,meta:meta||{}});if(EXP.length>96)EXP=EXP.slice(-96);save(EXP_KEY,EXP)};
@@ -203,7 +203,7 @@ reg('document.create.markdown','DocumentIR -> structured Markdown draft -> valid
 reg('document.create.html','DocumentIR -> structured HTML draft -> validation export','document.write','native',a=>makeDoc('html',a));
 reg('document.create.text','DocumentIR -> structured text draft -> validation export','document.write','native',a=>makeDoc('text',a));
 reg('capability.experience.status','read bounded success failure experience for artifact tools','compute','none',a=>expStats(a&&a.tool));
-reg('feedback.test','ingest a training regression or holdout test result into the Fly feedback path','compute','local',a=>feedbackTest(a?.name,a?.passed,a?.tier||'training',a?.failure||null,a?.targetTool||'delegate'));
+reg('feedback.test','ingest a training regression or holdout test result into the Fly feedback path','compute','local',a=>feedbackTest(a?.name,a?.passed,a?.tier||'training',a?.failure||null,a?.targetTool||'chat.compose'));
 reg('feedback.status','read learned feedback route bias and recent reward vectors','compute','none',()=>{try{const r=Agent.execute('feedback.status',{});return r&&r.ok?r.value:{error:r&&r.error}}catch(e){return{error:String(e&&e.message||e)}}});
 reg('capability.lexicon.status','read specialist vocabulary pack counts','compute','none',()=>V.lexiconStats());
 
