@@ -93,32 +93,60 @@ function imagePrompt(ir){
 function generateImage(a,refine){
  const ir=a.ir||V.buildImageIR(a.prompt||''),last=getLast(a.threadCode,'image');
  if(refine&&last&&last.ir)ir.subject=last.ir.subject+'; refinement request: '+ir.request;
- const ctrl=controlPrepare(ir),base=imagePrompt(ir),variants=IQ.expand(ir,ir.quality==='high'?12:8),candidates=[];
- for(const v of variants){
+ const ctrl=controlPrepare(ir),base=imagePrompt(ir),all=[];
+
+ function renderVariant(v){
    const fullPrompt=[base,v.prompt].filter(Boolean).join(' | ');
    let r;
    try{r=Agent.execute('o2.generate',{prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere})}
    catch(e){r={ok:false,error:String(e&&e.message||e)}}
-   candidates.push({id:v.id,strategy:v.strategy,prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere,value:r&&r.ok?r.value:null,error:r&&r.ok?null:(r&&r.error)||'generation-failed'});
+   return{id:v.id,parentId:v.parentId||null,generation:+v.generation||0,strategy:v.strategy,prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere,value:r&&r.ok?r.value:null,error:r&&r.ok?null:(r&&r.error)||'generation-failed'};
  }
- const ranked=IQ.rank(candidates,ir);
+ function renderBatch(list){for(const v of list)all.push(renderVariant(v))}
+ function rerank(){return IQ.rank(all,ir)}
+
+ const initial=IQ.expand(ir,ir.quality==='high'?12:9).map(v=>({...v,generation:0}));
+ renderBatch(initial);
+ let ranked=rerank();
+ const generationTrace=[{generation:0,candidates:all.length,bestScore:ranked.selected?.quality?.score||0,passed:ranked.passed.length}];
+
+ for(let generation=1;generation<=2;generation++){
+   const children=IQ.evolve(ranked.evaluated,ir,generation,generation===1?8:6);
+   if(!children.length)break;
+   renderBatch(children);
+   ranked=rerank();
+   generationTrace.push({generation,candidates:all.length,bestScore:ranked.selected?.quality?.score||0,passed:ranked.passed.length});
+ }
+
  if(!ranked.selected){
-   const reasons=ranked.rejected.slice(0,4).map(c=>c.id+':'+[...(c.quality.hardIssues||[]),...(c.quality.issues||[])].join(',')).join(' / ');
-   remember(refine?'image.refine':'image.generate',false,{quality:ir.quality,candidates:candidates.length,reasons});
+   const reasons=ranked.rejected.slice(0,6).map(c=>c.id+':'+[...(c.quality.hardIssues||[]),...(c.quality.issues||[])].join(',')).join(' / ');
+   remember(refine?'image.refine':'image.generate',false,{quality:ir.quality,candidates:all.length,generations:generationTrace.length,reasons});
    controlReward(ctrl,false);
    throw new Error('画像候補が品質基準を通過しませんでした。'+(reasons?' '+reasons:''));
  }
+
  const best=ranked.selected;
  const finalRun=Agent.execute('o2.generate',{prompt:best.prompt,seed:best.seed,mode:best.mode,detail:best.detail,blur:best.blur,atmosphere:best.atmosphere});
  if(!finalRun||!finalRun.ok)throw new Error((finalRun&&finalRun.error)||'selected image render failed');
  const finalQuality=IQ.evaluate({...best,value:finalRun.value},ir);
  if(!finalQuality.pass)throw new Error('最終画像が再検証で品質基準を下回りました。');
- const validation={pass:true,score:finalQuality.score,issues:finalQuality.issues,hardIssues:finalQuality.hardIssues,metrics:finalQuality.metrics,objects:finalRun.value?.objects||0,scene:finalRun.value?.scene||null,candidateCount:candidates.length,passedCount:ranked.passed.length,rejectedCount:ranked.rejected.length};
- const candidatesPassed=ranked.passed.map(c=>({id:c.id,strategy:c.strategy,score:c.quality.score,pass:true,issues:c.quality.issues||[],seed:c.seed,mode:c.mode}));
- const candidatesRejected=ranked.rejected.map(c=>({id:c.id,strategy:c.strategy,score:c.quality.score,pass:false,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode}));
- const reward=controlReward(ctrl,true),out={ir,prompt:best.prompt,value:finalRun.value,validation,selection:{id:best.id,strategy:best.strategy,score:finalQuality.score},candidates:candidatesPassed,rejected:candidatesRejected,control:ctrl,reward};
+
+ const firstBest=generationTrace[0]?.bestScore||0;
+ const validation={
+   pass:true,score:finalQuality.score,issues:finalQuality.issues,hardIssues:finalQuality.hardIssues,
+   metrics:finalQuality.metrics,objects:finalRun.value?.objects||0,scene:finalRun.value?.scene||null,
+   candidateCount:all.length,passedCount:ranked.passed.length,rejectedCount:ranked.rejected.length,
+   generationCount:generationTrace.length,evolutionGain:finalQuality.score-firstBest,generationTrace
+ };
+ const candidatesPassed=ranked.passed.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:true,issues:c.quality.issues||[],seed:c.seed,mode:c.mode}));
+ const candidatesRejected=ranked.rejected.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:false,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode}));
+ const reward=controlReward(ctrl,true),out={
+   ir,prompt:best.prompt,value:finalRun.value,validation,
+   selection:{id:best.id,parentId:best.parentId||null,generation:best.generation||0,strategy:best.strategy,score:finalQuality.score},
+   candidates:candidatesPassed,rejected:candidatesRejected,control:ctrl,reward
+ };
  setLast(a.threadCode,'image',out);
- remember(refine?'image.refine':'image.generate',true,{objects:validation.objects,quality:ir.quality,score:validation.score,candidates:validation.candidateCount,passed:validation.passedCount});
+ remember(refine?'image.refine':'image.generate',true,{objects:validation.objects,quality:ir.quality,score:validation.score,candidates:validation.candidateCount,passed:validation.passedCount,generations:validation.generationCount,evolutionGain:validation.evolutionGain});
  return out;
 }
 let VOICE_CFG=load('FFC_VOICE_CONFIG_V2',{language:'ja-JP',rate:1,pitch:1});
@@ -146,8 +174,8 @@ reg('code.refactor','refactor the last thread code artifact preserving intent','
 reg('code.test','generate a test-oriented code candidate from CodeIR','code.write','local',a=>generateCode(a,'test'));
 reg('code.convert','convert or port the last thread code artifact according to CodeIR','code.write','local',a=>generateCode(a,'convert'));
 reg('code.optimize','optimize the last thread code artifact under requested constraints','code.write','local',a=>generateCode(a,'optimize'));
-reg('image.generate','ImageIR -> multi-prompt expansion -> hard-gate tests -> score/rank -> render best passing O2 candidate','image.write','page',a=>generateImage(a,false));
-reg('image.refine','refine prior ImageIR -> multi-candidate tests -> score/rank -> render best passing candidate','image.write','page',a=>generateImage(a,true));
+reg('image.generate','ImageIR -> broad candidates -> quality gates -> evolutionary breeding -> rerank -> render best passing candidate','image.write','page',a=>generateImage(a,false));
+reg('image.refine','refine prior ImageIR -> evolutionary candidate search -> quality gates -> render best passing candidate','image.write','page',a=>generateImage(a,true));
 reg('voice.listen','SpeechIR -> Android native speech recognition','voice.input','native',voiceListen);
 reg('voice.speak.native','SpeechIR -> Android native TTS with rate pitch language','human.output','native',voiceSpeak);
 reg('voice.status.native','read Android native STT TTS permission state','voice.input','none',()=>window.AndroidVoice?safeJson(AndroidVoice.status()):{native:false,fallback:Agent.voiceStatus?Agent.voiceStatus():null});
