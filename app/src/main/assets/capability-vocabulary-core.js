@@ -157,7 +157,7 @@ function buildImageIR(text){
  const palette=uniq([
  /暖色|warm/.test(t)?'warm':null,/寒色|cool/.test(t)?'cool':null,/モノクロ|monochrome/.test(t)?'monochrome':null,/鮮やか|vivid/.test(t)?'vivid':null
  ]);
- return{kind:'ImageIR',action:hits(t,PACK.image.refine)?'refine':'generate',request:String(text||'').trim(),subject:imageSubject(text),size:sizeHint(t),aspect:aspectHint(t),composition,lighting,style,palette,quality:detectQuality(t),negative:uniq([/文字なし|no text/.test(t)?'no-text':null,/透かしなし|no watermark/.test(t)?'no-watermark':null]),validation:['scene-nonempty','dimensions','request-coverage','geometry','composition','clarity','score-threshold']};
+ return{kind:'ImageIR',action:hits(t,PACK.image.refine)?'refine':'generate',request:String(text||'').trim(),subject:imageSubject(text),size:sizeHint(t)||'1024x1024',aspect:aspectHint(t)||'1:1',composition,lighting,style,palette,quality:detectQuality(t),negative:uniq([/文字なし|no text/.test(t)?'no-text':null,/透かしなし|no watermark/.test(t)?'no-watermark':null]),validation:['scene-nonempty','dimensions','request-coverage','geometry','composition','clarity','category-integrity','render-structure','score-threshold']};
 }
 function buildVoiceIR(text){
  const t=norm(text);let operation='speak';
