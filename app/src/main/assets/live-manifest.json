@@ -3,9 +3,9 @@
   "minShellVersion": 70,
   "bridgeSchema": 4,
   "assetSchema": 4,
-  "commit": "bbf9555541477084f9060a86e574331055181bfb",
+  "commit": "6d53b9cdc6c9ca99e151ed6371cb493d6f14e153",
   "files": {
-    "index.html": "b5874a293e845d6310b39ec04404d513ad4b4e7306610553191ab10a40ce8119",
+    "index.html": "f881d2f7bffc35bff33b69fcc6db59c67eafe353c780ad06dffb211f9d4b6123",
     "native-bridge.js": "72e7d7fac8c5127f62edffa30b32151aa2488b7ebbc5c31c44f2a2369a623a90",
     "webview-runtime.js": "05c30e25c4779fd9211d9a6ade8a603a9fbc916743080de63fee1af98cdedbd2",
     "thread-router-core.js": "b19931c8f24397ce781bd9408132cefb5addf959f9fa09779f2a9b9d63731cb9",
@@ -17,7 +17,7 @@
     "research-physics-tools.js": "9163f15bdd1a5806bc3d6a7e6bbfc34933b8804534a30fa6f44686fdc539c778",
     "proxy-agent.js": "5a9b12bea3ee5dbb9a6845cd17ad81858100463fc219ed81a7af6069aa4d47d2",
     "conversation-output-core.js": "79ecf9c03fb3dbc2a02701442748539fec25c280a3a6cf62558c38552bd8f6a2",
-    "thread-router.js": "15d2e14a5fb67d2a11f0bc08a530879f101366090987ef07d6697755d461836e",
+    "thread-router.js": "54be7fbca19ebb88cc3c29f21a6093621d0b560898fe8c59d61c487d4f30d1ff",
     "dev-live.js": "f7fab43f4d92ef8d6a97414d2a41089ba74648cf38435ea772c90b8b8ce4b73c"
   }
 }
