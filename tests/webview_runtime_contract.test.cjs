@@ -14,6 +14,7 @@ const bridge=read('app/src/main/assets/native-bridge.js');
 const runtime=read('app/src/main/assets/webview-runtime.js');
 const threadRouter=read('app/src/main/assets/thread-router.js');
 const imageQuality=read('app/src/main/assets/image-quality-core.js');
+const capabilityTools=read('app/src/main/assets/capability-tools.js');
 const manifest=JSON.parse(read('app/src/main/assets/live-manifest.json'));
 
 must(/SHELL_VERSION\s*=\s*70/.test(config),'shell version must remain 70');
