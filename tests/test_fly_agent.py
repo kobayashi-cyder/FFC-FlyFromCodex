@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fly_agent import (
     AtomicCheckpointStore,
+    AutonomousSkillLearner,
     BodyArbiter,
     Capability,
     FlyMachineAgent,
@@ -278,3 +279,92 @@ def test_observer_records_structured_feedback_event(tmp_path):
     assert feedback
     assert feedback[-1]["data"]["tier"] == TestTier.TRAINING.value
     assert feedback[-1]["data"]["learnable"] is True
+
+
+
+def test_autonomous_skill_promotes_after_repeated_good_experience():
+    learner = AutonomousSkillLearner(min_attempts=3, min_success_rate=0.67, min_reward_ema=0.01)
+    encoder = FeedbackEncoder()
+    for _ in range(3):
+        event = encoder.from_quality(
+            "image.generate",
+            {
+                "pass": True,
+                "score": 90,
+                "hardIssues": [],
+                "metrics": {
+                    "subjectCoverage": 1.0,
+                    "composition": 0.9,
+                    "categoryIntegrity": 1.0,
+                    "render": 0.9,
+                },
+            },
+            source="image.generate",
+        )
+        learner.observe("image.generate", event)
+    profile = learner.profile("image.generate")
+    assert profile.promoted is True
+    assert profile.quarantined is False
+
+
+def test_autonomous_skill_quarantines_regression_failure():
+    learner = AutonomousSkillLearner(min_attempts=1, min_success_rate=0.0, min_reward_ema=-1.0)
+    encoder = FeedbackEncoder()
+    learner.observe(
+        "image.generate",
+        encoder.from_test(
+            "image_regression",
+            False,
+            tier=TestTier.REGRESSION,
+            action="image.generate",
+        ),
+    )
+    profile = learner.profile("image.generate")
+    assert profile.quarantined is True
+    assert profile.promoted is False
+
+
+def test_connectome_weights_roundtrip():
+    graph = default_connectome()
+    graph.route([Stimulus("human_command", 1.0, 1.0)])
+    graph.reinforce("delegate", 1.0, learning_rate=0.2)
+    snapshot = graph.weights_snapshot()
+
+    restored = default_connectome()
+    restored.restore_weights(snapshot)
+    assert restored.weights_snapshot() == snapshot
+
+
+def test_runtime_persists_autonomous_learning(tmp_path):
+    policy = ToolPolicy({Capability.COMPUTE})
+    bus = ToolBus(policy)
+    bus.register(ToolSpec("compute.x", lambda _: ToolResult.success({"value": 1}), Capability.COMPUTE))
+    agent = FlyMachineAgent(state_dir=tmp_path, tools=bus, output=lambda _: None)
+
+    for _ in range(3):
+        agent.observer.record(
+            __import__("fly_agent.models", fromlist=["Observation"]).Observation(
+                None, None, "compute.x", ToolResult.success({"value": 1})
+            )
+        )
+    agent._save()
+    assert agent.skills.profile("compute.x").attempts == 3
+
+    restored = FlyMachineAgent(state_dir=tmp_path, tools=bus, output=lambda _: None)
+    assert restored.skills.profile("compute.x").attempts == 3
+    assert "compute.x" in restored.status()["autonomy"]["profiles"]
+
+
+def test_feedback_is_consumed_as_connectome_stimulus(tmp_path):
+    agent = FlyMachineAgent(state_dir=tmp_path, output=lambda _: None)
+    event = agent.record_test_feedback(
+        "quality_training",
+        True,
+        tier=TestTier.TRAINING,
+        tool="delegate",
+    )
+    assert event.learnable is True
+    rows = list(agent.memory.tail(8))
+    feedback = [row for row in rows if row.get("kind") == "feedback"]
+    assert feedback
+    assert "feedback_decision" in feedback[-1]["data"]
