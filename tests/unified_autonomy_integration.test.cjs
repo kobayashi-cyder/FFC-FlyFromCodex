@@ -1,5 +1,6 @@
 const fs = require('fs');
 const assert = require('assert');
+const vm = require('vm');
 
 const read = p => fs.readFileSync(p, 'utf8');
 const index = read('app/src/main/assets/index.html');
@@ -7,6 +8,10 @@ const caps = read('app/src/main/assets/capability-tools.js');
 const threads = read('app/src/main/assets/thread-router.js');
 const proxy = read('app/src/main/assets/proxy-agent.js');
 const runtime = read('app/src/main/assets/webview-runtime.js');
+
+const scripts = [...index.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(s=>s.trim());
+assert(scripts.length > 0, 'index inline scripts missing');
+scripts.forEach((s,i)=>{ try { new vm.Script(s,{filename:'index-inline-'+i+'.js'}); } catch (e) { throw new Error('index inline script syntax '+i+': '+e.message); } });
 
 const requiredIndex = [
   'latestConversationText',
