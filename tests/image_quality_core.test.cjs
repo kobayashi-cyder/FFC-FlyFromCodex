@@ -49,4 +49,35 @@ const flatEval=Q.evaluate(flat,ir);
 assert.equal(flatEval.pass,false);
 assert.ok(flatEval.hardIssues.includes('flat-render'));
 
+const visible={samples:40,stdLuma:14,edgeDensity:.06,dynamicRange:90};
+const personIr={kind:'ImageIR',subject:'人物',request:'人物の画像を作成して',style:['photo'],quality:'high'};
+const personGood={id:'person-good',value:{objects:3,scene:{width:960,height:600},sceneDetail:{
+  width:960,height:600,mode:'photoish',
+  entities:[{id:'person_01',kind:'person',x:480,y:350,scale:1,z:350,pose:'stand',depth:'mid'}],
+  entityVisual:{person_01:{kind:'person',parts:{head:visible,torso:visible,limbs:visible}}}
+}}};
+const personEval=Q.evaluate(personGood,personIr);
+assert.equal(personEval.pass,true);
+assert.equal(personEval.metrics.categoryIntegrity,1);
+
+const personBroken=JSON.parse(JSON.stringify(personGood));
+personBroken.id='person-broken';
+personBroken.value.sceneDetail.entityVisual.person_01.parts.limbs={samples:40,stdLuma:0,edgeDensity:0,dynamicRange:0};
+const personBrokenEval=Q.evaluate(personBroken,personIr);
+assert.equal(personBrokenEval.pass,false);
+assert.ok(personBrokenEval.hardIssues.includes('category-structure:person:limbs'));
+
+const carIr={kind:'ImageIR',subject:'車',request:'車の画像を作成して',style:['photo'],quality:'high'};
+const carBroken={id:'car-broken',value:{objects:1,scene:{width:960,height:600},sceneDetail:{
+  width:960,height:600,mode:'photoish',
+  entities:[{id:'car_01',kind:'car',x:480,y:400,scale:1,z:400,pose:'idle',depth:'mid'}],
+  entityVisual:{car_01:{kind:'car',parts:{body:visible,cabin:visible,wheels:{samples:40,stdLuma:0,edgeDensity:0,dynamicRange:0}}}}
+}}};
+const carBrokenEval=Q.evaluate(carBroken,carIr);
+assert.equal(carBrokenEval.pass,false);
+assert.ok(carBrokenEval.hardIssues.includes('category-structure:car:wheels'));
+
+assert.ok(Q.expand(personIr,8)[0].prompt.includes('no extra limbs'));
+assert.ok(Q.expand(carIr,8)[0].prompt.includes('aligned wheels'));
+
 console.log('image-quality-core: PASS');
