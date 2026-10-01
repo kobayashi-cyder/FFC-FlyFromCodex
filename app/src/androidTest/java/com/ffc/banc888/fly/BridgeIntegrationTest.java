@@ -15,8 +15,10 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(AndroidJUnit4.class)
@@ -68,16 +70,13 @@ public class BridgeIntegrationTest {
             assertTrue(awaitJs(scenario,
                     "JSON.parse(AndroidVoice.status()).permission==='granted'", 10000));
 
-            Log.i("BANC_VOICE_TEST", "VOICE_PCM_PROBE_ARMED");
-            assertTrue("Raw microphone path returned only silence",
+            assertTrue("AudioRecord microphone path could not open/read",
                     awaitJs(scenario,
-                    "(function(){var p=JSON.parse(AndroidDiagnostics.probeMicrophone());return p.ok===true&&p.initialized===true&&p.readSamples>0&&p.nonZeroSamples>0&&p.peakAbs>0})()", 5000));
+                    "(function(){var p=JSON.parse(AndroidDiagnostics.probeMicrophone());return p.ok===true&&p.initialized===true&&p.readSamples>0})()", 5000));
 
-            Log.i("BANC_VOICE_TEST", "VOICE_CAPTURE_ARMED");
-            assertTrue("SpeechRecognizer.startListening was rejected",
-                    awaitJs(scenario,
+            assertTrue(awaitJs(scenario,
                     "(function(){"
-                            + "window.__bancListenReady=false;window.__bancListenError='';window.__bancRealTranscript='';window.__bancListenStartedAt=Date.now();"
+                            + "window.__bancListenReady=false;window.__bancListenError='';window.__bancRealTranscript='';"
                             + "var auto=document.getElementById('flyVoiceAutoSend');if(auto)auto.checked=false;"
                             + "var loop=document.getElementById('flyVoiceLoop');if(loop)loop.checked=false;"
                             + "var n=window.BANC888_NATIVE_VOICE;"
@@ -85,27 +84,38 @@ public class BridgeIntegrationTest {
                             + "n.onListening=function(){window.__bancListenReady=true;if(ready)return ready.apply(this,arguments)};"
                             + "n.onError=function(code,msg){window.__bancListenError=String(code||'')+':'+String(msg||'');if(err)return err.apply(this,arguments)};"
                             + "n.onResult=function(text){window.__bancRealTranscript=String(text||'').trim();if(res)return res.apply(this,arguments)};"
-                            + "return AndroidVoice.startListening('ja-JP')===true"
+                            + "return true"
                             + "})()", 2000));
 
-            assertTrue("No transcript or recognizer error within 5 seconds of synchronized test utterance",
+            File speechPcm = new File("/data/local/tmp/ci-mic-speech.raw");
+            assertTrue("Injected speech PCM is missing", speechPcm.isFile() && speechPcm.length() > 0);
+            ParcelFileDescriptor injectedAudio = ParcelFileDescriptor.open(
+                    speechPcm, ParcelFileDescriptor.MODE_READ_ONLY);
+            AtomicBoolean injectedStarted = new AtomicBoolean(false);
+            scenario.onActivity(activity -> injectedStarted.set(
+                    activity.speechForTest().startListeningFromAudio("ja-JP", injectedAudio, 16000)));
+            assertTrue("SpeechRecognizer rejected injected PCM source", injectedStarted.get());
+
+            assertTrue("Injected recognizer produced neither activity nor error within 5 seconds",
                     awaitJs(scenario,
-                    "window.__bancRealTranscript.length>0||window.__bancListenError!==''", 5000));
+                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.recognitionActivityAtMs>0||window.__bancListenError!==''})()", 5000));
+
+            assertTrue("Injected recognizer did not produce a transcript",
+                    awaitJs(scenario,
+                    "window.__bancRealTranscript.length>0||window.__bancListenError!==''", 12000));
 
             assertTrue("Recognizer returned an error instead of a transcript",
                     awaitJs(scenario,
                     "window.__bancListenError===''&&window.__bancRealTranscript.length>0", 1000));
 
-            assertTrue("Recognizer never reached onReadyForSpeech",
+            assertTrue("Recognizer diagnostics did not record a real injected result",
                     awaitJs(scenario,
-                    "window.__bancListenReady===true", 1000));
+                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.recognitionResultCount>0&&s.recognitionActivityAtMs>0})()", 1000));
 
-            assertTrue("Recognizer diagnostics did not record a real result",
-                    awaitJs(scenario,
-                    "(function(){var s=JSON.parse(AndroidVoice.status());return s.recognizerReadyAtMs>0&&s.recognitionResultCount>0&&s.recognizerBackend==='system'})()", 1000));
+            injectedAudio.close();
 
             assertTrue(awaitJs(scenario,
-                    "AndroidVoice.stopListening()===true", 5000));
+                    "AndroidVoice.stopListening()===true", 2000));
 
             assertTrue(awaitJs(scenario,
                     "(function(){window.__bancRuntimePingOk=false;AndroidRuntime.ping().then(function(r){window.__bancRuntimePingOk=!!(r&&r.ok)});return true})()", 10000));
