@@ -93,7 +93,7 @@ public class BridgeIntegrationTest {
                     speechPcm, ParcelFileDescriptor.MODE_READ_ONLY);
             AtomicBoolean injectedStarted = new AtomicBoolean(false);
             scenario.onActivity(activity -> injectedStarted.set(
-                    activity.speechForTest().startListeningFromAudio("ja-JP", injectedAudio, 16000)));
+                    activity.speechForTest().startListeningFromAudio("en-US", injectedAudio, 16000)));
             assertTrue("SpeechRecognizer rejected injected PCM source", injectedStarted.get());
 
             assertTrue("Injected recognizer produced neither activity nor error within 5 seconds",
