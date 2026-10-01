@@ -45,7 +45,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y espeak-ng sox
-          espeak-ng -v ja -s 125 -a 180 -w /tmp/ci-mic-speech.wav "こんにちは。これは おんせい てすと です。"
+          espeak-ng -v en-us -s 130 -a 180 -w /tmp/ci-mic-speech.wav "hello this is a speech recognition test"
           sox /tmp/ci-mic-speech.wav -r 16000 -c 1 -b 16 -e signed-integer -t raw /tmp/ci-mic-speech.raw
           test -s /tmp/ci-mic-speech.raw
           ls -l /tmp/ci-mic-speech.raw
