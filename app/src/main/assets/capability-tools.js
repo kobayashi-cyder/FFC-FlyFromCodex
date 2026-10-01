@@ -42,6 +42,34 @@ function controlReward(ctrl,ok){
  try{const r=Agent.execute(ok?'f42.adapt':'f42.rewire',{});return r&&r.ok?r.value:{error:r&&r.error}}
  catch(e){return{error:String(e&&e.message||e)}}
 }
+
+const REVIEW_KEY='FFC_REVIEW_EPISODES_V4';
+let REVIEW=load(REVIEW_KEY,[]);
+const clamp01=x=>Math.max(0,Math.min(1,Number(x)||0));
+const reviewRemember=e=>{REVIEW.push({...e,time:Date.now()});if(REVIEW.length>160)REVIEW=REVIEW.slice(-160);save(REVIEW_KEY,REVIEW)};
+const reviewStatus=()=>{const a=REVIEW.slice(-160),pass=a.filter(x=>x.accepted).length;return{version:'4.0',policy:'GENERATE→TEST→EVALUATE→DIAGNOSE→REPAIR→RETEST→LEARN',episodes:a.length,accepted:pass,rejected:a.length-pass,acceptRate:a.length?pass/a.length:null,last:a.slice(-16)}};
+function tokenize(s){return [...new Set(String(s||'').toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu,' ').split(/\s+/).filter(x=>x.length>1))].slice(0,48)}
+function coverage(text,terms){const s=String(text||'').toLowerCase(),t=(terms||[]).filter(Boolean);if(!t.length)return 1;let hit=0;for(const x of t)if(s.includes(String(x).toLowerCase()))hit++;return hit/t.length}
+function issuePenalty(issues){return Math.min(.72,(issues||[]).length*.16)}
+function baseScore(validation,content,terms){const ok=validation&&validation.pass?1:0,len=Math.min(1,String(content||'').length/900),cov=coverage(content,terms);return clamp01(.44*ok+.28*cov+.18*len+.10*(1-issuePenalty(validation&&validation.issues)))}
+function diagnose(validation,extra=[]){return [...new Set([...(validation&&validation.issues||[]),...(extra||[])].filter(Boolean))}
+function connectomeLearn(ctrl,accepted,score,issues,domain){
+ const events=[];
+ if(ctrl&&ctrl.ok&&ctrl.done){
+  try{const r=Agent.execute(accepted?'f42.adapt':'f42.rewire',{});events.push({tool:accepted?'f42.adapt':'f42.rewire',ok:!!(r&&r.ok),value:r&&r.value,error:r&&r.error})}catch(e){events.push({tool:accepted?'f42.adapt':'f42.rewire',ok:false,error:String(e&&e.message||e)})}
+  if(!accepted||score<.72){try{const r=Agent.execute('f46.evolve',{reason:'review-feedback',score,issues:(issues||[]).slice(0,12)});events.push({tool:'f46.evolve',ok:!!(r&&r.ok),value:r&&r.value,error:r&&r.error})}catch(e){}}
+ }
+ try{events.push({tool:'feedback.ingest',ok:true,value:feedbackTest(String(domain||'artifact')+'.review',accepted,'training',accepted?null:(issues||[]).join(','),String(domain||'artifact'))})}catch(e){events.push({tool:'feedback.ingest',ok:false,error:String(e&&e.message||e)})}
+ return events;
+}
+function reviewSelect(domain,candidates,ctrl,meta={}){
+ const tested=(candidates||[]).map((x,i)=>({...x,index:i,score:clamp01(x.score),diagnosis:diagnose(x.validation,x.diagnosis)})).sort((a,b)=>b.score-a.score);
+ const passed=tested.filter(x=>x.validation&&x.validation.pass),best=passed[0]||tested[0]||null,accepted=!!(best&&best.validation&&best.validation.pass);
+ const episode={domain,accepted,score:best?best.score:0,candidateCount:tested.length,passedCount:passed.length,issues:best?best.diagnosis:['no-candidate'],selected:best?best.index:null,candidates:tested.map(x=>({index:x.index,score:x.score,pass:!!(x.validation&&x.validation.pass),stage:x.stage||'candidate',tests:(x.validation&&x.validation.tests||[]).map(t=>({name:t.name,pass:!!t.pass}))})),meta};
+ const learning=meta.skipLearning?[]:connectomeLearn(ctrl,accepted,episode.score,episode.issues,domain);episode.learning=learning.map(x=>({tool:x.tool,ok:x.ok}));reviewRemember(episode);
+ return{version:'4.0',policy:'GENERATE→TEST→EVALUATE→DIAGNOSE→REPAIR→RETEST→LEARN',accepted,best,candidates:tested.map(x=>({index:x.index,score:x.score,pass:!!(x.validation&&x.validation.pass),issues:x.diagnosis,stage:x.stage||'candidate'})),learning};
+}
+
 function looksLikeCode(s,lang){
  s=String(s||'');if(s.length<60)return false;
  if(lang==='python')return /\b(def|import|from|class)\b/.test(s);
@@ -55,18 +83,19 @@ function looksLikeCode(s,lang){
 }
 function balance(s,a,b){let n=0;for(const c of String(s||'')){if(c===a)n++;else if(c===b)n--;if(n<0)return false}return n===0}
 function validateCode(code,ir){
- const issues=[];code=String(code||'');
- if(code.length<60)issues.push('too-short');
- if(!balance(code,'{','}'))issues.push('brace-balance');
- if(!balance(code,'(',')'))issues.push('paren-balance');
- if(ir.language==='javascript'&&issues.length===0&&!/\b(import|export)\b/.test(code)){try{new Function(code)}catch(e){issues.push('javascript-syntax:'+e.message)}}
- if(ir.language==='json'){try{JSON.parse(code)}catch(e){issues.push('json-syntax')}}
+ const issues=[],tests=[];code=String(code||'');
+ const check=(name,pass,detail)=>{tests.push({name,pass:!!pass,detail:detail||''});if(!pass)issues.push(name)};
+ check('minimum-length',code.length>=60,'length='+code.length);
+ check('brace-balance',balance(code,'{','}'));
+ check('paren-balance',balance(code,'(',')'));
+ if(ir.language==='javascript'&&!/\b(import|export)\b/.test(code)){let ok=true,msg='';try{new Function(code)}catch(e){ok=false;msg=e.message}check('javascript-syntax',ok,msg)}
+ if(ir.language==='json'){let ok=true;try{JSON.parse(code)}catch(e){ok=false}check('json-syntax',ok)}
  for(const r of ir.recipes||[]){
-  if(r==='csv'&&!/csv/i.test(code))issues.push('csv-requirement');
-  if(r==='http'&&!/(fetch|http|request|urlopen|Http)/i.test(code))issues.push('http-requirement');
-  if(r==='permission'&&!/(permission|RECORD_AUDIO|requestPermissions|ActivityCompat)/i.test(code))issues.push('permission-requirement');
+  if(r==='csv')check('requirement-csv',/csv/i.test(code));
+  if(r==='http')check('requirement-http',/(fetch|http|request|urlopen|Http)/i.test(code));
+  if(r==='permission')check('requirement-permission',/(permission|RECORD_AUDIO|requestPermissions|ActivityCompat)/i.test(code));
  }
- return{pass:issues.length===0,issues,length:code.length};
+ return{pass:issues.length===0,issues,tests,length:code.length};
 }
 function templateCode(ir,request){
  const note=String(request||'').replace(/[\r\n]+/g,' ').slice(0,180);
@@ -87,14 +116,27 @@ function templateCode(ir,request){
 }
 function generateCode(a,action){
  const ir=a.ir||V.buildCodeIR(a.prompt||''),ctrl=controlPrepare(ir),prior=getLast(a.threadCode,'code'),priorText=prior&&prior.text?prior.text:'';
- let draft='';const goal='CodeIR='+JSON.stringify(ir)+'\nThreadContext='+String(a.context||'').slice(-1800)+'\nPreviousArtifact='+priorText.slice(0,5000)+'\nRequest='+String(a.prompt||'')+'\nReturn a complete '+ir.language+' implementation. No meta commentary.';
- try{draft=clean(compose(goal))}catch(e){}
- if(!looksLikeCode(draft,ir.language))draft=templateCode(ir,a.prompt);
- let validation=validateCode(draft,ir);
- if(!validation.pass&&ir.quality==='high'){const fb=templateCode(ir,a.prompt),fv=validateCode(fb,ir);if(fv.issues.length<validation.issues.length){draft=fb;validation=fv}}
- const reward=controlReward(ctrl,validation.pass);let exported=null;if(ir.export)exported=shareText(draft,ir.filename||('BANC888_code.'+codeExt(ir.language)),'text/plain');
- const out={action,ir,text:draft,validation,control:ctrl,reward,exported};
- setLast(a.threadCode,'code',out);remember('code.'+action,validation.pass,{language:ir.language,issues:validation.issues,quality:ir.quality});return out;
+ const strategies=ir.quality==='high'?['robust and complete','minimal and correct','defensive and testable','clear and maintainable']:['complete and correct','simple and direct'];
+ const terms=[...tokenize(a.prompt),...(ir.recipes||[]),ir.language].filter(Boolean),candidates=[];
+ for(let i=0;i<strategies.length;i++){
+  let draft='';const goal='CodeIR='+JSON.stringify(ir)+'\nThreadContext='+String(a.context||'').slice(-1800)+'\nPreviousArtifact='+priorText.slice(0,5000)+'\nRequest='+String(a.prompt||'')+'\nCandidate strategy='+strategies[i]+'\nReturn only a complete '+ir.language+' implementation. No meta commentary.';
+  try{draft=clean(compose(goal))}catch(e){}
+  if(!looksLikeCode(draft,ir.language))draft=templateCode(ir,a.prompt);
+  const validation=validateCode(draft,ir),score=baseScore(validation,draft,terms);
+  candidates.push({text:draft,validation,score,stage:'generated',strategy:strategies[i]});
+ }
+ let interim=[...candidates].sort((x,y)=>y.score-x.score)[0];
+ if(interim&&(!interim.validation.pass||interim.score<.78)){
+  let repaired='';const repairGoal='Repair this '+ir.language+' candidate. Preserve the request and remove every listed defect.\nRequest='+String(a.prompt||'')+'\nIssues='+JSON.stringify(interim.validation.issues||[])+'\nCandidate:\n'+String(interim.text||'').slice(0,9000)+'\nReturn code only.';
+  try{repaired=clean(compose(repairGoal))}catch(e){}
+  if(!looksLikeCode(repaired,ir.language))repaired=templateCode(ir,a.prompt);
+  const validation=validateCode(repaired,ir),score=baseScore(validation,repaired,terms)+.02;
+  candidates.push({text:repaired,validation,score,stage:'repair',strategy:'diagnostic-repair'});
+ }
+ const review=reviewSelect('code.'+action,candidates,ctrl,{language:ir.language,quality:ir.quality}),best=review.best||{text:templateCode(ir,a.prompt),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0};
+ const draft=best.text,validation=best.validation,reward=review.learning;let exported=null;if(ir.export&&review.accepted)exported=shareText(draft,ir.filename||('BANC888_code.'+codeExt(ir.language)),'text/plain');
+ const out={action,ir,text:draft,validation,review,control:ctrl,reward,exported};
+ setLast(a.threadCode,'code',out);remember('code.'+action,review.accepted,{language:ir.language,issues:review.candidates.filter(x=>!x.pass).flatMap(x=>x.issues).slice(0,12),quality:ir.quality,score:review.best&&review.best.score,candidates:review.candidates.length});return out;
 }
 function imagePrompt(ir){
  const p=[ir.subject];if(ir.style&&ir.style.length)p.push('style: '+ir.style.join(', '));if(ir.composition&&ir.composition.length)p.push('composition: '+ir.composition.join(', '));if(ir.lighting&&ir.lighting.length)p.push('lighting: '+ir.lighting.join(', '));if(ir.palette&&ir.palette.length)p.push('palette: '+ir.palette.join(', '));if(ir.aspect)p.push('aspect: '+ir.aspect);if(ir.size)p.push('size: '+ir.size);if(ir.quality==='high')p.push('coherent composition, clear subject hierarchy, refined detail');if(ir.negative&&ir.negative.length)p.push('avoid: '+ir.negative.join(', '));return p.filter(Boolean).join(' | ');
@@ -158,8 +200,9 @@ function generateImage(a,refine){
  };
  const candidatesPassed=ranked.passed.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:true,issues:c.quality.issues||[],seed:c.seed,mode:c.mode,layoutX:c.layoutX,layoutY:c.layoutY,scaleBias:c.scaleBias}));
  const candidatesRejected=ranked.rejected.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:false,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode,layoutX:c.layoutX,layoutY:c.layoutY,scaleBias:c.scaleBias}));
+ const review=reviewSelect(refine?'image.refine':'image.generate',ranked.evaluated.map(x=>({prompt:x.prompt,value:x.value,validation:x.quality,score:(x.quality?.score||0)/100,stage:x.generation?'evolved':'generated',strategy:x.strategy,diagnosis:[...(x.quality?.hardIssues||[]),...(x.quality?.issues||[])]})),ctrl,{quality:ir.quality,subject:ir.subject,skipLearning:true,evolutionary:true});
  const reward=controlReward(ctrl,true),out={
-   ir,prompt:best.prompt,value:finalRun.value,validation,
+   ir,prompt:best.prompt,value:finalRun.value,validation,review,
    selection:{id:best.id,parentId:best.parentId||null,generation:best.generation||0,strategy:best.strategy,score:finalQuality.score},
    candidates:candidatesPassed,rejected:candidatesRejected,control:ctrl,reward,feedback
  };
@@ -172,17 +215,30 @@ function voiceConfigure(a){const ir=a.ir||V.buildVoiceIR(a.prompt||'');VOICE_CFG
 function voiceListen(a){const ir=a.ir||V.buildVoiceIR(a.prompt||''),lang=ir.language||VOICE_CFG.language;if(window.AndroidVoice){AndroidVoice.startListening(lang);remember('voice.listen',true,{language:lang});return{started:true,native:true,language:lang,logicalThread:a.threadCode||null}}if(Agent.listen)Agent.listen();return{started:true,native:false,language:lang}}
 function voiceSpeak(a){const ir=a.ir||V.buildVoiceIR(a.prompt||'');let text=String(ir.text||a.text||'').trim();if(!text)try{text=compose('人間へ短く自然に発話する内容を作る。要求: '+String(a.prompt||''))}catch(e){text=String(a.prompt||'')}const cfg={language:ir.language||VOICE_CFG.language,rate:ir.rate||VOICE_CFG.rate,pitch:ir.pitch||VOICE_CFG.pitch};if(window.AndroidVoice){AndroidVoice.speak(text,cfg.language,cfg.rate,cfg.pitch);remember('voice.speak.native',true,cfg);return{spoken:true,native:true,text,...cfg}}if(Agent.speak)Agent.speak(text);return{spoken:true,native:false,text,...cfg}}
 function docFallback(ir,context){const sections=(ir.sections||[]).map((s,i)=>'## '+(i+1)+'. '+s+'\n'+(i===0?'本資料は「'+ir.request+'」を目的として整理したものです。':i===1&&context?'関連文脈: '+String(context).slice(-900):'要件に沿って確認・記録してください。')).join('\n\n');return '# '+ir.title+'\n\n'+sections+'\n'}
-function validateDoc(body,ir){const b=String(body||''),heads=(b.match(/^##?\s+/gm)||[]).length,issues=[];if(b.length<220)issues.push('too-short');if(heads<Math.min(3,(ir.sections||[]).length))issues.push('missing-sections');if(/\bTODO\b|未定です|十分な知識がない/.test(b))issues.push('placeholder');return{pass:issues.length===0,issues,length:b.length,headings:heads}}
+function validateDoc(body,ir){
+ const s=String(body||''),heads=(s.match(/^##?\s+/gm)||[]).length,tests=[];const check=(name,pass,detail)=>tests.push({name,pass:!!pass,detail:detail||''});
+ check('minimum-length',s.length>=220,'length='+s.length);check('required-sections',heads>=Math.min(3,(ir.sections||[]).length),'headings='+heads);check('no-placeholder',!/\bTODO\b|未定です|十分な知識がない/.test(s));
+ const issues=tests.filter(x=>!x.pass).map(x=>x.name);return{pass:issues.length===0,issues,tests,length:s.length,headings:heads};
+}
 function makeDoc(format,a){
- const ir=a.ir||V.buildDocumentIR(a.prompt||''),ctrl=controlPrepare(ir),prior=getLast(a.threadCode,'document');let body='';
- const goal='DocumentIR='+JSON.stringify(ir)+'\nThreadContext='+String(a.context||'').slice(-2200)+'\nPreviousDraft='+String(prior&&prior.body||'').slice(0,4000)+'\nCreate a finished Japanese document. Use headings beginning with # and ##. Include all required sections. No meta commentary.';
- try{body=clean(compose(goal))}catch(e){}
- if(!/^#\s+/m.test(body)||body.length<220)body=docFallback(ir,a.context);
- let validation=validateDoc(body,ir);if(!validation.pass&&ir.quality==='high'){body=docFallback(ir,a.context)+'\n## 検証メモ\n- 要求: '+ir.request+'\n- 受入条件: 各章の内容を確認し、未確定事項を明示する。\n';validation=validateDoc(body,ir)}
- const reward=controlReward(ctrl,validation.pass),title=ir.title||'BANC888資料';let exported=null,outText=body;
- if(format==='docx')exported=window.AndroidFiles?safeJson(AndroidFiles.createDocx(title,body,ir.filename||'BANC888_document.docx')):{ok:false,reason:'native file bridge unavailable'};
- else{const ext=format==='markdown'?'md':format==='html'?'html':'txt',mime=format==='markdown'?'text/markdown':format==='html'?'text/html':'text/plain';if(format==='html')outText='<!doctype html><html lang="ja"><meta charset="utf-8"><title>'+title.replace(/[<>&]/g,'')+'</title><body><pre style="white-space:pre-wrap;font-family:system-ui">'+body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre></body></html>';exported=shareText(outText,ir.filename||('BANC888_document.'+ext),mime)}
- const out={format,title,body:outText,ir,validation,control:ctrl,reward,exported};setLast(a.threadCode,'document',out);remember('document.create.'+format,validation.pass,{type:ir.type,quality:ir.quality,issues:validation.issues});return out;
+ const ir=a.ir||V.buildDocumentIR(a.prompt||''),ctrl=controlPrepare(ir),prior=getLast(a.threadCode,'document'),terms=[...tokenize(ir.request),...(ir.sections||[])],strategies=ir.quality==='high'?['complete factual structure','concise practical structure','risk-aware structure']:['complete structure','concise structure'],candidates=[];
+ for(const strategy of strategies){
+  let body='';const goal='DocumentIR='+JSON.stringify(ir)+'\nThreadContext='+String(a.context||'').slice(-2200)+'\nPreviousDraft='+String(prior&&prior.body||'').slice(0,4000)+'\nStrategy='+strategy+'\nCreate a finished Japanese document. Use headings beginning with # and ##. Include all required sections. No meta commentary.';
+  try{body=clean(compose(goal))}catch(e){}
+  if(!/^#\s+/m.test(body)||body.length<220)body=docFallback(ir,a.context);
+  const validation=validateDoc(body,ir),score=baseScore(validation,body,terms);candidates.push({body,validation,score,stage:'generated',strategy});
+ }
+ let interim=[...candidates].sort((x,y)=>y.score-x.score)[0];
+ if(interim&&(!interim.validation.pass||interim.score<.78)){
+  let body='';const goal='Repair the following Japanese document. Keep its intent, fix all listed defects, and return the full finished document only.\nDocumentIR='+JSON.stringify(ir)+'\nIssues='+JSON.stringify(interim.validation.issues||[])+'\nDraft:\n'+String(interim.body||'').slice(0,9000);
+  try{body=clean(compose(goal))}catch(e){}
+  if(!/^#\s+/m.test(body)||body.length<220)body=docFallback(ir,a.context);
+  const validation=validateDoc(body,ir),score=baseScore(validation,body,terms)+.02;candidates.push({body,validation,score,stage:'repair',strategy:'diagnostic-repair'});
+ }
+ const review=reviewSelect('document.create.'+format,candidates,ctrl,{type:ir.type,quality:ir.quality}),best=review.best||candidates[0]||{body:docFallback(ir,a.context),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0};
+ const body=best.body,validation=best.validation,title=ir.title||'BANC888資料';let exported=null,outText=body;
+ if(review.accepted){if(format==='docx')exported=window.AndroidFiles?safeJson(AndroidFiles.createDocx(title,body,ir.filename||'BANC888_document.docx')):{ok:false,reason:'native file bridge unavailable'};else{const ext=format==='markdown'?'md':format==='html'?'html':'txt',mime=format==='markdown'?'text/markdown':format==='html'?'text/html':'text/plain';if(format==='html')outText='<!doctype html><html lang="ja"><meta charset="utf-8"><title>'+title.replace(/[<>&]/g,'')+'</title><body><pre style="white-space:pre-wrap;font-family:system-ui">'+body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre></body></html>';exported=shareText(outText,ir.filename||('BANC888_document.'+ext),mime)}}
+ const out={format,title,body:outText,ir,validation,review,control:ctrl,reward:review.learning,exported};setLast(a.threadCode,'document',out);remember('document.create.'+format,review.accepted,{type:ir.type,quality:ir.quality,issues:best.diagnosis,score:best.score,candidates:review.candidates.length});return out;
 }
 
 reg('code.generate','CodeIR plan -> generate -> static validate -> bounded repair/export','code.write','local',a=>generateCode(a,'generate'));
@@ -203,15 +259,16 @@ reg('document.create.markdown','DocumentIR -> structured Markdown draft -> valid
 reg('document.create.html','DocumentIR -> structured HTML draft -> validation export','document.write','native',a=>makeDoc('html',a));
 reg('document.create.text','DocumentIR -> structured text draft -> validation export','document.write','native',a=>makeDoc('text',a));
 reg('capability.experience.status','read bounded success failure experience for artifact tools','compute','none',a=>expStats(a&&a.tool));
+reg('capability.review.status','read multi-candidate review and repair history','compute','none',()=>reviewStatus());
 reg('feedback.test','ingest a training regression or holdout test result into the Fly feedback path','compute','local',a=>feedbackTest(a?.name,a?.passed,a?.tier||'training',a?.failure||null,a?.targetTool||'chat.compose'));
 reg('feedback.status','read learned feedback route bias and recent reward vectors','compute','none',()=>{try{const r=Agent.execute('feedback.status',{});return r&&r.ok?r.value:{error:r&&r.error}}catch(e){return{error:String(e&&e.message||e)}}});
 reg('capability.lexicon.status','read specialist vocabulary pack counts','compute','none',()=>V.lexiconStats());
 
 function summarize(tool,v){
- if(tool.indexOf('code.')===0)return'コード処理 '+tool+' 完了。validation='+(v.validation&&v.validation.pass?'PASS':'CHECK')+' / '+(v.ir&&v.ir.language||'auto')+(v.exported&&v.exported.ok?' / file shared':'');
+ if(tool.indexOf('code.')===0)return'コード処理 '+tool+' 完了。validation='+(v.validation&&v.validation.pass?'PASS':'CHECK')+' / review='+(v.review?.accepted?'PASS':'REJECT')+' / candidates='+(v.review?.candidates?.length||0)+' / '+(v.ir&&v.ir.language||'auto')+(v.exported&&v.exported.ok?' / file shared':'');
  if(tool.indexOf('image.')===0)return'画像処理 '+tool+' 完了。候補 '+(v.validation?.candidateCount||0)+'件 → 合格 '+(v.validation?.passedCount||0)+'件 / 選択 '+(v.selection?.id||'—')+' / score '+(v.validation?.score??'—')+' / validation='+(v.validation&&v.validation.pass?'PASS':'CHECK');
  if(tool==='voice.listen')return'音声入力を開始しました。';if(tool==='voice.speak.native')return'音声出力しました。';if(tool==='voice.status.native')return'音声状態: '+JSON.stringify(v);if(tool==='voice.configure')return'音声設定を更新しました。';
- if(tool.indexOf('document.create.')===0)return String(v.format||'document').toUpperCase()+'資料を作成しました。validation='+(v.validation&&v.validation.pass?'PASS':'CHECK')+(v.exported&&v.exported.ok?' / Android共有を開きました':'');
+ if(tool.indexOf('document.create.')===0)return String(v.format||'document').toUpperCase()+'資料を作成しました。validation='+(v.validation&&v.validation.pass?'PASS':'CHECK')+' / review='+(v.review?.accepted?'PASS':'REJECT')+' / candidates='+(v.review?.candidates?.length||0)+(v.exported&&v.exported.ok?' / Android共有を開きました':'');
  return'ツール処理完了。';
 }
 function present(tool,v,summary){let d=summary;if(tool.indexOf('code.')===0)d+='\n\n'+String(v.text||'').slice(0,14000);else if(tool.indexOf('document.create.')===0)d+='\n\n'+String(v.body||'').slice(0,9000);try{if(Agent.present)Agent.present({finalText:d,selected:{tool},observation:{tool,result:{ok:true,value:v}}})}catch(e){}}
