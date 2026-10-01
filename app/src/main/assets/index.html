@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><meta name="theme-color" content="#09101e"><meta name="color-scheme" content="dark"><meta name="referrer" content="no-referrer">
-<title>BANC888 Fly Agent · WebView Runtime v7</title>
+<title>BANC888 Fly Agent · Unified Autonomous Conversation v7.4</title>
 <style>
 :root{--bg:#09101e;--panel:#111a2d;--line:#293754;--text:#edf2ff;--muted:#98aac7;--accent:#82a7ff;--good:#67da9e;--warn:#ffd16f}
 *{box-sizing:border-box}html{scrollbar-gutter:stable;scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.48 system-ui,sans-serif;padding-bottom:env(safe-area-inset-bottom);overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
@@ -120,7 +120,7 @@ body.ui-compact #v50UnifiedBanner{display:none}
 
 </head>
 <body>
-<header><h1>🪰 BANC888 Fly Agent <span class="pill">v7 WEBVIEW CORE</span></h1>
+<header><h1>🪰 BANC888 Fly Agent <span class="pill">v7.4 UNIFIED AUTONOMY</span></h1>
 <div class="muted">音声会話 + Human Display + ToolBus + BANC/O0 + F38/F42/F46。通常操作はFly Consoleへ集約し、専門パネルは用途別に折りたたみます。</div></header>
 <main>
 <div class="card" id="v50UnifiedBanner"><h2>BANC888 v5.0 Fly Voice + Human Display Agent <span class="pill">v4.8 unified + ears + voice + human display</span></h2><div class="note"><b>操作主体は代理人としてのハエ。</b> v4.8のToolBus/F38/F42/F46を保持したまま、人間→ハエの音声入力、ハエ→人間の音声出力、ハエ→人間向け画面出力を追加。O0は不変です。</div></div>
@@ -2490,8 +2490,83 @@ function multimodalAnswer(text,lang){
   if(lang==="ko")pre="현재 멀티모달 문맥을 합치면: ";
   return pre+parts.join("\n");
 }
-function generateConversation(text){
-  text=String(text||"").trim();
+function latestConversationText(raw){
+  const s=String(raw||'').trim();
+  if(!s)return'';
+  let p=s.lastIndexOf('[[LATEST_USER]]');
+  if(p>=0)return s.slice(p+'[[LATEST_USER]]'.length).trim();
+  const label='最新の人間発話:';
+  p=s.lastIndexOf(label);
+  if(p>=0)return s.slice(p+label.length).trim();
+  return s;
+}
+function threadContextFromGoal(raw){
+  const s=String(raw||'');
+  const a=s.indexOf('[[THREAD_CONTEXT');
+  const b=s.lastIndexOf('[[LATEST_USER]]');
+  if(a>=0&&b>a){const nl=s.indexOf('\n',a);return s.slice(nl>=0?nl+1:a,b).trim()}
+  const old='以下は内部参照用です。返答では管理ラベルを説明せず、最新発話へ自然に答えてください。';
+  const p=s.indexOf(old),q=s.lastIndexOf('最新の人間発話:');
+  return p>=0&&q>p?s.slice(p+old.length,q).trim():'';
+}
+function cleanResearchExtract(text,max=720){
+  let s=String(text||'').replace(/\[[0-9]+\]/g,'').replace(/\s+/g,' ').trim();
+  if(!s)return'';
+  if(s.length<=max)return s;
+  const cut=s.slice(0,max),i=Math.max(cut.lastIndexOf('。'),cut.lastIndexOf('！'),cut.lastIndexOf('？'));
+  return (i>Math.floor(max*.55)?cut.slice(0,i+1):cut.replace(/\s+\S*$/,'')+'…').trim();
+}
+const OFFLINE_CONVERSATION_KNOWLEDGE=[
+  {re:/太陽光発電|ソーラー発電/,topic:'太陽光発電',text:'太陽光発電は、太陽光を太陽電池で直流電力に変え、パワーコンディショナで家庭や電力系統で使える交流へ変換する発電方式です。発電量は日射、パネル容量、方位・傾斜、温度、影、機器損失などで変わります。蓄電池を組み合わせると昼の余剰電力を夜に回せます。'},
+  {re:/蓄電池|バッテリー/,topic:'蓄電池',text:'蓄電池は電気エネルギーを化学エネルギーとして蓄え、必要なときに再び電気として取り出す装置です。家庭用では容量kWh、最大出力kW、充放電効率、サイクル寿命、安全制御が重要です。'},
+  {re:/人工知能|(^|[^A-Za-z])AI([^A-Za-z]|$)/i,topic:'人工知能',text:'人工知能（AI）は、認識・予測・生成・意思決定など、知的作業の一部を計算機で実現する技術の総称です。現在の多くのAIは、学習データからパターンを獲得する機械学習を基盤にしています。'}
+];
+function contextTopic(context=''){
+  const lines=String(context||'').split(/\n+/).reverse();
+  for(const line of lines){
+    const m=line.match(/^(?:人間|USER|Human)\s*:\s*(.+)$/i);if(!m)continue;
+    const x=normalizeJa(m[1]);
+    const q=x.match(/^([^、。！？?]{2,40}?)(?:について|は|って|を)/);
+    if(q&&!/^(それ|これ|あれ|私|僕|俺|あなた)$/.test(q[1]))return q[1].trim();
+  }
+  return'';
+}
+function knowledgeQuery(text,context=''){
+  let q=normalizeJa(latestConversationText(text));
+  const remembered=CHAT.memory.lastTopic||contextTopic(context);
+  if(remembered&&/^(それ|これ|あれ)(?:の|について|は|って)?/.test(q))q=q.replace(/^(それ|これ|あれ)/,remembered);
+  if(remembered&&/^(もっと|もう少し)(?:詳しく|詳細に)?$/.test(q))q=remembered;
+  if(remembered&&/^(?:メリット|デメリット|利点|欠点|仕組み|特徴|用途|原理|効率|費用|寿命)(?:は|を|について)?/.test(q))q=remembered+' '+q;
+  q=q.replace(/^(?:ねえ|ねぇ|ハエ|教えて)[、,:：\s]*/,'')
+     .replace(/(?:について)?(?:を)?(?:教えて|説明して|解説して)(?:ください|ほしい|欲しい)?$/,'')
+     .replace(/(?:とは)?(?:何|なに)(?:ですか|なの|でしょうか)?$/,'')
+     .replace(/(?:って)?(?:何|なに)(?:ですか|なの)?$/,'')
+     .replace(/(?:ですか|でしょうか|なの|なのか|か)$/,'')
+     .replace(/[?？!！。]+$/g,'').trim();
+  return (q||remembered||normalizeJa(text)).slice(0,140);
+}
+function offlineConversationAnswer(text){
+  for(const k of OFFLINE_CONVERSATION_KNOWLEDGE){if(k.re.test(String(text||''))){CHAT.memory.lastTopic=k.topic;saveChat();return k.text}}
+  return null;
+}
+function researchConversationAnswer(text,intent,lang,context=''){
+  if(lang!=='ja'||!['question','why','how','unknown','opinion'].includes(intent))return null;
+  const q=knowledgeQuery(text,context);if(!q||q.length<2)return null;
+  try{
+    const api=window.FFC_RESEARCH_PHYSICS_TOOLS;
+    if(api&&typeof api.collect==='function'){
+      const col=api.collect({kind:'ResearchIR',query:q,maxSources:2,sourceModes:['wikipedia'],citationRequired:false,request:text});
+      const src=(col&&col.sources||[]).find(x=>String(x.text||'').trim());
+      if(src){
+        const body=cleanResearchExtract(src.text,760);if(body){CHAT.memory.lastTopic=q;saveChat();return body+'\n\n出典: Wikipedia「'+(src.title||q)+'」'+(src.url?'\n'+src.url:'')}
+      }
+    }
+  }catch(e){}
+  return offlineConversationAnswer(text);
+}
+
+function generateConversation(text,context=""){
+  text=latestConversationText(text);
   const lang=detectHumanLanguage(text),r=RESP[lang]||RESP.en;
   const taught=teachFrom(text);if(taught)return{reply:taught,lang,intent:"teach"};
   const mem=memoryAnswer(text);if(mem)return{reply:mem,lang,intent:"memory"};
@@ -2518,10 +2593,11 @@ function generateConversation(text){
   const learned=learnedMeaning(text);
   const mm=multimodalAnswer(text,lang);
   if(mm && (intent==="question"||intent==="unknown"||/まとめ|統合|together|combine|context/.test(text.toLowerCase())))return{reply:mm,lang,intent:"multimodal"};
-  if(intent==="why" && last)return{reply:`現在のBANC回路についてなら、強さは埋込vignetteの集約synapse countを基準にしています。生理学的な因果や機能までを接続数だけから断定はしません。`,lang,intent};
-  if(intent==="how")return{reply:lang==="ja"?"このHTMLでは、入力を会話意図・BANC実データ・画像特徴・音声特徴・文書特徴へ分け、それらを1つの会話コンテキストに再結合しています。外部通信は使いません。":(r.capability?.[0]||RESP.en.capability[0]),lang,intent};
-  if(intent==="opinion")return{reply:lang==="ja"?"評価や意見は、観測できる情報と推測を分けて返します。BANCなら接続数などの事実を先に示し、機能解釈は別扱いにします。":(r.unknown?.[0]||RESP.en.unknown[0]),lang,intent};
+  if(intent==="why" && last && /BANC|connectome|コネクトーム|シナプス|synapse|root_id/i.test(text))return{reply:`現在のBANC回路についてなら、強さは埋込vignetteの集約synapse countを基準にしています。生理学的な因果や機能までを接続数だけから断定はしません。`,lang,intent};
+  if(intent==="how" && /このHTML|このアプリ|BANC888|会話機能|どうやって動|仕組み.*アプリ/i.test(text))return{reply:lang==="ja"?"このアプリでは、最新の発話を意図判定し、BANC・生成ツール・ローカル記憶・一般知識検索へ振り分け、結果を会話文へ戻します。":(r.capability?.[0]||RESP.en.capability[0]),lang,intent};
   const ga=generalConversationAnswer(text,intent);if(ga)return{reply:ga,lang,intent:"general"};
+  const researched=researchConversationAnswer(text,intent,lang,context);if(researched)return{reply:researched,lang,intent:"knowledge.research"};
+  if(intent==="opinion")return{reply:lang==="ja"?"その話題について、事実と評価を分けて考えます。どの観点を重視するか教えてもらえれば、その観点に沿って整理できます。":(r.unknown?.[0]||RESP.en.unknown[0]),lang,intent};
   if(r[intent])return{reply:pick(r[intent],text),lang,intent};
   if(mm)return{reply:mm,lang,intent:"multimodal"};
   if(learned)return{reply:`「${learned.surface}」は「${learned.meaning}」として覚えています。普通の会話の中でもこの意味を参照します。`,lang,intent:"learned.context"};
@@ -5585,7 +5661,7 @@ function agentWikiText(value){
 function agentExternalAction(goal){const s=String(goal);if(/ネット|通信|upload|download|cloud|web|internet/i.test(s))return'network.request';if(/ファイル|file|保存|削除|コピー|移動/i.test(s))return'file.operation';if(/アプリ|app|起動|終了/i.test(s))return'app.operation';if(/OS|システム|設定|電源|device/i.test(s))return'system.operation';if(/画面|click|クリック|入力|スクロール/i.test(s))return'screen.operation';return'external.operation'}
 
 function agentBuildCandidates(goal,lastObs,used){
-  const a=[],s=String(goal),ctrl=agentControl(s),expr=agentMathExpr(s),prev=used[used.length-1];
+  const a=[],rawGoal=String(goal),s=latestConversationText(rawGoal),ctrl=agentControl(s),expr=agentMathExpr(s),prev=used[used.length-1];
   if(prev==='f42.compile')agentAddCandidate(a,'f42.step',{maxOps:Math.max(128,Math.min(65536,+($('#f42Slice')?.value||16384)))},1.08,ctrl,used);
   else if(prev==='f42.step'&&lastObs?.result?.value&&!lastObs.result.value.done)agentAddCandidate(a,'f42.step',{maxOps:Math.max(128,Math.min(65536,+($('#f42Slice')?.value||16384)))},1.18,ctrl,used);
   else if(prev==='f38.compile')agentAddCandidate(a,'f38.step',{maxOps:Math.max(128,Math.min(65536,+($('#f38Slice')?.value||8192)))},1.00,ctrl,used);
@@ -5617,8 +5693,8 @@ function agentBuildCandidates(goal,lastObs,used){
     const rq=agentResearchQuery(s);if(rq)agentAddCandidate(a,'research.wiki',{query:rq,limit:3},.95,ctrl,used);
   }
   if(/ファイル|file|アプリ|app|ネット|internet|web|OS|システム|画面操作|クリック|スクロール|外部機器/i.test(s))agentAddCandidate(a,'bridge.propose',{action:agentExternalAction(s),goal:s},.88,ctrl,used);
-  agentAddCandidate(a,'cpf.inspect',{goal:s},.31,ctrl,used);
-  agentAddCandidate(a,'chat.compose',{goal:s,observation:lastObs},.52,ctrl,used);
+  agentAddCandidate(a,'cpf.inspect',{goal:s},.18,ctrl,used);
+  agentAddCandidate(a,'chat.compose',{goal:s,context:threadContextFromGoal(rawGoal),observation:lastObs},.72,ctrl,used);
   return {candidates:a,control:ctrl}
 }
 
