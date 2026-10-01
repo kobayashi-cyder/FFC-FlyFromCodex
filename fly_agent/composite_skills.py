@@ -122,7 +122,7 @@ class LearnedSkill:
         return cls(**data)
 
 
-class CompositeCompositeSkillFabric:
+class CompositeSkillFabric:
     """Persistent capability discovery + compositional skill acquisition.
 
     The fabric never executes arbitrary learned source code. It promotes successful,
