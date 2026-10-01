@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "minShellVersion": 71,
-  "bridgeSchema": 5,
-  "assetSchema": 6,
-  "commit": "a11ff1027233c771ecc09ea2c3b3f36c0acd8d1a",
+  "minShellVersion": 72,
+  "bridgeSchema": 6,
+  "assetSchema": 7,
+  "commit": "565bc4eccdba6633df8d5843177607d4f23944f2",
   "files": {
-    "index.html": "ee9680b170873f7777918714694955b735866190e143bdf8edc34415cda9f9a3",
-    "native-bridge.js": "ec236d2bf41017a8f0799f4b083edea11db141f007ec5a8191e226e5f28a47cb",
+    "index.html": "97b36a9ae66da860d7ec26531ab7f3fdf43cc942f6d243adc20ea7c6bb61a5c9",
+    "native-bridge.js": "b3389eba6f5225aa4482eff6ff8f9ab97bfb5194e49ff634d33ebef7b721c5b9",
     "webview-runtime.js": "05c30e25c4779fd9211d9a6ade8a603a9fbc916743080de63fee1af98cdedbd2",
     "thread-router-core.js": "b19931c8f24397ce781bd9408132cefb5addf959f9fa09779f2a9b9d63731cb9",
     "capability-vocabulary-core.js": "058c05be4be4381619c1b3cf961758f9580c55003834200e71bb66ae1899e9fe",
@@ -19,9 +19,10 @@
     "research-physics-tools.js": "9163f15bdd1a5806bc3d6a7e6bbfc34933b8804534a30fa6f44686fdc539c778",
     "proxy-agent.js": "a796fe466ecd72220b7ca2e82281a4363223b24ac8cf169ed7448e97f69444ba",
     "conversation-output-core.js": "79ecf9c03fb3dbc2a02701442748539fec25c280a3a6cf62558c38552bd8f6a2",
-    "thread-router.js": "26b048f6d6f99e1302b45d4d8afad1b2a95f643347188629299b41559536b9ac",
+    "thread-router.js": "eed4788260d75ef42f2fcbb26dfb77b8776eb7825dd09ef979402aa47e3f90a0",
     "dev-live.js": "f7fab43f4d92ef8d6a97414d2a41089ba74648cf38435ea772c90b8b8ce4b73c",
     "autonomy-core.js": "a2d6c18cdfaa818851d50c0bba816d0b74244cfce5f62e97358a3a827f2408ce",
-    "video-export.js": "f22581c6c00f4f6c50a634283f054698b9106646df0a9d8f1c87c5f1a896e3b4"
+    "video-export.js": "f24c0474aefe6d7de38878b41838d1cf1aa761013840ff3eed91b0c0657a98fb",
+    "conversation-export.js": "4e86eefc19ffc6e35c04e1f887252cb7a4b994df9b8d5d49cb90120522051fa0"
   }
 }
