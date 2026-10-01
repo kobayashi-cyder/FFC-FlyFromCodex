@@ -11,6 +11,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.ParcelFileDescriptor;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -187,10 +188,20 @@ final class SpeechController {
 
     synchronized boolean startListening(String language) {
         recognizerFallbackAttempted = false;
-        return startListeningInternal(language);
+        return startListeningInternal(language, null, 16000);
+    }
+
+    synchronized boolean startListeningFromAudio(String language, ParcelFileDescriptor audioSource, int sampleRate) {
+        if (Build.VERSION.SDK_INT < 33 || audioSource == null) return false;
+        recognizerFallbackAttempted = false;
+        return startListeningInternal(language, audioSource, sampleRate > 0 ? sampleRate : 16000);
     }
 
     private synchronized boolean startListeningInternal(String language) {
+        return startListeningInternal(language, null, 16000);
+    }
+
+    private synchronized boolean startListeningInternal(String language, ParcelFileDescriptor audioSource, int sampleRate) {
         if (state != State.IDLE && state != State.ERROR) return false;
         pendingLanguage = language == null ? "ja-JP" : language;
         if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -217,6 +228,12 @@ final class SpeechController {
         lastRecognitionError = "";
 
         Intent intent = recognitionIntent(pendingLanguage);
+        if (audioSource != null && Build.VERSION.SDK_INT >= 33) {
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, audioSource);
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1);
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT);
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, sampleRate);
+        }
         final long generation = ++listenGeneration;
         try {
             recognizer.startListening(intent);
@@ -295,7 +312,7 @@ final class SpeechController {
         initRecognizer(false);
         js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onStatus"
                 + "&&window.BANC888_NATIVE_VOICE.onStatus(" + JSONObject.quote(statusJson()) + ")");
-        startListeningInternal(pendingLanguage);
+        startListeningInternal(pendingLanguage, null, 16000);
     }
 
     synchronized void stopListening() {
