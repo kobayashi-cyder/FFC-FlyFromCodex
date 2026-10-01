@@ -78,6 +78,11 @@ must(imageQuality.includes('function evaluate('),'image candidate hard-gate eval
 must(imageQuality.includes('function rank('),'image candidate ranking missing');
 must(imageQuality.includes('CATEGORY_PARTS'),'category-specific image structure rules missing');
 must(imageQuality.includes('categoryIntegrity'),'category-specific image integrity gate missing');
+must(imageQuality.includes('function evolve('),'evolutionary image candidate breeder missing');
+must(capabilityTools.includes('generationTrace'),'multi-generation image search trace missing');
+must(capabilityTools.includes('IQ.evolve'),'image search must breed higher-scoring candidates');
+must(index.includes("seed+'|layout'"),'O2 seed must affect scene composition');
+must(index.includes('renderSeed'),'O2 seed must affect texture generation');
 must(index.includes('o2xEntityVisualMetrics'),'rendered entity-part measurement missing');
 must(index.includes('o2xRegionMetrics'),'rendered part pixel statistics missing');
 must(index.includes('explicitImage'),'image generation must require an explicit visual request');
