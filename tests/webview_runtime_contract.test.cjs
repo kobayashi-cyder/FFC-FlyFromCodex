@@ -19,10 +19,10 @@ const autonomy=read('app/src/main/assets/autonomy-core.js');
 const proxy=read('app/src/main/assets/proxy-agent.js');
 const manifest=JSON.parse(read('app/src/main/assets/live-manifest.json'));
 
-must(/SHELL_VERSION\s*=\s*74/.test(config),'shell version must be 74 for saved JSON exports');
+must(/SHELL_VERSION\s*=\s*75/.test(config),'shell version must be 75 for saved JSON exports');
 must(/WEB_RUNTIME_VERSION\s*=\s*7/.test(config),'web runtime version must remain 7');
 must(/BRIDGE_SCHEMA\s*=\s*8/.test(config),'bridge schema must be 8 for local model JSON exports');
-must(/ASSET_SCHEMA\s*=\s*9/.test(config),'asset schema must be 9 for parallel worker assets exports');
+must(/ASSET_SCHEMA\s*=\s*10/.test(config),'asset schema must be 10 for parallel worker assets exports');
 must(config.includes('"webview-runtime.js"'),'runtime asset must be installed and live-updatable');
 
 must(shell.includes('addWebMessageListener'),'origin-scoped WebMessage bridge missing');
@@ -119,7 +119,7 @@ must(autonomy.includes('matchSkill'),'autonomous skill reuse missing');
 must(proxy.includes('learnedProposal'),'proxy must consult learned skills');
 must(proxy.includes('baseCandidateProposal'),'proxy must autonomize built-in tool routes');
 must(proxy.includes('feedbackEvent'),'proxy must feed outcomes back into learning');
-must(manifest.bridgeSchema===8&&manifest.assetSchema===9&&manifest.minShellVersion===74,'live manifest schema drift');
+must(manifest.bridgeSchema===8&&manifest.assetSchema===10&&manifest.minShellVersion===75,'live manifest schema drift');
 must(Object.hasOwn(manifest.files,'webview-runtime.js'),'live manifest missing webview-runtime.js');
 
 console.log('webview-runtime-contract: PASS');

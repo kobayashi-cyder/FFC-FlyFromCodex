@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),core=require('../app/src/main/assets/attachment-core.js');
+const bytes=text=>new TextEncoder().encode(text);
+const file=core.decode({name:'会議.md',type:'text/markdown'},bytes('\uFEFF田中が10月10日までに試作品を提出する。'));
+assert.equal(file.text,'田中が10月10日までに試作品を提出する。');assert(!file.truncated);
+assert(core.format([file]).includes('10月10日'));
+assert.throws(()=>core.decode({name:'秘密.pdf'},bytes('%PDF-1.7')),/未対応/);
+assert.throws(()=>core.decode({name:'binary.txt'},new Uint8Array([0,1,2])),/バイナリ/);
+assert.throws(()=>core.decode({name:'invalid.txt'},new Uint8Array([255])),/UTF-8/);
+assert.throws(()=>core.decode({name:'large.csv'},new Uint8Array(core.MAX_BYTES+1)),/128KB/);
+assert.equal(core.decode({name:'long.txt'},bytes('x'.repeat(20000))).text.length,12000);
+assert.equal(core.decode({name:'long.txt'},bytes('x'.repeat(20000))).truncated,true);
+assert(!core.name('name\n.txt').includes('\n'));
+console.log('attachment-core: PASS');

@@ -43,6 +43,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: Portrait controls and attachment picker
+            class: com.ffc.banc888.fly.ChatControlsIntegrationTest
+            fixture: false
+          - name: APK and cached UI compatibility
+            class: com.ffc.banc888.fly.LiveBundleUpgradeIntegrationTest
+            fixture: false
           - name: Fly parallel workers
             class: com.ffc.banc888.fly.FlyParallelIntegrationTest
             fixture: false
@@ -138,4 +144,14 @@ jobs:
           path: |
             /tmp/BANC888-connectome-sample.mp4
             /tmp/instrumentation-result.txt
+          if-no-files-found: warn
+
+      - name: Save Android test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-${{ strategy.job-index }}
+          path: |
+            /tmp/instrumentation-result.txt
+            /tmp/device-logcat.txt
           if-no-files-found: warn

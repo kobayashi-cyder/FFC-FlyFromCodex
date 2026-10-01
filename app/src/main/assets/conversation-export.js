@@ -61,6 +61,7 @@
   }
   function metadata(meta,opt){
     if(!meta||typeof meta!=='object')return null;const out=selectFields(meta,['tool','capability','reason','route','confidence','voice','error']);
+    const attachments=list(own(meta,'attachments'),4);if(attachments.length)out.attachments=attachments.map(f=>({...selectFields(f,['name','type','size','truncated']),text:str(own(f,'text'),12000)}));
     const g=captureGeneration(own(meta,'generation'));if(g){const file=own(g.output,'exported'),jobId=str(own(file,'jobId'));const status=latestJob(jobId,opt.videoStatus);if(status)g.output.exported={...file,...status};out.generation=g}
     return Object.keys(out).length?out:null;
   }

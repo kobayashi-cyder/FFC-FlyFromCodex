@@ -91,7 +91,7 @@ function proposal(text,ctx){
   options.push({handled:true,plan:{handled:true,tool:first.tool,source:learned.proposal.source,confidence:learned.proposal.confidence},patch:null,learnedSkill:learned.id,proposal:learned.proposal});
  }
  const video=/動画|video|アニメ|映像/i.test(String(text))&&/生成|作って|作成|generate|create/i.test(String(text))&&!/コード|code|実装|python|javascript|kotlin/i.test(String(text));
- const reading=/要約|summari[sz]e|内容.*(?:理解|読)|本文.*(?:質問|答)/i.test(String(text))&&!/コード|code|画像|image|動画|video|docx|文書作成/i.test(String(text));
+ const reading=(!!ctx.attachedNow&&!V.classify(text).handled||/要約|summari[sz]e|内容.*(?:理解|読)|本文.*(?:質問|答)|添付.*(?:資料|内容|読|教|答)/i.test(String(text)))&&!/コード|code|画像|image|動画|video|docx|文書作成/i.test(String(text));
  const rp=RP?.classify?.(text),chat=!reading&&!video&&!rp?.handled&&!V.classify(text).handled&&!/(生成|作成|作って|書いて|実装|修正|改善|変換|要約|計算|足し算|引き算|検索|状態|一覧|診断|表示|読み上げ|音声入力|コンパイル|回路|connectome|banc|micro|f38|f42|f46|feedback|manifest|calculate|generate|create|compile|status|search|debug|refactor|\btest\b)/i.test(String(text)),plan=chat?{handled:true,tool:'chat.compose',domain:'chat',confidence:1}:reading?{handled:true,tool:'content.understand',domain:'content',confidence:.96}:video?{handled:true,tool:'o3.generate',domain:'video',confidence:.96}:rp?.handled?rp:V.classify(text);
  if(chat)options.length=0;
  if(plan.handled){
@@ -100,7 +100,7 @@ function proposal(text,ctx){
    const k=artifactKind(plan.domain),last=k&&Caps.last?Caps.last(ctx.threadCode,k):null;
    if(last&&last.ir&&last.ir.kind===ir.kind){try{patch=P.infer(last.ir,text,V,scopeFromText(text));ir=patch.ir;if(ir.action!==undefined)ir.action=plan.action}catch(e){emit('ir-patch-error',String(e&&e.message||e),{tool:plan.tool})}}
   }
-  const step={tool:plan.tool,args:{ir,goal:String(text||''),prompt:String(text||''),context:String(ctx.context||''),threadCode:ctx.threadCode||null},description:'specialist vocabulary route'};
+  const step={tool:plan.tool,args:{ir,goal:String(text||''),prompt:String(text||''),context:String(ctx.context||''),source:String(ctx.source||''),threadCode:ctx.threadCode||null},description:'specialist vocabulary route'};
   options.push({handled:true,plan,patch,proposal:{source:'specialist-vocabulary',confidence:plan.confidence,steps:[step]}});
  }else{
   const base=baseCandidateProposal(text,ctx);if(base)options.push(base);

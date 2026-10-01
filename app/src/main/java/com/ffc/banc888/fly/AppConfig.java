@@ -12,10 +12,10 @@ final class AppConfig {
     static final String APP_HOST = "appassets.androidplatform.net";
     static final String DEV_REF = "banc888-apk-connectome-mobile-v1";
     static final String REPO = "kobayashi-cyder/FFC-FlyFromCodex";
-    static final int SHELL_VERSION = 74;
+    static final int SHELL_VERSION = 75;
     static final int WEB_RUNTIME_VERSION = 7;
     static final int BRIDGE_SCHEMA = 8;
-    static final int ASSET_SCHEMA = 9;
+    static final int ASSET_SCHEMA = 10;
 
     static final String[] RUNTIME_SCRIPTS = new String[]{
             "native-bridge.js",
@@ -42,6 +42,8 @@ final class AppConfig {
             "conversation-export.js",
             "dev-live.js",
             "execution-controls.js",
+            "attachment-core.js",
+            "attachments.js",
             "settings-organizer.js",
             "artifact-workspace.js"
     };
@@ -72,6 +74,8 @@ final class AppConfig {
             "conversation-export.js",
             "dev-live.js",
             "execution-controls.js",
+            "attachment-core.js",
+            "attachments.js",
             "settings-organizer.js",
             "artifact-workspace.js",
             "fly-task-worker.js"
