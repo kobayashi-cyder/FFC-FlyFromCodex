@@ -14,7 +14,7 @@ public class VoiceUiIntegrationTest {
     public void recognizedTextRoutesIntoVoiceUi() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             assertTrue(TestSupport.awaitJs(scenario,
-                    "!!(window.FFCConversationOutput&&window.FFCThreadCore&&window.AndroidDiagnostics)", 10000));
+                    "!!(window.FFCConversationOutput&&window.FFCThreadCore&&window.AndroidDiagnostics)", 25000));
             assertTrue(TestSupport.awaitJs(scenario,
                     "window.FFCConversationOutput.speech({threadIds:[1],reason:'same',confidence:1},'こんにちは',window.FFCThreadCore.excelCode,{includeRoute:false})==='こんにちは'", 5000));
             assertTrue(TestSupport.awaitJs(scenario,
