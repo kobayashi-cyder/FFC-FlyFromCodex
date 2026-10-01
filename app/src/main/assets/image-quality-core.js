@@ -79,16 +79,23 @@ function expand(ir,count=8){
     ['strict','strict request fidelity, simple scene, correct subject count, no decorative distractions','photoish',4,.3,.7]
   ];
   const n=clamp(Math.trunc(+count||8),4,12),seedBase=hash32(subject+'|'+JSON.stringify(ir||{}));
-  return variants.slice(0,n).map((v,i)=>({
-    id:'img-'+String(i+1).padStart(2,'0'),
-    prompt:[base,v[1]].filter(Boolean).join(' | '),
-    strategy:v[0],
-    seed:String((seedBase+Math.imul(i+1,2654435761))>>>0),
-    mode:v[2],
-    detail:v[3],
-    blur:v[4],
-    atmosphere:v[5]
-  }));
+  return variants.slice(0,n).map((v,i)=>{
+    const seed=(seedBase+Math.imul(i+1,2654435761))>>>0;
+    const gene=(salt)=>((hash32(seed+'|'+salt)%10001)/10000);
+    return{
+      id:'img-'+String(i+1).padStart(2,'0'),
+      prompt:[base,v[1]].filter(Boolean).join(' | '),
+      strategy:v[0],
+      seed:String(seed),
+      mode:v[2],
+      detail:v[3],
+      blur:v[4],
+      atmosphere:v[5],
+      layoutX:+((gene('x')-.5)*.12).toFixed(4),
+      layoutY:+((gene('y')-.5)*.08).toFixed(4),
+      scaleBias:+(.90+gene('scale')*.20).toFixed(4)
+    };
+  });
 }
 function evolve(evaluated,ir,generation=1,count=6){
   const ranked=[...(evaluated||[])].sort((a,b)=>(b?.quality?.score||0)-(a?.quality?.score||0));
@@ -102,6 +109,9 @@ function evolve(evaluated,ir,generation=1,count=6){
     const detail=clamp(Math.round((+p.detail||5)+(r('detail')-.5)*2),3,6);
     const blur=+clamp((+p.blur||1)+(r('blur')-.5)*1.4,0,3).toFixed(2);
     const atmosphere=+clamp((+p.atmosphere||1)+(r('atmo')-.5)*.7,.35,1.7).toFixed(2);
+    const layoutX=+clamp((+p.layoutX||0)+(r('x')-.5)*.09,-.16,.16).toFixed(4);
+    const layoutY=+clamp((+p.layoutY||0)+(r('y')-.5)*.07,-.12,.12).toFixed(4);
+    const scaleBias=+clamp((+p.scaleBias||1)+(r('scale')-.5)*.18,.78,1.22).toFixed(4);
     const mode=(generation>1&&r('mode')>.72)?'cinematic':(p.mode||'photoish');
     const problems=[...(p?.quality?.hardIssues||[]),...(p?.quality?.issues||[])];
     const repairs=[];
@@ -125,7 +135,7 @@ function evolve(evaluated,ir,generation=1,count=6){
       parentId:p.id||null,
       prompt:[p.prompt||subject,mutation].filter(Boolean).join(' | '),
       strategy:'evolve:'+String(p.strategy||'best'),
-      seed:String(baseSeed>>>0),mode,detail,blur,atmosphere,generation
+      seed:String(baseSeed>>>0),mode,detail,blur,atmosphere,layoutX,layoutY,scaleBias,generation
     });
   }
   return out;
