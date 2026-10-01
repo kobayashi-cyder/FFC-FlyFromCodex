@@ -1,12 +1,21 @@
 (() => {
 'use strict';
-const V=window.FFCCapabilityVocabulary,IQ=window.FFCImageQuality,Agent=window.BANC888_FLY_AGENT;
-if(!V||!IQ||!Agent||window.FFC_CAPABILITIES)return;
+const V=window.FFCCapabilityVocabulary,IQ=window.FFCImageQuality,FB=window.FFCFeedback,Agent=window.BANC888_FLY_AGENT;
+if(!V||!IQ||!FB||!Agent||window.FFC_CAPABILITIES)return;
 const st=Agent.state,EXP_KEY='FFC_CAPABILITY_EXPERIENCE_V2',LAST_KEY='FFC_CAPABILITY_LAST_V2';
 const reg=(name,description,capability,sideEffect,handler)=>{st.capabilities.add(capability);st.tools.set(name,{name,description,capability,sideEffect,handler})};
 const safeJson=s=>{try{return JSON.parse(String(s||''))}catch{return{ok:false,error:String(s||'')}}};
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')||d}catch{return d}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const feedbackIngest=(event,targetTool)=>{
+  const ev={...event,senses:FB.stimuli(event)};
+  try{
+    const r=Agent.execute('feedback.ingest',{event:ev,targetTool:String(targetTool||event.action||'delegate')});
+    return r&&r.ok?r.value:{ok:false,error:(r&&r.error)||'feedback.ingest failed',event:ev};
+  }catch(e){return{ok:false,error:String(e&&e.message||e),event:ev}}
+};
+const feedbackTest=(name,passed,tier='training',failure=null,targetTool='delegate')=>
+  feedbackIngest(FB.fromTest(String(name||'test'),!!passed,{tier,action:String(targetTool||'delegate'),failure}),targetTool);
 let EXP=load(EXP_KEY,[]),LAST=load(LAST_KEY,{});
 const remember=(tool,ok,meta)=>{EXP.push({time:Date.now(),tool,ok:!!ok,meta:meta||{}});if(EXP.length>96)EXP=EXP.slice(-96);save(EXP_KEY,EXP)};
 const expStats=tool=>{const a=EXP.filter(x=>!tool||x.tool===tool),ok=a.filter(x=>x.ok).length;return{count:a.length,success:ok,failure:a.length-ok,rate:a.length?ok/a.length:null,last:a.slice(-6)}};
@@ -120,7 +129,12 @@ function generateImage(a,refine){
 
  if(!ranked.selected){
    const reasons=ranked.rejected.slice(0,6).map(c=>c.id+':'+[...(c.quality.hardIssues||[]),...(c.quality.issues||[])].join(',')).join(' / ');
-   remember(refine?'image.refine':'image.generate',false,{quality:ir.quality,candidates:all.length,generations:generationTrace.length,reasons});
+   const failQuality=ranked.rejected[0]?.quality||{pass:false,score:0,hardIssues:['no-passing-candidate'],issues:['candidate-exhausted'],metrics:{}};
+   const failEvent=FB.fromQuality({...failQuality,evolutionGain:(failQuality.score||0)-(generationTrace[0]?.bestScore||0)},{
+     action:refine?'image.refine':'image.generate',source:'image-quality',tier:FB.TIERS.TRAINING,previousScore:generationTrace[0]?.bestScore||0
+   });
+   const feedback=feedbackIngest(failEvent,'o2.generate');
+   remember(refine?'image.refine':'image.generate',false,{quality:ir.quality,candidates:all.length,generations:generationTrace.length,reasons,feedback});
    controlReward(ctrl,false);
    throw new Error('画像候補が品質基準を通過しませんでした。'+(reasons?' '+reasons:''));
  }
@@ -132,6 +146,10 @@ function generateImage(a,refine){
  if(!finalQuality.pass)throw new Error('最終画像が再検証で品質基準を下回りました。');
 
  const firstBest=generationTrace[0]?.bestScore||0;
+ const feedbackEvent=FB.fromQuality({...finalQuality,evolutionGain:finalQuality.score-firstBest},{
+   action:refine?'image.refine':'image.generate',source:'image-quality',tier:FB.TIERS.TRAINING,previousScore:firstBest
+ });
+ const feedback=feedbackIngest(feedbackEvent,'o2.generate');
  const validation={
    pass:true,score:finalQuality.score,issues:finalQuality.issues,hardIssues:finalQuality.hardIssues,
    metrics:finalQuality.metrics,objects:finalRun.value?.objects||0,scene:finalRun.value?.scene||null,
@@ -143,7 +161,7 @@ function generateImage(a,refine){
  const reward=controlReward(ctrl,true),out={
    ir,prompt:best.prompt,value:finalRun.value,validation,
    selection:{id:best.id,parentId:best.parentId||null,generation:best.generation||0,strategy:best.strategy,score:finalQuality.score},
-   candidates:candidatesPassed,rejected:candidatesRejected,control:ctrl,reward
+   candidates:candidatesPassed,rejected:candidatesRejected,control:ctrl,reward,feedback
  };
  setLast(a.threadCode,'image',out);
  remember(refine?'image.refine':'image.generate',true,{objects:validation.objects,quality:ir.quality,score:validation.score,candidates:validation.candidateCount,passed:validation.passedCount,generations:validation.generationCount,evolutionGain:validation.evolutionGain});
@@ -185,6 +203,8 @@ reg('document.create.markdown','DocumentIR -> structured Markdown draft -> valid
 reg('document.create.html','DocumentIR -> structured HTML draft -> validation export','document.write','native',a=>makeDoc('html',a));
 reg('document.create.text','DocumentIR -> structured text draft -> validation export','document.write','native',a=>makeDoc('text',a));
 reg('capability.experience.status','read bounded success failure experience for artifact tools','compute','none',a=>expStats(a&&a.tool));
+reg('feedback.test','ingest a training regression or holdout test result into the Fly feedback path','compute','local',a=>feedbackTest(a?.name,a?.passed,a?.tier||'training',a?.failure||null,a?.targetTool||'delegate'));
+reg('feedback.status','read learned feedback route bias and recent reward vectors','compute','none',()=>{try{const r=Agent.execute('feedback.status',{});return r&&r.ok?r.value:{error:r&&r.error}}catch(e){return{error:String(e&&e.message||e)}}});
 reg('capability.lexicon.status','read specialist vocabulary pack counts','compute','none',()=>V.lexiconStats());
 
 function summarize(tool,v){
