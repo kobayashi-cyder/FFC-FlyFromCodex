@@ -80,4 +80,14 @@ assert.ok(carBrokenEval.hardIssues.includes('category-structure:car:wheels'));
 assert.ok(Q.expand(personIr,8)[0].prompt.includes('no extra limbs'));
 assert.ok(Q.expand(carIr,8)[0].prompt.includes('aligned wheels'));
 
+const parentA={...cand('parent-a'),seed:'101',prompt:'猫',strategy:'faithful',detail:5,blur:1,atmosphere:1,mode:'photoish',quality:{score:94,pass:true}};
+const parentB={...cand('parent-b',420,340),seed:'202',prompt:'猫',strategy:'balanced',detail:5,blur:1,atmosphere:1,mode:'photoish',quality:{score:89,pass:true}};
+const evolved1=Q.evolve([parentA,parentB],ir,1,8);
+const evolved2=Q.evolve([parentA,parentB],ir,1,8);
+assert.equal(evolved1.length,8);
+assert.deepEqual(evolved1,evolved2);
+assert.ok(evolved1.every(x=>x.generation===1&&x.parentId));
+assert.equal(new Set(evolved1.map(x=>x.seed)).size,8);
+assert.ok(evolved1.some(x=>x.detail!==5||x.blur!==1||x.atmosphere!==1));
+
 console.log('image-quality-core: PASS');
