@@ -11,6 +11,10 @@ on:
       - ".github/scripts/banc888-voice-ci.sh"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
