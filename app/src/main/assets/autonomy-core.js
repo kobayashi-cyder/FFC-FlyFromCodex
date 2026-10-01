@@ -37,9 +37,9 @@ class Autonomy{
     episodes:Array.isArray(s.episodes)?clone(s.episodes.slice(-256)):[]
   };
   this.minSuccesses=Math.max(1,Number(opts.minSuccesses||2));
-  this.minReward=Number(opts.minReward==null?.05:opts.minReward);
-  this.minReliability=Number(opts.minReliability==null?.66:opts.minReliability);
-  this.matchThreshold=Number(opts.matchThreshold==null?.58:opts.matchThreshold);
+  this.minReward=Number(opts.minReward==null ? .05 : opts.minReward);
+  this.minReliability=Number(opts.minReliability==null ? .66 : opts.minReliability);
+  this.matchThreshold=Number(opts.matchThreshold==null ? .58 : opts.matchThreshold);
   this.maxSkills=Math.max(8,Number(opts.maxSkills||128));
  }
  syncTools(manifest=[]){
@@ -55,7 +55,7 @@ class Autonomy{
   if(outcome.learnable===false)return null;
   const n=String(name||'');if(!n)return null;
   const r=this.state.tools[n]||(this.state.tools[n]={name:n,attempts:0,successes:0,failures:0,rewardSum:0,lastReward:0,capability:'unknown',description:'',sideEffect:false,resource:null,executable:true});
-  const ok=!!outcome.ok,reward=clamp(outcome.reward==null?(ok?.2:-.5):outcome.reward);
+  const ok=!!outcome.ok,reward=clamp(outcome.reward==null?(ok ? .2 : -.5):outcome.reward);
   r.attempts=(+r.attempts||0)+1;r[ok?'successes':'failures']=(+r[ok?'successes':'failures']||0)+1;r.rewardSum=(+r.rewardSum||0)+reward;r.lastReward=reward;r.updatedAt=Date.now();
   if(outcome.quality&&typeof outcome.quality==='object')r.lastQuality=clone(outcome.quality);
   return r
@@ -70,7 +70,7 @@ class Autonomy{
  }
  recordEpisode(goal,steps,outcome={}){
   if(outcome.learnable===false||!Array.isArray(steps)||!steps.length)return null;
-  const success=!!outcome.success,reward=clamp(outcome.reward==null?(success?.2:-.5):outcome.reward),goalNorm=norm(goal),sig=tokens(goal),toolSeq=steps.map(s=>String(s.tool||''));
+  const success=!!outcome.success,reward=clamp(outcome.reward==null?(success ? .2 : -.5):outcome.reward),goalNorm=norm(goal),sig=tokens(goal),toolSeq=steps.map(s=>String(s.tool||''));
   const key=hash(goalNorm+'\n'+toolSeq.join('\n')),t=Date.now();
   const row=this.state.candidates[key]||(this.state.candidates[key]={
     id:key,goalPattern:goalNorm,signature:sig,steps:steps.map(s=>({tool:String(s.tool||''),args:templ(s.args||{},String(goal||'')),description:String(s.description||''),maxRetries:Number(s.maxRetries||s.max_retries||2),expectedEffect:String(s.expectedEffect||s.expected_effect||'')})),
