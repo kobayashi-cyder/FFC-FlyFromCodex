@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 75
-        versionName '7.0.5-conversation-ui'
+        versionCode 76
+        versionName '7.0.6-ranked-image-candidates'
     }
 
     buildTypes {
