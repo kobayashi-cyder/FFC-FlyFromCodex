@@ -38,7 +38,8 @@ const requiredLogs = [
   'BANC888_CONVERSATION_LOGS',
   'exportNDJSON',
   'copyJSON',
-  'quietAgentRun(prompt(x.t,x.q.text))',
+  'quietAgentRun(x.q.text)',
+  '{goal:text,context:context(t)}',
   "runtime:'v7.4-unified-autonomy'"
 ];
 for (const s of requiredLogs) assert(threads.includes(s), 'thread-router missing '+s);
