@@ -5,10 +5,12 @@ from fly_agent import (
     BodyArbiter,
     Capability,
     FlyMachineAgent,
+    FeedbackEncoder,
     GoalStatus,
     GraphConnectomeKernel,
     ResultStatus,
     Stimulus,
+    TestTier,
     ThreadRouter,
     ToolBus,
     ToolPolicy,
@@ -216,3 +218,63 @@ def test_connectome_projection_keeps_verified_roles_and_neighborhood():
     assert "far" not in ids
     assert next(node for node in graph["nodes"] if node["id"] == "s1")["channel"] == "danger"
     assert next(node for node in graph["nodes"] if node["id"] == "m1")["action"] == "evade"
+
+
+def test_feedback_encoder_quality_and_holdout_behavior():
+    encoder = FeedbackEncoder()
+    good = encoder.from_quality(
+        "delegate",
+        {
+            "pass": True,
+            "score": 88,
+            "evolutionGain": 12,
+            "hardIssues": [],
+            "metrics": {
+                "subjectCoverage": 1.0,
+                "composition": 0.9,
+                "categoryIntegrity": 1.0,
+                "render": 0.8,
+            },
+        },
+        tier=TestTier.TRAINING,
+    )
+    assert good.learnable is True
+    assert good.reward > 0
+
+    holdout = encoder.from_test("secret_eval", False, tier=TestTier.HOLDOUT)
+    assert holdout.learnable is False
+    assert holdout.learning_scale == 0.0
+
+
+def test_regression_feedback_is_weaker_but_learnable():
+    encoder = FeedbackEncoder()
+    event = encoder.from_test("router_regression", False, tier=TestTier.REGRESSION)
+    assert event.learnable is True
+    assert event.learning_scale == 0.35
+    assert event.vector.regression == 1.0
+
+
+def test_connectome_feedback_updates_only_active_causal_path():
+    graph = default_connectome()
+    graph.route([Stimulus("human_command", 1.0, 1.0)])
+    before = {(e.src, e.dst): e.weight for e in graph.edges}
+
+    encoder = FeedbackEncoder()
+    event = encoder.from_test("training_pass", True, tier=TestTier.TRAINING)
+    applied = graph.reinforce_feedback("delegate", event.vector, learning_scale=event.learning_scale)
+    after = {(e.src, e.dst): e.weight for e in graph.edges}
+
+    assert applied > 0
+    assert after[("s_command", "m_delegate")] != before[("s_command", "m_delegate")]
+    assert after[("i_escape", "m_evade")] == before[("i_escape", "m_evade")]
+    assert after[("s_danger", "m_delegate")] == before[("s_danger", "m_delegate")]
+
+
+def test_observer_records_structured_feedback_event(tmp_path):
+    agent = FlyMachineAgent(state_dir=tmp_path, output=lambda _: None)
+    agent.observer.record_test("training_pass", True, tier=TestTier.TRAINING)
+    rows = list(agent.memory.tail(4))
+    feedback = [row for row in rows if row.get("kind") == "feedback"]
+    assert feedback
+    assert feedback[-1]["data"]["tier"] == TestTier.TRAINING.value
+    assert feedback[-1]["data"]["learnable"] is True
