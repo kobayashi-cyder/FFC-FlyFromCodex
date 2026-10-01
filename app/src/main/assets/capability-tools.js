@@ -14,10 +14,10 @@ const autoSync=()=>{if(!AUTO)return null;const m=[...st.tools.values()].map(x=>(
 const autoReward=(ok,value,meta)=>{
  const v=value&&value.validation&&typeof value.validation==='object'?value.validation:(meta&&meta.validation&&typeof meta.validation==='object'?meta.validation:null);
  if(v){
-  if(v.pass===false)return -Math.max(.35,Math.min(1,((72-(+v.score||0))/72)+((v.hardIssues||[]).length?.35:0)));
+  if(v.pass===false)return -Math.max(.35,Math.min(1,((72-(+v.score||0))/72)+((v.hardIssues||[]).length ? .35 : 0)));
   if(v.score!=null)return Math.max(.1,Math.min(1,((+v.score||72)-60)/40));
  }
- return ok?.28:-.65;
+ return ok ? .28 : -.65;
 };
 const autoEpisode=(goal,steps,success,reward,source='capability')=>{if(!AUTO)return null;const p=AUTO.recordEpisode(String(goal||''),steps||[],{success:!!success,reward,learnable:true,source});autoSave();return p};
 const autoMatch=goal=>AUTO?AUTO.matchSkill(String(goal||''),name=>st.tools.has(name)&&st.capabilities.has(st.tools.get(name).capability)):null;
