@@ -34,7 +34,7 @@ final class ResearchClient {
     private String await(Callable<String> work) {
         Future<String> future = executor.submit(work);
         try {
-            return future.get(18, TimeUnit.SECONDS);
+            return future.get(7, TimeUnit.SECONDS);
         } catch (Exception e) {
             future.cancel(true);
             return errorJson(e.getMessage() == null ? e.toString() : e.getMessage());
@@ -108,8 +108,8 @@ final class ResearchClient {
             URL u = new URL(current);
             validateUrl(u);
             HttpURLConnection con = (HttpURLConnection) u.openConnection();
-            con.setConnectTimeout(8_000);
-            con.setReadTimeout(12_000);
+            con.setConnectTimeout(3_000);
+            con.setReadTimeout(5_000);
             con.setInstanceFollowRedirects(false);
             con.setRequestProperty("User-Agent", "BANC888-FlyResearch/2.0");
             con.setRequestProperty("Accept", "application/json");
