@@ -84,6 +84,11 @@ must(capabilityTools.includes('generationTrace'),'multi-generation image search 
 must(capabilityTools.includes('IQ.evolve'),'image search must breed higher-scoring candidates');
 must(index.includes("seed+'|layout'"),'O2 seed must affect scene composition');
 must(index.includes('renderSeed'),'O2 seed must affect texture generation');
+must(imageQuality.includes('layoutX'),'image evolution must search horizontal composition');
+must(imageQuality.includes('scaleBias'),'image evolution must search subject scale');
+must(capabilityTools.includes('layoutX:v.layoutX'),'evolved geometry genes must reach the renderer');
+must(index.includes('generationOptions'),'O2 must apply evolved generation options');
+must(index.includes('1024'),'O2 must support 1024-class output');
 must(index.includes('o2xEntityVisualMetrics'),'rendered entity-part measurement missing');
 must(index.includes('o2xRegionMetrics'),'rendered part pixel statistics missing');
 must(index.includes('explicitImage'),'image generation must require an explicit visual request');
