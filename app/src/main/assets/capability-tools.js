@@ -114,8 +114,9 @@ function generateImage(a,refine){
  const finalQuality=IQ.evaluate({...best,value:finalRun.value},ir);
  if(!finalQuality.pass)throw new Error('最終画像が再検証で品質基準を下回りました。');
  const validation={pass:true,score:finalQuality.score,issues:finalQuality.issues,hardIssues:finalQuality.hardIssues,metrics:finalQuality.metrics,objects:finalRun.value?.objects||0,scene:finalRun.value?.scene||null,candidateCount:candidates.length,passedCount:ranked.passed.length,rejectedCount:ranked.rejected.length};
- const compact=ranked.evaluated.map(c=>({id:c.id,strategy:c.strategy,score:c.quality.score,pass:c.quality.pass,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode}));
- const reward=controlReward(ctrl,true),out={ir,prompt:best.prompt,value:finalRun.value,validation,selection:{id:best.id,strategy:best.strategy,score:finalQuality.score},candidates:compact,control:ctrl,reward};
+ const candidatesPassed=ranked.passed.map(c=>({id:c.id,strategy:c.strategy,score:c.quality.score,pass:true,issues:c.quality.issues||[],seed:c.seed,mode:c.mode}));
+ const candidatesRejected=ranked.rejected.map(c=>({id:c.id,strategy:c.strategy,score:c.quality.score,pass:false,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode}));
+ const reward=controlReward(ctrl,true),out={ir,prompt:best.prompt,value:finalRun.value,validation,selection:{id:best.id,strategy:best.strategy,score:finalQuality.score},candidates:candidatesPassed,rejected:candidatesRejected,control:ctrl,reward};
  setLast(a.threadCode,'image',out);
  remember(refine?'image.refine':'image.generate',true,{objects:validation.objects,quality:ir.quality,score:validation.score,candidates:validation.candidateCount,passed:validation.passedCount});
  return out;
