@@ -10,7 +10,7 @@ for(const [name,expected] of Object.entries(manifest.files)){
   if(actual!==expected)throw new Error(name+' SHA-256 mismatch: '+actual+' != '+expected);
 }
 const expectedNames=[
-'index.html','native-bridge.js','webview-runtime.js','thread-router-core.js','capability-vocabulary-core.js','image-quality-core.js','research-physics-core.js','ir-patch-core.js','proxy-agent-core.js','capability-tools.js','research-physics-tools.js','proxy-agent.js','conversation-output-core.js','thread-router.js','dev-live.js'
+'index.html','native-bridge.js','webview-runtime.js','thread-router-core.js','capability-vocabulary-core.js','image-quality-core.js','feedback-core.js','research-physics-core.js','ir-patch-core.js','proxy-agent-core.js','capability-tools.js','research-physics-tools.js','proxy-agent.js','conversation-output-core.js','thread-router.js','dev-live.js'
 ].sort();
 const actualNames=Object.keys(manifest.files).sort();
 if(JSON.stringify(expectedNames)!==JSON.stringify(actualNames))throw new Error('live asset set mismatch');
