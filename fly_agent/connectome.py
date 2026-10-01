@@ -146,6 +146,22 @@ class GraphConnectomeKernel:
             self.reinforce(action, reward=reward, learning_rate=learning_rate)
         return reward
 
+    def weights_snapshot(self) -> dict[str, float]:
+        """Persist learned plasticity without changing the graph schema."""
+        return {f"{edge.src}->{edge.dst}": float(edge.weight) for edge in self.edges}
+
+    def restore_weights(self, data: dict[str, float] | None) -> None:
+        if not isinstance(data, dict):
+            return
+        for edge in self.edges:
+            key = f"{edge.src}->{edge.dst}"
+            if key not in data:
+                continue
+            try:
+                edge.weight = max(-4.0, min(4.0, float(data[key])))
+            except (TypeError, ValueError):
+                continue
+
 
 def default_connectome() -> GraphConnectomeKernel:
     data = {
