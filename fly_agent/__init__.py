@@ -1,3 +1,4 @@
+from .autonomy import LearnedSkill, LearnedSkillPlanner, SkillFabric
 from .body import BodyArbiter, BodyLease
 from .checkpoint import AtomicCheckpointStore
 from .connectome import GraphConnectomeKernel, default_connectome
@@ -26,6 +27,8 @@ __all__ = [
     "GoalStatus",
     "GraphConnectomeKernel",
     "Intent",
+    "LearnedSkill",
+    "LearnedSkillPlanner",
     "MachinePlannerAdapter",
     "MemoryFabric",
     "OutputMode",
@@ -33,6 +36,7 @@ __all__ = [
     "ResultStatus",
     "RewardVector",
     "RulePlanner",
+    "SkillFabric",
     "Stimulus",
     "TestTier",
     "ThreadRouter",
