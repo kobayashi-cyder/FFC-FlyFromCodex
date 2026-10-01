@@ -99,6 +99,23 @@ body.ui-compact #flyConversationCard .chatlog{height:260px}
 body.ui-compact #flyConversationCard .mmgrid{display:none}
 body.ui-compact #v50UnifiedBanner{display:none}
 @media(max-width:800px){.uiHub{top:62px}.uiHubTop{align-items:flex-start}.flyvoicegrid{grid-template-columns:1fr!important}.uiGroupHint{display:none}}
+@media(max-width:700px){
+  header{padding-top:max(34px,calc(10px + env(safe-area-inset-top)));padding-left:12px;padding-right:12px;padding-bottom:8px;position:relative}
+  header h1{font-size:21px!important;line-height:1.18;margin:0!important;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  header h1 .pill{font-size:11px;padding:3px 7px}
+  header>.muted{display:none}
+  main{padding:6px!important}
+  .uiHub{display:none}
+  body.ui-compact #flyAgentCard{padding:6px;border:0;box-shadow:none;background:transparent}
+  body.ui-compact #flyAgentCard>h2{display:none}
+  body.ui-compact #flyAgentCard>.flyvoicegrid,
+  body.ui-compact #flyAgentCard>.row,
+  body.ui-compact #flyAgentCard>.grid3{display:none!important}
+  body.ui-compact #flyAgentCard{margin-bottom:6px}
+  #ffcThreadHub{font-size:14px}
+  #ffcThreadLog{overscroll-behavior:contain}
+  #ffcOverviewDetails{font-size:12px;color:var(--muted)}
+}
 </style>
 
 </head>
@@ -2175,7 +2192,7 @@ function detectHumanLanguage(t){
 }
 const RESP={
  ja:{
-   greeting:["こんにちは。BANC回路、画像、音声、文書を同じ会話で扱えます。","はい。会話機能を復元しています。何から見ますか？"],
+   greeting:["こんにちは。聞いています。話したいことをそのままどうぞ。","はい、聞いています。続けてどうぞ。"],
    thanks:["どういたしまして。続けられます。"],
    bye:["またどうぞ。会話履歴はこのブラウザ内だけに保存されます。"],
    identity:["私はこの単一HTML内で動く888オフライン会話・BANC翻訳エンジンです。"],
@@ -2463,7 +2480,9 @@ function multimodalAnswer(text,lang){
   if(CHAT.multimodal.image)parts.push(imageSummary(CHAT.multimodal.image));
   if(CHAT.multimodal.audio)parts.push(audioSummary(CHAT.multimodal.audio));
   if(CHAT.multimodal.file)parts.push(fileSummary(CHAT.multimodal.file));
-  if($("#useBancContext")?.checked&&last)parts.push(summarizeFrame(last,text));
+  const bancTopic=CHAT.memory.lastTopic&&findEntityAcrossData(CHAT.memory.lastTopic);
+  const bancWanted=/banc|root_id|root id|synapse|シナプス|コネクトーム|connectome|dnp65|an27x017|mnad21|m_nsc_dilp|oxygen_sensory|aorta_sensory/i.test(String(text||""))||!!bancTopic;
+  if($("#useBancContext")?.checked&&last&&bancWanted)parts.push(summarizeFrame(last,text));
   if(!parts.length)return null;
   let pre="現在のマルチモーダル文脈を統合すると、";
   if(lang==="en")pre="Combining the current multimodal context: ";
@@ -5358,10 +5377,10 @@ class AgentMath {
 
 const AGENT={
   tools:new Map(),memory:new Map(),trace:[],last:null,running:false,stop:false,
-  capabilities:new Set(['compute','memory.read','memory.write','banc.read','cpf.read','micro.write','o2.write','o3.write','chat.compose','bridge.propose','f38.write','f42.write','f46.write','human.output','voice.input'])
+  capabilities:new Set(['compute','memory.read','memory.write','banc.read','cpf.read','research.read','micro.write','o2.write','o3.write','chat.compose','bridge.propose','f38.write','f42.write','f46.write','human.output','voice.input'])
 };
 const AGENT_ROUTE_ROLE=Object.freeze({
-  'banc.neighbors':'o1p1','cpf.inspect':'o1p1','memory.get':'o1p2','memory.put':'o1p3','compute.math':'o1p1',
+  'banc.neighbors':'o1p1','cpf.inspect':'o1p1','research.wiki':'o1p3','memory.get':'o1p2','memory.put':'o1p3','compute.math':'o1p1',
   'micro.compile':'o1p0','micro.step':'o1p2','micro.status':'o1p2','o2.generate':'o1p0','o3.generate':'o1p0',
   'chat.compose':'o1p3','bridge.propose':'o1p3','human.display':'o1p3','voice.speak':'o1p3','voice.status':'o1p3','f38.compile':'o1p0','f38.step':'o1p2','f38.status':'o1p2','f42.compile':'o1p0','f42.step':'o1p2','f42.status':'o1p2','f42.adapt':'o1p1','f42.rewire':'o1p1','f46.tune':'o1p0','f46.evolve':'o1p1','f46.replay':'o1p2','f46.status':'o1p2','system.manifest':'o1p3'
 });
@@ -5401,6 +5420,25 @@ function agentMathExpr(goal){
   const s=String(goal).replace(/[＝=]/g,'='),m=s.match(/(?:計算|calc(?:ulate)?|evaluate)[^0-9(+-]*([0-9piPIeE+\-*/%.(),\s]+)|([0-9.()]+\s*(?:\*\*|[+\-*/%])\s*[0-9.()+\-*/%\s]+)/i);return (m?.[1]||m?.[2]||'').trim().replace(/^=/,'').trim()
 }
 function agentFindGroup(goal){const q=String(goal),id=q.match(/\b\d{10,20}\b/);if(id)return id[0];const names=[...new Set(DATA.neurons.map(n=>n.display_name))].sort((a,b)=>b.length-a.length);return names.find(n=>q.toLowerCase().includes(n.toLowerCase()))||last?.focal_group||names[0]}
+function agentResearchQuery(goal){
+  let q=String(goal||'').normalize('NFKC').trim();
+  q=q.replace(/^(?:スレッド|THREAD)\s*[A-Z]+\s*[:：-]?\s*/i,'');
+  const lastTopic=String(CHAT?.memory?.lastTopic||'').trim();
+  if(lastTopic&&/^(?:それ|これ|あれ|その話|詳しく|もっと|メリット|デメリット|利点|欠点|仕組み|特徴|用途|なぜ|どうして|どれくらい)/.test(q))q=lastTopic+' '+q;
+  q=q.replace(/(?:について)?(?:教えてください|教えて|説明してください|説明して|知りたいです|知りたい|とは何ですか|とは何|って何ですか|って何)[。！？!?]*$/,'').trim();
+  if(q.length<2&&lastTopic)q=lastTopic;
+  return q.slice(0,140);
+}
+function agentWikiText(value){
+  const rows=Array.isArray(value?.results)?value.results:[];
+  const hit=rows.find(x=>String(x?.extract||'').trim())||rows[0];
+  if(!hit)return'';
+  const title=String(hit.title||value.query||'').trim();
+  let body=String(hit.extract||'').replace(/\s+/g,' ').trim();
+  if(body.length>760)body=body.slice(0,760).replace(/[、,]?[^。.!?！？]*$/,'')+'。';
+  if(!body)return title?title+'についての要約を取得できませんでした。':'';
+  return (title?title+'について。':'')+body;
+}
 function agentExternalAction(goal){const s=String(goal);if(/ネット|通信|upload|download|cloud|web|internet/i.test(s))return'network.request';if(/ファイル|file|保存|削除|コピー|移動/i.test(s))return'file.operation';if(/アプリ|app|起動|終了/i.test(s))return'app.operation';if(/OS|システム|設定|電源|device/i.test(s))return'system.operation';if(/画面|click|クリック|入力|スクロール/i.test(s))return'screen.operation';return'external.operation'}
 
 function agentBuildCandidates(goal,lastObs,used){
@@ -5429,6 +5467,10 @@ function agentBuildCandidates(goal,lastObs,used){
   if(/覚えて|記憶して|remember/i.test(s))agentAddCandidate(a,'memory.put',{key:'last_requested_memory',value:s},.81,ctrl,used);
   if(/覚えてる|記憶.*(?:見|教)|memory.*(?:get|show)|思い出/i.test(s))agentAddCandidate(a,'memory.get',{key:'last_requested_memory'},.84,ctrl,used);
   if(/マイク|microphone|音声.*権限|権限.*音声|耳.*(?:診断|状態)|voice.*(?:status|permission)/i.test(s))agentAddCandidate(a,'voice.status',{},.93,ctrl,used);
+  const generalIntent=classifyIntent(s),specialTopic=/banc|root_id|synapse|シナプス|コネクトーム|connectome|画像|image|写真|音声|audio|ファイル|document|csv|json|計算|calc|コード|code|動画|video/i.test(s);
+  if(window.AndroidResearch&&!specialTopic&&['question','why','how','unknown'].includes(generalIntent)){
+    const rq=agentResearchQuery(s);if(rq)agentAddCandidate(a,'research.wiki',{query:rq,limit:3},.95,ctrl,used);
+  }
   if(/ファイル|file|アプリ|app|ネット|internet|web|OS|システム|画面操作|クリック|スクロール|外部機器/i.test(s))agentAddCandidate(a,'bridge.propose',{action:agentExternalAction(s),goal:s},.88,ctrl,used);
   agentAddCandidate(a,'cpf.inspect',{goal:s},.31,ctrl,used);
   agentAddCandidate(a,'chat.compose',{goal:s,observation:lastObs},.52,ctrl,used);
@@ -5440,6 +5482,7 @@ function agentObservationText(tool,result,goal){
   const v=result.value;
   if(tool==='compute.math')return`計算結果: ${v}`;
   if(tool==='banc.neighbors'&&v?.frame)return desc(v.frame,detectHumanLanguage(goal));
+  if(tool==='research.wiki')return agentWikiText(v)||'一般知識の検索結果を取得できませんでした。';
   if(tool==='cpf.inspect')return`CPF観測: primitives=${agentCompact(v?.primitives||{},500)} / shortcut=${!!v?.shortcut}`;
   if(tool==='micro.compile')return`micro-opへ分解: ${v.totalOps?.toLocaleString?.()||v.totalOps} ops / ${v.shards} shards / N=${v.n}`;
   if(tool==='micro.step')return`micro-op実行: +${v.ran} ops / ${v.executed}/${v.total} / done=${v.done}${v.stats?' / '+agentCompact(v.stats,500):''}`;
@@ -5468,6 +5511,16 @@ function agentObservationText(tool,result,goal){
 agentRegister('compute.math','bounded arithmetic without eval','compute','none',a=>new AgentMath(a.expression).parse());
 agentRegister('memory.put','persistent local proxy memory','memory.write','local',a=>{if(!agentJsonSafe(a.value))throw new AgentInvalidRequest('non-JSON value');const k=String(a.key).slice(0,128);AGENT.memory.set(k,a.value);agentSaveMemory();return{key:k,stored:true}});
 agentRegister('memory.get','read proxy memory','memory.read','none',a=>AGENT.memory.has(String(a.key))?AGENT.memory.get(String(a.key)):null);
+agentRegister('research.wiki','retrieve concise general knowledge from Japanese Wikipedia through the native research bridge','research.read','none',a=>{
+  if(!window.AndroidResearch?.searchWikipedia)throw new AgentInvalidRequest('native research bridge unavailable');
+  const query=String(a.query||'').trim();if(!query)throw new AgentInvalidRequest('empty research query');
+  let raw=window.AndroidResearch.searchWikipedia(query,Math.max(1,Math.min(3,+a.limit||3))),j;
+  try{j=typeof raw==='string'?JSON.parse(raw):raw}catch(e){throw new AgentInvalidRequest('invalid research response')}
+  if(!j?.ok||!Array.isArray(j.results)||!j.results.length)throw new AgentInvalidRequest(j?.error||'no research results');
+  const first=j.results.find(x=>String(x?.extract||'').trim())||j.results[0];
+  if(first?.title){CHAT.memory.lastTopic=String(first.title);saveChat()}
+  return{query,provider:j.provider||'wikipedia',results:j.results.slice(0,3)};
+});
 agentRegister('banc.neighbors','query immutable O0 aggregate BANC view','banc.read','none',a=>{const hit=findDataAndGroup(String(a.query||agentFindGroup('')));if(!hit)throw new AgentInvalidRequest('BANC group/root not found');const res=traverse(hit.d,hit.g,Math.max(1,Math.min(3,+a.hops||1)),a.direction||'both',Math.max(1,+a.min||1)),frame=makeFrame(hit.d,hit.g,res);if(a.render!==false)render(frame);return{group:hit.g,frame}});
 agentRegister('cpf.inspect','propagate current goal through existing CPF control field','cpf.read','none',a=>{const f=cpfPropagate(String(a.goal||''),true);const tr=f?.trace||[];return{id:f?.id||null,shortcut:!!f?.shortcut,primitives:f?.primitives||{},tail:tr[tr.length-1]||{},provenance:f?.provenance||null}});
 agentRegister('micro.compile','compile large computation into existing scalar micro-op fabric','micro.write','local',a=>{microStop();MICRO.program=microCompileMatMul(String(a.goal||'agent compute'),Math.max(4,Math.min(64,+a.n||32)));MICRO.trace=[];MICRO.executed=0;MICRO.shardIndex=0;MICRO.pc=0;microUI();microDraw();return{n:MICRO.program.n,totalOps:MICRO.program.totalOps,shards:MICRO.program.shards.length,control:MICRO.program.control}});
@@ -5475,7 +5528,7 @@ agentRegister('micro.step','run one bounded slice of the existing micro-op fabri
 agentRegister('micro.status','read existing micro-op state','compute','none',()=>({compiled:!!MICRO.program,running:MICRO.running,executed:MICRO.executed,total:MICRO.program?.totalOps||0,shard:MICRO.shardIndex,pc:MICRO.pc,done:microDone(),stats:MICRO.program&&microDone()?microStats():null}));
 agentRegister('o2.generate','generate through preserved O2/O2 Photo+ runtime','o2.write','page',a=>{const prompt=String(a.prompt||'');let kind='O2';if(typeof o2xBuild==='function'&&$('#o2xPrompt')){$('#o2xPrompt').value=prompt;o2xBuild();kind='O2X'}else if(typeof o2pBuildScene==='function'&&$('#o2pPrompt')){$('#o2pPrompt').value=prompt;o2pBuildScene();kind='O2 Photo+'}else{if($('#o23Seed'))$('#o23Seed').value='agent|'+o23Hash(prompt);o23GenerateO2()}return{kind,objects:O23.scene?.objects?.length||0,scene:O23.scene?{width:O23.scene.width,height:O23.scene.height}:null}});
 agentRegister('o3.generate','generate O3 timeline from preserved O2 scene','o3.write','page',a=>{if(!O23.scene){const p=AGENT.tools.get('o2.generate');p.handler({prompt:a.prompt||''})}o23GenerateO3();return{tracks:O23.timeline?.tracks?.length||0,durationMs:O23.timeline?.durationMs||0,playing:false}});
-agentRegister('chat.compose','compose human-facing reply with preserved adaptive chat','chat.compose','local',a=>{const goal=String(a.goal||''),base=generateConversation(goal),obs=a.observation?agentObservationText(a.observation.tool,a.observation.result,goal):'';return{reply:base.reply+(obs?'\n\n【ハエのツール観測】\n'+obs:''),intent:base.intent,lang:base.lang}});
+agentRegister('chat.compose','compose human-facing reply with preserved adaptive chat','chat.compose','local',a=>{const goal=String(a.goal||''),base=generateConversation(goal),obs=a.observation?agentObservationText(a.observation.tool,a.observation.result,goal):'',ctx=String(a.context||'');if(ctx&&!CHAT.memory.lastTopic){const m=ctx.match(/人間:\s*([^\n]{2,60})/g);if(m?.length){const lastLine=m[m.length-1].replace(/^人間:\s*/,'');const t=topicFromText(lastLine);if(t){CHAT.memory.lastTopic=t;saveChat()}}}return{reply:base.reply+(obs?'\n\n'+obs:''),intent:base.intent,lang:base.lang}});
 agentRegister('bridge.propose','proposal for future OS/app/file/network body bridge','bridge.propose','external-proposal',a=>({proposal_only:true,execution:'NOT_PERFORMED',action:String(a.action||'external.operation'),goal:String(a.goal||''),reason:'APK/native bridge deferred; keep fly/tool contract stable'}));
 agentRegister('f38.compile','compile a fly-routed dependency-safe compute organism program','f38.write','local',a=>{f38Stop();const goal=String(a.goal||'agent compute'),mode=['text','code','image','audio','video'].includes(a.mode)?a.mode:'text',n=Math.max(8,Math.min(40,+a.n||16));F38.program=f38CompileProgram(goal,mode,n);F38.current=null;F38.pc=0;F38.regs=null;F38.executed=0;F38.trace=[];F38.done=new Set();F38.skipped=new Set();F38.error=null;f38MarkGated();f38Render(true);f38UI();return{n:F38.program.n,mode:F38.program.mode,totalOps:F38.program.totalOps,effectiveOps:F38.program.effectiveOps,shards:F38.program.shards.length,inputSource:F38.program.inputSource,control:F38.program.control}});
 agentRegister('f38.step','run one bounded dependency-safe F38 slice','f38.write','local',a=>{if(!F38.program)throw new AgentInvalidRequest('F38 program not compiled');f38Stop();const ran=f38RunSlice(Math.max(1,Math.min(65536,+a.maxOps||8192))),done=f38Complete();if(done)f38Render();return{ran,done,executed:F38.executed,total:F38.program.effectiveOps,error:F38.error,stats:done?f38Stats():null}});
@@ -5690,6 +5743,7 @@ function agentRun(goal,maxSteps=3,{oneStep=false,dryRun=false,logChat=true}={}){
     const built=agentBuildCandidates(goal,lastObs,used);allCandidates.push({step:i+1,control:built.control,candidates:built.candidates});const selected=agentSelect(built.candidates);if(!selected)break;
     const route=agentRoute(selected.tool);let result;try{result=agentExecute(selected.tool,selected.args,{dryRun})}catch(e){result={ok:false,status:e instanceof AgentCapabilityDenied?'BLOCKED':'INVALID',error:e.message||String(e),tool:selected.tool}}
     const step={index:i+1,tool:selected.tool,route:route?.id||null,activation:selected.activation,args:selected.args,result};steps.push(step);used.push(selected.tool);lastObs={tool:selected.tool,result};
+    if(selected.tool==='research.wiki'&&result.ok){finalText=agentObservationText(selected.tool,result,goal);break}
     if(selected.tool==='chat.compose'){finalText=result.ok?(result.value?.reply||agentObservationText(selected.tool,result,goal)):agentObservationText(selected.tool,result,goal);break}
     if(selected.tool==='bridge.propose'){finalText=agentObservationText(selected.tool,result,goal);break}
     if((selected.tool==='micro.step'||selected.tool==='f38.step'||selected.tool==='f42.step')&&result.value?.done&&i+1<limit)continue;
