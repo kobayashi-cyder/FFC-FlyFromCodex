@@ -41,35 +41,14 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm || true
 
-      - name: Configure virtual microphone
+      - name: Prepare injected speech fixture
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y pulseaudio pulseaudio-utils espeak-ng libasound2-plugins alsa-utils
-          pulseaudio --check || pulseaudio --start --exit-idle-time=-1
-          PULSE_SOCKET="$(pactl info | sed -n 's/^Server String: //p')"
-          test -n "$PULSE_SOCKET"
-          case "$PULSE_SOCKET" in
-            unix:*) PULSE_SERVER_VALUE="$PULSE_SOCKET" ;;
-            /*) PULSE_SERVER_VALUE="unix:$PULSE_SOCKET" ;;
-            *) PULSE_SERVER_VALUE="$PULSE_SOCKET" ;;
-          esac
-          echo "PULSE_SERVER=$PULSE_SERVER_VALUE" >> "$GITHUB_ENV"
-          echo "XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" >> "$GITHUB_ENV"
-          printf '%s\n' \
-            'pcm.!default {' \
-            '  type pulse' \
-            '}' \
-            'ctl.!default {' \
-            '  type pulse' \
-            '}' > "$HOME/.asoundrc"
-          echo "QEMU_AUDIO_DRV=pa" >> "$GITHUB_ENV"
-          pactl load-module module-null-sink sink_name=ci_mic_sink sink_properties=device.description=CI_Microphone
-          pactl set-default-source ci_mic_sink.monitor
+          sudo apt-get install -y espeak-ng sox
           espeak-ng -v ja -s 125 -a 180 -w /tmp/ci-mic-speech.wav "こんにちは。これは おんせい てすと です。"
-          test -s /tmp/ci-mic-speech.wav
-          pactl info
-          pactl list short sources
-          aplay -L | head -40
+          sox /tmp/ci-mic-speech.wav -r 16000 -c 1 -b 16 -e signed-integer -t raw /tmp/ci-mic-speech.raw
+          test -s /tmp/ci-mic-speech.raw
+          ls -l /tmp/ci-mic-speech.raw
 
       - name: Real linked Android/WebView + audio-path test
         uses: reactivecircus/android-emulator-runner@v2
@@ -79,5 +58,5 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -allow-host-audio
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
           script: bash .github/scripts/banc888-voice-ci.sh
