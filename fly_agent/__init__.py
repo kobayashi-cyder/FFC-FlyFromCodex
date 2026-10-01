@@ -2,6 +2,7 @@ from .body import BodyArbiter, BodyLease
 from .checkpoint import AtomicCheckpointStore
 from .connectome import GraphConnectomeKernel, default_connectome
 from .executive import ConnectomeExecutive, DecisionType
+from .feedback import FeedbackEncoder, FeedbackEvent, RewardVector, TestTier
 from .memory import MemoryFabric
 from .models import Goal, GoalStatus, Intent, OutputMode, ResultStatus, Stimulus, ToolResult
 from .planner import CompositePlanner, MachinePlannerAdapter, RulePlanner
@@ -19,6 +20,8 @@ __all__ = [
     "ConnectomeExecutive",
     "DecisionType",
     "FlyMachineAgent",
+    "FeedbackEncoder",
+    "FeedbackEvent",
     "Goal",
     "GoalStatus",
     "GraphConnectomeKernel",
@@ -28,8 +31,10 @@ __all__ = [
     "OutputMode",
     "RequirementContract",
     "ResultStatus",
+    "RewardVector",
     "RulePlanner",
     "Stimulus",
+    "TestTier",
     "ThreadRouter",
     "ToolBus",
     "ToolPolicy",
