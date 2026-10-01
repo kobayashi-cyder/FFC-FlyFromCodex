@@ -178,14 +178,14 @@ function generateCode(a,action){
  const recipeSupported=ir.language==='python'&&(ir.recipes||[]).some(x=>['csv','json','http'].includes(x))||['javascript','typescript'].includes(ir.language)&&(ir.recipes||[]).includes('http')||ir.language==='kotlin'&&(ir.recipes||[]).includes('microphone');
  const localCode=()=>recipeSupported?templateCode(ir,a.prompt):'// BANC888 generated scaffold: request implementation unavailable\n'+templateCode(ir,a.prompt);
  const {candidates,search}=adaptiveText({key,ir,field:'text',terms,validate:text=>validateCode(text,ir),
-  initial:()=>plainCode(compose('CodeIR='+JSON.stringify(ir)+'\nThreadContext='+context+'\nPreviousArtifact='+priorText+'\nRequest='+String(a.prompt||'')+'\nReturn only a complete '+ir.language+' implementation. No meta commentary.')),
+  initial:()=>a.modelDraft?plainCode(a.modelDraft):plainCode(compose('CodeIR='+JSON.stringify(ir)+'\nThreadContext='+context+'\nPreviousArtifact='+priorText+'\nRequest='+String(a.prompt||'')+'\nReturn only a complete '+ir.language+' implementation. No meta commentary.')),
   repair:(text,issues)=>plainCode(compose('Repair this '+ir.language+' candidate. Preserve the request and remove every listed defect.\nRequest='+String(a.prompt||'')+'\nIssues='+JSON.stringify(issues)+'\nCandidate:\n'+text.slice(0,9000)+'\nReturn code only.')),
   localRepair:(text,issues)=>issues.some(x=>x==='code-shape'||x==='implemented-request')?localCode():null,
   fallback:localCode});
  const review=reviewSelect('code.'+action,candidates,ctrl,{language:ir.language,quality:ir.quality,threadCode:a.threadCode,search}),best=review.best||{text:templateCode(ir,a.prompt),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0,scope:'unimplemented-scaffold'};
  if(review.accepted)cacheWrite(key,{text:best.text,strategy:best.strategy,scope:best.scope});
  const draft=best.text,validation=best.validation,reward=review.learning;let exported=null;if(ir.export&&review.accepted)exported=shareText(draft,ir.filename||('BANC888_code.'+codeExt(ir.language)),'text/plain');
- const out={action,ir,text:draft,validation,review,search,implementationScope:best.scope,control:ctrl,reward,exported};
+ const out={action,ir,language:ir.language,filename:ir.filename||('BANC888_code.'+codeExt(ir.language)),text:draft,validation,review,search,implementationScope:best.scope,control:ctrl,reward,exported};
  setLast(a.threadCode,'code',out);remember('code.'+action,review.accepted,{language:ir.language,issues:review.candidates.filter(x=>!x.pass).flatMap(x=>x.issues).slice(0,12),quality:ir.quality,score:review.best&&review.best.score,candidates:review.candidates.length});return out;
 }
 function imagePrompt(ir){
@@ -294,7 +294,7 @@ function makeDoc(format,a){
  const ir=a.ir||V.buildDocumentIR(a.prompt||''),prior=getLast(a.threadCode,'document'),priorBody=ir.action==='revise'?String(prior&&prior.body||'').slice(0,4000):'',source=String(a.context||'').trim().slice(-2200);
  const key=JSON.stringify(['document',ir,source,priorBody]),ctrl=QUALITY_CACHE.has(key)?null:controlPrepare(ir),terms=[...tokenize(ir.request),...(ir.sections||[])];
  const {candidates,search}=adaptiveText({key,ir,field:'body',terms,validate:body=>validateDoc(body,ir,source),
-  initial:()=>compose('DocumentIR='+JSON.stringify(ir)+'\nThreadContext='+source+'\nPreviousDraft='+priorBody+'\nCreate a Japanese document using # and ## headings and all required sections. Preserve supplied facts. Mark absent facts as requiring confirmation. No meta commentary.'),
+  initial:()=>a.modelDraft||compose('DocumentIR='+JSON.stringify(ir)+'\nThreadContext='+source+'\nPreviousDraft='+priorBody+'\nCreate a Japanese document using # and ## headings and all required sections. Preserve supplied facts. Mark absent facts as requiring confirmation. No meta commentary.'),
   repair:(body,issues)=>compose('Repair the following Japanese document. Fix only the listed defects, preserve supplied facts, and return the full document.\nDocumentIR='+JSON.stringify(ir)+'\nSource='+source+'\nIssues='+JSON.stringify(issues)+'\nDraft:\n'+body.slice(0,9000)),
   localRepair:(body,issues)=>{if(issues.some(x=>x==='minimum-length'||x==='required-sections'||x==='no-placeholder'))return docFallback(ir,source);if(issues.includes('source-preserved'))return body+'\n\n## 提供された記録（出典）\n'+source+'\n';return body},
   fallback:()=>docFallback(ir,source)});
@@ -386,6 +386,6 @@ function handle(text,ctx){
  remember(plan.tool,true,{reward,validation:r.value?.validation});autoEpisode(text,steps,true,reward,'specialist-vocabulary');const finalText=summarize(plan.tool,r.value);present(plan.tool,r.value,finalText);return{handled:true,plan,tool:plan.tool,value:r.value,finalText}
 }
 function ui(){const host=document.getElementById('ffcThreadHub')||document.getElementById('flyAgentCard');if(!host||document.getElementById('ffcCapabilityBar'))return;const x=document.createElement('div');x.id='ffcCapabilityBar';x.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;font-size:12px;opacity:.9';const n=V.lexiconStats();x.innerHTML='<span>🧰 Specialist Tools v2</span><span>CODE '+n.code+'</span><span>IMAGE '+n.image+'</span><span>VOICE '+n.voice+'</span><span>DOC '+n.document+'</span><span>IR→VERIFY→REPAIR</span>';host.insertBefore(x,host.firstChild)}
-window.FFC_CAPABILITIES={version:'2.1-autonomy-review',vocabulary:V,handle,classify:V.classify,experience:expStats,last:(thread,kind)=>getLast(thread,kind),autonomy:AUTO,autonomyStatus:()=>AUTO?AUTO.status():null,persistAutonomy:autoSave,syncAutonomy:autoSync,manifest:()=>[...st.tools.values()].map(({handler,...x})=>x)};
+window.FFC_CAPABILITIES={validateArtifact:(text,ir)=>ir.kind==='CodeIR'?validateCode(text,ir):validateDoc(text,ir),version:'2.1-autonomy-review',vocabulary:V,handle,classify:V.classify,experience:expStats,last:(thread,kind)=>getLast(thread,kind),autonomy:AUTO,autonomyStatus:()=>AUTO?AUTO.status():null,persistAutonomy:autoSave,syncAutonomy:autoSync,acceptWorker:(tool,thread,kind,value)=>{setLast(thread,kind,value);remember(tool,!!value?.validation?.pass,{validation:value?.validation});},manifest:()=>[...st.tools.values()].map(({handler,...x})=>x)};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ui,{once:true});else setTimeout(ui,0);
 })();

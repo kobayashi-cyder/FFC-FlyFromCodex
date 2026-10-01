@@ -26,7 +26,7 @@
   function fileResult(v){if(!v||typeof v!=='object')return null;const out=selectFields(v,['ok','jobId','status','frames','frameCount','fps','width','height','durationMs','name','bytes','shared','codec','mime','error','provider']);const uri=own(v,'fileUri')||own(v,'uri');if(typeof uri==='string'&&/^content:\/\/[^?\s]+$/.test(uri))out.fileUri=uri.slice(0,2000);const q=own(v,'quality');if(q){out.quality=selectFields(q,['kind','requests','retries','improved']);const scores=own(q,'scores');if(Array.isArray(scores))out.quality.scores=scores.slice(0,450).filter(x=>typeof x==='number'&&Number.isFinite(x));}return out}
   function projectOutput(v,tool){
     if(!v||typeof v!=='object')return null;
-    const out=selectFields(v,['format','title','language','scope','sourceStatus','prompt','durationMs','fps','width','height','tracks','trackCount']);
+    const out=selectFields(v,['format','title','language','filename','edited','scope','sourceStatus','prompt','durationMs','fps','width','height','tracks','trackCount']);
     for(const k of ['text','body','summary','reply']){const s=own(v,k);if(typeof s==='string'&&!/^data:|^blob:/i.test(s)){out[k]=s.slice(0,MAX_TEXT);if(s.length>MAX_TEXT)out.truncated=true}}
     const valid=validation(own(v,'validation')),rev=review(own(v,'review'));
     if(valid)out.validation=valid;if(rev)out.review=rev;

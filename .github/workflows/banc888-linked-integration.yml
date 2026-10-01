@@ -43,6 +43,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: Fly parallel workers
+            class: com.ffc.banc888.fly.FlyParallelIntegrationTest
+            fixture: false
+          - name: Local model API fixture
+            class: com.ffc.banc888.fly.LocalModelIntegrationTest
+            fixture: false
           - name: WebView bridge
             class: com.ffc.banc888.fly.BridgeIntegrationTest
             fixture: false

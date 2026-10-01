@@ -19,6 +19,11 @@ window.AndroidFiles={
  createDocx:(title,body,filename)=>window.__BancFiles?__BancFiles.createDocx(token,String(title||''),String(body||''),String(filename||'')):denied(),
  shareText:(text,filename,mime)=>window.__BancFiles?__BancFiles.shareText(token,String(text||''),String(filename||''),String(mime||'text/plain')):denied()
 };
+window.AndroidModel={
+ start:(endpoint,payload)=>window.__BancModel?__BancModel.start(token,String(endpoint),String(payload)):denied(),
+ poll:id=>window.__BancModel?__BancModel.poll(token,String(id)):denied(),
+ cancel:id=>window.__BancModel?__BancModel.cancel(token,String(id)):denied()
+};
 window.AndroidA1111={
  start:(endpoint,path,payload)=>window.__BancA1111?__BancA1111.start(token,String(endpoint),String(path),String(payload)):denied(),
  poll:id=>window.__BancA1111?__BancA1111.poll(token,String(id)):denied(),

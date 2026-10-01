@@ -19,10 +19,10 @@ const autonomy=read('app/src/main/assets/autonomy-core.js');
 const proxy=read('app/src/main/assets/proxy-agent.js');
 const manifest=JSON.parse(read('app/src/main/assets/live-manifest.json'));
 
-must(/SHELL_VERSION\s*=\s*73/.test(config),'shell version must be 73 for saved JSON exports');
+must(/SHELL_VERSION\s*=\s*74/.test(config),'shell version must be 74 for saved JSON exports');
 must(/WEB_RUNTIME_VERSION\s*=\s*7/.test(config),'web runtime version must remain 7');
-must(/BRIDGE_SCHEMA\s*=\s*7/.test(config),'bridge schema must be 7 for saved JSON exports');
-must(/ASSET_SCHEMA\s*=\s*8/.test(config),'asset schema must be 8 for chat exports');
+must(/BRIDGE_SCHEMA\s*=\s*8/.test(config),'bridge schema must be 8 for local model JSON exports');
+must(/ASSET_SCHEMA\s*=\s*9/.test(config),'asset schema must be 9 for parallel worker assets exports');
 must(config.includes('"webview-runtime.js"'),'runtime asset must be installed and live-updatable');
 
 must(shell.includes('addWebMessageListener'),'origin-scoped WebMessage bridge missing');
@@ -71,8 +71,8 @@ must(index.includes('agentResearchQuery'),'conversation research query normaliza
 must(index.includes('agentWikiText'),'human-readable research answer formatter missing');
 must(!index.includes('会話機能を復元しています。何から見ますか？'),'obsolete canned restoration reply must not return');
 must(index.includes('bancWanted'),'ordinary questions must not be hijacked by unrelated BANC context');
-must(threadRouter.includes("quietAgentRun(x.q.text)"),'thread router must send only the latest utterance to intent classification');
-must(threadRouter.includes("{goal:text,context:context(t)}"),'thread context must be separate from latest conversational goal');
+must(threadRouter.includes("proxy.executeAsync(request,ctx)"),'thread router must send only the latest utterance to intent classification');
+must(threadRouter.includes("{goal:visibleText(t,text),threadCode:code(t),context:context(t)}"),'thread context must be separate from latest conversational goal');
 must(!threadRouter.includes("quietAgentRun(prompt(x.t,x.q.text))"),'management-wrapped thread prompt must not reach conversational classifier');
 must(threadRouter.includes('ffcQuickListen'),'mobile conversation view must expose microphone action without scrolling');
 must(config.includes('"image-quality-core.js"'),'image quality core must be a managed runtime asset');
@@ -119,7 +119,7 @@ must(autonomy.includes('matchSkill'),'autonomous skill reuse missing');
 must(proxy.includes('learnedProposal'),'proxy must consult learned skills');
 must(proxy.includes('baseCandidateProposal'),'proxy must autonomize built-in tool routes');
 must(proxy.includes('feedbackEvent'),'proxy must feed outcomes back into learning');
-must(manifest.bridgeSchema===7&&manifest.assetSchema===8&&manifest.minShellVersion===73,'live manifest schema drift');
+must(manifest.bridgeSchema===8&&manifest.assetSchema===9&&manifest.minShellVersion===74,'live manifest schema drift');
 must(Object.hasOwn(manifest.files,'webview-runtime.js'),'live manifest missing webview-runtime.js');
 
 console.log('webview-runtime-contract: PASS');

@@ -92,14 +92,15 @@ function proposal(text,ctx){
  }
  const video=/動画|video|アニメ|映像/i.test(String(text))&&/生成|作って|作成|generate|create/i.test(String(text))&&!/コード|code|実装|python|javascript|kotlin/i.test(String(text));
  const reading=/要約|summari[sz]e|内容.*(?:理解|読)|本文.*(?:質問|答)/i.test(String(text))&&!/コード|code|画像|image|動画|video|docx|文書作成/i.test(String(text));
- const rp=RP?.classify?.(text),plan=reading?{handled:true,tool:'content.understand',domain:'content',confidence:.96}:video?{handled:true,tool:'o3.generate',domain:'video',confidence:.96}:rp?.handled?rp:V.classify(text);
+ const rp=RP?.classify?.(text),chat=!reading&&!video&&!rp?.handled&&!V.classify(text).handled&&!/(生成|作成|作って|書いて|実装|修正|改善|変換|要約|計算|足し算|引き算|検索|状態|一覧|診断|表示|読み上げ|音声入力|コンパイル|回路|connectome|banc|micro|f38|f42|f46|feedback|manifest|calculate|generate|create|compile|status|search|debug|refactor|\btest\b)/i.test(String(text)),plan=chat?{handled:true,tool:'chat.compose',domain:'chat',confidence:1}:reading?{handled:true,tool:'content.understand',domain:'content',confidence:.96}:video?{handled:true,tool:'o3.generate',domain:'video',confidence:.96}:rp?.handled?rp:V.classify(text);
+ if(chat)options.length=0;
  if(plan.handled){
   let ir=plan.ir,patch=null;
   if(shouldPatch(plan,text)){
    const k=artifactKind(plan.domain),last=k&&Caps.last?Caps.last(ctx.threadCode,k):null;
    if(last&&last.ir&&last.ir.kind===ir.kind){try{patch=P.infer(last.ir,text,V,scopeFromText(text));ir=patch.ir;if(ir.action!==undefined)ir.action=plan.action}catch(e){emit('ir-patch-error',String(e&&e.message||e),{tool:plan.tool})}}
   }
-  const step={tool:plan.tool,args:{ir,prompt:String(text||''),context:String(ctx.context||''),threadCode:ctx.threadCode||null},description:'specialist vocabulary route'};
+  const step={tool:plan.tool,args:{ir,goal:String(text||''),prompt:String(text||''),context:String(ctx.context||''),threadCode:ctx.threadCode||null},description:'specialist vocabulary route'};
   options.push({handled:true,plan,patch,proposal:{source:'specialist-vocabulary',confidence:plan.confidence,steps:[step]}});
  }else{
   const base=baseCandidateProposal(text,ctx);if(base)options.push(base);
@@ -173,11 +174,48 @@ function execute(text,ctx){
  const tool=last?.step?.tool||failed?.step?.tool||pp.plan?.tool,value=last?.r?.value;
  return{handled:true,status:goal.status,tool,plan:pp.plan,patch:pp.patch,value,error:failed?.error||null,steps:results,learnedSkill:pp.learnedSkill||null,finalText:finalText(tool,value,goal.status,pp.patch)};
 }
+async function executeAsync(text,ctx){
+ ctx=ctx||{};const pp=proposal(text,ctx);if(!pp.handled)return{handled:false,plan:pp.plan};
+ const goal={id:id(),text:String(text||''),threadId:ctx.threadCode||null,priority:+ctx.priority||50,status:C.Status.QUEUED,createdAt:now(),updatedAt:now(),attempts:0};
+ state.goals.push(goal);save();
+ const verdict=executive.evaluate(pp.proposal,spec);
+ if(!verdict.accepted){goal.status=C.Status.BLOCKED;goal.lastError=verdict.reason;goal.updatedAt=now();emit('blocked',verdict.reason,{goalId:goal.id,tool:pp.plan?.tool});return{handled:true,status:goal.status,tool:pp.plan?.tool,plan:pp.plan,patch:pp.patch,finalText:'代理人が '+verdict.reason+' のため実行をブロックしました。'}}
+ goal.status=C.Status.RUNNING;goal.attempts++;goal.updatedAt=now();state.lastThread=ctx.threadCode||'__system__';save();
+ const results=[],rewards=[];let failed=null,last=null;
+ for(let i=0;i<pp.proposal.steps.length;i++){
+  const step=pp.proposal.steps[i],resource=(window.FFCFlyParallel?.supported(step.tool)||step.tool==='chat.compose')?'compute:'+String(ctx.threadCode||'__system__'):C.resourceForTool(step.tool),owner=ctx.threadCode||'__system__',lease=arbiter.acquire(resource,owner);
+  if(!lease){failed={step,error:'resource busy: '+resource,status:C.Status.WAITING};break}
+  const selected=selectThroughConnectome([{tool:step.tool,excitation:1,confidence:pp.proposal.confidence??1}],ctx,true);
+  if(!selected){arbiter.release(lease);failed={step,error:state.connectomeError||'no active connectome output',status:C.Status.BLOCKED};break}
+  const args={...(step.args||{})};
+  if(ctx.threadCode!=null)args.threadCode=ctx.threadCode;
+  if(ctx.context!=null&&args.context==null)args.context=String(ctx.context||'');
+  let r;
+  try{r=await (window.FFCFlyParallel?FFCFlyParallel.execute(step.tool,args):Agent.execute(step.tool,args))}
+  catch(e){r={ok:false,error:String(e&&e.message||e)}}
+  finally{try{arbiter.release(lease)}catch(e){}}
+  const ev=feedbackEvent(step.tool,r,ctx),reward=ev?ev.reward*ev.learningScale:(r&&r.ok ? .2 : -.6);
+  rewards.push(Number(reward)||0);results.push({tool:step.tool,result:r,reward,connectome:selected.connectome});last={step,r};
+  if(!r||!r.ok){failed={step,r,error:(r&&r.error)||'tool failed',status:C.Status.FAILED};break}
+  const val=r.value&&r.value.validation;
+  if(val&&val.pass===false){failed={step,r,error:'artifact validation failed',status:C.Status.FAILED};break}
+ }
+ const avg=rewards.length?rewards.reduce((a,b)=>a+b,0)/rewards.length:(failed?-.6:.2);
+ if(Caps.autonomy&&Caps.autonomy.recordEpisode){
+  try{const promoted=Caps.autonomy.recordEpisode(text,pp.proposal.steps,{success:!failed,reward:avg,learnable:true,source:pp.proposal.source,skillId:pp.learnedSkill||null});if(promoted)emit('skill-acquired','acquired '+promoted.id,{goalId:goal.id,skill:promoted});if(Caps.persistAutonomy)Caps.persistAutonomy()}catch(e){emit('autonomy-record-error',String(e&&e.message||e))}
+ }
+ if(failed){
+  goal.status=failed.status||C.Status.FAILED;goal.lastError=failed.error;emit(goal.status===C.Status.WAITING?'waiting':'observation',failed.error,{goalId:goal.id,tool:failed.step?.tool});
+ }else{goal.status=C.Status.DONE;goal.lastError=null;emit('observation','success',{goalId:goal.id,steps:results.map(x=>x.tool)})}
+ goal.updatedAt=now();state.goals=trimGoals(state.goals);save();
+ const tool=last?.step?.tool||failed?.step?.tool||pp.plan?.tool,value=last?.r?.value;
+ return{handled:true,status:goal.status,tool,plan:pp.plan,patch:pp.patch,value,error:failed?.error||null,steps:results,learnedSkill:pp.learnedSkill||null,finalText:finalText(tool,value,goal.status,pp.patch)};
+}
 function retry(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||![C.Status.BLOCKED,C.Status.FAILED,C.Status.WAITING].includes(g.status))return false;g.status=C.Status.QUEUED;g.lastError=null;g.updatedAt=now();save();return true}
 function cancel(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||[C.Status.DONE,C.Status.CANCELLED].includes(g.status))return false;g.status=C.Status.CANCELLED;g.updatedAt=now();save();return true}
 function status(){return{schema:state.schema,connectome:connectome?connectome.snapshot():null,connectomeError:state.connectomeError||null,connectomeRuntime:connectome?connectome.stats():null,recovered:!!state.recovered,goals:state.goals.slice(-80),events:state.events.slice(-40),body:arbiter.snapshot(),allowed:[...policy.allowed],autonomy:Caps.autonomyStatus?Caps.autonomyStatus():null}}
 function patchIr(ir,ops,scope){return P.apply(ir,ops,scope)}
-window.FFC_PROXY_AGENT={version:'2.1-autonomy',execute,proposal,status,retry,cancel,patchIr,policy,body:arbiter,executive};
+window.FFC_PROXY_AGENT={version:'2.1-autonomy',execute,executeAsync,proposal,status,retry,cancel,patchIr,policy,body:arbiter,executive};
 setTimeout(()=>{const b=document.getElementById('ffcCapabilityBar');if(b&&!document.getElementById('ffcProxyBadge')){const x=document.createElement('span');x.id='ffcProxyBadge';x.textContent='🪰 PROXY EXEC + IR PATCH';b.appendChild(x)}},200);
 if(state.recovered)emit('recovery','checkpoint restored from backup');
 })();

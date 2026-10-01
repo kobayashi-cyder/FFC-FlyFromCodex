@@ -25,6 +25,7 @@ final class BridgeRegistry {
     private final DocumentExporter documents;
     private final VideoExporter videos;
     private final A1111Client a1111;
+    private final LocalModelClient localModel;
     private final ResearchClient research;
     private final DevLiveManager devLive;
     private final Runnable reload;
@@ -39,6 +40,7 @@ final class BridgeRegistry {
             DocumentExporter documents,
             VideoExporter videos,
             A1111Client a1111,
+            LocalModelClient localModel,
             ResearchClient research,
             DevLiveManager devLive,
             Runnable reload
@@ -52,6 +54,7 @@ final class BridgeRegistry {
         this.documents = documents;
         this.videos = videos;
         this.a1111 = a1111;
+        this.localModel = localModel;
         this.research = research;
         this.devLive = devLive;
         this.reload = reload;
@@ -60,6 +63,7 @@ final class BridgeRegistry {
     void install() {
         webView.addJavascriptInterface(new VoiceBridge(), "__BancVoice");
         webView.addJavascriptInterface(new FilesBridge(), "__BancFiles");
+        webView.addJavascriptInterface(new ModelBridge(), "__BancModel");
         webView.addJavascriptInterface(new A1111Bridge(), "__BancA1111");
         webView.addJavascriptInterface(new VideoBridge(), "__BancVideo");
         webView.addJavascriptInterface(new ResearchBridge(), "__BancResearch");
@@ -73,6 +77,7 @@ final class BridgeRegistry {
         webView.removeJavascriptInterface("__BancResearch");
         webView.removeJavascriptInterface("__BancVideo");
         webView.removeJavascriptInterface("__BancA1111");
+        webView.removeJavascriptInterface("__BancModel");
         webView.removeJavascriptInterface("__BancDev");
         webView.removeJavascriptInterface("__BancDiagnostics");
     }
@@ -141,6 +146,12 @@ final class BridgeRegistry {
         @JavascriptInterface public String shareText(String token, String text, String filename, String mime) {
             return allow(token) ? documents.shareText(text, filename, mime) : denied();
         }
+    }
+
+    public final class ModelBridge {
+        @JavascriptInterface public String start(String token,String endpoint,String payload){return allow(token)?localModel.start(endpoint,payload):denied();}
+        @JavascriptInterface public String poll(String token,String id){return allow(token)?localModel.poll(id):denied();}
+        @JavascriptInterface public String cancel(String token,String id){return allow(token)?localModel.cancel(id):denied();}
     }
 
     public final class A1111Bridge {

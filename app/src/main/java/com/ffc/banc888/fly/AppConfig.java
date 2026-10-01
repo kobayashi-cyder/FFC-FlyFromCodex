@@ -12,10 +12,10 @@ final class AppConfig {
     static final String APP_HOST = "appassets.androidplatform.net";
     static final String DEV_REF = "banc888-apk-connectome-mobile-v1";
     static final String REPO = "kobayashi-cyder/FFC-FlyFromCodex";
-    static final int SHELL_VERSION = 73;
+    static final int SHELL_VERSION = 74;
     static final int WEB_RUNTIME_VERSION = 7;
-    static final int BRIDGE_SCHEMA = 7;
-    static final int ASSET_SCHEMA = 8;
+    static final int BRIDGE_SCHEMA = 8;
+    static final int ASSET_SCHEMA = 9;
 
     static final String[] RUNTIME_SCRIPTS = new String[]{
             "native-bridge.js",
@@ -33,11 +33,17 @@ final class AppConfig {
             "video-export.js",
             "a1111-video.js",
             "research-physics-tools.js",
+            "fly-parallel-core.js",
+            "local-model.js",
+            "fly-parallel.js",
             "proxy-agent.js",
             "conversation-output-core.js",
             "thread-router.js",
             "conversation-export.js",
-            "dev-live.js"
+            "dev-live.js",
+            "execution-controls.js",
+            "settings-organizer.js",
+            "artifact-workspace.js"
     };
 
     static final String[] LIVE_ASSETS = new String[]{
@@ -57,11 +63,18 @@ final class AppConfig {
             "video-export.js",
             "a1111-video.js",
             "research-physics-tools.js",
+            "fly-parallel-core.js",
+            "local-model.js",
+            "fly-parallel.js",
             "proxy-agent.js",
             "conversation-output-core.js",
             "thread-router.js",
             "conversation-export.js",
-            "dev-live.js"
+            "dev-live.js",
+            "execution-controls.js",
+            "settings-organizer.js",
+            "artifact-workspace.js",
+            "fly-task-worker.js"
     };
 
     static final Set<String> LIVE_ASSET_SET =

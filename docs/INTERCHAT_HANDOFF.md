@@ -77,3 +77,11 @@ GitHub Actions で以下を検証する:
 - 発言・生成物・一致するMP4 jobのJSON保存と明示的共有。詳細は `CHAT_JSON.md`。
 - 会話表示の生成物はHTMLとして実行しない。プレビューは8枚だけ一時保持し、JSONへ画素やネイティブ認証情報を複製しない。
 - shell72/bridge6/asset7、APK v7.7。旧v7.6のAndroid MP4復号・画像・回路・WebView検査は成功。PCM音声認識検査は失敗しており、動画検証と区別する。
+
+
+## v7.9 会話・資料・開発と並列化
+- shell74/bridge8/asset9、versionCode86。最大256会話、初期2/最大4 Worker。FIFOと動画専有、背景完了による強制会話切替を廃止。
+- 歯車は設定のみ。旧表示説明を内部DOMから削除し、必要な入力・Canvasの実装用DOMをhidden/inertで保持。生成・保存・編集は会話の結果で操作。
+- 通常会話の誤ツール選択、名前が一般語彙学習へ流れる問題、共有CHAT記憶を修正。
+- 任意のローカルOpenAI互換モデルAPIは認証なしLAN/localhost向け。モデルと推論ランタイムはAPKに同梱していない。接続先未指定のため本物のモデル品質は未検証。
+- 検証範囲と手順は docs/FLY_PARALLEL_WORKSPACE.md。

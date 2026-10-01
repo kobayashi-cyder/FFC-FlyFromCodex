@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 85
-        versionName '7.8.0-offline-a1111'
+        versionCode 86
+        versionName '7.9.0-fly-parallel'
     }
 
     buildTypes {
