@@ -48,6 +48,9 @@ jobs:
           - name: Voice UI routing
             class: com.ffc.banc888.fly.VoiceUiIntegrationTest
             fixture: false
+          - name: Image candidate ranking
+            class: com.ffc.banc888.fly.ImageQualityIntegrationTest
+            fixture: false
           - name: Conversation knowledge
             class: com.ffc.banc888.fly.ConversationKnowledgeIntegrationTest
             fixture: false
