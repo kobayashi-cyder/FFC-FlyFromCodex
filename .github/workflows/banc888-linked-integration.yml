@@ -1,4 +1,4 @@
-name: BANC888 Linked Emulator Test
+name: BANC888 Parallel Integration Tests
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - "banc888-apk-*"
     paths:
       - "app/**"
+      - "tests/**"
       - ".github/workflows/banc888-linked-integration.yml"
       - ".github/scripts/banc888-voice-ci.sh"
   workflow_dispatch:
@@ -14,9 +15,40 @@ permissions:
   contents: read
 
 jobs:
-  linked-emulator:
+  contract:
+    name: Test • Contract
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Web/runtime contract
+        run: node tests/webview_runtime_contract.test.cjs
+
+  android:
+    name: Test • ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: WebView bridge
+            class: com.ffc.banc888.fly.BridgeIntegrationTest
+            fixture: false
+          - name: Microphone API
+            class: com.ffc.banc888.fly.MicrophoneIntegrationTest
+            fixture: false
+          - name: SpeechRecognizer PCM
+            class: com.ffc.banc888.fly.SpeechRecognizerIntegrationTest
+            fixture: true
+          - name: TTS
+            class: com.ffc.banc888.fly.TtsIntegrationTest
+            fixture: false
+          - name: Voice UI routing
+            class: com.ffc.banc888.fly.VoiceUiIntegrationTest
+            fixture: false
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,16 +74,19 @@ jobs:
           sudo udevadm trigger --name-match=kvm || true
 
       - name: Prepare injected speech fixture
+        if: matrix.fixture
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y espeak-ng sox
           espeak-ng -v en-us -s 130 -a 180 -w /tmp/ci-mic-speech.wav "hello this is a speech recognition test"
           sox /tmp/ci-mic-speech.wav -r 16000 -c 1 -b 16 -e signed-integer -t raw /tmp/ci-mic-speech.raw
           test -s /tmp/ci-mic-speech.raw
-          ls -l /tmp/ci-mic-speech.raw
 
-      - name: Real linked Android/WebView + audio-path test
+      - name: Run ${{ matrix.name }}
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          TEST_NAME: ${{ matrix.name }}
+          TEST_CLASS: ${{ matrix.class }}
         with:
           api-level: 34
           target: google_apis
