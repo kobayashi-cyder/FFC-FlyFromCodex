@@ -98,9 +98,9 @@ function generateImage(a,refine){
  function renderVariant(v){
    const fullPrompt=[base,v.prompt].filter(Boolean).join(' | ');
    let r;
-   try{r=Agent.execute('o2.generate',{prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere})}
+   try{r=Agent.execute('o2.generate',{prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere,layoutX:v.layoutX,layoutY:v.layoutY,scaleBias:v.scaleBias})}
    catch(e){r={ok:false,error:String(e&&e.message||e)}}
-   return{id:v.id,parentId:v.parentId||null,generation:+v.generation||0,strategy:v.strategy,prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere,value:r&&r.ok?r.value:null,error:r&&r.ok?null:(r&&r.error)||'generation-failed'};
+   return{id:v.id,parentId:v.parentId||null,generation:+v.generation||0,strategy:v.strategy,prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere,layoutX:+v.layoutX||0,layoutY:+v.layoutY||0,scaleBias:+v.scaleBias||1,value:r&&r.ok?r.value:null,error:r&&r.ok?null:(r&&r.error)||'generation-failed'};
  }
  function renderBatch(list){for(const v of list)all.push(renderVariant(v))}
  function rerank(){return IQ.rank(all,ir)}
@@ -126,7 +126,7 @@ function generateImage(a,refine){
  }
 
  const best=ranked.selected;
- const finalRun=Agent.execute('o2.generate',{prompt:best.prompt,seed:best.seed,mode:best.mode,detail:best.detail,blur:best.blur,atmosphere:best.atmosphere});
+ const finalRun=Agent.execute('o2.generate',{prompt:best.prompt,seed:best.seed,mode:best.mode,detail:best.detail,blur:best.blur,atmosphere:best.atmosphere,layoutX:best.layoutX,layoutY:best.layoutY,scaleBias:best.scaleBias});
  if(!finalRun||!finalRun.ok)throw new Error((finalRun&&finalRun.error)||'selected image render failed');
  const finalQuality=IQ.evaluate({...best,value:finalRun.value},ir);
  if(!finalQuality.pass)throw new Error('最終画像が再検証で品質基準を下回りました。');
@@ -138,8 +138,8 @@ function generateImage(a,refine){
    candidateCount:all.length,passedCount:ranked.passed.length,rejectedCount:ranked.rejected.length,
    generationCount:generationTrace.length,evolutionGain:finalQuality.score-firstBest,generationTrace
  };
- const candidatesPassed=ranked.passed.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:true,issues:c.quality.issues||[],seed:c.seed,mode:c.mode}));
- const candidatesRejected=ranked.rejected.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:false,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode}));
+ const candidatesPassed=ranked.passed.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:true,issues:c.quality.issues||[],seed:c.seed,mode:c.mode,layoutX:c.layoutX,layoutY:c.layoutY,scaleBias:c.scaleBias}));
+ const candidatesRejected=ranked.rejected.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:false,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode,layoutX:c.layoutX,layoutY:c.layoutY,scaleBias:c.scaleBias}));
  const reward=controlReward(ctrl,true),out={
    ir,prompt:best.prompt,value:finalRun.value,validation,
    selection:{id:best.id,parentId:best.parentId||null,generation:best.generation||0,strategy:best.strategy,score:finalQuality.score},
