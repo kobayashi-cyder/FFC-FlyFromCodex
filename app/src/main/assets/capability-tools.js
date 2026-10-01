@@ -67,7 +67,7 @@ function tokenize(s){return [...new Set(String(s||'').toLowerCase().replace(/[^\
 function coverage(text,terms){const s=String(text||'').toLowerCase(),t=(terms||[]).filter(Boolean);if(!t.length)return 1;let hit=0;for(const x of t)if(s.includes(String(x).toLowerCase()))hit++;return hit/t.length}
 function issuePenalty(issues){return Math.min(.72,(issues||[]).length*.16)}
 function baseScore(validation,content,terms){const ok=validation&&validation.pass?1:0,len=Math.min(1,String(content||'').length/900),cov=coverage(content,terms);return clamp01(.44*ok+.28*cov+.18*len+.10*(1-issuePenalty(validation&&validation.issues)))}
-function diagnose(validation,extra=[]){return [...new Set([...(validation&&validation.issues||[]),...(extra||[])].filter(Boolean))}
+function diagnose(validation,extra=[]){return [...new Set([...(validation&&validation.issues||[]),...(extra||[])].filter(Boolean))]}
 function connectomeLearn(ctrl,accepted,score,issues,domain){
  const events=[];
  if(ctrl&&ctrl.ok&&ctrl.done){

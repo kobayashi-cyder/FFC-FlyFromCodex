@@ -14,9 +14,16 @@ function load(){
  s=s||blank();s.goals=C.recoverGoals(Array.isArray(s.goals)?s.goals:[]);s.events=Array.isArray(s.events)?s.events.slice(-240):[];return s
 }
 let state=load();
+let connectome=null;
+try{connectome=new C.ConnectomeSelector(Agent.connectome);connectome.restore(state.connectome);Agent.state.connectomeSelector=connectome}catch(e){state.connectomeError=String(e.message||e)}
+function selectThroughConnectome(rows){
+ if(!connectome)return null;
+ const allowed=rows.filter(x=>{const s=spec(x.tool);return !!(s&&policy.allows(s.capability))});
+ return connectome.select(allowed);
+}
 function save(){
  try{
-  const payload=JSON.stringify({...state,events:state.events.slice(-240)});
+  const payload=JSON.stringify({...state,connectome:connectome?connectome.snapshot():null,events:state.events.slice(-240)});
   localStorage.setItem(TMP,payload);JSON.parse(localStorage.getItem(TMP));
   const old=localStorage.getItem(KEY);if(old){try{JSON.parse(old);localStorage.setItem(BAK,old)}catch(e){}}
   localStorage.setItem(KEY,localStorage.getItem(TMP));localStorage.removeItem(TMP);
@@ -33,6 +40,7 @@ function feedbackEvent(tool,r){
  else ev=FB.fromTest('tool:'+tool,!!(r&&r.ok),{tier:'training',action:tool,failure:r&&r.error||null});
  try{Agent.execute('feedback.ingest',{event:{...ev,senses:FB.stimuli(ev)},targetTool:tool})}catch(e){}
  try{if(Caps.autonomy)Caps.autonomy.observeTool(tool,{ok:!!(r&&r.ok),reward:ev.reward*ev.learningScale,quality:val||null,learnable:ev.learnable});if(Caps.persistAutonomy)Caps.persistAutonomy()}catch(e){}
+ if(connectome)connectome.reinforce(tool,ev.reward*ev.learningScale,{learnable:ev.learnable,tier:ev.tier});
  return ev
 }
 function learnedProposal(text){
@@ -54,10 +62,8 @@ function baseCandidateProposal(text){
   if(/(?:tool|ツール|機能).*(?:manifest|一覧|リスト)|できること一覧/i.test(q))extra('system.manifest',{},1.01);
   if(/(?:画面|display).*(?:表示|出して|show)/i.test(q))extra('human.display',{text:q},.97);
   if(auto&&auto.enrichCandidates)rows=auto.enrichCandidates(rows);
-  rows=rows.filter(x=>{const s=spec(x.tool);return !!(s&&policy.allows(s.capability))}).map(x=>({...x,activation:(+x.excitation||0)-(+x.inhibition||0)}));
-  rows.sort((a,b)=>b.activation-a.activation||(b.confidence||0)-(a.confidence||0));
-  const pick=rows[0];if(!pick||pick.activation<.05)return null;
-  return{handled:true,plan:{handled:true,tool:pick.tool,source:'fly-candidate-router',confidence:pick.confidence||.7},patch:null,proposal:{source:'fly-candidate-router',confidence:pick.confidence||.7,steps:[{tool:pick.tool,args:pick.args||{},description:'autonomous candidate selection'}]}}
+  const pick=selectThroughConnectome(rows);if(!pick)return null;
+  return{handled:true,plan:{handled:true,tool:pick.tool,source:'fly-candidate-router',confidence:pick.confidence||.7,connectome:pick.connectome},patch:null,proposal:{source:'fly-candidate-router',confidence:pick.confidence||.7,steps:[{tool:pick.tool,args:pick.args||{},description:'autonomous candidate selection'}]}}
  }catch(e){emit('candidate-router-error',String(e&&e.message||e));return null}
 }
 function artifactKind(domain){return domain==='code'?'code':domain==='image'?'image':domain==='document'?'document':domain==='voice'?'voice':null}
@@ -109,6 +115,8 @@ function execute(text,ctx){
  for(let i=0;i<pp.proposal.steps.length;i++){
   const step=pp.proposal.steps[i],resource=C.resourceForTool(step.tool),owner=ctx.threadCode||'__system__',lease=arbiter.acquire(resource,owner);
   if(!lease){failed={step,error:'resource busy: '+resource,status:C.Status.WAITING};break}
+  const selected=selectThroughConnectome([{tool:step.tool,excitation:1,confidence:pp.proposal.confidence??1}]);
+  if(!selected){arbiter.release(lease);failed={step,error:state.connectomeError||'no active connectome output',status:C.Status.BLOCKED};break}
   const args={...(step.args||{})};
   if(ctx.threadCode!=null)args.threadCode=ctx.threadCode;
   if(ctx.context!=null&&args.context==null)args.context=String(ctx.context||'');
@@ -117,7 +125,7 @@ function execute(text,ctx){
   catch(e){r={ok:false,error:String(e&&e.message||e)}}
   finally{try{arbiter.release(lease)}catch(e){}}
   const ev=feedbackEvent(step.tool,r),reward=ev?ev.reward*ev.learningScale:(r&&r.ok ? .2 : -.6);
-  rewards.push(Number(reward)||0);results.push({tool:step.tool,result:r,reward});last={step,r};
+  rewards.push(Number(reward)||0);results.push({tool:step.tool,result:r,reward,connectome:selected.connectome});last={step,r};
   if(!r||!r.ok){failed={step,r,error:(r&&r.error)||'tool failed',status:C.Status.FAILED};break}
   const val=r.value&&r.value.validation;
   if(val&&val.pass===false){failed={step,r,error:'artifact validation failed',status:C.Status.FAILED};break}
@@ -135,7 +143,7 @@ function execute(text,ctx){
 }
 function retry(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||![C.Status.BLOCKED,C.Status.FAILED,C.Status.WAITING].includes(g.status))return false;g.status=C.Status.QUEUED;g.lastError=null;g.updatedAt=now();save();return true}
 function cancel(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||[C.Status.DONE,C.Status.CANCELLED].includes(g.status))return false;g.status=C.Status.CANCELLED;g.updatedAt=now();save();return true}
-function status(){return{schema:state.schema,recovered:!!state.recovered,goals:state.goals.slice(-80),events:state.events.slice(-40),body:arbiter.snapshot(),allowed:[...policy.allowed],autonomy:Caps.autonomyStatus?Caps.autonomyStatus():null}}
+function status(){return{schema:state.schema,connectome:connectome?connectome.snapshot():null,connectomeError:state.connectomeError||null,recovered:!!state.recovered,goals:state.goals.slice(-80),events:state.events.slice(-40),body:arbiter.snapshot(),allowed:[...policy.allowed],autonomy:Caps.autonomyStatus?Caps.autonomyStatus():null}}
 function patchIr(ir,ops,scope){return P.apply(ir,ops,scope)}
 window.FFC_PROXY_AGENT={version:'2.1-autonomy',execute,proposal,status,retry,cancel,patchIr,policy,body:arbiter,executive};
 setTimeout(()=>{const b=document.getElementById('ffcCapabilityBar');if(b&&!document.getElementById('ffcProxyBadge')){const x=document.createElement('span');x.id='ffcProxyBadge';x.textContent='🪰 PROXY EXEC + IR PATCH';b.appendChild(x)}},200);

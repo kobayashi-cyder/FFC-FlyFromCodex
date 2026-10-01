@@ -22,5 +22,76 @@
  function nextGoal(goals,lastThread){const q=(goals||[]).filter(g=>g.status===Status.QUEUED);if(!q.length)return null;const top=Math.max(...q.map(g=>+g.priority||0)),same=q.filter(g=>(+g.priority||0)===top).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));return same.find(g=>g.threadId!==lastThread)||same[0]}
  function resourceForTool(name){if(/^voice\.listen/.test(name))return'microphone';if(/^voice\.(speak|configure)/.test(name))return'speaker';if(/^image\./.test(name))return'image-generator';if(/^document\./.test(name))return'artifact';if(/^code\./.test(name))return'compute';return'compute'}
  function classifyCapability(name,spec){if(spec&&spec.capability)return spec.capability;if(/^device\./.test(name))return'device';if(/^network\./.test(name))return'network';if(/^code\./.test(name))return'code.write';if(/^image\./.test(name))return'image.write';if(/^voice\./.test(name))return'voice.input';if(/^document\./.test(name))return'document.write';return'compute'}
- return{Status,Result,ToolPolicy,BodyArbiter,Executive,recoverGoals,nextGoal,resourceForTool,classifyCapability};
+ // Biological edges, engineered encoding/readout. Transmitter signs are model
+ // assumptions inherited from CPF, not measurements of functional causality.
+ class ConnectomeSelector{
+  constructor(data,opts={}){
+   if(!data||!Array.isArray(data.edges)||!Array.isArray(data.nodes))throw new Error('missing connectome data');
+   this.nodes=[...new Set(data.nodes)];this.ids=new Set(this.nodes);
+   this.routes=new Map((data.routes||[]).map(r=>[r.id,r]));this.toolRoutes=data.toolRoutes||{};
+   this.source=data.source||'unspecified';
+   this.identity=JSON.stringify({nodes:this.nodes,edges:data.edges,routes:data.routes,toolRoutes:this.toolRoutes});
+   this.ticks=opts.ticks===undefined?6:opts.ticks;
+   if(!Number.isInteger(this.ticks)||this.ticks<1||this.ticks>32)throw new Error('invalid propagation ticks');
+   this.factors=new Map();this.last=null;
+   const totals=new Map();
+   this.edges=data.edges.map((e,i)=>{
+    if(!this.ids.has(e.from)||!this.ids.has(e.to)||!Number.isFinite(Number(e.count))||Number(e.count)<0)throw new Error('invalid connectome edge');
+    const nt=String(e.pre_top_nt||'').toLowerCase();
+    const sign=nt.includes('gaba')?-1:nt.includes('acetylcholine')?1:nt.includes('glutamate')?-.35:nt.includes('serotonin')?.28:nt.includes('dh44')||nt.includes('lk')||nt.includes('ilp')||nt.includes('darc')?.18:.10;
+    const magnitude=Math.sqrt(Number(e.count));totals.set(e.from,(totals.get(e.from)||0)+magnitude);
+    return{...e,id:String(i),magnitude,sign};
+   });
+   for(const e of this.edges)e.weight=e.sign*e.magnitude/Math.max(1e-9,totals.get(e.from));
+  }
+  binding(tool){
+   let id=this.toolRoutes[tool];
+   // Explicit machine task bindings, not biological semantic annotations.
+   if(!id)id=/^(code|image|document)\./.test(tool)?'o1p0':/^(feedback|autonomy)\./.test(tool)?'o1p2':'o1p3';
+   const r=this.routes.get(id);return r&&r.source!==r.target&&this.ids.has(r.source)&&this.ids.has(r.target)?r:null;
+  }
+  propagate(candidate){
+   const route=this.binding(String(candidate.tool||''));if(!route)return null;
+   const raw=(Number(candidate.excitation??1)-Number(candidate.inhibition??0))*Number(candidate.confidence??1);
+   if(!Number.isFinite(raw)||raw<=0)return null;
+   const drive=Math.min(1.2,raw),trace=[],eligibility=new Map();
+   let activity=new Map(this.nodes.map(n=>[n,0]));
+   for(let tick=0;tick<this.ticks;tick++){
+    const next=new Map(this.nodes.map(n=>[n,(activity.get(n)||0)*.35]));
+    next.set(route.source,next.get(route.source)+drive);
+    for(const e of this.edges){
+     const flux=(activity.get(e.from)||0)*e.weight*(this.factors.get(e.id)||1);
+     next.set(e.to,next.get(e.to)+flux);
+     eligibility.set(e.id,(eligibility.get(e.id)||0)+Math.abs(flux));
+    }
+    for(const n of this.nodes)next.set(n,Math.tanh(next.get(n)));
+    activity=next;trace.push(Object.fromEntries(activity));
+   }
+   const output=activity.get(route.target)||0;
+   // Magnitude lets an inhibitory pathway carry an engineered action signal.
+   return{candidate,tool:candidate.tool,activation:Math.abs(output),signedOutput:output,route:route.id,sourceNode:route.source,targetNode:route.target,trace,eligibility};
+  }
+  select(candidates=[]){
+   const ranked=candidates.map(c=>this.propagate(c)).filter(x=>x&&x.activation>=1e-6);
+   ranked.sort((a,b)=>b.activation-a.activation||String(a.tool).localeCompare(String(b.tool)));
+   this.last=ranked[0]||null;
+   if(!this.last)return null;
+   const {eligibility,...decision}=this.last;
+   return{...decision.candidate,activation:decision.activation,connectome:{...decision,candidate:undefined,provenance:this.source,granularity:'display_name aggregate',bindings:'engineered',transmitterSigns:'CPF model assumptions'}};
+  }
+  reinforce(tool,reward,{learnable=true,tier='training'}={}){
+   if(!learnable||tier==='holdout'||!this.last||this.last.tool!==tool||!Number.isFinite(reward))return false;
+   // Only edges both active and upstream of the selected output receive reward.
+   const cone=new Set([this.last.targetNode]);let changed=true;
+   while(changed){changed=false;for(const e of this.edges)if(cone.has(e.to)&&!cone.has(e.from)){cone.add(e.from);changed=true}}
+   for(const e of this.edges){const eligibility=this.last.eligibility.get(e.id)||0;if(!cone.has(e.to)||!cone.has(e.from)||eligibility<1e-9)continue;
+    const factor=(this.factors.get(e.id)||1)+.025*Math.max(-1,Math.min(1,reward))*Math.min(1,eligibility);
+    this.factors.set(e.id,Math.max(.75,Math.min(1.25,factor)));
+   }
+   this.last=null;return true;
+  }
+  snapshot(){return{schema:1,source:this.source,identity:this.identity,factors:Object.fromEntries(this.factors)}}
+  restore(state){if(!state||state.schema!==1||state.source!==this.source||state.identity!==this.identity)return;for(const e of this.edges){const f=state.factors?.[e.id];if(Number.isFinite(f)&&f>=.75&&f<=1.25)this.factors.set(e.id,f)}}
+ }
+ return{Status,Result,ToolPolicy,BodyArbiter,Executive,ConnectomeSelector,recoverGoals,nextGoal,resourceForTool,classifyCapability};
 });

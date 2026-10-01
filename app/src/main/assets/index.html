@@ -3785,7 +3785,7 @@ function o2xBuild(){
   const entities=[]; let counts={};
   const subjectKinds=new Set(['person','cat','dog','bird','car','insect']);
   for(let i=0;i<analysis.tokens.entities.length;i++){
-    const kind=analysis.tokens.entities[i]; counts[kind]=(counts[kind]||0)+1; const id=\`\${kind}_\${String(counts[kind]).padStart(2,'0')}\`,p=o2xBasePos(kind,i,W,H);
+    const kind=analysis.tokens.entities[i]; counts[kind]=(counts[kind]||0)+1; const id=`${kind}_${String(counts[kind]).padStart(2,'0')}`,p=o2xBasePos(kind,i,W,H);
     const subject=subjectKinds.has(kind),globalScale=Math.min(W/960,H/600),jx=((rng()-.5)*(subject?.075:.045)+(+opt.layoutX||0))*W,jy=((rng()-.5)*(subject?.055:.035)+(+opt.layoutY||0))*H,scaleJ=(subject?.88+rng()*.24:.93+rng()*.14)*(+opt.scaleBias||1)*globalScale;
     const pose=(kind==='person'&&(analysis.poses.sit.includes(kind)||analysis.poses.stand.includes(kind)))?'idle':(kind==='person'&&rng()>.76?'sit':'idle');
     entities.push({id,kind,x:p.x+jx,y:p.y+jy,scale:p.scale*scaleJ,z:p.y+jy,pose,material:'default',renderSeed:seed+'|'+id,variant:+rng().toFixed(4)});
@@ -3794,7 +3794,7 @@ function o2xBuild(){
   if(!entities.some(e=>e.kind==='cloud') && analysis.tokens.time!=='night') entities.push({id:'cloud_01',kind:'cloud',...o2xBasePos('cloud',0,W,H),z:40,pose:'idle',material:'vapor',renderSeed:seed+'|cloud'});
   const camera={horizon:.56+(rng()-.5)*.08,focalX:.46+(rng()-.5)*.10,focalY:.52+(rng()-.5)*.08,contrast:.92+rng()*.18,warmth:(rng()-.5)*.18};
   const scene={format:'BANC888-O2-photo-plus-v0.3',prompt,mode,detail,blur,atmosphere:atmos,seed,width:W,height:H,analysis,entities,camera,generationOptions:{layoutX:+opt.layoutX||0,layoutY:+opt.layoutY||0,scaleBias:+opt.scaleBias||1}};
-  o2xApplyRelations(scene); O2X.analysis=analysis; O2X.scene=scene; o2xRender(); o2xSync(); $('#o2xStatus').textContent=\`O2 Photo+ generated: \${scene.entities.length} entities · seed \${seed}.\`; a1Route('o1p1',1); a1Route('o1p0',1); a1Route('o1p3',.8);
+  o2xApplyRelations(scene); O2X.analysis=analysis; O2X.scene=scene; o2xRender(); o2xSync(); $('#o2xStatus').textContent=`O2 Photo+ generated: ${scene.entities.length} entities · seed ${seed}.`; a1Route('o1p1',1); a1Route('o1p0',1); a1Route('o1p3',.8);
 }
 function o2xSky(ctx,scene){
   const W=scene.width,H=scene.height,t=scene.analysis.tokens.time,m=scene.mode;
@@ -5623,8 +5623,10 @@ function agentExecute(name,args={},opts={}){
   AGENT.trace.push({n:AGENT.trace.length+1,time:new Date().toISOString(),...envelope,result});if(AGENT.trace.length>120)AGENT.trace.shift();agentFire(name,result.ok?.8:.25);return result
 }
 function agentSelect(candidates){
-  const eligible=candidates.map(c=>({...c,activation:(+c.excitation-(+c.inhibition||0))*(c.confidence==null?1:+c.confidence)})).filter(c=>AGENT.tools.has(c.tool)&&Number.isFinite(c.activation)&&c.activation>=.05);
-  eligible.sort((a,b)=>b.activation-a.activation||(b.confidence||1)-(a.confidence||1)||a.tool.localeCompare(b.tool));return eligible[0]||null
+  const core=window.FFCProxyCore;
+  if(!core?.ConnectomeSelector)return null;
+  if(!AGENT.connectomeSelector)AGENT.connectomeSelector=new core.ConnectomeSelector({nodes:CPF_GRAPH.nodes,edges:DATA.edges,routes:O1P_SHORTCUTS,toolRoutes:AGENT_ROUTE_ROLE,source:RAW.source});
+  return AGENT.connectomeSelector.select(candidates.filter(c=>{const t=AGENT.tools.get(c.tool);return t&&AGENT.capabilities.has(t.capability)}));
 }
 function agentAddCandidate(a,tool,args,base,control,used){
   const rb=control?.routeBias||{};let bias=agentRouteBoost(tool);
@@ -6029,7 +6031,7 @@ function agentUIInit(){agentLoadMemory();agentLoadFeedback();const goal=$('#agen
   if($('#flyVoiceStart'))$('#flyVoiceStart').onclick=()=>flyVoiceStartListening();if($('#flyVoiceDiagnose'))$('#flyVoiceDiagnose').onclick=()=>flyVoiceDiagnose({request:true});if($('#flyVoiceStop'))$('#flyVoiceStop').onclick=()=>{flyVoiceStopListening();if('speechSynthesis'in window)speechSynthesis.cancel();FLYVOICE.speaking=false;flyVoiceSetState('idle','停止')};if($('#flyVoiceRepeat'))$('#flyVoiceRepeat').onclick=()=>flySpeak(FLYVOICE.lastSpoken||$('#flyDisplayText')?.textContent||'');
   if($('#agentStatus'))$('#agentStatus').textContent=`${AGENT.tools.size} tools / ${AGENT.capabilities.size} capabilities / v5.2 mic-permission+voice+display / base v4.6 preserved + F38/F42/F46 bridged`;flyVoiceSetState('idle','耳の診断待ち');flyVoiceDiagnose({request:false});
 }
-window.BANC888_FLY_AGENT={handoff:AGENT_HANDOFF,state:AGENT,manifest:agentManifest,run:agentRun,execute:agentExecute,buildCandidates:agentBuildCandidates,listen:flyVoiceStartListening,diagnoseVoice:flyVoiceDiagnose,voiceStatus:()=>FLYVOICE.lastDiag,stopListening:flyVoiceStopListening,speak:flySpeak,present:flyPresent,voice:FLYVOICE,stop:()=>{AGENT.stop=true;flyVoiceStopListening();if('speechSynthesis'in window)speechSynthesis.cancel()}};
+window.BANC888_FLY_AGENT={connectome:{nodes:CPF_GRAPH.nodes,edges:DATA.edges,routes:O1P_SHORTCUTS,toolRoutes:AGENT_ROUTE_ROLE,source:RAW.source},handoff:AGENT_HANDOFF,state:AGENT,manifest:agentManifest,run:agentRun,execute:agentExecute,buildCandidates:agentBuildCandidates,listen:flyVoiceStartListening,diagnoseVoice:flyVoiceDiagnose,voiceStatus:()=>FLYVOICE.lastDiag,stopListening:flyVoiceStopListening,speak:flySpeak,present:flyPresent,voice:FLYVOICE,stop:()=>{AGENT.stop=true;flyVoiceStopListening();if('speechSynthesis'in window)speechSynthesis.cancel()}};
 setTimeout(agentUIInit,0);
 })();
 // ---- end v4.8 Unified Fly Agent ToolBus bridge ----
