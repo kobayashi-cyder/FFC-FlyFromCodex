@@ -7,3 +7,7 @@ let p=V.classify('Pythonでコードを書いて');let v=ex.evaluate({steps:[{to
 v=ex.evaluate({steps:[{tool:'network.fetch'}]},n=>({capability:'network'}));assert.equal(v.status,C.Result.BLOCKED);
 let old=V.buildImageIR('猫の画像、16:9、写真風');let diff=P.infer(old,'構図だけ正方形にして',V,'meso');assert.equal(diff.ir.kind,'ImageIR');assert.equal(diff.ir.aspect,'1:1');
 console.log('proxy-apk-integration: PASS');
+const A=require('../app/src/main/assets/autonomy-core.js');
+const auto=new A.Autonomy({}, {minSuccesses:2,minReward:0});
+auto.syncTools([{name:'code.generate',capability:'code.write',description:'code',executable:true}]);
+assert.equal(auto.status().discoveredTools,1);
