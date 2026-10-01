@@ -1,3 +1,4 @@
+from .autonomy import AutonomousSkillLearner, SkillProfile
 from .body import BodyArbiter, BodyLease
 from .checkpoint import AtomicCheckpointStore
 from .connectome import GraphConnectomeKernel, default_connectome
@@ -13,6 +14,7 @@ from .voice import VoiceRouter
 
 __all__ = [
     "AtomicCheckpointStore",
+    "AutonomousSkillLearner",
     "BodyArbiter",
     "BodyLease",
     "Capability",
@@ -33,6 +35,7 @@ __all__ = [
     "ResultStatus",
     "RewardVector",
     "RulePlanner",
+    "SkillProfile",
     "Stimulus",
     "TestTier",
     "ThreadRouter",
