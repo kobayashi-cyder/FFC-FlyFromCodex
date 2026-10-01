@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 79
-        versionName '7.0.9-evolutionary-image-engine'
+        versionCode 80
+        versionName '7.1.0-autonomous-connectome'
     }
 
     buildTypes {
