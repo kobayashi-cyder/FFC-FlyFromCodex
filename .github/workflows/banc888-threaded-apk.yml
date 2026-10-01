@@ -19,6 +19,7 @@ on:
       - "tests/webview_runtime_contract.test.cjs"
       - "tests/image_quality_core.test.cjs"
       - "tests/feedback_core.test.cjs"
+      - "tests/autonomy_core.test.cjs"
       - "tests/research_physics_core.test.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
@@ -68,6 +69,7 @@ jobs:
           node --check app/src/main/assets/capability-vocabulary-core.js
           node --check app/src/main/assets/image-quality-core.js
           node --check app/src/main/assets/feedback-core.js
+          node --check app/src/main/assets/autonomy-core.js
           node --check app/src/main/assets/research-physics-core.js
           node --check app/src/main/assets/ir-patch-core.js
           node --check app/src/main/assets/proxy-agent-core.js
@@ -83,6 +85,7 @@ jobs:
           node tests/capability_vocabulary.test.cjs
           node tests/image_quality_core.test.cjs
           node tests/feedback_core.test.cjs
+          node tests/autonomy_core.test.cjs
           node tests/specialist_capability_v2.test.cjs
           node tests/ir_patch_core.test.cjs
           node tests/proxy_agent_core.test.cjs
@@ -105,7 +108,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.0-webview-core-debug
+          name: BANC888-v7.1-autonomous-connectome-debug
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/debug/app-debug.apk.sha256
