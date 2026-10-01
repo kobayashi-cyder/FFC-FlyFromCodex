@@ -8,7 +8,7 @@
 const TIERS=Object.freeze({TRAINING:'training',REGRESSION:'regression',HOLDOUT:'holdout'});
 const SCALE=Object.freeze({training:1,regression:.35,holdout:0});
 const clamp=(x,a=-1,b=1)=>Math.max(a,Math.min(b,Number(x)||0));
-const metric=v=>clamp((Number(v)||0)*2-1);
+const metric=v=>v==null||v===''?0:clamp((Number(v)||0)*2-1);
 const qualityScore=s=>clamp(((Number(s)||0)-72)/28);
 const gainScore=g=>clamp((Number(g)||0)/30);
 const tierOf=t=>Object.values(TIERS).includes(t)?t:TIERS.TRAINING;
