@@ -9,6 +9,7 @@ from fly_agent import (
     GoalStatus,
     GraphConnectomeKernel,
     ResultStatus,
+    SkillFabric,
     Stimulus,
     TestTier,
     ThreadRouter,
@@ -19,7 +20,7 @@ from fly_agent import (
     excel_label,
 )
 from fly_agent.connectome import default_connectome
-from fly_agent.models import ToolContext
+from fly_agent.models import PlanProposal, PlannerResult, PlanStep, ToolContext
 
 
 def test_danger_prefers_evade():
@@ -278,3 +279,80 @@ def test_observer_records_structured_feedback_event(tmp_path):
     assert feedback
     assert feedback[-1]["data"]["tier"] == TestTier.TRAINING.value
     assert feedback[-1]["data"]["learnable"] is True
+
+
+def test_skill_fabric_discovers_registered_tools_and_policy(tmp_path):
+    bus = ToolBus(ToolPolicy({Capability.COMPUTE}))
+    bus.register(ToolSpec("compute.alpha", lambda _: ToolResult.success("a"), Capability.COMPUTE, "alpha"))
+    bus.register(ToolSpec("network.beta", lambda _: ToolResult.success("b"), Capability.NETWORK, "beta"))
+    fabric = SkillFabric(tmp_path / "skills.json")
+    fabric.sync_tools(bus)
+
+    assert fabric.status()["discovered_tools"] == 2
+    assert fabric.tools["compute.alpha"]["executable"] is True
+    assert fabric.tools["network.beta"]["executable"] is False
+
+
+def test_successful_plan_is_promoted_and_reused_as_skill(tmp_path):
+    bus = ToolBus(ToolPolicy({Capability.COMPUTE}))
+    bus.register(ToolSpec("echo", lambda a: ToolResult.success(a.get("text")), Capability.COMPUTE))
+    fabric = SkillFabric(tmp_path / "skills.json", min_successes=2, min_reward=0.0)
+    goal = Goal("repeat this goal")
+    proposal = PlanProposal(
+        [PlanStep("echo", {"text": goal.text}, "echo learned goal")],
+        source="test-planner",
+    )
+
+    assert fabric.observe_plan(goal, proposal, success=True, reward=0.4) is None
+    promoted = fabric.observe_plan(goal, proposal, success=True, reward=0.5)
+    assert promoted is not None
+    assert promoted.successes == 2
+
+    learned = fabric.proposal_for(Goal("repeat this goal"), bus)
+    assert learned is not None
+    assert learned.source.startswith("learned-skill:")
+    assert learned.steps[0].tool == "echo"
+    assert learned.steps[0].args["text"] == "repeat this goal"
+
+
+def test_holdout_feedback_is_not_consumed_by_skill_fabric(tmp_path):
+    bus = ToolBus(ToolPolicy({Capability.COMPUTE}))
+    bus.register(ToolSpec("echo", lambda _: ToolResult.success("ok"), Capability.COMPUTE))
+    fabric = SkillFabric(tmp_path / "skills.json")
+    fabric.sync_tools(bus)
+    encoder = FeedbackEncoder()
+    event = encoder.from_test("secret", True, tier=TestTier.HOLDOUT, action="echo")
+    fabric.consume_feedback("echo", event)
+    assert fabric.tools["echo"]["attempts"] == 0
+
+
+def test_runtime_autonomously_acquires_repeated_successful_plan(tmp_path):
+    class EchoPlanner:
+        def propose(self, goal, memory, tools):
+            return PlannerResult(
+                ResultStatus.SUCCESS,
+                PlanProposal(
+                    [PlanStep("echo", {"text": goal.text}, "learnable echo")],
+                    source="echo-planner",
+                ),
+            )
+
+    bus = ToolBus(ToolPolicy({Capability.COMPUTE}))
+    bus.register(ToolSpec("echo", lambda a: ToolResult.success(a.get("text")), Capability.COMPUTE))
+    agent = FlyMachineAgent(
+        state_dir=tmp_path,
+        tools=bus,
+        output=lambda _: None,
+        planner=EchoPlanner(),
+    )
+    agent.submit_goal("autonomy target")
+    agent.submit_goal("autonomy target")
+    assert agent.run() == 2
+    status = agent.status()["autonomy"]
+    assert status["learned_skills"] >= 1
+
+    restored = FlyMachineAgent(state_dir=tmp_path, tools=bus, output=lambda _: None)
+    restored.submit_goal("autonomy target")
+    assert restored.run() == 1
+    done = restored.status()["completed_goals"]
+    assert any(g["text"] == "autonomy target" for g in done)
