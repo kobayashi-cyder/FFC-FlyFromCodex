@@ -55,6 +55,10 @@ public class MainActivity extends Activity {
         if (shell != null) shell.eval(script);
     }
 
+    SpeechController speechForTest() {
+        return speech;
+    }
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         // Do not serialize Chromium/WebView history into the Activity state bundle.
