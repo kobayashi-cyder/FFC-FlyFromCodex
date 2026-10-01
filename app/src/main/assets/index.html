@@ -3657,7 +3657,7 @@ setTimeout(()=>{try{o2pBuildScene()}catch(e){$('#o2pStatus').textContent='O2P in
 
 
 // ---- O2 Photo+ renderer (relation-aware / more photo-like) ----
-const O2X={analysis:null,scene:null};
+const O2X={analysis:null,scene:null,options:null};
 function o2xVal(id,def=''){const e=$(id);return e?e.value:def}
 function o2xNum(id,def=0){const v=+o2xVal(id,def);return Number.isFinite(v)?v:def}
 function o2xIncludes(text,arr){return arr.some(k=>text.includes(k))}
@@ -3702,18 +3702,22 @@ function o2xApplyRelations(scene){
 function o2xBuild(){
   const prompt=o2xVal('#o2xPrompt','夕方、中央の机の上に猫がいる。');
   const mode=o2xVal('#o2xMode','photoish'); const detail=Math.max(1,Math.min(6,Math.trunc(o2xNum('#o2xDetail',4)))); const blur=Math.max(0,Math.min(12,o2xNum('#o2xBlur',2))); const atmos=Math.max(0,Math.min(2,o2xNum('#o2xAtmos',1))); const seed=o2xVal('#o2xSeed','2601');
-  const analysis=o2xAnalyze(prompt),rng=o2pRng(seed+'|layout'),W=960,H=600,entities=[]; let counts={};
+  const analysis=o2xAnalyze(prompt),rng=o2pRng(seed+'|layout'),opt=O2X.options||{};
+  const sizeMatch=prompt.match(/size:\s*(\d{3,4})\s*[x×]\s*(\d{3,4})/i),aspectMatch=prompt.match(/aspect:\s*(\d{1,2})\s*[:：]\s*(\d{1,2})/i);
+  let W=sizeMatch?Math.max(512,Math.min(1536,+sizeMatch[1])):1024,H=sizeMatch?Math.max(512,Math.min(1536,+sizeMatch[2])):1024;
+  if(!sizeMatch&&aspectMatch){const ar=Math.max(.4,Math.min(2.5,(+aspectMatch[1]||1)/(+aspectMatch[2]||1)));if(ar>=1){W=1024;H=Math.max(512,Math.round(1024/ar))}else{H=1024;W=Math.max(512,Math.round(1024*ar))}}
+  const entities=[]; let counts={};
   const subjectKinds=new Set(['person','cat','dog','bird','car','insect']);
   for(let i=0;i<analysis.tokens.entities.length;i++){
     const kind=analysis.tokens.entities[i]; counts[kind]=(counts[kind]||0)+1; const id=\`\${kind}_\${String(counts[kind]).padStart(2,'0')}\`,p=o2xBasePos(kind,i,W,H);
-    const subject=subjectKinds.has(kind),jx=(rng()-.5)*W*(subject?.075:.045),jy=(rng()-.5)*H*(subject?.055:.035),scaleJ=subject?.88+rng()*.24:.93+rng()*.14;
+    const subject=subjectKinds.has(kind),globalScale=Math.min(W/960,H/600),jx=((rng()-.5)*(subject?.075:.045)+(+opt.layoutX||0))*W,jy=((rng()-.5)*(subject?.055:.035)+(+opt.layoutY||0))*H,scaleJ=(subject?.88+rng()*.24:.93+rng()*.14)*(+opt.scaleBias||1)*globalScale;
     const pose=(kind==='person'&&(analysis.poses.sit.includes(kind)||analysis.poses.stand.includes(kind)))?'idle':(kind==='person'&&rng()>.76?'sit':'idle');
     entities.push({id,kind,x:p.x+jx,y:p.y+jy,scale:p.scale*scaleJ,z:p.y+jy,pose,material:'default',renderSeed:seed+'|'+id,variant:+rng().toFixed(4)});
   }
   if(!entities.some(e=>e.kind==='sun'||e.kind==='moon')) entities.push({id:analysis.tokens.time==='night'?'moon_01':'sun_01',kind:analysis.tokens.time==='night'?'moon':'sun',...o2xBasePos(analysis.tokens.time==='night'?'moon':'sun',0,W,H),z:30,pose:'idle',material:'emissive',renderSeed:seed+'|sky'});
   if(!entities.some(e=>e.kind==='cloud') && analysis.tokens.time!=='night') entities.push({id:'cloud_01',kind:'cloud',...o2xBasePos('cloud',0,W,H),z:40,pose:'idle',material:'vapor',renderSeed:seed+'|cloud'});
   const camera={horizon:.56+(rng()-.5)*.08,focalX:.46+(rng()-.5)*.10,focalY:.52+(rng()-.5)*.08,contrast:.92+rng()*.18,warmth:(rng()-.5)*.18};
-  const scene={format:'BANC888-O2-photo-plus-v0.2',prompt,mode,detail,blur,atmosphere:atmos,seed,width:W,height:H,analysis,entities,camera};
+  const scene={format:'BANC888-O2-photo-plus-v0.3',prompt,mode,detail,blur,atmosphere:atmos,seed,width:W,height:H,analysis,entities,camera,generationOptions:{layoutX:+opt.layoutX||0,layoutY:+opt.layoutY||0,scaleBias:+opt.scaleBias||1}};
   o2xApplyRelations(scene); O2X.analysis=analysis; O2X.scene=scene; o2xRender(); o2xSync(); $('#o2xStatus').textContent=\`O2 Photo+ generated: \${scene.entities.length} entities · seed \${seed}.\`; a1Route('o1p1',1); a1Route('o1p0',1); a1Route('o1p3',.8);
 }
 function o2xSky(ctx,scene){
@@ -5643,6 +5647,7 @@ agentRegister('micro.step','run one bounded slice of the existing micro-op fabri
 agentRegister('micro.status','read existing micro-op state','compute','none',()=>({compiled:!!MICRO.program,running:MICRO.running,executed:MICRO.executed,total:MICRO.program?.totalOps||0,shard:MICRO.shardIndex,pc:MICRO.pc,done:microDone(),stats:MICRO.program&&microDone()?microStats():null}));
 agentRegister('o2.generate','generate through preserved O2/O2 Photo+ runtime','o2.write','page',a=>{
   const prompt=String(a.prompt||'');let kind='O2',detail=null;
+  O2X.options={layoutX:+a.layoutX||0,layoutY:+a.layoutY||0,scaleBias:+a.scaleBias||1};
   if(typeof o2xBuild==='function'&&$('#o2xPrompt')){
     $('#o2xPrompt').value=prompt;
     if(a.seed!=null&&$('#o2xSeed'))$('#o2xSeed').value=String(a.seed);
@@ -5683,7 +5688,7 @@ agentRegister('o2.generate','generate through preserved O2/O2 Photo+ runtime','o
   }
   const objects=detail?.entities?.length||O23.scene?.objects?.length||0;
   const scene=detail?{width:detail.width,height:detail.height}:O23.scene?{width:O23.scene.width,height:O23.scene.height}:null;
-  return{kind,objects,scene,sceneDetail:detail};
+  return{kind,objects,scene,sceneDetail:detail,generationOptions:O2X.scene?.generationOptions||O2X.options};
 });
 agentRegister('o3.generate','generate O3 timeline from preserved O2 scene','o3.write','page',a=>{if(!O23.scene){const p=AGENT.tools.get('o2.generate');p.handler({prompt:a.prompt||''})}o23GenerateO3();return{tracks:O23.timeline?.tracks?.length||0,durationMs:O23.timeline?.durationMs||0,playing:false}});
 agentRegister('chat.compose','compose human-facing reply with preserved adaptive chat','chat.compose','local',a=>{const goal=String(a.goal||''),base=generateConversation(goal),obs=a.observation?agentObservationText(a.observation.tool,a.observation.result,goal):'',ctx=String(a.context||'');if(ctx&&!CHAT.memory.lastTopic){const m=ctx.match(/人間:\s*([^\n]{2,60})/g);if(m?.length){const lastLine=m[m.length-1].replace(/^人間:\s*/,'');const t=topicFromText(lastLine);if(t){CHAT.memory.lastTopic=t;saveChat()}}}return{reply:base.reply+(obs?'\n\n'+obs:''),intent:base.intent,lang:base.lang}});
