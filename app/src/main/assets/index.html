@@ -5542,7 +5542,26 @@ agentRegister('o2.generate','generate through preserved O2/O2 Photo+ runtime','o
       const sc=O2X.scene;
       detail={width:sc.width,height:sc.height,prompt:sc.prompt,mode:sc.mode,seed:sc.seed,detail:sc.detail,blur:sc.blur,atmosphere:sc.atmosphere,
         entities:(sc.entities||[]).map(e=>({id:e.id,kind:e.kind,x:e.x,y:e.y,scale:e.scale,z:e.z,pose:e.pose,depth:e.depth||'mid'})),
-        analysis:sc.analysis?.tokens||null};
+        analysis:sc.analysis?.tokens||null,renderMetrics:null};
+      try{
+        const cv=$('#o2xCanvas'),cx=cv?.getContext('2d',{willReadFrequently:true});
+        if(cv&&cx){
+          const step=24,d=cx.getImageData(0,0,cv.width,cv.height).data;
+          let n=0,sum=0,sum2=0,clip=0,edge=0,edgeN=0,prevRow=[];
+          for(let y=0,ry=0;y<cv.height;y+=step,ry++){
+            let prev=null,rx=0;
+            for(let x=0;x<cv.width;x+=step,rx++){
+              const i=(y*cv.width+x)*4,r=d[i],g=d[i+1],b=d[i+2],l=.2126*r+.7152*g+.0722*b;
+              n++;sum+=l;sum2+=l*l;if(l<5||l>250)clip++;
+              if(prev!=null){edgeN++;if(Math.abs(l-prev)>24)edge++}
+              if(prevRow[rx]!=null){edgeN++;if(Math.abs(l-prevRow[rx])>24)edge++}
+              prev=l;prevRow[rx]=l;
+            }
+          }
+          const mean=n?sum/n:0,std=n?Math.sqrt(Math.max(0,sum2/n-mean*mean)):0;
+          detail.renderMetrics={samples:n,meanLuma:+mean.toFixed(2),stdLuma:+std.toFixed(2),clippedRatio:n?+(clip/n).toFixed(4):1,edgeDensity:edgeN?+(edge/edgeN).toFixed(4):0};
+        }
+      }catch(e){}
     }
   }else if(typeof o2pBuildScene==='function'&&$('#o2pPrompt')){
     $('#o2pPrompt').value=prompt;o2pBuildScene();kind='O2 Photo+';
