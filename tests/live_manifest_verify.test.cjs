@@ -2,7 +2,7 @@ const fs=require('node:fs');
 const crypto=require('node:crypto');
 const path=require('node:path');
 const manifest=JSON.parse(fs.readFileSync('app/src/main/assets/live-manifest.json','utf8'));
-if(manifest.schema!==1||manifest.bridgeSchema!==4||manifest.assetSchema!==5||manifest.minShellVersion>70)throw new Error('live manifest schema mismatch');
+if(manifest.schema!==1||manifest.bridgeSchema!==5||manifest.assetSchema!==6||manifest.minShellVersion>71)throw new Error('live manifest schema mismatch');
 for(const [name,expected] of Object.entries(manifest.files)){
   const p=path.join('app/src/main/assets',name);
   if(!fs.existsSync(p))throw new Error('missing live asset '+name);
@@ -10,7 +10,7 @@ for(const [name,expected] of Object.entries(manifest.files)){
   if(actual!==expected)throw new Error(name+' SHA-256 mismatch: '+actual+' != '+expected);
 }
 const expectedNames=[
-'index.html','native-bridge.js','webview-runtime.js','thread-router-core.js','capability-vocabulary-core.js','image-quality-core.js','feedback-core.js','autonomy-core.js','research-physics-core.js','ir-patch-core.js','proxy-agent-core.js','capability-tools.js','research-physics-tools.js','proxy-agent.js','conversation-output-core.js','thread-router.js','dev-live.js'
+'index.html','native-bridge.js','webview-runtime.js','thread-router-core.js','capability-vocabulary-core.js','image-quality-core.js','feedback-core.js','autonomy-core.js','research-physics-core.js','ir-patch-core.js','proxy-agent-core.js','capability-tools.js','video-export.js','research-physics-tools.js','proxy-agent.js','conversation-output-core.js','thread-router.js','dev-live.js'
 ].sort();
 const actualNames=Object.keys(manifest.files).sort();
 if(JSON.stringify(expectedNames)!==JSON.stringify(actualNames))throw new Error('live asset set mismatch');

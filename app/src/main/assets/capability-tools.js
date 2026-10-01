@@ -63,6 +63,34 @@ let REVIEW=load(REVIEW_KEY,[]);
 const clamp01=x=>Math.max(0,Math.min(1,Number(x)||0));
 const reviewRemember=e=>{REVIEW.push({...e,time:Date.now()});if(REVIEW.length>160)REVIEW=REVIEW.slice(-160);save(REVIEW_KEY,REVIEW)};
 const reviewStatus=()=>{const a=REVIEW.slice(-160),pass=a.filter(x=>x.accepted).length;return{version:'4.0',policy:'GENERATE→TEST→EVALUATE→DIAGNOSE→REPAIR→RETEST→LEARN',episodes:a.length,accepted:pass,rejected:a.length-pass,acceptRate:a.length?pass/a.length:null,last:a.slice(-16)}};
+// Retain strings/renderer genes only, never canvases, pixels or review traces.
+// The byte limit counts UTF-16 key/payload storage; it is not a RAM measurement.
+const QUALITY_CACHE=new Map(),CACHE_LIMIT=12,CACHE_STRING_BYTES=96*1024;
+let cacheStringBytes=0;
+function cacheRead(key){const row=QUALITY_CACHE.get(key);if(!row)return null;QUALITY_CACHE.delete(key);QUALITY_CACHE.set(key,row);return JSON.parse(row.payload)}
+function cacheWrite(key,value){const payload=JSON.stringify(value),bytes=2*(key.length+payload.length);if(bytes>CACHE_STRING_BYTES)return;const old=QUALITY_CACHE.get(key);if(old){cacheStringBytes-=old.bytes;QUALITY_CACHE.delete(key)}while(QUALITY_CACHE.size>=CACHE_LIMIT||cacheStringBytes+bytes>CACHE_STRING_BYTES){const first=QUALITY_CACHE.keys().next().value;cacheStringBytes-=QUALITY_CACHE.get(first).bytes;QUALITY_CACHE.delete(first)}QUALITY_CACHE.set(key,{payload,bytes});cacheStringBytes+=bytes}
+const cacheStatus=()=>({entries:QUALITY_CACHE.size,maxEntries:CACHE_LIMIT,retainedStringBytes:cacheStringBytes,maxStringBytes:CACHE_STRING_BYTES});
+function adaptiveText({key,ir,field,terms,validate,initial,repair,fallback,localRepair}){
+ const candidates=[],seen=new Set(),maxAttempts=ir.quality==='fast'?1:ir.quality==='high'?3:2;
+ const search={policy:'validate-deduplicate-repair',maxAttempts,composeCalls:0,assessmentCalls:0,duplicateCount:0,cacheHit:false,stopReason:'budget',repairs:[]};
+ const submit=(value,stage,strategy,scope)=>{const text=clean(value);if(!text)return null;if(seen.has(text)){search.duplicateCount++;return null}seen.add(text);const validation=validate(text);search.assessmentCalls++;const row={[field]:text,validation,score:baseScore(validation,text,terms),stage,strategy,scope};candidates.push(row);return row};
+ const cached=cacheRead(key);let current=cached&&submit(cached.text,'cached',cached.strategy,cached.scope);
+ if(current&&current.validation.pass){search.cacheHit=true;search.stopReason='cached-revalidated';return{candidates,search}}
+ const call=fn=>{search.composeCalls++;try{return clean(fn())}catch(e){return''}};
+ current=submit(call(initial),'generated','complete factual implementation','composed');
+ while(current&&!current.validation.pass&&search.composeCalls<maxAttempts){
+  const defects=[...current.validation.issues];search.repairs.push(defects);
+  const local=localRepair&&submit(localRepair(current[field],defects),'repair','local defect repair','local-repair');
+  if(local){current=local;if(current.validation.pass)break}
+  const next=submit(call(()=>repair(current[field],current.validation.issues)),'repair','diagnostic-repair','composed');
+  if(!next){search.stopReason='duplicate-or-empty-repair';break}
+  if(!next.validation.pass&&next.validation.issues.length>=current.validation.issues.length){current=next;search.stopReason='repair-plateau';break}
+  current=next;
+ }
+ if(!candidates.some(x=>x.validation.pass)){submit(fallback(),'repair','supported local fallback','local-fallback');search.stopReason=candidates.some(x=>x.validation.pass)?'validated-local-fallback':search.stopReason}
+ else if(!search.cacheHit)search.stopReason='defects-resolved';
+ return{candidates,search};
+}
 function tokenize(s){return [...new Set(String(s||'').toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu,' ').split(/\s+/).filter(x=>x.length>1))].slice(0,48)}
 function coverage(text,terms){const s=String(text||'').toLowerCase(),t=(terms||[]).filter(Boolean);if(!t.length)return 1;let hit=0;for(const x of t)if(s.includes(String(x).toLowerCase()))hit++;return hit/t.length}
 function issuePenalty(issues){return Math.min(.72,(issues||[]).length*.16)}
@@ -112,16 +140,19 @@ function validateCode(code,ir){
  const issues=[],tests=[];code=String(code||'');
  const check=(name,pass,detail)=>{tests.push({name,pass:!!pass,detail:detail||''});if(!pass)issues.push(name)};
  check('minimum-length',code.length>=60,'length='+code.length);
+ check('code-shape',looksLikeCode(code,ir.language));
+ check('implemented-request',!/BANC888 generated scaffold/.test(code),'A scaffold does not implement an arbitrary request.');
  check('brace-balance',balance(code,'{','}'));
  check('paren-balance',balance(code,'(',')'));
  if(ir.language==='javascript'&&!/\b(import|export)\b/.test(code)){let ok=true,msg='';try{new Function(code)}catch(e){ok=false;msg=e.message}check('javascript-syntax',ok,msg)}
  if(ir.language==='json'){let ok=true;try{JSON.parse(code)}catch(e){ok=false}check('json-syntax',ok)}
  for(const r of ir.recipes||[]){
   if(r==='csv')check('requirement-csv',/csv/i.test(code));
+  if(r==='json')check('requirement-json',/json/i.test(code));
   if(r==='http')check('requirement-http',/(fetch|http|request|urlopen|Http)/i.test(code));
   if(r==='permission')check('requirement-permission',/(permission|RECORD_AUDIO|requestPermissions|ActivityCompat)/i.test(code));
  }
- return{pass:issues.length===0,issues,tests,length:code.length};
+ return{pass:issues.length===0,issues,tests,length:code.length,level:'static-syntax-and-requirements'};
 }
 function templateCode(ir,request){
  const note=String(request||'').replace(/[\r\n]+/g,' ').slice(0,180);
@@ -141,27 +172,20 @@ function templateCode(ir,request){
  return "// BANC888 generated scaffold\n// Request: "+note+"\n";
 }
 function generateCode(a,action){
- const ir=a.ir||V.buildCodeIR(a.prompt||''),ctrl=controlPrepare(ir),prior=getLast(a.threadCode,'code'),priorText=prior&&prior.text?prior.text:'';
- const strategies=ir.quality==='high'?['robust and complete','minimal and correct','defensive and testable','clear and maintainable']:['complete and correct','simple and direct'];
- const terms=[...tokenize(a.prompt),...(ir.recipes||[]),ir.language].filter(Boolean),candidates=[];
- for(let i=0;i<strategies.length;i++){
-  let draft='';const goal='CodeIR='+JSON.stringify(ir)+'\nThreadContext='+String(a.context||'').slice(-1800)+'\nPreviousArtifact='+priorText.slice(0,5000)+'\nRequest='+String(a.prompt||'')+'\nCandidate strategy='+strategies[i]+'\nReturn only a complete '+ir.language+' implementation. No meta commentary.';
-  try{draft=clean(compose(goal))}catch(e){}
-  if(!looksLikeCode(draft,ir.language))draft=templateCode(ir,a.prompt);
-  const validation=validateCode(draft,ir),score=baseScore(validation,draft,terms);
-  candidates.push({text:draft,validation,score,stage:'generated',strategy:strategies[i]});
- }
- let interim=[...candidates].sort((x,y)=>y.score-x.score)[0];
- if(interim&&(!interim.validation.pass||interim.score<.78)){
-  let repaired='';const repairGoal='Repair this '+ir.language+' candidate. Preserve the request and remove every listed defect.\nRequest='+String(a.prompt||'')+'\nIssues='+JSON.stringify(interim.validation.issues||[])+'\nCandidate:\n'+String(interim.text||'').slice(0,9000)+'\nReturn code only.';
-  try{repaired=clean(compose(repairGoal))}catch(e){}
-  if(!looksLikeCode(repaired,ir.language))repaired=templateCode(ir,a.prompt);
-  const validation=validateCode(repaired,ir),score=baseScore(validation,repaired,terms)+.02;
-  candidates.push({text:repaired,validation,score,stage:'repair',strategy:'diagnostic-repair'});
- }
- const review=reviewSelect('code.'+action,candidates,ctrl,{language:ir.language,quality:ir.quality,threadCode:a.threadCode}),best=review.best||{text:templateCode(ir,a.prompt),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0};
+ const ir=a.ir||V.buildCodeIR(a.prompt||''),prior=getLast(a.threadCode,'code'),priorText=action==='generate'?'':String(prior&&prior.text||'').slice(0,5000),context=String(a.context||'').slice(-1800);
+ const key=JSON.stringify(['code',action,ir,context,priorText]),ctrl=QUALITY_CACHE.has(key)?null:controlPrepare(ir),terms=[...tokenize(a.prompt),...(ir.recipes||[]),ir.language].filter(Boolean);
+ const plainCode=text=>clean(text).replace(/^```[^\n]*\n([\s\S]*?)\n```\s*$/,'$1');
+ const recipeSupported=ir.language==='python'&&(ir.recipes||[]).some(x=>['csv','json','http'].includes(x))||['javascript','typescript'].includes(ir.language)&&(ir.recipes||[]).includes('http')||ir.language==='kotlin'&&(ir.recipes||[]).includes('microphone');
+ const localCode=()=>recipeSupported?templateCode(ir,a.prompt):'// BANC888 generated scaffold: request implementation unavailable\n'+templateCode(ir,a.prompt);
+ const {candidates,search}=adaptiveText({key,ir,field:'text',terms,validate:text=>validateCode(text,ir),
+  initial:()=>plainCode(compose('CodeIR='+JSON.stringify(ir)+'\nThreadContext='+context+'\nPreviousArtifact='+priorText+'\nRequest='+String(a.prompt||'')+'\nReturn only a complete '+ir.language+' implementation. No meta commentary.')),
+  repair:(text,issues)=>plainCode(compose('Repair this '+ir.language+' candidate. Preserve the request and remove every listed defect.\nRequest='+String(a.prompt||'')+'\nIssues='+JSON.stringify(issues)+'\nCandidate:\n'+text.slice(0,9000)+'\nReturn code only.')),
+  localRepair:(text,issues)=>issues.some(x=>x==='code-shape'||x==='implemented-request')?localCode():null,
+  fallback:localCode});
+ const review=reviewSelect('code.'+action,candidates,ctrl,{language:ir.language,quality:ir.quality,threadCode:a.threadCode,search}),best=review.best||{text:templateCode(ir,a.prompt),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0,scope:'unimplemented-scaffold'};
+ if(review.accepted)cacheWrite(key,{text:best.text,strategy:best.strategy,scope:best.scope});
  const draft=best.text,validation=best.validation,reward=review.learning;let exported=null;if(ir.export&&review.accepted)exported=shareText(draft,ir.filename||('BANC888_code.'+codeExt(ir.language)),'text/plain');
- const out={action,ir,text:draft,validation,review,control:ctrl,reward,exported};
+ const out={action,ir,text:draft,validation,review,search,implementationScope:best.scope,control:ctrl,reward,exported};
  setLast(a.threadCode,'code',out);remember('code.'+action,review.accepted,{language:ir.language,issues:review.candidates.filter(x=>!x.pass).flatMap(x=>x.issues).slice(0,12),quality:ir.quality,score:review.best&&review.best.score,candidates:review.candidates.length});return out;
 }
 function imagePrompt(ir){
@@ -170,29 +194,38 @@ function imagePrompt(ir){
 function generateImage(a,refine){
  const ir=a.ir||V.buildImageIR(a.prompt||''),last=getLast(a.threadCode,'image');
  if(refine&&last&&last.ir)ir.subject=last.ir.subject+'; refinement request: '+ir.request;
- const ctrl=controlPrepare(ir),base=imagePrompt(ir),all=[];
-
+ const key=JSON.stringify(['image',ir]),cached=cacheRead(key),ctrl=cached?null:controlPrepare(ir),base=imagePrompt(ir),all=[],seen=new Set();
+ const maxCandidates=ir.quality==='fast'?6:ir.quality==='high'?14:10,qualityTarget=ir.quality==='fast'?80:ir.quality==='high'?92:86;
+ const search={policy:'quality-target-defect-repair-plateau',maxCandidates,qualityTarget,stopReason:'budget',renderCalls:0,assessmentCalls:0,duplicateCount:0,cacheHit:!!cached};
  function renderVariant(v){
    const fullPrompt=[base,v.prompt].filter(Boolean).join(' | ');
-   let r;
+   const identity=JSON.stringify([fullPrompt,v.seed,v.mode,v.detail,v.blur,v.atmosphere,v.layoutX,v.layoutY,v.scaleBias]);
+   if(seen.has(identity)){search.duplicateCount++;return null}seen.add(identity);
+   let r;search.renderCalls++;
    try{r=Agent.execute('o2.generate',{prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere,layoutX:v.layoutX,layoutY:v.layoutY,scaleBias:v.scaleBias})}
    catch(e){r={ok:false,error:String(e&&e.message||e)}}
-   return{id:v.id,parentId:v.parentId||null,generation:+v.generation||0,strategy:v.strategy,prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere,layoutX:+v.layoutX||0,layoutY:+v.layoutY||0,scaleBias:+v.scaleBias||1,value:r&&r.ok?r.value:null,error:r&&r.ok?null:(r&&r.error)||'generation-failed'};
+   const row={id:v.id,parentId:v.parentId||null,generation:+v.generation||0,strategy:v.strategy,prompt:fullPrompt,variantPrompt:v.prompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere,layoutX:+v.layoutX||0,layoutY:+v.layoutY||0,scaleBias:+v.scaleBias||1,value:r&&r.ok?r.value:null,error:r&&r.ok?null:(r&&r.error)||'generation-failed'};
+   row.quality=IQ.evaluate(row,ir);search.assessmentCalls++;return row;
  }
- function renderBatch(list){for(const v of list)all.push(renderVariant(v))}
- function rerank(){return IQ.rank(all,ir)}
-
- const initial=IQ.expand(ir,ir.quality==='high'?12:9).map(v=>({...v,generation:0}));
- renderBatch(initial);
- let ranked=rerank();
+ function renderBatch(list){for(const v of list){if(all.length>=maxCandidates)break;const row=renderVariant(v);if(row)all.push(row)}}
+ function rerank(){const passed=all.filter(x=>x.quality.pass).sort((x,y)=>y.quality.score-x.quality.score||String(x.id).localeCompare(String(y.id))),rejected=all.filter(x=>!x.quality.pass).sort((x,y)=>y.quality.score-x.quality.score);return{selected:passed[0]||null,passed,rejected,evaluated:all}}
+ renderBatch(cached?[{...cached,generation:0}]:IQ.expand(ir,4).map(v=>({...v,generation:0})));
+ let ranked=rerank(),plateaus=0;
  const generationTrace=[{generation:0,candidates:all.length,bestScore:ranked.selected?.quality?.score||0,passed:ranked.passed.length}];
-
- for(let generation=1;generation<=2;generation++){
-   const children=IQ.evolve(ranked.evaluated,ir,generation,generation===1?8:6);
-   if(!children.length)break;
-   renderBatch(children);
+ for(let generation=1;generation<=3;generation++){
+   if(ranked.selected?.quality?.score>=qualityTarget){search.stopReason='quality-target';break}
+   if(ranked.rejected.length&&ranked.rejected.every(x=>x.quality.hardIssues?.includes('unsupported-subject'))){search.stopReason='unsupported-subject';break}
+   if(all.length>=maxCandidates)break;
+   const previous=Math.max(0,...all.map(x=>x.quality.score));
+   const children=IQ.evolve(ranked.evaluated.map(x=>({...x,prompt:x.variantPrompt})),ir,generation,Math.min(4,maxCandidates-all.length)).slice(0,maxCandidates-all.length);
+   const before=all.length;renderBatch(children);
+   if(all.length===before){search.stopReason='duplicate-or-empty-repair';break}
    ranked=rerank();
-   generationTrace.push({generation,candidates:all.length,bestScore:ranked.selected?.quality?.score||0,passed:ranked.passed.length});
+   const score=Math.max(0,...all.map(x=>x.quality.score));
+   generationTrace.push({generation,candidates:all.length,bestScore:ranked.selected?.quality?.score||0,passed:ranked.passed.length,scoreGain:score-previous});
+   plateaus=score-previous<1?plateaus+1:0;
+   if(ranked.selected?.quality?.score>=qualityTarget){search.stopReason='quality-target';break}
+   if(plateaus>=2){search.stopReason='quality-plateau';break}
  }
 
  if(!ranked.selected){
@@ -210,9 +243,11 @@ function generateImage(a,refine){
  const review=reviewSelect(refine?'image.refine':'image.generate',ranked.evaluated.map(x=>({prompt:x.prompt,value:x.value,validation:x.quality,score:(x.quality?.score||0)/100,stage:x.generation?'evolved':'generated',strategy:x.strategy,diagnosis:[...(x.quality?.hardIssues||[]),...(x.quality?.issues||[])]})),ctrl,{quality:ir.quality,subject:ir.subject,skipLearning:true,evolutionary:true,threadCode:a.threadCode});
  if(!review.accepted)throw new Error('画像候補に対するコネクトーム出力がありません。');
  const best=ranked.evaluated[review.best.index];
- const finalRun=Agent.execute('o2.generate',{prompt:best.prompt,seed:best.seed,mode:best.mode,detail:best.detail,blur:best.blur,atmosphere:best.atmosphere,layoutX:best.layoutX,layoutY:best.layoutY,scaleBias:best.scaleBias});
- if(!finalRun||!finalRun.ok)throw new Error((finalRun&&finalRun.error)||'selected image render failed');
- const finalQuality=IQ.evaluate({...best,value:finalRun.value},ir);
+ let finalRun,finalQuality;
+ if(best===all[all.length-1]){finalRun={ok:true,value:best.value};finalQuality=best.quality}
+ else{search.renderCalls++;finalRun=Agent.execute('o2.generate',{prompt:best.prompt,seed:best.seed,mode:best.mode,detail:best.detail,blur:best.blur,atmosphere:best.atmosphere,layoutX:best.layoutX,layoutY:best.layoutY,scaleBias:best.scaleBias});
+  if(!finalRun||!finalRun.ok)throw new Error((finalRun&&finalRun.error)||'selected image render failed');
+  finalQuality=IQ.evaluate({...best,value:finalRun.value},ir);search.assessmentCalls++}
  if(!finalQuality.pass)throw new Error('最終画像が再検証で品質基準を下回りました。');
 
  const firstBest=generationTrace[0]?.bestScore||0;
@@ -224,13 +259,14 @@ function generateImage(a,refine){
    pass:true,score:finalQuality.score,issues:finalQuality.issues,hardIssues:finalQuality.hardIssues,
    metrics:finalQuality.metrics,objects:finalRun.value?.objects||0,scene:finalRun.value?.scene||null,
    candidateCount:all.length,passedCount:ranked.passed.length,rejectedCount:ranked.rejected.length,
-   generationCount:generationTrace.length,evolutionGain:finalQuality.score-firstBest,generationTrace
+   generationCount:generationTrace.length,evolutionGain:finalQuality.score-firstBest,generationTrace,search
  };
  const candidatesPassed=ranked.passed.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:true,issues:c.quality.issues||[],seed:c.seed,mode:c.mode,layoutX:c.layoutX,layoutY:c.layoutY,scaleBias:c.scaleBias}));
  const candidatesRejected=ranked.rejected.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:false,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode,layoutX:c.layoutX,layoutY:c.layoutY,scaleBias:c.scaleBias}));
 
+ cacheWrite(key,{id:best.id,parentId:best.parentId,strategy:best.strategy,prompt:best.variantPrompt,seed:best.seed,mode:best.mode,detail:best.detail,blur:best.blur,atmosphere:best.atmosphere,layoutX:best.layoutX,layoutY:best.layoutY,scaleBias:best.scaleBias});
  const reward=controlReward(ctrl,true),out={
-   ir,prompt:best.prompt,value:finalRun.value,validation,review,
+   ir,prompt:best.prompt,value:finalRun.value,validation,review,search,
    selection:{id:best.id,parentId:best.parentId||null,generation:best.generation||0,strategy:best.strategy,score:finalQuality.score},
    candidates:candidatesPassed,rejected:candidatesRejected,control:ctrl,reward,feedback
  };
@@ -248,50 +284,48 @@ function docFallback(ir,context){
  const body=sections.map((name,i)=>'## '+(i+1)+'. '+name+'\n'+(i===0?'目的: '+ir.request+'\n対象: 提供された記録の整理と共有。事実と確認事項を分けて記載します。':i===1?evidence:'確認事項: この節に対応する事実を元の記録と照合します。担当者、期限、合意事項が記録にある場合は原文に沿って記載し、記録がない項目は追加確認が必要と明記します。')).join('\n\n');
  return '# '+ir.title+'\n\n'+body+'\n\n## 出典と確認\n'+(source?'出典: この依頼で提供された文脈。内容の正確性と公開範囲は元の記録で確認してください。':'出典資料なし。具体的な事実を記入するまでは完成した議事録として扱わないでください。')+'\n';
 }
-function validateDoc(body,ir){
+function validateDoc(body,ir,source=''){
  const s=String(body||''),heads=(s.match(/^##?\s+/gm)||[]).length,tests=[];const check=(name,pass,detail)=>tests.push({name,pass:!!pass,detail:detail||''});
  check('minimum-length',s.length>=220,'length='+s.length);check('required-sections',heads>=Math.min(3,(ir.sections||[]).length),'headings='+heads);check('no-placeholder',!/\bTODO\b|未定です|十分な知識がない/.test(s));
- const issues=tests.filter(x=>!x.pass).map(x=>x.name);return{pass:issues.length===0,issues,tests,length:s.length,headings:heads};
+ if(source)check('source-preserved',s.includes(source),'Supplied text must remain available for checking facts.');
+ const issues=tests.filter(x=>!x.pass).map(x=>x.name);return{pass:issues.length===0,issues,tests,length:s.length,headings:heads,level:'structure-and-source-preservation'};
 }
 function makeDoc(format,a){
- const ir=a.ir||V.buildDocumentIR(a.prompt||''),ctrl=controlPrepare(ir),prior=getLast(a.threadCode,'document'),terms=[...tokenize(ir.request),...(ir.sections||[])],strategies=ir.quality==='high'?['complete factual structure','concise practical structure','risk-aware structure']:['complete structure','concise structure'],candidates=[];
- for(const strategy of strategies){
-  let body='';const goal='DocumentIR='+JSON.stringify(ir)+'\nThreadContext='+String(a.context||'').slice(-2200)+'\nPreviousDraft='+String(prior&&prior.body||'').slice(0,4000)+'\nStrategy='+strategy+'\nCreate a finished Japanese document. Use headings beginning with # and ##. Include all required sections. No meta commentary.';
-  try{body=clean(compose(goal))}catch(e){}
-  if(!/^#\s+/m.test(body)||body.length<220)body=docFallback(ir,a.context);
-  const validation=validateDoc(body,ir),score=baseScore(validation,body,terms);candidates.push({body,validation,score,stage:'generated',strategy});
- }
- let interim=[...candidates].sort((x,y)=>y.score-x.score)[0];
- if(interim&&(!interim.validation.pass||interim.score<.78)){
-  let body='';const goal='Repair the following Japanese document. Keep its intent, fix all listed defects, and return the full finished document only.\nDocumentIR='+JSON.stringify(ir)+'\nIssues='+JSON.stringify(interim.validation.issues||[])+'\nDraft:\n'+String(interim.body||'').slice(0,9000);
-  try{body=clean(compose(goal))}catch(e){}
-  if(!/^#\s+/m.test(body)||body.length<220)body=docFallback(ir,a.context);
-  const validation=validateDoc(body,ir),score=baseScore(validation,body,terms)+.02;candidates.push({body,validation,score,stage:'repair',strategy:'diagnostic-repair'});
- }
- const review=reviewSelect('document.create.'+format,candidates,ctrl,{type:ir.type,quality:ir.quality,threadCode:a.threadCode}),best=review.best||candidates[0]||{body:docFallback(ir,a.context),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0};
- const body=best.body,validation=best.validation,title=ir.title||'BANC888資料';let exported=null,outText=body;
+ const ir=a.ir||V.buildDocumentIR(a.prompt||''),prior=getLast(a.threadCode,'document'),priorBody=ir.action==='revise'?String(prior&&prior.body||'').slice(0,4000):'',source=String(a.context||'').trim().slice(-2200);
+ const key=JSON.stringify(['document',ir,source,priorBody]),ctrl=QUALITY_CACHE.has(key)?null:controlPrepare(ir),terms=[...tokenize(ir.request),...(ir.sections||[])];
+ const {candidates,search}=adaptiveText({key,ir,field:'body',terms,validate:body=>validateDoc(body,ir,source),
+  initial:()=>compose('DocumentIR='+JSON.stringify(ir)+'\nThreadContext='+source+'\nPreviousDraft='+priorBody+'\nCreate a Japanese document using # and ## headings and all required sections. Preserve supplied facts. Mark absent facts as requiring confirmation. No meta commentary.'),
+  repair:(body,issues)=>compose('Repair the following Japanese document. Fix only the listed defects, preserve supplied facts, and return the full document.\nDocumentIR='+JSON.stringify(ir)+'\nSource='+source+'\nIssues='+JSON.stringify(issues)+'\nDraft:\n'+body.slice(0,9000)),
+  localRepair:(body,issues)=>{if(issues.some(x=>x==='minimum-length'||x==='required-sections'||x==='no-placeholder'))return docFallback(ir,source);if(issues.includes('source-preserved'))return body+'\n\n## 提供された記録（出典）\n'+source+'\n';return body},
+  fallback:()=>docFallback(ir,source)});
+ const review=reviewSelect('document.create.'+format,candidates,ctrl,{type:ir.type,quality:ir.quality,threadCode:a.threadCode,search}),best=review.best||candidates[0]||{body:docFallback(ir,source),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0};
+ if(review.accepted)cacheWrite(key,{text:best.body,strategy:best.strategy,scope:best.scope});
+ const body=best.body,validation=review.accepted?best.validation:{...best.validation,pass:false,issues:[...best.validation.issues,'connectome-output-missing']},title=ir.title||'BANC888資料';let exported=null,outText=body;
  if(review.accepted){if(format==='docx')exported=window.AndroidFiles?safeJson(AndroidFiles.createDocx(title,body,ir.filename||'BANC888_document.docx')):{ok:false,reason:'native file bridge unavailable'};else{const ext=format==='markdown'?'md':format==='html'?'html':'txt',mime=format==='markdown'?'text/markdown':format==='html'?'text/html':'text/plain';if(format==='html')outText='<!doctype html><html lang="ja"><meta charset="utf-8"><title>'+title.replace(/[<>&]/g,'')+'</title><body><pre style="white-space:pre-wrap;font-family:system-ui">'+body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre></body></html>';exported=shareText(outText,ir.filename||('BANC888_document.'+ext),mime)}}
- const out={format,title,body:outText,ir,validation,review,control:ctrl,reward:review.learning,exported};setLast(a.threadCode,'document',out);remember('document.create.'+format,review.accepted,{type:ir.type,quality:ir.quality,issues:best.diagnosis,score:best.score,candidates:review.candidates.length});return out;
+ const out={format,title,body:outText,ir,validation,review,search,sourceStatus:source?'supplied-source-preserved':'outline-with-missing-facts',control:ctrl,reward:review.learning,exported};setLast(a.threadCode,'document',out);remember('document.create.'+format,review.accepted,{type:ir.type,quality:ir.quality,issues:best.diagnosis,score:best.score,candidates:review.candidates.length});return out;
 }
 
 function understandContent(a){
  const prompt=String(a.prompt||''),quoted=[...prompt.matchAll(/[「『]([^」』]+)[」』]/g)].map(x=>x[1]);
  const source=String(a.source||prompt.split(/本文[:：]|source[:：]/i).slice(1).join(' ')||quoted.join(' ')||a.context||'').slice(0,12000);
  const question=prompt.split(/本文[:：]|source[:：]/i)[0],latin=question.toLowerCase().match(/[a-z0-9]{2,}/g)||[];
- const jp=question.replace(/要約|内容|理解|教えて|ください|本文|[\s\p{P}]/gu,'');
+ const summaryMode=/要約|summari[sz]e|summary|内容.*理解/i.test(question);
+ const jp=question.replace(/要約|内容|理解|教えて|ください|本文|質問|答えて|何ですか|ですか|ますか|とは|何|[\s\p{P}]/gu,'');
  const terms=[...new Set([...latin,...Array.from({length:Math.max(0,jp.length-1)},(_,i)=>jp.slice(i,i+2))])].slice(0,48);
  const sentences=source.split(/(?<=[。！？.!?])\s*|\n+/).map(x=>x.trim()).filter(Boolean).slice(0,48);
- const remaining=sentences.map((text,index)=>({text,index,relevance:terms.filter(t=>text.toLowerCase().includes(t)).length}));
+ const seen=new Set(),remaining=sentences.map((text,index)=>({text,index,relevance:terms.filter(t=>text.toLowerCase().includes(t)).length+(!summaryMode&&/いつ|日付|when/i.test(question)&&/\d+[年月日]|\d+[:/]\d+|開催日/.test(text)?2:0)})).filter(x=>{const key=x.text.normalize('NFKC').replace(/\s+/g,' ');if(seen.has(key))return false;seen.add(key);return true});
  const evidence=[],traces=[],kernel=Agent.state.connectomeSelector;
+ let noRelevantEvidence=false;
  while(remaining.length&&evidence.length<3&&kernel?.evaluate){
-  const top=Math.max(...remaining.map(x=>x.relevance)),eligible=top>0?remaining.filter(x=>x.relevance===top):remaining;
+  const top=Math.max(...remaining.map(x=>x.relevance));if(!summaryMode&&top<=0){noRelevantEvidence=!evidence.length;break}
+  const eligible=top>0?remaining.filter(x=>x.relevance===top):remaining;
   const rows=eligible.map(x=>({tool:'888.content.'+x.index,routeId:/とは|です|is |means /i.test(x.text)?'o1p1':/ため|ので|because/i.test(x.text)?'o1p2':'o1p3',excitation:1,contentIndex:x.index}));
   const pick=kernel.evaluate(rows,a.threadCode||'__system__');if(!pick)break;
   const sentence=remaining.find(x=>x.index===pick.contentIndex);evidence.push(sentence);traces.push(pick.connectome);
   remaining.splice(remaining.indexOf(sentence),1);
  }
  evidence.sort((x,y)=>x.index-y.index);
- return{mode:'extractive-source-reading',summary:evidence.map(x=>x.text).join(' '),evidence:evidence.map(x=>({sourceIndex:x.index,text:x.text})),sourceLength:source.length,connectome:traces,validation:{pass:evidence.length>0,issues:evidence.length?[]:['source-or-connectome-output-missing']}};
+ return{mode:'extractive-source-reading',questionMode:summaryMode?'summary':'source-question',summary:evidence.length?evidence.map(x=>x.text).join(' '):noRelevantEvidence?'提供された資料に、この質問に答える根拠が見つかりませんでした。':'',evidence:evidence.map(x=>({sourceIndex:x.index,text:x.text})),sourceLength:source.length,connectome:traces,validation:{pass:evidence.length>0,issues:evidence.length?[]:[noRelevantEvidence?'no-relevant-evidence':'source-or-connectome-output-missing']}};
 }
 reg('content.understand','read supplied text and select source evidence through the connectome','read_state','none',understandContent);
 
@@ -302,8 +336,8 @@ reg('code.refactor','refactor the last thread code artifact preserving intent','
 reg('code.test','generate a test-oriented code candidate from CodeIR','code.write','local',a=>generateCode(a,'test'));
 reg('code.convert','convert or port the last thread code artifact according to CodeIR','code.write','local',a=>generateCode(a,'convert'));
 reg('code.optimize','optimize the last thread code artifact under requested constraints','code.write','local',a=>generateCode(a,'optimize'));
-reg('image.generate','ImageIR -> broad candidates -> quality gates -> evolutionary breeding -> rerank -> render best passing candidate','image.write','page',a=>generateImage(a,false));
-reg('image.refine','refine prior ImageIR -> evolutionary candidate search -> quality gates -> render best passing candidate','image.write','page',a=>generateImage(a,true));
+reg('image.generate','ImageIR -> bounded quality target search -> defect repair -> cached assessment -> circuit-gated render','image.write','page',a=>generateImage(a,false));
+reg('image.refine','refine prior ImageIR -> bounded defect repair -> quality and circuit gates','image.write','page',a=>generateImage(a,true));
 reg('voice.listen','SpeechIR -> Android native speech recognition','voice.input','native',voiceListen);
 reg('voice.speak.native','SpeechIR -> Android native TTS with rate pitch language','human.output','native',voiceSpeak);
 reg('voice.status.native','read Android native STT TTS permission state','voice.input','none',()=>window.AndroidVoice?safeJson(AndroidVoice.status()):{native:false,fallback:Agent.voiceStatus?Agent.voiceStatus():null});
@@ -313,6 +347,7 @@ reg('document.create.markdown','DocumentIR -> structured Markdown draft -> valid
 reg('document.create.html','DocumentIR -> structured HTML draft -> validation export','document.write','native',a=>makeDoc('html',a));
 reg('document.create.text','DocumentIR -> structured text draft -> validation export','document.write','native',a=>makeDoc('text',a));
 reg('capability.experience.status','read bounded success failure experience for artifact tools','compute','none',a=>expStats(a&&a.tool));
+reg('capability.quality.status','read bounded quality search cache storage','compute','none',cacheStatus);
 reg('capability.review.status','read multi-candidate review and repair history','compute','none',()=>reviewStatus());
 reg('feedback.test','ingest a training regression or holdout test result into the Fly feedback path','compute','local',a=>feedbackTest(a?.name,a?.passed,a?.tier||'training',a?.failure||null,a?.targetTool||'chat.compose'));
 reg('feedback.status','read learned feedback route bias and recent reward vectors','compute','none',()=>{try{const r=Agent.execute('feedback.status',{});return r&&r.ok?r.value:{error:r&&r.error}}catch(e){return{error:String(e&&e.message||e)}}});

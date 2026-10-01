@@ -17,6 +17,14 @@ window.AndroidFiles={
  createDocx:(title,body,filename)=>window.__BancFiles?__BancFiles.createDocx(token,String(title||''),String(body||''),String(filename||'')):denied(),
  shareText:(text,filename,mime)=>window.__BancFiles?__BancFiles.shareText(token,String(text||''),String(filename||''),String(mime||'text/plain')):denied()
 };
+window.AndroidVideo={
+ begin:(w,h,fps,frames,name)=>window.__BancVideo?__BancVideo.begin(token,Number(w),Number(h),Number(fps),Number(frames),String(name||'BANC888_video.mp4')):denied(),
+ append:(id,index,jpeg)=>window.__BancVideo?__BancVideo.append(token,String(id),Number(index),String(jpeg)):denied(),
+ finish:(id)=>window.__BancVideo?__BancVideo.finish(token,String(id)):denied(),
+ status:(id)=>window.__BancVideo?__BancVideo.status(token,String(id||'')):denied(),
+ cancel:(id)=>window.__BancVideo?__BancVideo.cancel(token,String(id)):denied(),
+ share:(id)=>window.__BancVideo?__BancVideo.share(token,String(id)):denied()
+};
 window.AndroidResearch={
  searchWikipedia:(query,limit)=>window.__BancResearch?__BancResearch.searchWikipedia(token,String(query||''),Number(limit||3)):denied(),
  searchCrossref:(query,limit)=>window.__BancResearch?__BancResearch.searchCrossref(token,String(query||''),Number(limit||3)):denied()

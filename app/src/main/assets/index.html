@@ -120,7 +120,7 @@ body.ui-compact #v50UnifiedBanner{display:none}
 
 </head>
 <body>
-<header><h1>🪰 BANC888 Fly Agent <span class="pill">v7.5 CONNECTOME MOBILE</span></h1>
+<header><h1>🪰 BANC888 Fly Agent <span class="pill">v7.6 CONNECTOME MP4</span></h1>
 <div class="muted">音声会話 + Human Display + ToolBus + BANC/O0 + F38/F42/F46。通常操作はFly Consoleへ集約し、専門パネルは用途別に折りたたみます。</div></header>
 <main>
 <div class="card" id="v50UnifiedBanner"><h2>BANC888 v5.0 Fly Voice + Human Display Agent <span class="pill">v4.8 unified + ears + voice + human display</span></h2><div class="note"><b>操作主体は代理人としてのハエ。</b> v4.8のToolBus/F38/F42/F46を保持したまま、人間→ハエの音声入力、ハエ→人間の音声出力、ハエ→人間向け画面出力を追加。O0は不変です。</div></div>
@@ -5794,7 +5794,36 @@ agentRegister('o2.generate','generate through preserved O2/O2 Photo+ runtime','o
   const scene=detail?{width:detail.width,height:detail.height}:O23.scene?{width:O23.scene.width,height:O23.scene.height}:null;
   return{kind,objects,scene,sceneDetail:detail,generationOptions:O2X.scene?.generationOptions||O2X.options};
 });
-agentRegister('o3.generate','generate O3 timeline from preserved O2 scene','o3.write','page',a=>{if(!O23.scene){const p=AGENT.tools.get('o2.generate');p.handler({prompt:a.prompt||''})}o23GenerateO3();return{tracks:O23.timeline?.tracks?.length||0,durationMs:O23.timeline?.durationMs||0,playing:false}});
+function o23CoherentVideo(prompt){
+ // Build a fresh semantic scene; all parts of an actor receive the same motion.
+ SEM.plan=semPlan(prompt);SEM.scene=semSceneFromPlan(SEM.plan);semRender();semSync();
+ O23.scene=JSON.parse(JSON.stringify(SEM.scene));const tracks=[];
+ const still=/静止|動かさない|still/i.test(prompt),jump=/跳|ジャンプ|jump/i.test(prompt);
+ for(const o of O23.scene.objects){
+  const kind=String(o.id||'').match(/^(cat|dog|person|car|bird|insect|cloud)/)?.[1];if(!kind||still)continue;
+  const dx=kind==='cloud'?40:kind==='bird'?90:100,dy=jump?-65:kind==='bird'||kind==='insect'?-30:-4;
+  for(const [prop,delta] of [['x',dx],['y',dy],...(o.type==='line'?[['x2',dx],['y2',dy]]:[])]){
+   const value=Number(o[prop]||0);tracks.push({object:o.id,property:prop,route:'o1p0',keyframes:[[0,value],[.5,value+delta],[1,value]]});
+  }
+ }
+ O23.timeline={format:'BANC888-O3-coherent-v1',durationMs:4000,loop:true,tracks};o23Render(0);o23SyncEditor();
+}
+function o23CaptureVideo(){
+ if(!O23.scene||!O23.timeline)throw new Error('動画シーンを生成してください。');
+ const scene=JSON.parse(JSON.stringify(O23.scene)),timeline=JSON.parse(JSON.stringify(O23.timeline));
+ const objects=scene.objects.map(o=>({...o})),byId=new Map(objects.map(o=>[o.id,o]));
+ return{width:scene.width,height:scene.height,durationMs:timeline.durationMs,render:(t,ctx)=>{
+  for(const track of timeline.tracks){const object=byId.get(track.object);if(object){const v=o23TrackValue(track,t);if(v!==undefined)object[track.property]=v}}
+  ctx.clearRect(0,0,scene.width,scene.height);ctx.fillStyle=scene.background?.type==='linearGradient'?o23Gradient(ctx,scene.background):scene.background||'#07101e';ctx.fillRect(0,0,scene.width,scene.height);
+  for(const object of objects)o23DrawPrimitive(ctx,object);
+ }};
+}
+window.FFCVideoSceneSource=o23CaptureVideo;
+agentRegister('o3.generate','generate coherent semantic motion and save native MP4','o3.write','page',a=>{
+ o23CoherentVideo(String(a.prompt||''));if(window.FFCVideoExport)FFCVideoExport.setSource(o23CaptureVideo);
+ const exported=window.FFCVideoExport?FFCVideoExport.start({filename:a.filename,fps:a.fps}):{ok:false,status:'failed',error:'MP4 runtime unavailable'};
+ return{tracks:O23.timeline.tracks.length,durationMs:O23.timeline.durationMs,playing:false,exported};
+});
 agentRegister('chat.compose','compose human-facing reply with preserved adaptive chat','chat.compose','local',a=>{const goal=String(a.goal||''),base=generateConversation(goal),obs=a.observation?agentObservationText(a.observation.tool,a.observation.result,goal):'',ctx=String(a.context||'');if(ctx&&!CHAT.memory.lastTopic){const m=ctx.match(/人間:\s*([^\n]{2,60})/g);if(m?.length){const lastLine=m[m.length-1].replace(/^人間:\s*/,'');const t=topicFromText(lastLine);if(t){CHAT.memory.lastTopic=t;saveChat()}}}return{reply:base.reply+(obs?'\n\n'+obs:''),intent:base.intent,lang:base.lang}});
 agentRegister('bridge.propose','proposal for future OS/app/file/network body bridge','bridge.propose','external-proposal',a=>({proposal_only:true,execution:'NOT_PERFORMED',action:String(a.action||'external.operation'),goal:String(a.goal||''),reason:'APK/native bridge deferred; keep fly/tool contract stable'}));
 agentRegister('f38.compile','compile a fly-routed dependency-safe compute organism program','f38.write','local',a=>{f38Stop();const goal=String(a.goal||'agent compute'),mode=['text','code','image','audio','video'].includes(a.mode)?a.mode:'text',n=Math.max(8,Math.min(40,+a.n||16));F38.program=f38CompileProgram(goal,mode,n);F38.current=null;F38.pc=0;F38.regs=null;F38.executed=0;F38.trace=[];F38.done=new Set();F38.skipped=new Set();F38.error=null;f38MarkGated();f38Render(true);f38UI();return{n:F38.program.n,mode:F38.program.mode,totalOps:F38.program.totalOps,effectiveOps:F38.program.effectiveOps,shards:F38.program.shards.length,inputSource:F38.program.inputSource,control:F38.program.control}});
@@ -5976,7 +6005,7 @@ function flySpeak(text){
   FLYVOICE.speaking=true;flyVoiceStopListening();speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(clean);u.lang=$('#flyVoiceLang')?.value||'ja-JP';u.rate=+($('#flyVoiceRate')?.value||1);u.pitch=+($('#flyVoicePitch')?.value||1);const ix=+($('#flyVoiceSelect')?.value);if(Number.isInteger(ix)&&FLYVOICE.voices[ix])u.voice=FLYVOICE.voices[ix];
   u.onstart=()=>{FLYVOICE.speaking=true;flyVoiceSetState('speaking','ハエが話しています…')};u.onend=()=>{FLYVOICE.speaking=false;flyVoiceSetState('idle','発話終了');if($('#flyVoiceLoop')?.checked)setTimeout(()=>flyVoiceStartListening(),420)};u.onerror=e=>{FLYVOICE.speaking=false;flyVoiceSetState('error','音声出力: '+(e.error||'error'))};speechSynthesis.speak(u);return{spoken:true,chars:clean.length,lang:u.lang,rate:u.rate,pitch:u.pitch}
 }
-function flyFindVisualSource(packet){const goal=String(packet?.goal||'');const explicitVisual=/(?:画像|image|絵|picture|photo|動画|video|アニメ|映像).*(?:生成|作って|作成|描いて|generate|create)|(?:生成|作って|作成|描いて|generate|create).*(?:画像|image|絵|picture|photo|動画|video|アニメ|映像)/i.test(goal);const tools=(packet?.steps||[]).map(x=>x.tool).reverse();for(const tool of tools){if(tool==='o3.generate')return explicitVisual?['o3v0Canvas','O3 video/frame output']:[null,'text output'];if(tool==='o2.generate')return explicitVisual?['o2xCanvas','O2 image output']:[null,'text output'];if(tool==='banc.neighbors')return['graph','BANC graph output']}return[null,'text output']}
+function flyFindVisualSource(packet){const goal=String(packet?.goal||'');const explicitVisual=/(?:画像|image|絵|picture|photo|動画|video|アニメ|映像).*(?:生成|作って|作成|描いて|generate|create)|(?:生成|作って|作成|描いて|generate|create).*(?:画像|image|絵|picture|photo|動画|video|アニメ|映像)/i.test(goal);const tools=(packet?.steps||[]).map(x=>x.tool).reverse();for(const tool of tools){if(tool==='o3.generate')return explicitVisual?['o23Canvas','O3 video/frame output']:[null,'text output'];if(tool==='o2.generate')return explicitVisual?['o2xCanvas','O2 image output']:[null,'text output'];if(tool==='banc.neighbors')return['graph','BANC graph output']}return[null,'text output']}
 function flyCopyCanvas(srcId){const dst=$('#flyDisplayCanvas'),src=srcId&&$('#'+srcId);if(!dst||!src||typeof src.getContext!=='function'){if(dst)dst.style.display='none';return false}try{const ctx=dst.getContext('2d');ctx.clearRect(0,0,dst.width,dst.height);ctx.fillStyle='#05080f';ctx.fillRect(0,0,dst.width,dst.height);const sw=src.width||1,sh=src.height||1,scale=Math.min(dst.width/sw,dst.height/sh),w=sw*scale,h=sh*scale;ctx.drawImage(src,(dst.width-w)/2,(dst.height-h)/2,w,h);dst.style.display='block';return true}catch(e){dst.style.display='none';return false}}
 function flyPresent(packetOrText,meta={}){const packet=typeof packetOrText==='object'&&packetOrText?packetOrText:null,text=packet?String(packet.finalText||''):String(packetOrText||'');const tool=meta.tool||packet?.selected?.tool||'—',route=meta.route||packet?.selected?.route||'—';if($('#flyDisplayText'))$('#flyDisplayText').textContent=text||'—';if($('#flyDisplayTool'))$('#flyDisplayTool').textContent='tool '+tool;if($('#flyDisplayRoute'))$('#flyDisplayRoute').textContent='route '+route;if($('#flyDisplayState'))$('#flyDisplayState').textContent=meta.state||'FLY OUTPUT';const [srcId,caption]=packet?flyFindVisualSource(packet):[null,'text output'];const copied=flyCopyCanvas(srcId);if($('#flyDisplayCaption'))$('#flyDisplayCaption').textContent=(copied?caption:'text output')+' · human-facing presentation channel';return{displayed:true,tool,route,visual:copied?srcId:null,chars:text.length}}
 function flyDeliver(packet,{dryRun=false}={}){if(!packet)return null;const display=agentExecute('human.display',{packet},{dryRun});let voice=null;if(packet.finalText&&$('#flyVoiceSpeak')?.checked)voice=agentExecute('voice.speak',{text:packet.finalText},{dryRun});packet.outputs={display,voice};return packet.outputs}

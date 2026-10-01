@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -66,6 +66,9 @@ jobs:
             fixture: false
           - name: Connectome mobile
             class: com.ffc.banc888.fly.ConnectomeMobileIntegrationTest
+            fixture: false
+          - name: MP4 export
+            class: com.ffc.banc888.fly.VideoExportIntegrationTest
             fixture: false
           - name: Conversation knowledge
             class: com.ffc.banc888.fly.ConversationKnowledgeIntegrationTest
@@ -117,3 +120,13 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
           script: bash .github/scripts/banc888-voice-ci.sh
+
+      - name: Save MP4 verification artifact
+        if: always() && matrix.class == 'com.ffc.banc888.fly.VideoExportIntegrationTest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BANC888-MP4-verification
+          path: |
+            /tmp/BANC888-connectome-sample.mp4
+            /tmp/instrumentation-result.txt
+          if-no-files-found: warn

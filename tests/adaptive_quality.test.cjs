@@ -1,0 +1,72 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const C=require('../app/src/main/assets/proxy-agent-core.js'),V=require('../app/src/main/assets/capability-vocabulary-core.js'),AC=require('../app/src/main/assets/autonomy-core.js'),FB=require('../app/src/main/assets/feedback-core.js'),IQ=require('../app/src/main/assets/image-quality-core.js');
+const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
+const csv=html.match(/const RAW=\{[\s\S]*?edges:`([\s\S]*?)`/)[1];
+const edges=csv.trim().split('\n').slice(1).map(line=>{const [from,to,count,...nt]=line.split(',');return{from,to,count:+count,pre_top_nt:nt.join(',').replaceAll('"','')}});
+const routes=vm.runInNewContext(html.match(/const O1P_SHORTCUTS=(\[[\s\S]*?\]);/)[1]);
+const data={nodes:[...new Set(edges.flatMap(e=>[e.from,e.to]))],edges,routes,toolRoutes:{},source:'embedded BANC aggregate'};
+const visible={samples:40,stdLuma:14,edgeDensity:.06,dynamicRange:90};
+function scene(kind='cat',center=480){return{objects:1,scene:{width:960,height:600},sceneDetail:{width:960,height:600,mode:'photoish',entities:[{id:'cat1',kind,x:center,y:330,scale:1}],entityVisual:{cat1:{parts:{head:visible,body:visible,tail:visible}}},renderMetrics:{samples:1000,stdLuma:35,edgeDensity:.09,clippedRatio:0}}}}
+function runtime({compose=()=> 'No implementation from this test body',render=()=>scene(),quality=IQ}={}){
+ const store=new Map(),tools=new Map(),calls=[];
+ const Agent={state:{tools,capabilities:new Set(),connectomeSelector:new C.ConnectomeMultiplexer(data)},execute:(tool,args={})=>{
+  calls.push({tool,args});const t=tools.get(tool);if(t){try{return{ok:true,value:t.handler(args)}}catch(e){return{ok:false,error:e.message}}}
+  if(tool==='chat.compose')return{ok:true,value:{reply:compose(args.goal)}};
+  if(tool==='o2.generate')return{ok:true,value:render(args,calls.filter(x=>x.tool===tool).length)};
+  return{ok:true,value:{done:true}};
+ }};
+ const context={window:{FFCCapabilityVocabulary:V,FFCImageQuality:quality,FFCFeedback:FB,FFCAutonomyCore:AC,BANC888_FLY_AGENT:Agent},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},document:{readyState:'complete',getElementById:()=>null},setTimeout:()=>{}};
+ vm.runInNewContext(fs.readFileSync('app/src/main/assets/capability-tools.js','utf8'),context);
+ return{Agent,calls};
+}
+const live=runtime(),request={prompt:'PythonでCSVを読み込むコードを生成して',threadCode:'A'};
+let result=live.Agent.execute('code.generate',request).value;
+assert.equal(result.validation.pass,true);assert.equal(result.search.composeCalls,1);assert.ok(result.text.includes('csv.DictReader'));
+const original=result.text;
+result=live.Agent.execute('code.generate',request).value;
+assert.equal(result.text,original);assert.equal(result.search.cacheHit,true);assert.equal(result.search.composeCalls,0);assert.equal(result.search.assessmentCalls,1);assert.ok(result.review.connectome);
+assert.equal(live.Agent.execute('code.generate',{...request,context:'different source'}).value.search.cacheHit,false);
+live.Agent.state.connectomeSelector=new C.ConnectomeMultiplexer({...data,edges:[]});
+result=live.Agent.execute('code.generate',request).value;
+assert.equal(result.search.cacheHit,true);assert.equal(result.review.accepted,false);assert.equal(result.validation.pass,false);
+const good='function sum(a,b) { return a+b; }\nconst example = sum(2,3);\nconst verified = example === 5;';
+const broken='function sum(a,b) { return a+b; }\nconst example = sum(2,3;\nconst verified = example === 5;';
+let repairGoal='';
+const repairing=runtime({compose:goal=>{if(goal.startsWith('Repair')){repairGoal=goal;return good}return broken}});
+result=repairing.Agent.execute('code.generate',{prompt:'JavaScriptで足し算する関数を書いて'}).value;
+assert.equal(result.validation.pass,true);assert.equal(result.search.composeCalls,2);assert.ok(repairGoal.includes('javascript-syntax'));assert.equal(vm.runInNewContext(result.text+'\nsum(2,3)'),5);
+const duplicate=runtime({compose:()=>broken});
+result=duplicate.Agent.execute('code.generate',{prompt:'JavaScriptで足し算する関数を書いて'}).value;
+assert.equal(result.validation.pass,false);assert.equal(result.review.accepted,false);assert.ok(result.search.duplicateCount>=1);assert.ok(result.search.composeCalls<=result.search.maxAttempts);
+const unsupported=runtime().Agent.execute('code.generate',{prompt:'Pythonで未知の処理を実装して'}).value;
+assert.equal(unsupported.validation.pass,false);assert.equal(unsupported.implementationScope,'unimplemented-scaffold');
+const source='会議は10月3日。田中が試作品を10月10日までに提出する。';
+const doc=runtime().Agent.execute('document.create.markdown',{prompt:'会議議事録をMarkdownで作成して',context:source}).value;
+assert.equal(doc.validation.pass,true);assert.ok(doc.body.includes(source));assert.equal(doc.sourceStatus,'supplied-source-preserved');assert.equal(doc.search.composeCalls,1);
+const missing=runtime().Agent.execute('document.create.markdown',{prompt:'会議議事録を作成して'}).value;
+assert.equal(missing.sourceStatus,'outline-with-missing-facts');assert.ok(missing.body.includes('完成した議事録として扱わない'));
+const reading=runtime(),irrelevant=reading.Agent.execute('content.understand',{prompt:'光合成とは何ですか？本文:会議は10月3日に開催します。参加者は田中です。'}).value;
+assert.equal(irrelevant.validation.pass,false);assert.ok(irrelevant.validation.issues.includes('no-relevant-evidence'));assert.ok(irrelevant.summary.includes('根拠が見つかりません'));
+const summary=reading.Agent.execute('content.understand',{prompt:'要約してください。本文:会議は10月3日です。会議は10月3日です。議題は開発計画です。'}).value;
+assert.equal(summary.validation.pass,true);assert.equal(summary.evidence.length,2);assert.deepEqual(Array.from(summary.evidence,x=>x.sourceIndex),[0,2]);
+const when=reading.Agent.execute('content.understand',{prompt:'いつですか？本文:議題は開発計画です。会議は10月3日です。'}).value;
+assert.equal(when.validation.pass,true);assert.equal(when.evidence.length,1);assert.equal(when.evidence[0].sourceIndex,1);
+const bounded=runtime();for(let i=0;i<20;i++)bounded.Agent.execute('code.generate',{...request,context:'request '+i});
+const cache=bounded.Agent.execute('capability.quality.status').value;assert.ok(cache.entries<=cache.maxEntries);assert.ok(cache.retainedStringBytes<=cache.maxStringBytes);
+const image=runtime();let pic=image.Agent.execute('image.generate',{prompt:'猫の画像を作成して',threadCode:'B'});
+assert.equal(pic.ok,true,pic.error);pic=pic.value;assert.equal(pic.validation.pass,true);assert.equal(pic.search.stopReason,'quality-target');assert.equal(pic.validation.candidateCount,4);assert.ok(pic.search.renderCalls<=5);assert.equal(pic.selection.score,Math.max(...pic.candidates.map(x=>x.score)));
+pic=image.Agent.execute('image.generate',{prompt:'猫の画像を作成して',threadCode:'B'}).value;
+assert.equal(pic.search.cacheHit,true);assert.equal(pic.validation.candidateCount,1);assert.equal(pic.search.renderCalls,1);assert.equal(pic.validation.pass,true);
+image.Agent.state.connectomeSelector=new C.ConnectomeMultiplexer({...data,edges:[]});assert.equal(image.Agent.execute('image.generate',{prompt:'猫の画像を作成して',threadCode:'B'}).ok,false);
+const evolutionary=runtime({render:(args,call)=>scene('cat',call<=4?100:480)});
+pic=evolutionary.Agent.execute('image.generate',{prompt:'猫の画像を作成して'}).value;
+// Initial cats are cropped; the repair renders restore the complete subject.
+assert.equal(pic.validation.pass,true);assert.equal(pic.validation.generationCount,2);assert.equal(pic.validation.candidateCount,8);assert.ok(pic.validation.evolutionGain>0);assert.ok(pic.search.renderCalls<=pic.search.maxCandidates+1);
+const plateauQuality={...IQ,evaluate:(candidate,ir)=>({...IQ.evaluate(candidate,ir),score:80})};
+const plateau=runtime({quality:plateauQuality});pic=plateau.Agent.execute('image.generate',{prompt:'猫の画像を作成して'}).value;
+assert.equal(pic.search.stopReason,'quality-plateau');assert.equal(pic.validation.generationCount,3);assert.equal(pic.validation.candidateCount,12);assert.ok(pic.search.renderCalls<=pic.search.maxCandidates+1);
+const duplicateQuality={...plateauQuality,evolve:parents=>parents.map(x=>({...x,id:'duplicate-'+x.id}))};
+const duplicateImages=runtime({quality:duplicateQuality});pic=duplicateImages.Agent.execute('image.generate',{prompt:'猫の画像を作成して'}).value;
+assert.equal(pic.search.stopReason,'duplicate-or-empty-repair');assert.equal(pic.validation.candidateCount,4);assert.equal(pic.search.duplicateCount,4);assert.ok(pic.search.renderCalls<=5);
+const failures=runtime({render:()=>scene('connectome')});assert.equal(failures.Agent.execute('image.generate',{prompt:'パンダの画像を作成して'}).ok,false);assert.equal(failures.calls.filter(x=>x.tool==='o2.generate').length,4);
+console.log('adaptive-quality: PASS (validated cache, defect repair, deduplication, scaffold rejection, source preservation, bounded image target/plateau and cut rejection)');

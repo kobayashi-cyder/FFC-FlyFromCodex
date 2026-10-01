@@ -37,7 +37,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -105,6 +105,8 @@ jobs:
           node tests/connectome_mobile.test.cjs
           node tests/connectome_multiplex.test.cjs
           node tests/task_review.test.cjs
+          node tests/video_export.test.cjs
+          node tests/adaptive_quality.test.cjs
           node tests/proxy_apk_integration.test.cjs
           node tests/conversation_output_core.test.cjs
           node tests/research_physics_core.test.cjs
@@ -121,17 +123,17 @@ jobs:
 
       - name: APK inventory
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.5-connectome-mobile-debug.apk
-          ls -lh BANC888-v7.5-connectome-mobile-debug.apk
-          sha256sum BANC888-v7.5-connectome-mobile-debug.apk > BANC888-v7.5-connectome-mobile-debug.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.6-connectome-mp4-debug.apk
+          ls -lh BANC888-v7.6-connectome-mp4-debug.apk
+          sha256sum BANC888-v7.6-connectome-mp4-debug.apk > BANC888-v7.6-connectome-mp4-debug.apk.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.5-connectome-mobile-debug
+          name: BANC888-v7.6-connectome-mp4-debug
           path: |
-            BANC888-v7.5-connectome-mobile-debug.apk
-            BANC888-v7.5-connectome-mobile-debug.apk.sha256
+            BANC888-v7.6-connectome-mp4-debug.apk
+            BANC888-v7.6-connectome-mp4-debug.apk.sha256
             connectome-mobile-benchmark.json
           if-no-files-found: error
           retention-days: 30

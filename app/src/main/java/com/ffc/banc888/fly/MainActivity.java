@@ -15,6 +15,7 @@ public class MainActivity extends Activity {
     private SpeechController speech;
     private ResearchClient research;
     private DocumentExporter documents;
+    private VideoExporter videos;
     private WebShellController webShell;
     private BridgeRegistry bridges;
 
@@ -29,6 +30,7 @@ public class MainActivity extends Activity {
         devLive = new DevLiveManager(this);
         research = new ResearchClient();
         documents = new DocumentExporter(this);
+        videos = new VideoExporter(this);
         speech = new SpeechController(this, this::evalJs);
 
         webShell = new WebShellController(this, webView, devLive, nativeSession);
@@ -40,6 +42,7 @@ public class MainActivity extends Activity {
                 webShell::diagnosticsJson,
                 speech,
                 documents,
+                videos,
                 research,
                 devLive,
                 () -> webShell.loadCurrentPage()
@@ -103,6 +106,12 @@ public class MainActivity extends Activity {
         }
         if (speech != null) {
             try { speech.destroy(); } catch (Throwable ignored) {}
+        }
+        if (videos != null) {
+            VideoExporter exporter = videos;
+            new Thread(() -> {
+                try { exporter.close(); } catch (Throwable ignored) {}
+            }, "BANC888-video-shutdown").start();
         }
         if (research != null) {
             try { research.shutdown(); } catch (Throwable ignored) {}

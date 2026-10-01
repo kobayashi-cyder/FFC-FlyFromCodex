@@ -12,10 +12,10 @@ final class AppConfig {
     static final String APP_HOST = "appassets.androidplatform.net";
     static final String DEV_REF = "banc888-apk-connectome-mobile-v1";
     static final String REPO = "kobayashi-cyder/FFC-FlyFromCodex";
-    static final int SHELL_VERSION = 70;
+    static final int SHELL_VERSION = 71;
     static final int WEB_RUNTIME_VERSION = 7;
-    static final int BRIDGE_SCHEMA = 4;
-    static final int ASSET_SCHEMA = 5;
+    static final int BRIDGE_SCHEMA = 5;
+    static final int ASSET_SCHEMA = 6;
 
     static final String[] RUNTIME_SCRIPTS = new String[]{
             "native-bridge.js",
@@ -29,6 +29,7 @@ final class AppConfig {
             "ir-patch-core.js",
             "proxy-agent-core.js",
             "capability-tools.js",
+            "video-export.js",
             "research-physics-tools.js",
             "proxy-agent.js",
             "conversation-output-core.js",
@@ -49,6 +50,7 @@ final class AppConfig {
             "ir-patch-core.js",
             "proxy-agent-core.js",
             "capability-tools.js",
+            "video-export.js",
             "research-physics-tools.js",
             "proxy-agent.js",
             "conversation-output-core.js",
