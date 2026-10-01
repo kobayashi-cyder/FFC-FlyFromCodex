@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 77
-        versionName '7.0.7-category-image-quality'
+        versionCode 78
+        versionName '7.0.8-evolutionary-image-search'
     }
 
     buildTypes {
