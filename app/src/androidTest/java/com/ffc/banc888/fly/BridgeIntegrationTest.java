@@ -13,6 +13,7 @@ public class BridgeIntegrationTest {
     @Test
     public void webViewBridgeRuntimeIsLinked() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            assertTrue("Native runtime did not become ready", TestSupport.awaitNativeReady(scenario));
             assertTrue(TestSupport.awaitJs(scenario,
                     "!!(window.FFC_THREADS&&window.FFC_PROXY_AGENT&&window.FFC_CAPABILITIES&&window.FFCConversationOutput&&window.FFC_WEBVIEW_RUNTIME&&window.AndroidRuntime)", 15000));
             assertTrue(TestSupport.awaitJs(scenario,
@@ -20,7 +21,7 @@ public class BridgeIntegrationTest {
             assertTrue(TestSupport.awaitJs(scenario,
                     "JSON.parse(AndroidVoice.status()).threadRouter===true", 5000));
             assertTrue(TestSupport.awaitJs(scenario,
-                    "JSON.parse(AndroidDiagnostics.status()).shellVersion===70&&JSON.parse(AndroidDiagnostics.status()).bridgeSchema===4&&JSON.parse(AndroidDiagnostics.status()).webShell.runtimeVersion===7", 5000));
+                    "(function(){var s=JSON.parse(AndroidDiagnostics.status());return s.shellVersion===70&&s.bridgeSchema===4&&s.webShell.runtimeVersion===7})()", 5000));
             assertTrue(TestSupport.awaitJs(scenario,
                     "JSON.parse(__BancVoice.status('wrong-token')).error==='native bridge denied'", 5000));
             assertTrue(TestSupport.awaitJs(scenario,

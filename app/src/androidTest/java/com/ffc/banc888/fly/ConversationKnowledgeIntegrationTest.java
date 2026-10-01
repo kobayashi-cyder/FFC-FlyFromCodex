@@ -13,6 +13,7 @@ public class ConversationKnowledgeIntegrationTest {
     @Test
     public void generalQuestionProducesSubstantiveSolarAnswer() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            assertTrue("Native runtime did not become ready", TestSupport.awaitNativeReady(scenario));
             assertTrue(TestSupport.awaitJs(scenario,
                     "!!(window.BANC888_FLY_AGENT&&window.AndroidResearch&&window.FFC_THREADS)", 12000));
 

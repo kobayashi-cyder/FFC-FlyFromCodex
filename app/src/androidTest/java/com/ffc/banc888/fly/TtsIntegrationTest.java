@@ -13,6 +13,7 @@ public class TtsIntegrationTest {
     @Test
     public void textToSpeechCompletesUtterance() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            assertTrue("Native runtime did not become ready", TestSupport.awaitNativeReady(scenario));
             assertTrue(TestSupport.awaitJs(scenario,
                     "JSON.parse(AndroidVoice.status()).ttsReady===true", 15000));
             assertTrue(TestSupport.awaitJs(scenario,

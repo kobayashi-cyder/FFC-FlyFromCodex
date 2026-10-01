@@ -14,6 +14,7 @@ public class MicrophoneIntegrationTest {
     public void microphonePermissionAndAudioRecordInitialize() throws Exception {
         TestSupport.grantMicrophone();
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            assertTrue("Native runtime did not become ready", TestSupport.awaitNativeReady(scenario));
             assertTrue(TestSupport.awaitJs(scenario,
                     "!!(window.AndroidVoice&&window.AndroidDiagnostics)", 15000));
             assertTrue(TestSupport.awaitJs(scenario,

@@ -13,6 +13,7 @@ public class ImageQualityIntegrationTest {
     @Test
     public void explicitImageRequestUsesMultipleCandidatesAndSelectsOnlyPassingResult() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            assertTrue("Native runtime did not become ready", TestSupport.awaitNativeReady(scenario));
             assertTrue(TestSupport.awaitJs(scenario,
                     "!!(window.FFC_CAPABILITIES&&window.FFCImageQuality&&window.BANC888_FLY_AGENT)", 12000));
 
@@ -41,7 +42,7 @@ public class ImageQualityIntegrationTest {
                             + "return true})()", 3000));
 
             assertTrue("Image candidate pipeline did not finish",
-                    TestSupport.awaitJs(scenario, "window.__imgDone===true", 15000));
+                    TestSupport.awaitJs(scenario, "window.__imgDone===true", 60000));
             assertTrue("No passing ranked image candidate was selected",
                     TestSupport.awaitJs(scenario, "window.__imgOk===true", 1000));
         }

@@ -19,6 +19,7 @@ public class SpeechRecognizerIntegrationTest {
     public void injectedPcmReachesSpeechRecognizerAndReturnsTranscript() throws Exception {
         TestSupport.grantMicrophone();
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            assertTrue("Native runtime did not become ready", TestSupport.awaitNativeReady(scenario));
             assertTrue(TestSupport.awaitJs(scenario,
                     "!!(window.AndroidVoice&&window.FFC_THREADS&&window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.__ffcThreadBound)", 15000));
             assertTrue(TestSupport.awaitJs(scenario,
