@@ -3,7 +3,7 @@
   "minShellVersion": 75,
   "bridgeSchema": 8,
   "assetSchema": 10,
-  "commit": "3d35b57166c3fbfc4079f469da80c3eb869dc268",
+  "commit": "f63119697e82b01617da43edaa23b54151fbba24",
   "files": {
     "index.html": "7d848da41fa87e1c69a40344e2b734844ed92ad26c7093d363460a4709b9ebf5",
     "native-bridge.js": "8e922e8740186456c6c10197a699c7430993926f3678de1879bb0acfb120f7be",
@@ -34,6 +34,6 @@
     "artifact-workspace.js": "151f244a3f28bdbd3352d39be781127b53b705461474043bbd9c7a028d43fae4",
     "fly-task-worker.js": "adbfea2305e7e285ef3631ef743226790936ac3f848e373281316fbcda42142b",
     "attachment-core.js": "741e2eff9fb68c6bd974a16a8332fc83af8cd89df04930cca2387d4bdd440455",
-    "attachments.js": "fe9a877571e2c2879382682bffde64046cd2a4ed47651e666649f8552dc4ea19"
+    "attachments.js": "ef85a0d6d763fd064b0680dade3b76be5a92e8c794ae723cd297fcabc47b5d24"
   }
 }
