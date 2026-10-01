@@ -15,7 +15,7 @@ final class AppConfig {
     static final int SHELL_VERSION = 70;
     static final int WEB_RUNTIME_VERSION = 7;
     static final int BRIDGE_SCHEMA = 4;
-    static final int ASSET_SCHEMA = 4;
+    static final int ASSET_SCHEMA = 5;
 
     static final String[] RUNTIME_SCRIPTS = new String[]{
             "native-bridge.js",
@@ -24,6 +24,7 @@ final class AppConfig {
             "capability-vocabulary-core.js",
             "image-quality-core.js",
             "feedback-core.js",
+            "autonomy-core.js",
             "research-physics-core.js",
             "ir-patch-core.js",
             "proxy-agent-core.js",
@@ -43,6 +44,7 @@ final class AppConfig {
             "capability-vocabulary-core.js",
             "image-quality-core.js",
             "feedback-core.js",
+            "autonomy-core.js",
             "research-physics-core.js",
             "ir-patch-core.js",
             "proxy-agent-core.js",
