@@ -3,7 +3,7 @@
   "minShellVersion": 70,
   "bridgeSchema": 4,
   "assetSchema": 5,
-  "commit": "22af8add5e6e325b620e411bb0f1ff808e2f1ad4",
+  "commit": "c2e1c5d042224cf873f91b9a9738ac09c1898e81",
   "files": {
     "index.html": "8a9abd6b347b98b43a8720095522142650ca1848fcd16c8735ed812e52e12b35",
     "native-bridge.js": "72e7d7fac8c5127f62edffa30b32151aa2488b7ebbc5c31c44f2a2369a623a90",
@@ -17,7 +17,7 @@
     "proxy-agent-core.js": "e99e49bdabb46bd6f5a049c5ee98fd09052919f5e816d09f08550607e9e358e2",
     "capability-tools.js": "6865c2bd5d0d56ec1e2817975f9166251a915e3d3ce32a6bc5468066108886f3",
     "research-physics-tools.js": "9163f15bdd1a5806bc3d6a7e6bbfc34933b8804534a30fa6f44686fdc539c778",
-    "proxy-agent.js": "c68200e3d525666a2b6b2b454089a5fc985d26f2ba89768cfbda13c175a10be2",
+    "proxy-agent.js": "316ef16f8bbcb66c79ac28d056b2ff932c801f6f831d74cb674d834af4e0880c",
     "conversation-output-core.js": "79ecf9c03fb3dbc2a02701442748539fec25c280a3a6cf62558c38552bd8f6a2",
     "thread-router.js": "54be7fbca19ebb88cc3c29f21a6093621d0b560898fe8c59d61c487d4f30d1ff",
     "dev-live.js": "f7fab43f4d92ef8d6a97414d2a41089ba74648cf38435ea772c90b8b8ce4b73c",
