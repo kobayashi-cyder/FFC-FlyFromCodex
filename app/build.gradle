@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 78
-        versionName '7.0.8-evolutionary-image-search'
+        versionCode 79
+        versionName '7.0.9-evolutionary-image-engine'
     }
 
     buildTypes {
