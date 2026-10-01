@@ -18,6 +18,7 @@ import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.Voice;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -119,11 +120,13 @@ final class SpeechController {
     private final RecognitionListener listener = new RecognitionListener() {
         @Override public void onReadyForSpeech(Bundle params) {
             recognizerReadyAtMs = System.currentTimeMillis();
+            Log.i("BANC_VOICE", "onReadyForSpeech");
             setState(State.LISTENING);
             js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onListening&&window.BANC888_NATIVE_VOICE.onListening()");
         }
         @Override public void onBeginningOfSpeech() {
             speechBeganAtMs = System.currentTimeMillis();
+            Log.i("BANC_VOICE", "onBeginningOfSpeech");
             recognitionActivityAtMs = speechBeganAtMs;
         }
         @Override public void onRmsChanged(float rmsdB) {
@@ -134,6 +137,7 @@ final class SpeechController {
         @Override public void onEvent(int eventType, Bundle params) {}
 
         @Override public void onError(int error) {
+            Log.i("BANC_VOICE", "onError=" + error);
             lastRecognitionErrorCode = error;
             lastRecognitionError = recognitionErrorText(error);
             if (shouldFallbackRecognizer(error)) {
@@ -147,6 +151,7 @@ final class SpeechController {
         }
 
         @Override public void onResults(Bundle results) {
+            Log.i("BANC_VOICE", "onResults");
             ArrayList<String> list = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             float[] conf = results.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES);
             JSONArray alternatives = new JSONArray();
@@ -175,7 +180,10 @@ final class SpeechController {
         @Override public void onPartialResults(Bundle partialResults) {
             ArrayList<String> list = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             String text = list != null && !list.isEmpty() ? list.get(0) : "";
-            if (!text.trim().isEmpty()) recognitionActivityAtMs = System.currentTimeMillis();
+            if (!text.trim().isEmpty()) {
+                recognitionActivityAtMs = System.currentTimeMillis();
+                Log.i("BANC_VOICE", "onPartialResults nonempty");
+            }
             js.eval("window.BANC888_NATIVE_VOICE&&window.BANC888_NATIVE_VOICE.onPartial&&window.BANC888_NATIVE_VOICE.onPartial("
                     + JSONObject.quote(text) + ")");
         }
@@ -255,7 +263,7 @@ final class SpeechController {
                 synchronized (SpeechController.this) {
                     if (generation != listenGeneration) return;
                     if (state == State.IDLE || state == State.ERROR || state == State.SPEAKING) return;
-                    if (recognitionActivityAtMs > 0L || recognitionResultCount > 0) return;
+                    if (recognizerReadyAtMs > 0L || recognitionActivityAtMs > 0L || recognitionResultCount > 0) return;
                     ++listenGeneration;
                     try { if (recognizer != null) recognizer.cancel(); } catch (Throwable ignored) {}
                     lastRecognitionErrorCode = -4;
@@ -371,8 +379,14 @@ final class SpeechController {
             int nonZero = 0;
             int peak = 0;
             while (System.currentTimeMillis() < deadline && nonZero < 64) {
-                int read = record.read(pcm, 0, pcm.length, AudioRecord.READ_BLOCKING);
-                if (read <= 0) continue;
+                int read = record.read(pcm, 0, pcm.length, AudioRecord.READ_NON_BLOCKING);
+                if (read <= 0) {
+                    try { Thread.sleep(10L); } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                    continue;
+                }
                 totalRead += read;
                 for (int i = 0; i < read; i++) {
                     int v = pcm[i];
