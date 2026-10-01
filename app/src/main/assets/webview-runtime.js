@@ -4,7 +4,7 @@ if(window.__BANC888_WEBVIEW_RUNTIME_V7__)return;
 window.__BANC888_WEBVIEW_RUNTIME_V7__=true;
 
 const VERSION=7;
-const BUILD='7.1-java-integrated';
+const BUILD='7.4-unified-autonomy';
 const bootAt=performance.now();
 const state={
   ready:false,
@@ -44,6 +44,9 @@ function snapshot(){
     nativeEvents:state.nativeEvents,
     lastNativeEvent:state.lastNativeEvent,
     transport:transport(),
+    autonomy:(()=>{try{return window.BANC888_FLY_AGENT?.skillsStatus?.()||null}catch{return null}})(),
+    review:(()=>{try{return window.FFC_CAPABILITIES?.reviewStatus?.()||null}catch{return null}})(),
+    conversationLogs:!!window.BANC888_CONVERSATION_LOGS,
     metrics:{...state.metrics},
     errors:state.errors.slice(-8),
     bridges:{
