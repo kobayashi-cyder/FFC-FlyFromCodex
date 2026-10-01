@@ -44,6 +44,15 @@ function baseCandidateProposal(text){
  try{
   const built=Agent.buildCandidates(String(text||''),null,[]),auto=Caps.autonomy;
   let rows=Array.isArray(built?.candidates)?built.candidates:[];
+  const q=String(text||''),extra=(tool,args,exc=.9)=>{if(Agent.state?.tools?.has?.(tool))rows.push({tool,args:args||{},excitation:exc,inhibition:0,confidence:.96,source:'autonomy-diagnostic-router'})};
+  if(/micro.*(?:status|状態)|(?:status|状態).*micro/i.test(q))extra('micro.status',{},1.03);
+  if(/f38.*(?:status|状態)|(?:status|状態).*f38/i.test(q))extra('f38.status',{},1.03);
+  if(/f42.*(?:status|状態)|(?:status|状態).*f42/i.test(q))extra('f42.status',{},1.03);
+  if(/f46.*(?:status|状態)|(?:status|状態).*f46/i.test(q))extra('f46.status',{},1.03);
+  if(/(?:feedback|フィードバック|報酬|reward).*(?:status|状態)|(?:学習状態|報酬状態)/i.test(q))extra('feedback.status',{},1.02);
+  if(/(?:autonomy|自律|獲得スキル|学習).*(?:status|状態|一覧)|獲得スキル一覧/i.test(q))extra('autonomy.status',{},1.06);
+  if(/(?:tool|ツール|機能).*(?:manifest|一覧|リスト)|できること一覧/i.test(q))extra('system.manifest',{},1.01);
+  if(/(?:画面|display).*(?:表示|出して|show)/i.test(q))extra('human.display',{text:q},.97);
   if(auto&&auto.enrichCandidates)rows=auto.enrichCandidates(rows);
   rows=rows.filter(x=>{const s=spec(x.tool);return !!(s&&policy.allows(s.capability))}).map(x=>({...x,activation:(+x.excitation||0)-(+x.inhibition||0)}));
   rows.sort((a,b)=>b.activation-a.activation||(b.confidence||0)-(a.confidence||0));
