@@ -22,7 +22,7 @@ const PACK={
  },
  image:{
   nouns:['画像','イラスト','絵','写真','図解','図','アイコン','サムネイル','背景','ポスター','image','picture','photo','render','canvas','png','jpg','jpeg'],
-  generate:['画像生成','描いて','描画','レンダリング','作って','生成','generate','render','draw','create'],
+  generate:['画像生成','画像作成','描いて','描画','レンダリング','作って','作成','作成して','生成','generate','render','draw','create'],
   refine:['修正','描き直し','改善','高精細化','構図変更','明るく','暗く','refine','revise','variation']
  },
  voice:{
