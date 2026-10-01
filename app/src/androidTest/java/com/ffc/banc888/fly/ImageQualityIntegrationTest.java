@@ -28,7 +28,11 @@ public class ImageQualityIntegrationTest {
                             + "&&v.validation.candidateCount>=8&&v.validation.passedCount>=1"
                             + "&&v.validation.score>=72&&v.selection&&pool.length===v.validation.passedCount"
                             + "&&pool.every(function(x){return x.pass===true})"
-                            + "&&Number(v.selection.score)===max);"
+                            + "&&Number(v.selection.score)===max"
+                            + "&&v.validation.metrics&&v.validation.metrics.categoryIntegrity===1"
+                            + "&&Array.isArray(v.validation.metrics.categoryChecks)"
+                            + "&&v.validation.metrics.categoryChecks.some(function(x){return x.kind==='cat'&&x.pass===true"
+                            + "&&x.parts&&x.parts.head&&x.parts.head.pass&&x.parts.body&&x.parts.body.pass&&x.parts.tail&&x.parts.tail.pass}));"
                             + "}catch(e){window.__imgMeta={error:String(e)}}finally{window.__imgDone=true}},0);"
                             + "return true})()", 3000));
 
