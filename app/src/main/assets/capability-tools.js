@@ -32,7 +32,7 @@ const feedbackIngest=(event,targetTool)=>{
 const feedbackTest=(name,passed,tier='training',failure=null,targetTool='chat.compose')=>
   feedbackIngest(FB.fromTest(String(name||'test'),!!passed,{tier,action:String(targetTool||'delegate'),failure}),targetTool);
 let EXP=load(EXP_KEY,[]),LAST=load(LAST_KEY,{});
-const remember=(tool,ok,meta)=>{EXP.push({time:Date.now(),tool,ok:!!ok,meta:meta||{}});if(EXP.length>96)EXP=EXP.slice(-96);save(EXP_KEY,EXP);if(AUTO){AUTO.observeTool(tool,{ok:!!ok,reward:autoReward(!!ok,null,meta),quality:meta&&meta.validation,learnable:true});autoSave()}};
+const remember=(tool,ok,meta)=>{EXP.push({time:Date.now(),tool,ok:!!ok,meta:meta||{}});if(EXP.length>96)EXP=EXP.slice(-96);save(EXP_KEY,EXP);if(AUTO){const reward=meta&&meta.reward!=null?Number(meta.reward):autoReward(!!ok,null,meta);AUTO.observeTool(tool,{ok:!!ok,reward,quality:meta&&meta.validation,learnable:true});autoSave()}};
 const expStats=tool=>{const a=EXP.filter(x=>!tool||x.tool===tool),ok=a.filter(x=>x.ok).length;return{count:a.length,success:ok,failure:a.length-ok,rate:a.length?ok/a.length:null,last:a.slice(-6)}};
 const setLast=(thread,kind,value)=>{const k=(thread||'_global')+'|'+kind;LAST[k]=value;save(LAST_KEY,LAST)};
 const getLast=(thread,kind)=>LAST[(thread||'_global')+'|'+kind]||LAST['_global|'+kind]||null;
@@ -242,7 +242,6 @@ function handle(text,ctx){
    const args={...(step.args||{})};if(ctx.threadCode!=null)args.threadCode=ctx.threadCode;if(ctx.context!=null)args.context=String(ctx.context||'');
    let r;try{r=Agent.execute(step.tool,args)}catch(e){r={ok:false,error:String(e&&e.message||e)}}
    const reward=autoReward(!!(r&&r.ok),r&&r.value,null);remember(step.tool,!!(r&&r.ok),{reward,autonomySkill:learned.id});
-   if(AUTO)AUTO.observeTool(step.tool,{ok:!!(r&&r.ok),reward,quality:r?.value?.validation,learnable:true});
    last={step,r,reward};if(!r||!r.ok){failed=last;break}
   }
   const success=!failed&&!!last,avg=learned.proposal.steps.length?((last&&last.reward)||0):0;autoEpisode(text,learned.proposal.steps,success,success?avg:-.65,learned.proposal.source);autoSave();
@@ -256,6 +255,6 @@ function handle(text,ctx){
  autoEpisode(text,steps,true,reward,'specialist-vocabulary');const finalText=summarize(plan.tool,r.value);present(plan.tool,r.value,finalText);return{handled:true,plan,tool:plan.tool,value:r.value,finalText}
 }
 function ui(){const host=document.getElementById('ffcThreadHub')||document.getElementById('flyAgentCard');if(!host||document.getElementById('ffcCapabilityBar'))return;const x=document.createElement('div');x.id='ffcCapabilityBar';x.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;font-size:12px;opacity:.9';const n=V.lexiconStats();x.innerHTML='<span>🧰 Specialist Tools v2</span><span>CODE '+n.code+'</span><span>IMAGE '+n.image+'</span><span>VOICE '+n.voice+'</span><span>DOC '+n.document+'</span><span>IR→VERIFY→REPAIR</span>';host.insertBefore(x,host.firstChild)}
-window.FFC_CAPABILITIES={version:'2.1-autonomy',vocabulary:V,handle,classify:V.classify,experience:expStats,last:(thread,kind)=>getLast(thread,kind),autonomy:AUTO,autonomyStatus:()=>AUTO?AUTO.status():null,manifest:()=>[...st.tools.values()].map(({handler,...x})=>x)};
+window.FFC_CAPABILITIES={version:'2.1-autonomy',vocabulary:V,handle,classify:V.classify,experience:expStats,last:(thread,kind)=>getLast(thread,kind),autonomy:AUTO,autonomyStatus:()=>AUTO?AUTO.status():null,persistAutonomy:autoSave,syncAutonomy:autoSync,manifest:()=>[...st.tools.values()].map(({handler,...x})=>x)};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ui,{once:true});else setTimeout(ui,0);
 })();
