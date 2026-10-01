@@ -5528,7 +5528,31 @@ agentRegister('cpf.inspect','propagate current goal through existing CPF control
 agentRegister('micro.compile','compile large computation into existing scalar micro-op fabric','micro.write','local',a=>{microStop();MICRO.program=microCompileMatMul(String(a.goal||'agent compute'),Math.max(4,Math.min(64,+a.n||32)));MICRO.trace=[];MICRO.executed=0;MICRO.shardIndex=0;MICRO.pc=0;microUI();microDraw();return{n:MICRO.program.n,totalOps:MICRO.program.totalOps,shards:MICRO.program.shards.length,control:MICRO.program.control}});
 agentRegister('micro.step','run one bounded slice of the existing micro-op fabric','micro.write','local',a=>{if(!MICRO.program)throw new AgentInvalidRequest('micro program not compiled');microStop();const ran=microRunSlice(Math.max(1,Math.min(65536,+a.maxOps||4096))),done=microDone();if(done)microFinish();return{ran,done,executed:MICRO.executed,total:MICRO.program.totalOps,stats:done?microStats():null}});
 agentRegister('micro.status','read existing micro-op state','compute','none',()=>({compiled:!!MICRO.program,running:MICRO.running,executed:MICRO.executed,total:MICRO.program?.totalOps||0,shard:MICRO.shardIndex,pc:MICRO.pc,done:microDone(),stats:MICRO.program&&microDone()?microStats():null}));
-agentRegister('o2.generate','generate through preserved O2/O2 Photo+ runtime','o2.write','page',a=>{const prompt=String(a.prompt||'');let kind='O2';if(typeof o2xBuild==='function'&&$('#o2xPrompt')){$('#o2xPrompt').value=prompt;o2xBuild();kind='O2X'}else if(typeof o2pBuildScene==='function'&&$('#o2pPrompt')){$('#o2pPrompt').value=prompt;o2pBuildScene();kind='O2 Photo+'}else{if($('#o23Seed'))$('#o23Seed').value='agent|'+o23Hash(prompt);o23GenerateO2()}return{kind,objects:O23.scene?.objects?.length||0,scene:O23.scene?{width:O23.scene.width,height:O23.scene.height}:null}});
+agentRegister('o2.generate','generate through preserved O2/O2 Photo+ runtime','o2.write','page',a=>{
+  const prompt=String(a.prompt||'');let kind='O2',detail=null;
+  if(typeof o2xBuild==='function'&&$('#o2xPrompt')){
+    $('#o2xPrompt').value=prompt;
+    if(a.seed!=null&&$('#o2xSeed'))$('#o2xSeed').value=String(a.seed);
+    if(a.mode&&$('#o2xMode'))$('#o2xMode').value=String(a.mode);
+    if(a.detail!=null&&$('#o2xDetail'))$('#o2xDetail').value=String(a.detail);
+    if(a.blur!=null&&$('#o2xBlur'))$('#o2xBlur').value=String(a.blur);
+    if(a.atmosphere!=null&&$('#o2xAtmos'))$('#o2xAtmos').value=String(a.atmosphere);
+    o2xBuild();kind='O2X';
+    if(O2X?.scene){
+      const sc=O2X.scene;
+      detail={width:sc.width,height:sc.height,prompt:sc.prompt,mode:sc.mode,seed:sc.seed,detail:sc.detail,blur:sc.blur,atmosphere:sc.atmosphere,
+        entities:(sc.entities||[]).map(e=>({id:e.id,kind:e.kind,x:e.x,y:e.y,scale:e.scale,z:e.z,pose:e.pose,depth:e.depth||'mid'})),
+        analysis:sc.analysis?.tokens||null};
+    }
+  }else if(typeof o2pBuildScene==='function'&&$('#o2pPrompt')){
+    $('#o2pPrompt').value=prompt;o2pBuildScene();kind='O2 Photo+';
+  }else{
+    if($('#o23Seed'))$('#o23Seed').value=String(a.seed||('agent|'+o23Hash(prompt)));o23GenerateO2();
+  }
+  const objects=detail?.entities?.length||O23.scene?.objects?.length||0;
+  const scene=detail?{width:detail.width,height:detail.height}:O23.scene?{width:O23.scene.width,height:O23.scene.height}:null;
+  return{kind,objects,scene,sceneDetail:detail};
+});
 agentRegister('o3.generate','generate O3 timeline from preserved O2 scene','o3.write','page',a=>{if(!O23.scene){const p=AGENT.tools.get('o2.generate');p.handler({prompt:a.prompt||''})}o23GenerateO3();return{tracks:O23.timeline?.tracks?.length||0,durationMs:O23.timeline?.durationMs||0,playing:false}});
 agentRegister('chat.compose','compose human-facing reply with preserved adaptive chat','chat.compose','local',a=>{const goal=String(a.goal||''),base=generateConversation(goal),obs=a.observation?agentObservationText(a.observation.tool,a.observation.result,goal):'',ctx=String(a.context||'');if(ctx&&!CHAT.memory.lastTopic){const m=ctx.match(/人間:\s*([^\n]{2,60})/g);if(m?.length){const lastLine=m[m.length-1].replace(/^人間:\s*/,'');const t=topicFromText(lastLine);if(t){CHAT.memory.lastTopic=t;saveChat()}}}return{reply:base.reply+(obs?'\n\n'+obs:''),intent:base.intent,lang:base.lang}});
 agentRegister('bridge.propose','proposal for future OS/app/file/network body bridge','bridge.propose','external-proposal',a=>({proposal_only:true,execution:'NOT_PERFORMED',action:String(a.action||'external.operation'),goal:String(a.goal||''),reason:'APK/native bridge deferred; keep fly/tool contract stable'}));
