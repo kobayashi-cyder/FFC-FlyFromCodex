@@ -54,6 +54,8 @@ must(speech.includes('recognizerReadyAtMs'),'recognizer readiness diagnostics mi
 must(speech.includes('fallbackToSystemRecognizer'),'on-device to system recognizer fallback missing');
 must(speech.includes('ready-timeout'),'recognizer readiness watchdog missing');
 must(speech.includes('speech-activity-timeout'),'5-second speech activity watchdog missing');
+must(speech.includes('EXTRA_AUDIO_SOURCE'),'deterministic recognizer audio-source support missing');
+must(speech.includes('startListeningFromAudio'),'instrumentation audio-source entry point missing');
 must(speech.includes('5000L'),'speech activity watchdog must remain five seconds');
 must(speech.includes('recognitionActivityAtMs'),'speech activity diagnostics missing');
 must(index.includes('PCM取得OK'),'UI must distinguish real PCM capture from permission-only state');
