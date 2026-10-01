@@ -127,9 +127,9 @@ class GraphConnectomeKernel:
                 continue
             src = float(self._last_activation.get(edge.src, 0.0))
             dst = float(self._last_activation.get(edge.dst, 0.0))
-            if abs(src) < 0.02 and abs(dst) < 0.02:
+            if abs(src) < 0.02:
                 continue
-            eligibility = max(0.05, abs(src)) * max(0.05, abs(dst))
+            eligibility = abs(src) * max(0.05, abs(dst))
             sign = 1.0 if src * dst >= 0.0 else -1.0
             delta = bounded * learning_rate * eligibility * sign
             edge.weight = max(-4.0, min(4.0, edge.weight + delta))
