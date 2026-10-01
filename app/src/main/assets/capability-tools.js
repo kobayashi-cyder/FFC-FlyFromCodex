@@ -1,7 +1,7 @@
 (() => {
 'use strict';
-const V=window.FFCCapabilityVocabulary,Agent=window.BANC888_FLY_AGENT;
-if(!V||!Agent||window.FFC_CAPABILITIES)return;
+const V=window.FFCCapabilityVocabulary,IQ=window.FFCImageQuality,Agent=window.BANC888_FLY_AGENT;
+if(!V||!IQ||!Agent||window.FFC_CAPABILITIES)return;
 const st=Agent.state,EXP_KEY='FFC_CAPABILITY_EXPERIENCE_V2',LAST_KEY='FFC_CAPABILITY_LAST_V2';
 const reg=(name,description,capability,sideEffect,handler)=>{st.capabilities.add(capability);st.tools.set(name,{name,description,capability,sideEffect,handler})};
 const safeJson=s=>{try{return JSON.parse(String(s||''))}catch{return{ok:false,error:String(s||'')}}};
@@ -91,11 +91,34 @@ function imagePrompt(ir){
  const p=[ir.subject];if(ir.style&&ir.style.length)p.push('style: '+ir.style.join(', '));if(ir.composition&&ir.composition.length)p.push('composition: '+ir.composition.join(', '));if(ir.lighting&&ir.lighting.length)p.push('lighting: '+ir.lighting.join(', '));if(ir.palette&&ir.palette.length)p.push('palette: '+ir.palette.join(', '));if(ir.aspect)p.push('aspect: '+ir.aspect);if(ir.size)p.push('size: '+ir.size);if(ir.quality==='high')p.push('coherent composition, clear subject hierarchy, refined detail');if(ir.negative&&ir.negative.length)p.push('avoid: '+ir.negative.join(', '));return p.filter(Boolean).join(' | ');
 }
 function generateImage(a,refine){
- const ir=a.ir||V.buildImageIR(a.prompt||''),last=getLast(a.threadCode,'image');if(refine&&last&&last.ir)ir.subject=last.ir.subject+'; refinement request: '+ir.request;
- const ctrl=controlPrepare(ir),prompt=imagePrompt(ir);let r=Agent.execute('o2.generate',{prompt});if(!r||!r.ok)throw new Error((r&&r.error)||'o2.generate failed');
- let value=r.value,validation={pass:!!(value&&value.objects>0),issues:value&&value.objects>0?[]:['empty-scene'],objects:value&&value.objects||0,scene:value&&value.scene||null};
- if(!validation.pass){r=Agent.execute('o2.generate',{prompt:ir.subject});if(r&&r.ok){value=r.value;validation={pass:!!(value&&value.objects>0),issues:value&&value.objects>0?[]:['empty-scene'],objects:value&&value.objects||0,scene:value&&value.scene||null}}}
- const reward=controlReward(ctrl,validation.pass),out={ir,prompt,value,validation,control:ctrl,reward};setLast(a.threadCode,'image',out);remember(refine?'image.refine':'image.generate',validation.pass,{objects:validation.objects,quality:ir.quality});return out;
+ const ir=a.ir||V.buildImageIR(a.prompt||''),last=getLast(a.threadCode,'image');
+ if(refine&&last&&last.ir)ir.subject=last.ir.subject+'; refinement request: '+ir.request;
+ const ctrl=controlPrepare(ir),base=imagePrompt(ir),variants=IQ.expand(ir,ir.quality==='high'?12:8),candidates=[];
+ for(const v of variants){
+   const fullPrompt=[base,v.prompt].filter(Boolean).join(' | ');
+   let r;
+   try{r=Agent.execute('o2.generate',{prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere})}
+   catch(e){r={ok:false,error:String(e&&e.message||e)}}
+   candidates.push({id:v.id,strategy:v.strategy,prompt:fullPrompt,seed:v.seed,mode:v.mode,detail:v.detail,blur:v.blur,atmosphere:v.atmosphere,value:r&&r.ok?r.value:null,error:r&&r.ok?null:(r&&r.error)||'generation-failed'});
+ }
+ const ranked=IQ.rank(candidates,ir);
+ if(!ranked.selected){
+   const reasons=ranked.rejected.slice(0,4).map(c=>c.id+':'+[...(c.quality.hardIssues||[]),...(c.quality.issues||[])].join(',')).join(' / ');
+   remember(refine?'image.refine':'image.generate',false,{quality:ir.quality,candidates:candidates.length,reasons});
+   controlReward(ctrl,false);
+   throw new Error('画像候補が品質基準を通過しませんでした。'+(reasons?' '+reasons:''));
+ }
+ const best=ranked.selected;
+ const finalRun=Agent.execute('o2.generate',{prompt:best.prompt,seed:best.seed,mode:best.mode,detail:best.detail,blur:best.blur,atmosphere:best.atmosphere});
+ if(!finalRun||!finalRun.ok)throw new Error((finalRun&&finalRun.error)||'selected image render failed');
+ const finalQuality=IQ.evaluate({...best,value:finalRun.value},ir);
+ if(!finalQuality.pass)throw new Error('最終画像が再検証で品質基準を下回りました。');
+ const validation={pass:true,score:finalQuality.score,issues:finalQuality.issues,hardIssues:finalQuality.hardIssues,metrics:finalQuality.metrics,objects:finalRun.value?.objects||0,scene:finalRun.value?.scene||null,candidateCount:candidates.length,passedCount:ranked.passed.length,rejectedCount:ranked.rejected.length};
+ const compact=ranked.evaluated.map(c=>({id:c.id,strategy:c.strategy,score:c.quality.score,pass:c.quality.pass,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode}));
+ const reward=controlReward(ctrl,true),out={ir,prompt:best.prompt,value:finalRun.value,validation,selection:{id:best.id,strategy:best.strategy,score:finalQuality.score},candidates:compact,control:ctrl,reward};
+ setLast(a.threadCode,'image',out);
+ remember(refine?'image.refine':'image.generate',true,{objects:validation.objects,quality:ir.quality,score:validation.score,candidates:validation.candidateCount,passed:validation.passedCount});
+ return out;
 }
 let VOICE_CFG=load('FFC_VOICE_CONFIG_V2',{language:'ja-JP',rate:1,pitch:1});
 function voiceConfigure(a){const ir=a.ir||V.buildVoiceIR(a.prompt||'');VOICE_CFG={language:ir.language||VOICE_CFG.language,rate:ir.rate||VOICE_CFG.rate,pitch:ir.pitch||VOICE_CFG.pitch};save('FFC_VOICE_CONFIG_V2',VOICE_CFG);remember('voice.configure',true,VOICE_CFG);return{...VOICE_CFG,continuousRequested:!!ir.continuous}}
@@ -122,8 +145,8 @@ reg('code.refactor','refactor the last thread code artifact preserving intent','
 reg('code.test','generate a test-oriented code candidate from CodeIR','code.write','local',a=>generateCode(a,'test'));
 reg('code.convert','convert or port the last thread code artifact according to CodeIR','code.write','local',a=>generateCode(a,'convert'));
 reg('code.optimize','optimize the last thread code artifact under requested constraints','code.write','local',a=>generateCode(a,'optimize'));
-reg('image.generate','ImageIR -> prompt -> preserved O2/O2 Photo+ -> scene validation/retry','image.write','page',a=>generateImage(a,false));
-reg('image.refine','refine prior thread ImageIR and regenerate through O2','image.write','page',a=>generateImage(a,true));
+reg('image.generate','ImageIR -> multi-prompt expansion -> hard-gate tests -> score/rank -> render best passing O2 candidate','image.write','page',a=>generateImage(a,false));
+reg('image.refine','refine prior ImageIR -> multi-candidate tests -> score/rank -> render best passing candidate','image.write','page',a=>generateImage(a,true));
 reg('voice.listen','SpeechIR -> Android native speech recognition','voice.input','native',voiceListen);
 reg('voice.speak.native','SpeechIR -> Android native TTS with rate pitch language','human.output','native',voiceSpeak);
 reg('voice.status.native','read Android native STT TTS permission state','voice.input','none',()=>window.AndroidVoice?safeJson(AndroidVoice.status()):{native:false,fallback:Agent.voiceStatus?Agent.voiceStatus():null});
@@ -137,7 +160,7 @@ reg('capability.lexicon.status','read specialist vocabulary pack counts','comput
 
 function summarize(tool,v){
  if(tool.indexOf('code.')===0)return'コード処理 '+tool+' 完了。validation='+(v.validation&&v.validation.pass?'PASS':'CHECK')+' / '+(v.ir&&v.ir.language||'auto')+(v.exported&&v.exported.ok?' / file shared':'');
- if(tool.indexOf('image.')===0)return'画像処理 '+tool+' 完了。objects='+(v.validation&&v.validation.objects||0)+' / validation='+(v.validation&&v.validation.pass?'PASS':'CHECK');
+ if(tool.indexOf('image.')===0)return'画像処理 '+tool+' 完了。候補 '+(v.validation?.candidateCount||0)+'件 → 合格 '+(v.validation?.passedCount||0)+'件 / 選択 '+(v.selection?.id||'—')+' / score '+(v.validation?.score??'—')+' / validation='+(v.validation&&v.validation.pass?'PASS':'CHECK');
  if(tool==='voice.listen')return'音声入力を開始しました。';if(tool==='voice.speak.native')return'音声出力しました。';if(tool==='voice.status.native')return'音声状態: '+JSON.stringify(v);if(tool==='voice.configure')return'音声設定を更新しました。';
  if(tool.indexOf('document.create.')===0)return String(v.format||'document').toUpperCase()+'資料を作成しました。validation='+(v.validation&&v.validation.pass?'PASS':'CHECK')+(v.exported&&v.exported.ok?' / Android共有を開きました':'');
  return'ツール処理完了。';
