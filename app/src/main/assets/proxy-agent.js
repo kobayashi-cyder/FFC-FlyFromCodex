@@ -42,15 +42,15 @@ function proposal(text,ctx){
  return{handled:true,plan,patch,proposal:{source:'specialist-vocabulary',confidence:plan.confidence,steps:[step]}};
 }
 function finalText(tool,value,status,patch){
- const patchNote=patch&&patch.changed&&patch.changed.length?' / IR '+patch.scope+' patch '+patch.changed.length:'';
+ const patchNote=patch&&patch.changed&&patch.changed.length?' / IR '+patch.scope+' patch '+patch.changed.length:'',rv=value&&value.review,reviewNote=rv?' / review='+(rv.accepted?'PASS':'REJECT')+' '+Math.round((rv.best?.score||rv.score||0)*100)+'% '+(rv.candidates?.filter?.(x=>x.pass).length||rv.passedCount||0)+'/'+(rv.candidates?.length||rv.candidateCount||0):'';
  if(status===C.Status.BLOCKED)return'代理人が実行をブロックしました。'+patchNote;
  if(status===C.Status.WAITING)return'共有身体が使用中のため待機しています。'+patchNote;
- if(status===C.Status.FAILED)return'生成または検証に失敗しました。'+patchNote;
- if(/^code\./.test(tool))return'コード処理を完了しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+patchNote;
- if(/^image\./.test(tool))return'画像処理を完了しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+patchNote;
- if(/^document\./.test(tool))return String(value&&value.format||'DOCUMENT').toUpperCase()+'資料を作成しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+patchNote;
+ if(status===C.Status.FAILED)return(rv&&rv.accepted===false?'候補を生成・検査・修復しましたが、合格候補がないため成果物は出力しません。':'生成または検証に失敗しました。')+reviewNote+patchNote;
+ if(/^code\./.test(tool))return'コード処理を完了しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+reviewNote+patchNote;
+ if(/^image\./.test(tool))return'画像処理を完了しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+reviewNote+patchNote;
+ if(/^document\./.test(tool))return String(value&&value.format||'DOCUMENT').toUpperCase()+'資料を作成しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+reviewNote+patchNote;
  if(/^voice\./.test(tool))return'音声ツールを実行しました。'+patchNote;
- return'ツールを実行しました。'+patchNote;
+ return'ツールを実行しました。'+reviewNote+patchNote;
 }
 function execute(text,ctx){
  ctx=ctx||{};const pp=proposal(text,ctx);if(!pp.handled)return{handled:false,plan:pp.plan};
@@ -67,9 +67,9 @@ function execute(text,ctx){
  finally{try{arbiter.release(lease)}catch(e){}}
  if(!r||!r.ok){goal.status=C.Status.FAILED;goal.lastError=(r&&r.error)||'tool failed';emit('observation','tool failed',{goalId:goal.id,tool:step.tool,error:goal.lastError})}
  else{
-  const val=r.value&&r.value.validation;
-  if(val&&val.pass===false){goal.status=C.Status.FAILED;goal.lastError='artifact validation failed';emit('observation','validation failed',{goalId:goal.id,tool:step.tool,issues:val.issues||[]})}
-  else{goal.status=C.Status.DONE;goal.lastError=null;emit('observation','success',{goalId:goal.id,tool:step.tool})}
+  const val=r.value&&r.value.validation,review=r.value&&r.value.review;
+  if((val&&val.pass===false)||(review&&review.accepted===false)){goal.status=C.Status.FAILED;goal.lastError=review&&review.accepted===false?'review gate rejected all candidates':'artifact validation failed';emit('observation','validation/review failed',{goalId:goal.id,tool:step.tool,issues:val?.issues||review?.best?.diagnosis||[],review:review||null})}
+  else{goal.status=C.Status.DONE;goal.lastError=null;emit('observation','success',{goalId:goal.id,tool:step.tool,review:review||null,validation:val||null})}
  }
  goal.updatedAt=now();save();
  return{handled:true,status:goal.status,tool:step.tool,plan:pp.plan,patch:pp.patch,value:r&&r.value,error:r&&r.error,finalText:finalText(step.tool,r&&r.value,goal.status,pp.patch)};
@@ -78,7 +78,7 @@ function retry(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||![C.Sta
 function cancel(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||[C.Status.DONE,C.Status.CANCELLED].includes(g.status))return false;g.status=C.Status.CANCELLED;g.updatedAt=now();save();return true}
 function status(){return{schema:state.schema,recovered:!!state.recovered,goals:state.goals.slice(-80),events:state.events.slice(-40),body:arbiter.snapshot(),allowed:[...policy.allowed]}}
 function patchIr(ir,ops,scope){return P.apply(ir,ops,scope)}
-window.FFC_PROXY_AGENT={version:'2.0-apk',execute,proposal,status,retry,cancel,patchIr,policy,body:arbiter,executive};
+window.FFC_PROXY_AGENT={version:'2.1-unified-autonomy',execute,proposal,status,retry,cancel,patchIr,policy,body:arbiter,executive};
 setTimeout(()=>{const b=document.getElementById('ffcCapabilityBar');if(b&&!document.getElementById('ffcProxyBadge')){const x=document.createElement('span');x.id='ffcProxyBadge';x.textContent='🪰 PROXY EXEC + IR PATCH';b.appendChild(x)}},200);
 if(state.recovered)emit('recovery','checkpoint restored from backup');
 })();
