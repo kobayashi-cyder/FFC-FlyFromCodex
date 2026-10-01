@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Iterable
 
 from .connectome import GraphConnectomeKernel
+from .feedback import FeedbackEvent
 from .models import Goal, Intent, PlanProposal, Stimulus
 from .tools import ToolBus
 
@@ -65,3 +66,12 @@ class ConnectomeExecutive:
 
     def reinforce(self, action: str, reward: float) -> None:
         self.kernel.reinforce(action, reward=reward)
+
+    def reinforce_feedback(self, event: FeedbackEvent) -> float:
+        if not event.learnable:
+            return 0.0
+        return self.kernel.reinforce_feedback(
+            event.action,
+            event.vector,
+            learning_scale=event.learning_scale,
+        )
