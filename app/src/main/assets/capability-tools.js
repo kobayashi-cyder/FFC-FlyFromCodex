@@ -1,12 +1,27 @@
 (() => {
 'use strict';
-const V=window.FFCCapabilityVocabulary,IQ=window.FFCImageQuality,FB=window.FFCFeedback,Agent=window.BANC888_FLY_AGENT;
-if(!V||!IQ||!FB||!Agent||window.FFC_CAPABILITIES)return;
-const st=Agent.state,EXP_KEY='FFC_CAPABILITY_EXPERIENCE_V2',LAST_KEY='FFC_CAPABILITY_LAST_V2';
-const reg=(name,description,capability,sideEffect,handler)=>{st.capabilities.add(capability);st.tools.set(name,{name,description,capability,sideEffect,handler})};
+const V=window.FFCCapabilityVocabulary,IQ=window.FFCImageQuality,FB=window.FFCFeedback,AC=window.FFCAutonomyCore,Agent=window.BANC888_FLY_AGENT;
+if(!V||!IQ||!FB||!AC||!Agent||window.FFC_CAPABILITIES)return;
+const st=Agent.state,EXP_KEY='FFC_CAPABILITY_EXPERIENCE_V2',LAST_KEY='FFC_CAPABILITY_LAST_V2',AUTO_KEY='FFC_AUTONOMY_STATE_V1';
+let AUTO=null;
+const reg=(name,description,capability,sideEffect,handler)=>{st.capabilities.add(capability);st.tools.set(name,{name,description,capability,sideEffect,handler});if(AUTO)AUTO.syncTools([{name,description,capability,sideEffect,executable:st.capabilities.has(capability)}])};
 const safeJson=s=>{try{return JSON.parse(String(s||''))}catch{return{ok:false,error:String(s||'')}}};
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')||d}catch{return d}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+AUTO=new AC.Autonomy(load(AUTO_KEY,{}),{minSuccesses:2,minReward:.05,minReliability:.66,matchThreshold:.58});
+const autoSave=()=>{if(AUTO)save(AUTO_KEY,AUTO.snapshot())};
+const autoSync=()=>{if(!AUTO)return null;const m=[...st.tools.values()].map(x=>({name:x.name,description:x.description,capability:x.capability,sideEffect:x.sideEffect,executable:st.capabilities.has(x.capability)}));const r=AUTO.syncTools(m);autoSave();return r};
+const autoReward=(ok,value,meta)=>{
+ const v=value&&value.validation&&typeof value.validation==='object'?value.validation:(meta&&meta.validation&&typeof meta.validation==='object'?meta.validation:null);
+ if(v){
+  if(v.pass===false)return -Math.max(.35,Math.min(1,((72-(+v.score||0))/72)+((v.hardIssues||[]).length?.35:0)));
+  if(v.score!=null)return Math.max(.1,Math.min(1,((+v.score||72)-60)/40));
+ }
+ return ok?.28:-.65;
+};
+const autoEpisode=(goal,steps,success,reward,source='capability')=>{if(!AUTO)return null;const p=AUTO.recordEpisode(String(goal||''),steps||[],{success:!!success,reward,learnable:true,source});autoSave();return p};
+const autoMatch=goal=>AUTO?AUTO.matchSkill(String(goal||''),name=>st.tools.has(name)&&st.capabilities.has(st.tools.get(name).capability)):null;
+autoSync();
 const feedbackIngest=(event,targetTool)=>{
   const ev={...event,senses:FB.stimuli(event)};
   try{
@@ -17,7 +32,7 @@ const feedbackIngest=(event,targetTool)=>{
 const feedbackTest=(name,passed,tier='training',failure=null,targetTool='chat.compose')=>
   feedbackIngest(FB.fromTest(String(name||'test'),!!passed,{tier,action:String(targetTool||'delegate'),failure}),targetTool);
 let EXP=load(EXP_KEY,[]),LAST=load(LAST_KEY,{});
-const remember=(tool,ok,meta)=>{EXP.push({time:Date.now(),tool,ok:!!ok,meta:meta||{}});if(EXP.length>96)EXP=EXP.slice(-96);save(EXP_KEY,EXP)};
+const remember=(tool,ok,meta)=>{EXP.push({time:Date.now(),tool,ok:!!ok,meta:meta||{}});if(EXP.length>96)EXP=EXP.slice(-96);save(EXP_KEY,EXP);if(AUTO){AUTO.observeTool(tool,{ok:!!ok,reward:autoReward(!!ok,null,meta),quality:meta&&meta.validation,learnable:true});autoSave()}};
 const expStats=tool=>{const a=EXP.filter(x=>!tool||x.tool===tool),ok=a.filter(x=>x.ok).length;return{count:a.length,success:ok,failure:a.length-ok,rate:a.length?ok/a.length:null,last:a.slice(-6)}};
 const setLast=(thread,kind,value)=>{const k=(thread||'_global')+'|'+kind;LAST[k]=value;save(LAST_KEY,LAST)};
 const getLast=(thread,kind)=>LAST[(thread||'_global')+'|'+kind]||LAST['_global|'+kind]||null;
@@ -206,6 +221,9 @@ reg('capability.experience.status','read bounded success failure experience for 
 reg('feedback.test','ingest a training regression or holdout test result into the Fly feedback path','compute','local',a=>feedbackTest(a?.name,a?.passed,a?.tier||'training',a?.failure||null,a?.targetTool||'chat.compose'));
 reg('feedback.status','read learned feedback route bias and recent reward vectors','compute','none',()=>{try{const r=Agent.execute('feedback.status',{});return r&&r.ok?r.value:{error:r&&r.error}}catch(e){return{error:String(e&&e.message||e)}}});
 reg('capability.lexicon.status','read specialist vocabulary pack counts','compute','none',()=>V.lexiconStats());
+reg('autonomy.status','read dynamically discovered tools learned composite skills and reward statistics','compute','none',()=>AUTO?AUTO.status():{disabled:true});
+reg('autonomy.skills','read promoted autonomous composite skills','compute','none',()=>AUTO?AUTO.status().skills:[]);
+autoSync();
 
 function summarize(tool,v){
  if(tool.indexOf('code.')===0)return'コード処理 '+tool+' 完了。validation='+(v.validation&&v.validation.pass?'PASS':'CHECK')+' / '+(v.ir&&v.ir.language||'auto')+(v.exported&&v.exported.ok?' / file shared':'');
@@ -215,8 +233,29 @@ function summarize(tool,v){
  return'ツール処理完了。';
 }
 function present(tool,v,summary){let d=summary;if(tool.indexOf('code.')===0)d+='\n\n'+String(v.text||'').slice(0,14000);else if(tool.indexOf('document.create.')===0)d+='\n\n'+String(v.body||'').slice(0,9000);try{if(Agent.present)Agent.present({finalText:d,selected:{tool},observation:{tool,result:{ok:true,value:v}}})}catch(e){}}
-function handle(text,ctx){ctx=ctx||{};const plan=V.classify(text);if(!plan.handled||plan.confidence<.58)return{handled:false,plan};const args={ir:plan.ir,prompt:String(text||''),context:String(ctx.context||''),threadCode:ctx.threadCode||null};const r=Agent.execute(plan.tool,args);if(!r||!r.ok){remember(plan.tool,false,{error:(r&&r.error)||'unknown'});return{handled:true,plan,tool:plan.tool,error:(r&&r.error)||'tool failed',finalText:plan.tool+' でエラー: '+((r&&r.error)||'unknown')}}const finalText=summarize(plan.tool,r.value);present(plan.tool,r.value,finalText);return{handled:true,plan,tool:plan.tool,value:r.value,finalText}}
+function handle(text,ctx){
+ ctx=ctx||{};autoSync();
+ const learned=autoMatch(text);
+ if(learned&&learned.proposal?.steps?.length){
+  let last=null,failed=null;
+  for(const step of learned.proposal.steps){
+   const args={...(step.args||{})};if(ctx.threadCode!=null)args.threadCode=ctx.threadCode;if(ctx.context!=null)args.context=String(ctx.context||'');
+   let r;try{r=Agent.execute(step.tool,args)}catch(e){r={ok:false,error:String(e&&e.message||e)}}
+   const reward=autoReward(!!(r&&r.ok),r&&r.value,null);remember(step.tool,!!(r&&r.ok),{reward,autonomySkill:learned.id});
+   if(AUTO)AUTO.observeTool(step.tool,{ok:!!(r&&r.ok),reward,quality:r?.value?.validation,learnable:true});
+   last={step,r,reward};if(!r||!r.ok){failed=last;break}
+  }
+  const success=!failed&&!!last,avg=learned.proposal.steps.length?((last&&last.reward)||0):0;autoEpisode(text,learned.proposal.steps,success,success?avg:-.65,learned.proposal.source);autoSave();
+  if(!success)return{handled:true,plan:{handled:true,tool:failed?.step?.tool,source:learned.proposal.source},tool:failed?.step?.tool,error:failed?.r?.error||'learned skill failed',finalText:'獲得スキル実行エラー: '+(failed?.r?.error||'unknown')};
+  const finalText=summarize(last.step.tool,last.r.value);present(last.step.tool,last.r.value,finalText);return{handled:true,plan:{handled:true,tool:last.step.tool,source:learned.proposal.source},tool:last.step.tool,value:last.r.value,finalText,learnedSkill:learned.id}
+ }
+ const plan=V.classify(text);if(!plan.handled||plan.confidence<.58)return{handled:false,plan};
+ const args={ir:plan.ir,prompt:String(text||''),context:String(ctx.context||''),threadCode:ctx.threadCode||null},steps=[{tool:plan.tool,args,description:'specialist capability'}];
+ const r=Agent.execute(plan.tool,args),reward=autoReward(!!(r&&r.ok),r&&r.value,null);
+ if(!r||!r.ok){remember(plan.tool,false,{error:(r&&r.error)||'unknown',reward});autoEpisode(text,steps,false,reward,'specialist-vocabulary');return{handled:true,plan,tool:plan.tool,error:(r&&r.error)||'tool failed',finalText:plan.tool+' でエラー: '+((r&&r.error)||'unknown')}}
+ autoEpisode(text,steps,true,reward,'specialist-vocabulary');const finalText=summarize(plan.tool,r.value);present(plan.tool,r.value,finalText);return{handled:true,plan,tool:plan.tool,value:r.value,finalText}
+}
 function ui(){const host=document.getElementById('ffcThreadHub')||document.getElementById('flyAgentCard');if(!host||document.getElementById('ffcCapabilityBar'))return;const x=document.createElement('div');x.id='ffcCapabilityBar';x.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;font-size:12px;opacity:.9';const n=V.lexiconStats();x.innerHTML='<span>🧰 Specialist Tools v2</span><span>CODE '+n.code+'</span><span>IMAGE '+n.image+'</span><span>VOICE '+n.voice+'</span><span>DOC '+n.document+'</span><span>IR→VERIFY→REPAIR</span>';host.insertBefore(x,host.firstChild)}
-window.FFC_CAPABILITIES={version:'2.0',vocabulary:V,handle,classify:V.classify,experience:expStats,last:(thread,kind)=>getLast(thread,kind),manifest:()=>[...st.tools.values()].filter(x=>/^(code|image|voice|document|capability)\./.test(x.name)).map(({handler,...x})=>x)};
+window.FFC_CAPABILITIES={version:'2.1-autonomy',vocabulary:V,handle,classify:V.classify,experience:expStats,last:(thread,kind)=>getLast(thread,kind),autonomy:AUTO,autonomyStatus:()=>AUTO?AUTO.status():null,manifest:()=>[...st.tools.values()].map(({handler,...x})=>x)};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ui,{once:true});else setTimeout(ui,0);
 })();
