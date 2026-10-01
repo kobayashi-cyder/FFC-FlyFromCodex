@@ -43,4 +43,10 @@ const unsupported=Q.evaluate(defaultGarbage,unknown);
 assert.equal(unsupported.pass,false);
 assert.ok(unsupported.hardIssues.includes('unsupported-subject'));
 
+const flat=cand('flat');
+flat.value.sceneDetail.renderMetrics={samples:1000,meanLuma:127,stdLuma:2,clippedRatio:0,edgeDensity:0.001};
+const flatEval=Q.evaluate(flat,ir);
+assert.equal(flatEval.pass,false);
+assert.ok(flatEval.hardIssues.includes('flat-render'));
+
 console.log('image-quality-core: PASS');
