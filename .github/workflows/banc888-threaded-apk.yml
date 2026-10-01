@@ -18,6 +18,7 @@ on:
       - "tests/live_manifest_verify.test.cjs"
       - "tests/webview_runtime_contract.test.cjs"
       - "tests/image_quality_core.test.cjs"
+      - "tests/feedback_core.test.cjs"
       - "tests/research_physics_core.test.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
@@ -62,6 +63,7 @@ jobs:
           node --check app/src/main/assets/thread-router-core.js
           node --check app/src/main/assets/capability-vocabulary-core.js
           node --check app/src/main/assets/image-quality-core.js
+          node --check app/src/main/assets/feedback-core.js
           node --check app/src/main/assets/research-physics-core.js
           node --check app/src/main/assets/ir-patch-core.js
           node --check app/src/main/assets/proxy-agent-core.js
@@ -76,6 +78,7 @@ jobs:
           node tests/thread_router_core.test.cjs
           node tests/capability_vocabulary.test.cjs
           node tests/image_quality_core.test.cjs
+          node tests/feedback_core.test.cjs
           node tests/specialist_capability_v2.test.cjs
           node tests/ir_patch_core.test.cjs
           node tests/proxy_agent_core.test.cjs
