@@ -5570,7 +5570,7 @@ class AgentMath {
 
 const AGENT={
   tools:new Map(),memory:new Map(),trace:[],last:null,running:false,stop:false,
-  feedback:{bias:{},events:[]},
+  feedback:{bias:{},events:[]},skills:new Map(),
   capabilities:new Set(['compute','memory.read','memory.write','banc.read','cpf.read','research.read','micro.write','o2.write','o3.write','chat.compose','bridge.propose','f38.write','f42.write','f46.write','human.output','voice.input'])
 };
 const AGENT_ROUTE_ROLE=Object.freeze({
@@ -5588,6 +5588,46 @@ function agentRouteBoost(name){const learned=agentFeedbackBias(name),r=agentRout
 function agentFire(name,amount=.75){const r=agentRoute(name);if(r&&typeof o23Fire==='function')o23Fire(r,amount)}
 function agentSaveFeedback(){try{localStorage.setItem('banc888_fly_agent_feedback_v1',JSON.stringify(AGENT.feedback))}catch(e){}}
 function agentLoadFeedback(){try{const x=JSON.parse(localStorage.getItem('banc888_fly_agent_feedback_v1')||'null');if(x&&typeof x==='object'){AGENT.feedback.bias=x.bias&&typeof x.bias==='object'?x.bias:{};AGENT.feedback.events=Array.isArray(x.events)?x.events.slice(-96):[]}}catch(e){}}
+const AGENT_SKILL_KEY='banc888_fly_agent_skills_v1';
+function agentSkillDefault(name){return{name:String(name),attempts:0,successes:0,failures:0,rewardEma:0,trainingPasses:0,trainingFailures:0,regressionPasses:0,regressionFailures:0,holdoutPasses:0,holdoutFailures:0,promoted:false,quarantined:false,lastReward:0,lastStatus:'new',updatedAt:Date.now()}}
+function agentSkill(name){const k=String(name||'unknown');if(!AGENT.skills.has(k))AGENT.skills.set(k,agentSkillDefault(k));return AGENT.skills.get(k)}
+function agentSaveSkills(){try{localStorage.setItem(AGENT_SKILL_KEY,JSON.stringify(Object.fromEntries(AGENT.skills)))}catch(e){}}
+function agentLoadSkills(){try{const x=JSON.parse(localStorage.getItem(AGENT_SKILL_KEY)||'{}');for(const [k,v] of Object.entries(x||{}))AGENT.skills.set(k,{...agentSkillDefault(k),...(v||{}),name:k})}catch(e){}}
+function agentSkillRate(p){return p&&p.attempts?p.successes/p.attempts:0}
+function agentRecomputeSkill(p){
+ const repeatedBad=p.attempts>=5&&agentSkillRate(p)<.34&&p.failures>=3;
+ p.quarantined=!!(p.regressionFailures>0||p.holdoutFailures>0||repeatedBad);
+ p.promoted=!!(p.attempts>=3&&agentSkillRate(p)>=.67&&p.rewardEma>=.05&&!p.quarantined);
+ p.updatedAt=Date.now();return p;
+}
+function agentResultReward(result){
+ if(!result||result.ok===false)return-.82;
+ const v=result.value&&typeof result.value==='object'?result.value:{},val=v.validation&&typeof v.validation==='object'?v.validation:null,review=v.review&&typeof v.review==='object'?v.review:null;
+ let r=.18;
+ if(val){r+=val.pass?.32:-.52;const s=Number(val.score);if(Number.isFinite(s))r+=(Math.max(0,Math.min(100,s))-72)/180}
+ if(review)r+=review.accepted?.22:-.58;
+ return agentClamp(r,-1,1);
+}
+function agentObserveSkill(name,result){
+ const p=agentSkill(name),reward=agentResultReward(result);
+ p.attempts++;if(result&&result.ok!==false){p.successes++}else p.failures++;
+ p.rewardEma=.78*(Number(p.rewardEma)||0)+.22*reward;p.lastReward=reward;p.lastStatus=result?.status||((result&&result.ok!==false)?'OK':'ERROR');
+ agentRecomputeSkill(p);agentSaveSkills();return p;
+}
+function agentObserveFeedbackSkill(target,ev,applied){
+ if(!target)return null;const p=agentSkill(target),tier=String(ev?.tier||'training'),passed=Number(ev?.reward||0)>=0&&Number(ev?.vector?.hardFailure||ev?.vector?.hard_failure||0)<.9;
+ if(tier==='training'){if(passed)p.trainingPasses++;else p.trainingFailures++}
+ else if(tier==='regression'){if(passed)p.regressionPasses++;else p.regressionFailures++}
+ else if(tier==='holdout'){if(passed)p.holdoutPasses++;else p.holdoutFailures++}
+ if(tier!=='holdout'){p.rewardEma=.82*(Number(p.rewardEma)||0)+.18*agentClamp(applied||0,-1,1);p.lastReward=agentClamp(applied||0,-1,1)}
+ const hard=Number(ev?.vector?.hardFailure||ev?.vector?.hard_failure||0);if(hard>=.9)p.quarantined=true;
+ agentRecomputeSkill(p);agentSaveSkills();return p;
+}
+function agentSkillBias(name){const p=agentSkill(name);if(p.quarantined)return-.95;if(p.promoted)return.09;return agentClamp((p.rewardEma||0)*.08,-.05,.05)}
+function agentAutonomyStatus(){
+ const profiles=Object.fromEntries([...AGENT.skills.entries()].map(([k,p])=>[k,{...p,successRate:agentSkillRate(p)}]));
+ return{schema:1,mode:'bounded-autonomous-skill-acquisition',promotion:{minAttempts:3,minSuccessRate:.67,minRewardEma:.05},autonomousTools:Object.values(profiles).filter(p=>p.promoted&&!p.quarantined).map(p=>p.name),quarantinedTools:Object.values(profiles).filter(p=>p.quarantined).map(p=>p.name),profiles};
+}
 function agentIngestFeedback(a={}){
   const ev=a.event&&typeof a.event==='object'?a.event:a;
   const target=String(a.targetTool||ev.targetTool||ev.action||'delegate');
@@ -5606,6 +5646,7 @@ function agentIngestFeedback(a={}){
   const record={time:new Date().toISOString(),target,tier,reward,applied,learnable,vector,source:ev.source||'feedback',senses:ev.senses||null,bias:target?agentFeedbackBias(target):0};
   AGENT.feedback.events.push(record);if(AGENT.feedback.events.length>96)AGENT.feedback.events.splice(0,AGENT.feedback.events.length-96);
   agentSaveFeedback();
+  const skill=agentObserveFeedbackSkill(target,ev,applied);record.skill=skill?{name:skill.name,promoted:skill.promoted,quarantined:skill.quarantined,rewardEma:skill.rewardEma}:null;
   if(target)agentFire(target,agentClamp(.55+applied*.35,.15,1));
   return record;
 }
@@ -5620,20 +5661,21 @@ function agentExecute(name,args={},opts={}){
   const envelope={tool:name,args,side_effect:t.sideEffect,dry_run:!!opts.dryRun};let result;
   if(opts.dryRun&&t.sideEffect!=='none')result={ok:true,status:'DRY_RUN',request:envelope};
   else{try{result={ok:true,status:'OK',tool:name,value:t.handler(args)}}catch(e){result={ok:false,status:e instanceof AgentToolError?'INVALID':'ERROR',tool:name,error:e.message||String(e)}}}
-  AGENT.trace.push({n:AGENT.trace.length+1,time:new Date().toISOString(),...envelope,result});if(AGENT.trace.length>120)AGENT.trace.shift();agentFire(name,result.ok?.8:.25);return result
+  const skill=opts.dryRun?agentSkill(name):agentObserveSkill(name,result);
+  AGENT.trace.push({n:AGENT.trace.length+1,time:new Date().toISOString(),...envelope,result,skill:{promoted:!!skill.promoted,quarantined:!!skill.quarantined,rewardEma:+skill.rewardEma||0,successRate:agentSkillRate(skill)}});if(AGENT.trace.length>120)AGENT.trace.shift();agentFire(name,result.ok?.8:.25);return result
 }
 function agentSelect(candidates){
   const eligible=candidates.map(c=>({...c,activation:(+c.excitation-(+c.inhibition||0))*(c.confidence==null?1:+c.confidence)})).filter(c=>AGENT.tools.has(c.tool)&&Number.isFinite(c.activation)&&c.activation>=.05);
   eligible.sort((a,b)=>b.activation-a.activation||(b.confidence||1)-(a.confidence||1)||a.tool.localeCompare(b.tool));return eligible[0]||null
 }
 function agentAddCandidate(a,tool,args,base,control,used){
-  const rb=control?.routeBias||{};let bias=agentRouteBoost(tool);
+  const rb=control?.routeBias||{};let bias=agentRouteBoost(tool)+agentSkillBias(tool);
   if(tool==='banc.neighbors'||tool==='cpf.inspect')bias+=.07*(+rb.detail||0);
   if(tool==='o2.generate'||tool==='o3.generate'||tool==='micro.compile'||tool==='f38.compile'||tool==='f42.compile'||tool==='f46.tune')bias+=.07*(+rb.spread||0);
   if(tool==='micro.step'||tool==='micro.status'||tool==='f38.step'||tool==='f38.status'||tool==='f42.step'||tool==='f42.status'||tool==='f46.status'||tool==='f46.replay')bias+=.07*(+rb.sharpness||0);
   if(tool==='chat.compose')bias+=.05*(+rb.symmetry||0);
-  const inhibition=used.includes(tool)?.38:0;
-  a.push({tool,args,excitation:Math.min(1.2,base+bias),inhibition,confidence:.96,source:'BANC888-v3.6 O1′/CPF engineered routing adapter'});
+  const skill=agentSkill(tool),inhibition=(used.includes(tool)?.38:0)+(skill.quarantined?1.1:0);
+  a.push({tool,args,excitation:Math.min(1.2,base+bias),inhibition,confidence:.96,source:'BANC888 autonomous connectome + engineered routing adapter',skill:{promoted:skill.promoted,quarantined:skill.quarantined,rewardEma:skill.rewardEma}});
 }
 function agentMathExpr(goal){
   const s=String(goal).replace(/[＝=]/g,'='),m=s.match(/(?:計算|calc(?:ulate)?|evaluate)[^0-9(+-]*([0-9piPIeE+\-*/%.(),\s]+)|([0-9.()]+\s*(?:\*\*|[+\-*/%])\s*[0-9.()+\-*/%\s]+)/i);return (m?.[1]||m?.[2]||'').trim().replace(/^=/,'').trim()
@@ -5809,6 +5851,7 @@ agentRegister('f46.replay','replay recent episodes with bounded plasticity','f46
 agentRegister('f46.status','read F46 evolutionary route/replay/body-bus state','compute','none',()=>({running:F46.running,best:F46.best,lastTune:F46.lastTune,replayCount:F46.replayCount,trials:F46.trials.slice(-8),model:F42.model?{n:F42.model.n,epoch:F42.model.epoch,routeEpoch:F42.model.routeEpoch}:null,bodyBus:F42.program?f46BodyBus(F42.program):null,handoff:BANC888_V46_HANDOFF}));
 agentRegister('feedback.ingest','consume multidimensional quality/test feedback and adapt tool-route bias','compute','local',a=>agentIngestFeedback(a));
 agentRegister('feedback.status','read recent reward vectors and learned tool-route bias','compute','none',()=>({bias:{...AGENT.feedback.bias},events:AGENT.feedback.events.slice(-24)}));
+agentRegister('autonomy.status','read persistent per-tool autonomous promotion and quarantine state','compute','none',()=>agentAutonomyStatus());
 agentRegister('system.manifest','list available agent body tools','compute','none',()=>({tools:agentManifest(),stack:{v38:BANC888_V38_HANDOFF,v42:BANC888_V42_HANDOFF,v46:BANC888_V46_HANDOFF,agent:AGENT_HANDOFF},feedback:{bias:{...AGENT.feedback.bias},events:AGENT.feedback.events.length}}));
 
 
@@ -6020,7 +6063,7 @@ function agentRun(goal,maxSteps=3,{oneStep=false,dryRun=false,logChat=true}={}){
   if(logChat&&finalText)addChat('bot',finalText,`fly-agent / v5.0 / steps=${steps.length} / tool=${lastStep?.tool||'none'} / route=${lastStep?.route||'none'}`);flyDeliver(packet,{dryRun});agentRender(packet);return packet
 }
 
-function agentUIInit(){agentLoadMemory();agentLoadFeedback();const goal=$('#agentGoal');if(goal&&!goal.value)goal.value='BANCの接続を見て、結果を説明して';flyVoicePopulate();if('speechSynthesis'in window)speechSynthesis.onvoiceschanged=flyVoicePopulate;
+function agentUIInit(){agentLoadMemory();agentLoadFeedback();agentLoadSkills();const goal=$('#agentGoal');if(goal&&!goal.value)goal.value='BANCの接続を見て、結果を説明して';flyVoicePopulate();if('speechSynthesis'in window)speechSynthesis.onvoiceschanged=flyVoicePopulate;
   const run=()=>agentRun(goal?.value,+($('#agentMaxSteps')?.value||3),{dryRun:!!$('#agentDryRun')?.checked,logChat:!!$('#agentLogChat')?.checked});
   if($('#agentRun'))$('#agentRun').onclick=run;if($('#agentStep'))$('#agentStep').onclick=()=>agentRun(goal?.value,1,{oneStep:true,dryRun:!!$('#agentDryRun')?.checked,logChat:false});if($('#agentStop'))$('#agentStop').onclick=()=>{AGENT.stop=true;AGENT.running=false};
   if($('#agentUseChat'))$('#agentUseChat').onclick=()=>{if(goal)goal.value=$('#chatInput')?.value||''};
@@ -6029,7 +6072,7 @@ function agentUIInit(){agentLoadMemory();agentLoadFeedback();const goal=$('#agen
   if($('#flyVoiceStart'))$('#flyVoiceStart').onclick=()=>flyVoiceStartListening();if($('#flyVoiceDiagnose'))$('#flyVoiceDiagnose').onclick=()=>flyVoiceDiagnose({request:true});if($('#flyVoiceStop'))$('#flyVoiceStop').onclick=()=>{flyVoiceStopListening();if('speechSynthesis'in window)speechSynthesis.cancel();FLYVOICE.speaking=false;flyVoiceSetState('idle','停止')};if($('#flyVoiceRepeat'))$('#flyVoiceRepeat').onclick=()=>flySpeak(FLYVOICE.lastSpoken||$('#flyDisplayText')?.textContent||'');
   if($('#agentStatus'))$('#agentStatus').textContent=`${AGENT.tools.size} tools / ${AGENT.capabilities.size} capabilities / v5.2 mic-permission+voice+display / base v4.6 preserved + F38/F42/F46 bridged`;flyVoiceSetState('idle','耳の診断待ち');flyVoiceDiagnose({request:false});
 }
-window.BANC888_FLY_AGENT={handoff:AGENT_HANDOFF,state:AGENT,manifest:agentManifest,run:agentRun,execute:agentExecute,buildCandidates:agentBuildCandidates,listen:flyVoiceStartListening,diagnoseVoice:flyVoiceDiagnose,voiceStatus:()=>FLYVOICE.lastDiag,stopListening:flyVoiceStopListening,speak:flySpeak,present:flyPresent,voice:FLYVOICE,stop:()=>{AGENT.stop=true;flyVoiceStopListening();if('speechSynthesis'in window)speechSynthesis.cancel()}};
+window.BANC888_FLY_AGENT={handoff:AGENT_HANDOFF,state:AGENT,manifest:agentManifest,run:agentRun,execute:agentExecute,buildCandidates:agentBuildCandidates,skillsStatus:agentAutonomyStatus,listen:flyVoiceStartListening,diagnoseVoice:flyVoiceDiagnose,voiceStatus:()=>FLYVOICE.lastDiag,stopListening:flyVoiceStopListening,speak:flySpeak,present:flyPresent,voice:FLYVOICE,stop:()=>{AGENT.stop=true;flyVoiceStopListening();if('speechSynthesis'in window)speechSynthesis.cancel()}};
 setTimeout(agentUIInit,0);
 })();
 // ---- end v4.8 Unified Fly Agent ToolBus bridge ----
