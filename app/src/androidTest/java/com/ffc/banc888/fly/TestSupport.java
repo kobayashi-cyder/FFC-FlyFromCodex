@@ -23,6 +23,12 @@ final class TestSupport {
         }
     }
 
+    static boolean awaitNativeReady(ActivityScenario<MainActivity> scenario) throws Exception {
+        return awaitJs(scenario,
+                "!!(window.AndroidVoice&&window.AndroidDiagnostics&&window.FFC_THREADS&&window.FFC_PROXY_AGENT)",
+                30000);
+    }
+
     static boolean awaitJs(ActivityScenario<MainActivity> scenario, String expression, long timeoutMs) throws Exception {
         long end = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < end) {
@@ -36,10 +42,21 @@ final class TestSupport {
                     latch.countDown();
                 });
             });
-            latch.await(2, TimeUnit.SECONDS);
+            // Do not discard a legitimate asynchronous result after an arbitrary
+            // two seconds and enqueue more evaluations behind the same busy UI.
+            long remainingMs = Math.max(1L, end - System.currentTimeMillis());
+            latch.await(remainingMs, TimeUnit.MILLISECONDS);
             if ("true".equals(value.get())) return true;
             Thread.sleep(150);
         }
+        scenario.onActivity(activity -> {
+            ViewGroup root = activity.findViewById(android.R.id.content);
+            WebView webView = (WebView) root.getChildAt(0);
+            webView.evaluateJavascript(
+                    "JSON.stringify({ready:document.readyState,voice:typeof AndroidVoice,"
+                            + "diagnostics:typeof AndroidDiagnostics==='undefined'?null:AndroidDiagnostics.status()})",
+                    result -> android.util.Log.e("BANC888-WebView", "TEST timeout: " + expression + " actual: " + result));
+        });
         return false;
     }
 }

@@ -21,11 +21,17 @@ adb logcat -v threadtime > /tmp/device-logcat.txt 2>&1 &
 DEVICE_LOGCAT_PID=$!
 
 set +e
-timeout --signal=TERM 32s adb shell am instrument -w -r \
+timeout --signal=TERM --kill-after=5s 120s adb shell am instrument -w -r \
   -e class "$TEST_CLASS" \
-  com.ffc.banc888.fly.test/androidx.test.runner.AndroidJUnitRunner
+  com.ffc.banc888.fly.test/androidx.test.runner.AndroidJUnitRunner > /tmp/instrumentation-result.txt 2>&1
 STATUS=$?
 set -e
+cat /tmp/instrumentation-result.txt
+# adb may exit zero even when instrumentation assertions fail. Require the
+# runner's explicit successful test summary as well as a successful process.
+if [ "$STATUS" -eq 0 ] && ! grep -Eq '^OK \([1-9][0-9]* tests?\)' /tmp/instrumentation-result.txt; then
+  STATUS=1
+fi
 
 kill "$DEVICE_LOGCAT_PID" 2>/dev/null || true
 wait "$DEVICE_LOGCAT_PID" 2>/dev/null || true
@@ -44,7 +50,7 @@ fi
 
 if [ "$STATUS" -ne 0 ]; then
   echo "=== focused device log ==="
-  grep -E -n -C 10 'FATAL EXCEPTION|AndroidRuntime|Process: com\.ffc\.banc888\.fly|BANC_VOICE|SpeechRecognizer|RecognitionService|SodaSpeechRecognizer|NetworkSpeechRecognizer|AssertionError|TransactionTooLargeException|TestRunner' /tmp/device-logcat.txt || true
+  grep -E -n -C 10 'FATAL EXCEPTION|AndroidRuntime|Process: com\.ffc\.banc888\.fly|BANC_VOICE|BANC888-WebView|chromium|CONSOLE|SpeechRecognizer|RecognitionService|SodaSpeechRecognizer|NetworkSpeechRecognizer|AssertionError|TransactionTooLargeException|TestRunner' /tmp/device-logcat.txt || true
 fi
 
 exit "$STATUS"

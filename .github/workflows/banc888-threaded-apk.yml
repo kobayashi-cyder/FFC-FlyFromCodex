@@ -20,6 +20,7 @@ on:
       - "tests/image_quality_core.test.cjs"
       - "tests/feedback_core.test.cjs"
       - "tests/autonomy_core.test.cjs"
+      - "tests/connectome_selector.test.cjs"
       - "tests/research_physics_core.test.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
@@ -89,6 +90,7 @@ jobs:
           node tests/specialist_capability_v2.test.cjs
           node tests/ir_patch_core.test.cjs
           node tests/proxy_agent_core.test.cjs
+          node tests/connectome_selector.test.cjs
           node tests/proxy_apk_integration.test.cjs
           node tests/conversation_output_core.test.cjs
           node tests/research_physics_core.test.cjs
@@ -108,7 +110,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.1-autonomous-connectome-debug
+          name: BANC888-v7.2-connectome-topology-debug
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/debug/app-debug.apk.sha256

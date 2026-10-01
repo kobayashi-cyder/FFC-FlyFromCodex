@@ -13,6 +13,7 @@ public class AutonomyIntegrationTest {
     @Test
     public void runtimeDiscoversToolsAndAcquiresReusableSkill() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            assertTrue("Native runtime did not become ready", TestSupport.awaitNativeReady(scenario));
             assertTrue(TestSupport.awaitJs(scenario,
                     "!!(window.FFCAutonomyCore&&window.FFC_CAPABILITIES&&window.FFC_PROXY_AGENT&&window.BANC888_FLY_AGENT)", 15000));
             assertTrue(TestSupport.awaitJs(scenario,

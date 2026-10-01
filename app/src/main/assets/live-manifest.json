@@ -3,9 +3,9 @@
   "minShellVersion": 70,
   "bridgeSchema": 4,
   "assetSchema": 5,
-  "commit": "e779df0f08e944c387c5fc14778baeaf60fc1807",
+  "commit": "670b033ae3c4fab9e3965cbae837b335ab8af720",
   "files": {
-    "index.html": "e58e15a4c388111cbbd39bae2aa1963a0c42e7d597eb87db4d1ffedfa61cd4d7",
+    "index.html": "43b24b377fb430c0469a60a2fcdaf9c04081b1fe893d88870e87422b514155c0",
     "native-bridge.js": "72e7d7fac8c5127f62edffa30b32151aa2488b7ebbc5c31c44f2a2369a623a90",
     "webview-runtime.js": "05c30e25c4779fd9211d9a6ade8a603a9fbc916743080de63fee1af98cdedbd2",
     "thread-router-core.js": "b19931c8f24397ce781bd9408132cefb5addf959f9fa09779f2a9b9d63731cb9",
@@ -14,12 +14,12 @@
     "feedback-core.js": "586131d31f68cfc618bfb2ffc05ed6ebe94b9eeaf99ddb35627e8a889d4fd350",
     "research-physics-core.js": "ab7cb284c5f71d3a935eed4155ce57fd59aeac120640ae8d41e351fe2c3d9fb4",
     "ir-patch-core.js": "9e8ceee84eff2413659d38b14b5fd39f3cced78e17b8d93d0a1d72962af47966",
-    "proxy-agent-core.js": "e99e49bdabb46bd6f5a049c5ee98fd09052919f5e816d09f08550607e9e358e2",
-    "capability-tools.js": "9e41289bc4a46906138f5395bf0a5e1cdaee46e7c321265a0d4a4e98c27a8b70",
+    "proxy-agent-core.js": "acc4466ea8c20f089a4e025c863f1b22e20dd78e8d8366b439718f8f58ce880f",
+    "capability-tools.js": "e64b7eeed8ab87adee4b4c0b211e72f0b85f1b6cce992b87927fc48e47cb5563",
     "research-physics-tools.js": "9163f15bdd1a5806bc3d6a7e6bbfc34933b8804534a30fa6f44686fdc539c778",
-    "proxy-agent.js": "316ef16f8bbcb66c79ac28d056b2ff932c801f6f831d74cb674d834af4e0880c",
+    "proxy-agent.js": "6d3dfe13fc16f80701ddd10a8a4e6a208fd30ea06b4215eb06e5eb63ea2b479c",
     "conversation-output-core.js": "79ecf9c03fb3dbc2a02701442748539fec25c280a3a6cf62558c38552bd8f6a2",
-    "thread-router.js": "20d22389d9a38f60bf5c36276ab46ffeaa3c15b4fa1c9e361067a6e6211a6e95",
+    "thread-router.js": "26b048f6d6f99e1302b45d4d8afad1b2a95f643347188629299b41559536b9ac",
     "dev-live.js": "f7fab43f4d92ef8d6a97414d2a41089ba74648cf38435ea772c90b8b8ce4b73c",
     "autonomy-core.js": "a2d6c18cdfaa818851d50c0bba816d0b74244cfce5f62e97358a3a827f2408ce"
   }
