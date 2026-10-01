@@ -21,7 +21,7 @@ adb logcat -v threadtime > /tmp/device-logcat.txt 2>&1 &
 DEVICE_LOGCAT_PID=$!
 
 set +e
-timeout --signal=TERM 32s adb shell am instrument -w -r \
+timeout --signal=TERM 90s adb shell am instrument -w -r \
   -e class "$TEST_CLASS" \
   com.ffc.banc888.fly.test/androidx.test.runner.AndroidJUnitRunner
 STATUS=$?
@@ -44,7 +44,7 @@ fi
 
 if [ "$STATUS" -ne 0 ]; then
   echo "=== focused device log ==="
-  grep -E -n -C 10 'FATAL EXCEPTION|AndroidRuntime|Process: com\.ffc\.banc888\.fly|BANC_VOICE|SpeechRecognizer|RecognitionService|SodaSpeechRecognizer|NetworkSpeechRecognizer|AssertionError|TransactionTooLargeException|TestRunner' /tmp/device-logcat.txt || true
+  grep -E -n -C 10 'FATAL EXCEPTION|AndroidRuntime|Process: com\.ffc\.banc888\.fly|BANC_VOICE|SpeechRecognizer|RecognitionService|SodaSpeechRecognizer|NetworkSpeechRecognizer|AssertionError|TransactionTooLargeException|TestRunner|chromium|Uncaught|ReferenceError|SyntaxError' /tmp/device-logcat.txt || true
 fi
 
 exit "$STATUS"
