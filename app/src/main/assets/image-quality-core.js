@@ -103,8 +103,18 @@ function evolve(evaluated,ir,generation=1,count=6){
     const blur=+clamp((+p.blur||1)+(r('blur')-.5)*1.4,0,3).toFixed(2);
     const atmosphere=+clamp((+p.atmosphere||1)+(r('atmo')-.5)*.7,.35,1.7).toFixed(2);
     const mode=(generation>1&&r('mode')>.72)?'cinematic':(p.mode||'photoish');
+    const problems=[...(p?.quality?.hardIssues||[]),...(p?.quality?.issues||[])];
+    const repairs=[];
+    if(problems.some(x=>String(x).startsWith('subject-missing')||x==='request-coverage'))repairs.push('make the requested subject unmistakably present and dominant');
+    if(problems.some(x=>String(x).startsWith('category-structure')))repairs.push('repair anatomy and all required structural parts with natural proportions');
+    if(problems.some(x=>x==='entity-out-of-bounds'||String(x).startsWith('category-crop')))repairs.push('zoom out enough to keep the entire subject inside frame');
+    if(problems.some(x=>x==='implausible-scale'))repairs.push('correct object scale and physical proportions');
+    if(problems.some(x=>x==='flat-render'||x==='low-visual-structure'))repairs.push('increase local shape definition material contrast and readable edges');
+    if(problems.some(x=>x==='weak-composition'))repairs.push('rebalance focal placement and visual hierarchy');
+    if(problems.some(x=>x==='clutter'||x==='scene-clutter'||x==='stacked-duplicates'))repairs.push('remove duplicates and unnecessary background objects');
     const mutation=[
       'evolution generation '+generation,
+      ...repairs,
       r('crop')>.5?'preserve full subject inside frame':'strong readable silhouette',
       r('space')>.5?'natural spacing and perspective':'balanced subject scale',
       r('material')>.5?'refined material texture and local contrast':'coherent soft lighting',
