@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .autonomy import AutonomousSkillLearner
 from .executive import ConnectomeExecutive
 from .feedback import FeedbackEncoder, FeedbackEvent, TestTier
 from .memory import MemoryFabric
@@ -9,10 +10,16 @@ from .models import AgentEvent, Observation, ResultStatus
 class Observer:
     """Turns tool outcomes into durable experience and local reinforcement."""
 
-    def __init__(self, memory: MemoryFabric, executive: ConnectomeExecutive):
+    def __init__(
+        self,
+        memory: MemoryFabric,
+        executive: ConnectomeExecutive,
+        learner: AutonomousSkillLearner | None = None,
+    ):
         self.memory = memory
         self.executive = executive
         self.feedback = FeedbackEncoder()
+        self.learner = learner
 
     def record(self, observation: Observation) -> None:
         result = observation.result
@@ -75,12 +82,20 @@ class Observer:
         thread_id: str | None,
         goal_id: str | None,
     ) -> None:
-        applied = self.executive.reinforce_feedback(event)
+        applied, decision = self.executive.consume_feedback(event)
+        profile = self.learner.observe(event.source, event) if self.learner is not None else None
         self.memory.append(
             AgentEvent(
                 "feedback",
                 f"{event.source}: reward={event.reward:.3f} applied={applied:.3f}",
                 thread_id=thread_id,
-                data={"goal_id": goal_id, **event.to_dict(), "applied_reward": applied},
+                data={
+                    "goal_id": goal_id,
+                    **event.to_dict(),
+                    "applied_reward": applied,
+                    "feedback_decision": decision.type.value,
+                    "feedback_action": decision.intent.action if decision.intent else None,
+                    "skill": profile.to_dict() if profile is not None else None,
+                },
             )
         )
