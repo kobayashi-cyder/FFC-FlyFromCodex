@@ -49,6 +49,12 @@ if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
 fi
 
 if [ "$STATUS" -ne 0 ]; then
+  # Keep assertion summaries accessible through check-run annotations even when
+  # the CI log download host is unavailable to a reviewer.
+  while IFS= read -r failure_line; do
+    failure_line="${failure_line//%/%25}"
+    echo "::error title=Android test assertion::$failure_line"
+  done < <(grep -E 'AssertionError|Exception|FAILURES|INSTRUMENTATION_FAILED' /tmp/instrumentation-result.txt || true)
   echo "=== focused device log ==="
   grep -E -n -C 10 'FATAL EXCEPTION|AndroidRuntime|Process: com\.ffc\.banc888\.fly|BANC_VOICE|BANC888-WebView|chromium|CONSOLE|SpeechRecognizer|RecognitionService|SodaSpeechRecognizer|NetworkSpeechRecognizer|AssertionError|TransactionTooLargeException|TestRunner' /tmp/device-logcat.txt || true
 fi

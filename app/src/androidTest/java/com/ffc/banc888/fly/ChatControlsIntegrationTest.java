@@ -59,7 +59,8 @@ public class ChatControlsIntegrationTest {
             Instrumentation.ActivityMonitor monitor=instrument.addMonitor(filter,new Instrumentation.ActivityResult(Activity.RESULT_OK,result),true);
             try {
                 tap(scenario,"ffcAttachButton");
-                assertTrue("Android FileReader did not receive selected UTF-8 document",TestSupport.awaitJs(scenario,"FFCAttachments.peek(FFC_THREADS.state.activeId).length===1&&FFCAttachments.peek(FFC_THREADS.state.activeId)[0].text.indexOf('10月10日')>=0",10000));
+                boolean received=TestSupport.awaitJs(scenario,"FFCAttachments.peek(FFC_THREADS.state.activeId).length===1&&FFCAttachments.peek(FFC_THREADS.state.activeId)[0].text.indexOf('10月10日')>=0",10000);
+                assertTrue("Android FileReader did not receive selected UTF-8 document: "+read(scenario,"document.getElementById('ffcAttachmentStatus').textContent"),received);
                 assertEquals(1,monitor.getHits());
             } finally { instrument.removeMonitor(monitor); }
             assertTrue(TestSupport.awaitJs(scenario,"(function(){var i=document.getElementById('ffcThreadText');i.value='添付資料の内容を要約してください';return true})()",3000));

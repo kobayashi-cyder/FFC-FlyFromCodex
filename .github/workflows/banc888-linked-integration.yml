@@ -1,14 +1,6 @@
 name: BANC888 Parallel Integration Tests
 
 on:
-  push:
-    branches:
-      - "banc888-apk-*"
-    paths:
-      - "app/**"
-      - "tests/**"
-      - ".github/workflows/banc888-linked-integration.yml"
-      - ".github/scripts/banc888-voice-ci.sh"
   pull_request:
     paths:
       - "app/**"

@@ -7,7 +7,7 @@ const peek=id=>(drafts.get(id)||[]).map(f=>({...f}));
 function notice(text){const e=document.getElementById('ffcAttachmentStatus');if(e)e.textContent=text}
 function render(){const holder=document.getElementById('ffcAttachmentChips');if(!holder)return;holder.replaceChildren();for(const [index,file] of peek(current()).entries()){const b=document.createElement('button');b.type='button';b.textContent=file.name+(file.truncated?'（先頭のみ）':'')+' ×';b.setAttribute('aria-label',file.name+'を添付から削除');b.onclick=()=>{const id=current(),files=peek(id);files.splice(index,1);drafts.set(id,files);render()};holder.append(b)}const button=document.getElementById('ffcAttachButton');if(button)button.disabled=loading}
 function consume(id){const files=peek(id);drafts.delete(id);render();notice('');return files}
-function read(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(core.decode(file,new Uint8Array(reader.result)));reader.onerror=()=>reject(new Error('ファイルを読み込めませんでした。'));reader.onabort=()=>reject(new Error('ファイルの読み込みを停止しました。'));reader.readAsArrayBuffer(file)})}
+function read(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{try{resolve(core.decode(file,new Uint8Array(reader.result)))}catch(e){reject(e)}};reader.onerror=()=>reject(new Error('ファイルを読み込めませんでした。'));reader.onabort=()=>reject(new Error('ファイルの読み込みを停止しました。'));reader.readAsArrayBuffer(file)})}
 async function attachFiles(files,id=current()){
  if(loading)throw new Error('添付を読み込み中です。');if(!id)throw new Error('会話がまだ準備できていません。');
  if(drafts.size>=16&&!drafts.has(id))throw new Error('未送信の添付がある会話は16本までです。先に送信または削除してください。');
