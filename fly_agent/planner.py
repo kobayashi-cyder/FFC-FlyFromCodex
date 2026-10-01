@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from .models import Goal, PlanProposal, PlannerResult, PlanStep, ResultStatus, ToolContext
 from .tools import ToolBus
@@ -55,15 +55,31 @@ class RulePlanner:
 class MachinePlannerAdapter:
     """Calls a planner tool to obtain a proposal; the executive still validates it."""
 
-    def __init__(self, tool_name: str = "planner.propose"):
+    def __init__(
+        self,
+        tool_name: str = "planner.propose",
+        context_provider: Callable[[], dict[str, Any]] | None = None,
+    ):
         self.tool_name = tool_name
+        self.context_provider = context_provider
 
     def propose(self, goal: Goal, memory: list[dict[str, Any]], tools: ToolBus) -> PlannerResult:
         if tools.spec(self.tool_name) is None:
             return PlannerResult(ResultStatus.UNSUPPORTED, error="planner tool is not connected")
+        payload = {
+            "goal": goal.text,
+            "memory": memory,
+            "available_tools": tools.names(),
+            "tool_catalog": tools.manifest(),
+        }
+        if self.context_provider is not None:
+            try:
+                payload["autonomy"] = self.context_provider()
+            except Exception as exc:
+                payload["autonomy"] = {"error": f"{type(exc).__name__}: {exc}"}
         result = tools.execute(
             self.tool_name,
-            {"goal": goal.text, "memory": memory, "available_tools": tools.names()},
+            payload,
             ToolContext(thread_id=goal.thread_id, goal_id=goal.id),
         )
         if not result.ok:
