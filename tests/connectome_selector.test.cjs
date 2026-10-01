@@ -51,3 +51,15 @@ for(const kind of ['specialist','learned','base']){
 }
 const missing=proxy(null);assert.equal(missing.api.execute('test').status,C.Status.BLOCKED);
 console.log('connectome-selector: PASS (real aggregate topology, ablation, plasticity, APK execution)');
+
+// The legacy loop must respect compile/step dependencies even when a compile
+// route produces a stronger signal than its continuation route.
+const runBody=html.slice(html.indexOf('function agentRun('),html.indexOf('function agentBindUI',html.indexOf('function agentRun(')));
+const loopKernel=new C.ConnectomeSelector({...data,toolRoutes:{...data.toolRoutes,'micro.step':'o1p2'}});
+const loop={AGENT_HANDOFF:{},AGENT:{running:false,stop:false},agentBuildCandidates:()=>({candidates:[{tool:'micro.compile',excitation:1},{tool:'micro.step',excitation:.8},{tool:'chat.compose',excitation:.5}]}),agentSelect:rows=>loopKernel.select(rows),agentRoute:()=>null,agentExecute:tool=>({ok:true,value:tool==='chat.compose'?{reply:'done'}:{done:true}}),agentObservationText:()=>'',flyDeliver:()=>{},agentRender:()=>{},addChat:()=>{},AgentCapabilityDenied:class extends Error{}};
+// Isolate the function itself from following UI setup code.
+vm.runInNewContext(runBody.slice(0,runBody.indexOf('\nfunction ',1)),loop);
+const packet=loop.agentRun('compile',3,{logChat:false});
+assert.deepEqual(Array.from(packet.steps,x=>x.tool),['micro.compile','micro.step','chat.compose']);
+assert.ok(packet.steps.every(x=>x.connectome));
+console.log('legacy compile/step dependency: PASS');

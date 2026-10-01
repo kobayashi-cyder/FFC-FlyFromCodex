@@ -6009,9 +6009,9 @@ function agentRun(goal,maxSteps=3,{oneStep=false,dryRun=false,logChat=true}={}){
   if(logChat)addChat('user',goal,'fly-agent goal / v5.0 voice+display / ToolBus+F38+F42+F46');
   const limit=oneStep?1:Math.max(1,Math.min(6,+maxSteps||3));
   for(let i=0;i<limit&&!AGENT.stop;i++){
-    const built=agentBuildCandidates(goal,lastObs,used);allCandidates.push({step:i+1,control:built.control,candidates:built.candidates});const selected=agentSelect(built.candidates);if(!selected)break;
+    const built=agentBuildCandidates(goal,lastObs,used);allCandidates.push({step:i+1,control:built.control,candidates:built.candidates});const previous=used[used.length-1],pending=/^(micro|f38|f42)\.compile$/.test(previous||'')?previous.replace('.compile','.step'):/^(micro|f38|f42)\.step$/.test(previous||'')&&!lastObs?.result?.value?.done?previous:null;const selected=agentSelect(built.candidates.filter(c=>(!used.includes(c.tool)||c.tool===pending)&&(!pending||c.tool===pending)));if(!selected)break;
     const route=agentRoute(selected.tool);let result;try{result=agentExecute(selected.tool,selected.args,{dryRun})}catch(e){result={ok:false,status:e instanceof AgentCapabilityDenied?'BLOCKED':'INVALID',error:e.message||String(e),tool:selected.tool}}
-    const step={index:i+1,tool:selected.tool,route:route?.id||null,activation:selected.activation,args:selected.args,result};steps.push(step);used.push(selected.tool);lastObs={tool:selected.tool,result};
+    const step={index:i+1,tool:selected.tool,route:route?.id||null,activation:selected.activation,connectome:selected.connectome,args:selected.args,result};steps.push(step);used.push(selected.tool);lastObs={tool:selected.tool,result};
     if(selected.tool==='research.wiki'&&result.ok){finalText=agentObservationText(selected.tool,result,goal);break}
     if(selected.tool==='chat.compose'){finalText=result.ok?(result.value?.reply||agentObservationText(selected.tool,result,goal)):agentObservationText(selected.tool,result,goal);break}
     if(selected.tool==='bridge.propose'){finalText=agentObservationText(selected.tool,result,goal);break}
