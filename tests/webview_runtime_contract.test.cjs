@@ -76,6 +76,10 @@ must(config.includes('"image-quality-core.js"'),'image quality core must be a ma
 must(imageQuality.includes('function expand('),'image prompt multi-expansion missing');
 must(imageQuality.includes('function evaluate('),'image candidate hard-gate evaluation missing');
 must(imageQuality.includes('function rank('),'image candidate ranking missing');
+must(imageQuality.includes('CATEGORY_PARTS'),'category-specific image structure rules missing');
+must(imageQuality.includes('categoryIntegrity'),'category-specific image integrity gate missing');
+must(index.includes('o2xEntityVisualMetrics'),'rendered entity-part measurement missing');
+must(index.includes('o2xRegionMetrics'),'rendered part pixel statistics missing');
 must(index.includes('explicitImage'),'image generation must require an explicit visual request');
 must(index.includes('sceneDetail:detail'),'O2 candidate scene diagnostics missing');
 
