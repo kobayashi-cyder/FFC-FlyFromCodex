@@ -5,6 +5,7 @@ from pathlib import Path
 import time
 from typing import Callable, Iterable
 
+from .autonomy import AutonomousSkillLearner
 from .body import BodyArbiter
 from .checkpoint import AtomicCheckpointStore
 from .connectome import GraphConnectomeKernel, default_connectome
@@ -20,6 +21,7 @@ from .models import (
     Stimulus,
     ToolContext,
 )
+from .feedback import TestTier
 from .observer import Observer
 from .planner import CompositePlanner, MachinePlannerAdapter, PlannerAdapter, RulePlanner
 from .threads import ThreadRouter
@@ -42,7 +44,7 @@ class RequirementContract:
 class FlyMachineAgent:
     """Fly-led proxy agent with machine cognition and tool prostheses."""
 
-    STATE_SCHEMA = 2
+    STATE_SCHEMA = 3
 
     def __init__(
         self,
@@ -70,7 +72,8 @@ class FlyMachineAgent:
         )
         self.planner = planner or CompositePlanner(RulePlanner(), MachinePlannerAdapter())
         self.voice = VoiceRouter(self.threads)
-        self.observer = Observer(self.memory, self.executive)
+        self.skills = AutonomousSkillLearner()
+        self.observer = Observer(self.memory, self.executive, self.skills)
         self.goals: list[Goal] = []
         self.paused = False
         self.stopped = False
@@ -253,6 +256,43 @@ class FlyMachineAgent:
         self._save()
         return True
 
+    def record_test_feedback(
+        self,
+        name: str,
+        passed: bool,
+        *,
+        tier: TestTier = TestTier.TRAINING,
+        tool: str = "delegate",
+        failure: str | None = None,
+        thread_id: str | None = None,
+        goal_id: str | None = None,
+    ):
+        event = self.observer.feedback.from_test(name, passed, tier=tier, action=tool, failure=failure)
+        self.observer._record_feedback(event, thread_id, goal_id)
+        self._save()
+        return event
+
+    def record_quality_feedback(
+        self,
+        tool: str,
+        quality: dict,
+        *,
+        previous_score: float | None = None,
+        tier: TestTier = TestTier.TRAINING,
+        thread_id: str | None = None,
+        goal_id: str | None = None,
+    ):
+        event = self.observer.feedback.from_quality(
+            tool,
+            quality,
+            previous_score=previous_score,
+            tier=tier,
+            source=tool,
+        )
+        self.observer._record_feedback(event, thread_id, goal_id)
+        self._save()
+        return event
+
     def run(self, max_steps: int = 100) -> int:
         count = 0
         while count < max_steps and not self.paused and not self.stopped:
@@ -280,6 +320,8 @@ class FlyMachineAgent:
             "tools": self.tools.names(),
             "capabilities": sorted(cap.value for cap in self.tools.policy.allowed),
             "body": self.body.snapshot(),
+            "autonomy": self.skills.status(self.tools),
+            "connectome_weights": self.executive.kernel.weights_snapshot(),
         }
 
     def _apply_planning_failure(self, goal: Goal, planning: PlannerResult) -> None:
@@ -345,6 +387,8 @@ class FlyMachineAgent:
             "last_thread_id": self._last_thread_id,
             "threads": self.threads.to_state(),
             "goals": [goal.to_dict() for goal in self.goals],
+            "skills": self.skills.snapshot(),
+            "connectome_weights": self.executive.kernel.weights_snapshot(),
         }
         self.checkpoints.save(payload)
 
@@ -353,6 +397,8 @@ class FlyMachineAgent:
         self.paused = bool(data.get("paused", False))
         self.stopped = bool(data.get("stopped", False))
         self._last_thread_id = data.get("last_thread_id")
+        self.executive.kernel.restore_weights(data.get("connectome_weights"))
+        self.skills.restore(data.get("skills"))
         self.threads.restore(data.get("threads"))
         if not self.threads.threads():
             self.threads.create("Main", listener_enabled=True)
