@@ -6,6 +6,7 @@ from fly_agent import (
     Capability,
     FlyMachineAgent,
     FeedbackEncoder,
+    Goal,
     GoalStatus,
     GraphConnectomeKernel,
     ResultStatus,
