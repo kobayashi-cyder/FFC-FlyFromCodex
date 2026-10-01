@@ -9,6 +9,12 @@ on:
       - "tests/**"
       - ".github/workflows/banc888-linked-integration.yml"
       - ".github/scripts/banc888-voice-ci.sh"
+  pull_request:
+    paths:
+      - "app/**"
+      - "tests/**"
+      - ".github/workflows/banc888-linked-integration.yml"
+      - ".github/scripts/banc888-voice-ci.sh"
   workflow_dispatch:
 
 concurrency:
@@ -57,6 +63,9 @@ jobs:
             fixture: false
           - name: Autonomous capability learning
             class: com.ffc.banc888.fly.AutonomyIntegrationTest
+            fixture: false
+          - name: Connectome mobile
+            class: com.ffc.banc888.fly.ConnectomeMobileIntegrationTest
             fixture: false
           - name: Conversation knowledge
             class: com.ffc.banc888.fly.ConversationKnowledgeIntegrationTest

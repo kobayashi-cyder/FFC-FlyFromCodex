@@ -79,10 +79,21 @@ function connectomeLearn(ctrl,accepted,score,issues,domain){
 }
 function reviewSelect(domain,candidates,ctrl,meta={}){
  const tested=(candidates||[]).map((x,i)=>({...x,index:i,score:clamp01(x.score),diagnosis:diagnose(x.validation,x.diagnosis)})).sort((a,b)=>b.score-a.score);
- const passed=tested.filter(x=>x.validation&&x.validation.pass),best=passed[0]||tested[0]||null,accepted=!!(best&&best.validation&&best.validation.pass);
- const episode={domain,accepted,score:best?best.score:0,candidateCount:tested.length,passedCount:passed.length,issues:best?best.diagnosis:['no-candidate'],selected:best?best.index:null,candidates:tested.map(x=>({index:x.index,score:x.score,pass:!!(x.validation&&x.validation.pass),stage:x.stage||'candidate',tests:(x.validation&&x.validation.tests||[]).map(t=>({name:t.name,pass:!!t.pass}))})),meta};
+ const passed=tested.filter(x=>x.validation&&x.validation.pass);
+ let best=null,circuit=null;
+ const kernel=Agent.state.connectomeSelector;
+ if(passed.length&&kernel?.evaluate){
+  // Quality is a hard admissibility condition; topology breaks ties between
+  // equally scoring acceptable outputs. Readout roles are engineered adapters.
+  const top=passed[0].score,eligible=passed.filter(x=>x.score===top);
+  const rows=eligible.map(x=>({tool:'888.output.'+x.index,routeId:x.stage==='repair'?'o1p2':/concise|minimal|simple/i.test(x.strategy||'')?'o1p3':/robust|defensive|factual|risk/i.test(x.strategy||'')?'o1p1':'o1p0',excitation:.5+.5*x.score,outputIndex:x.index}));
+  circuit=kernel.evaluate(rows,meta.threadCode||'__system__',{reward:meta.skipLearning?undefined:.15});
+  if(circuit)best=eligible.find(x=>x.index===circuit.outputIndex)||null;
+ }
+ const accepted=!!best;
+ const episode={domain,accepted,connectome:circuit?.connectome||null,score:best?best.score:0,candidateCount:tested.length,passedCount:passed.length,issues:best?best.diagnosis:['no-candidate'],selected:best?best.index:null,candidates:tested.map(x=>({index:x.index,score:x.score,pass:!!(x.validation&&x.validation.pass),stage:x.stage||'candidate',tests:(x.validation&&x.validation.tests||[]).map(t=>({name:t.name,pass:!!t.pass}))})),meta};
  const learning=meta.skipLearning?[]:connectomeLearn(ctrl,accepted,episode.score,episode.issues,domain);episode.learning=learning.map(x=>({tool:x.tool,ok:x.ok}));reviewRemember(episode);
- return{version:'4.0',policy:'GENERATE→TEST→EVALUATE→DIAGNOSE→REPAIR→RETEST→LEARN',accepted,best,candidates:tested.map(x=>({index:x.index,score:x.score,pass:!!(x.validation&&x.validation.pass),issues:x.diagnosis,stage:x.stage||'candidate'})),learning};
+ return{version:'4.0',policy:'GENERATE→TEST→EVALUATE→DIAGNOSE→REPAIR→RETEST→LEARN',accepted,best,connectome:circuit?.connectome||null,candidates:tested.map(x=>({index:x.index,score:x.score,pass:!!(x.validation&&x.validation.pass),issues:x.diagnosis,stage:x.stage||'candidate'})),learning};
 }
 
 function looksLikeCode(s,lang){
@@ -148,7 +159,7 @@ function generateCode(a,action){
   const validation=validateCode(repaired,ir),score=baseScore(validation,repaired,terms)+.02;
   candidates.push({text:repaired,validation,score,stage:'repair',strategy:'diagnostic-repair'});
  }
- const review=reviewSelect('code.'+action,candidates,ctrl,{language:ir.language,quality:ir.quality}),best=review.best||{text:templateCode(ir,a.prompt),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0};
+ const review=reviewSelect('code.'+action,candidates,ctrl,{language:ir.language,quality:ir.quality,threadCode:a.threadCode}),best=review.best||{text:templateCode(ir,a.prompt),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0};
  const draft=best.text,validation=best.validation,reward=review.learning;let exported=null;if(ir.export&&review.accepted)exported=shareText(draft,ir.filename||('BANC888_code.'+codeExt(ir.language)),'text/plain');
  const out={action,ir,text:draft,validation,review,control:ctrl,reward,exported};
  setLast(a.threadCode,'code',out);remember('code.'+action,review.accepted,{language:ir.language,issues:review.candidates.filter(x=>!x.pass).flatMap(x=>x.issues).slice(0,12),quality:ir.quality,score:review.best&&review.best.score,candidates:review.candidates.length});return out;
@@ -196,7 +207,9 @@ function generateImage(a,refine){
    throw new Error('画像候補が品質基準を通過しませんでした。'+(reasons?' '+reasons:''));
  }
 
- const best=ranked.selected;
+ const review=reviewSelect(refine?'image.refine':'image.generate',ranked.evaluated.map(x=>({prompt:x.prompt,value:x.value,validation:x.quality,score:(x.quality?.score||0)/100,stage:x.generation?'evolved':'generated',strategy:x.strategy,diagnosis:[...(x.quality?.hardIssues||[]),...(x.quality?.issues||[])]})),ctrl,{quality:ir.quality,subject:ir.subject,skipLearning:true,evolutionary:true,threadCode:a.threadCode});
+ if(!review.accepted)throw new Error('画像候補に対するコネクトーム出力がありません。');
+ const best=ranked.evaluated[review.best.index];
  const finalRun=Agent.execute('o2.generate',{prompt:best.prompt,seed:best.seed,mode:best.mode,detail:best.detail,blur:best.blur,atmosphere:best.atmosphere,layoutX:best.layoutX,layoutY:best.layoutY,scaleBias:best.scaleBias});
  if(!finalRun||!finalRun.ok)throw new Error((finalRun&&finalRun.error)||'selected image render failed');
  const finalQuality=IQ.evaluate({...best,value:finalRun.value},ir);
@@ -215,7 +228,7 @@ function generateImage(a,refine){
  };
  const candidatesPassed=ranked.passed.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:true,issues:c.quality.issues||[],seed:c.seed,mode:c.mode,layoutX:c.layoutX,layoutY:c.layoutY,scaleBias:c.scaleBias}));
  const candidatesRejected=ranked.rejected.map(c=>({id:c.id,parentId:c.parentId||null,generation:c.generation||0,strategy:c.strategy,score:c.quality.score,pass:false,issues:[...(c.quality.hardIssues||[]),...(c.quality.issues||[])],seed:c.seed,mode:c.mode,layoutX:c.layoutX,layoutY:c.layoutY,scaleBias:c.scaleBias}));
- const review=reviewSelect(refine?'image.refine':'image.generate',ranked.evaluated.map(x=>({prompt:x.prompt,value:x.value,validation:x.quality,score:(x.quality?.score||0)/100,stage:x.generation?'evolved':'generated',strategy:x.strategy,diagnosis:[...(x.quality?.hardIssues||[]),...(x.quality?.issues||[])]})),ctrl,{quality:ir.quality,subject:ir.subject,skipLearning:true,evolutionary:true});
+
  const reward=controlReward(ctrl,true),out={
    ir,prompt:best.prompt,value:finalRun.value,validation,review,
    selection:{id:best.id,parentId:best.parentId||null,generation:best.generation||0,strategy:best.strategy,score:finalQuality.score},
@@ -229,7 +242,12 @@ let VOICE_CFG=load('FFC_VOICE_CONFIG_V2',{language:'ja-JP',rate:1,pitch:1});
 function voiceConfigure(a){const ir=a.ir||V.buildVoiceIR(a.prompt||'');VOICE_CFG={language:ir.language||VOICE_CFG.language,rate:ir.rate||VOICE_CFG.rate,pitch:ir.pitch||VOICE_CFG.pitch};save('FFC_VOICE_CONFIG_V2',VOICE_CFG);remember('voice.configure',true,VOICE_CFG);return{...VOICE_CFG,continuousRequested:!!ir.continuous}}
 function voiceListen(a){const ir=a.ir||V.buildVoiceIR(a.prompt||''),lang=ir.language||VOICE_CFG.language;if(window.AndroidVoice){AndroidVoice.startListening(lang);remember('voice.listen',true,{language:lang});return{started:true,native:true,language:lang,logicalThread:a.threadCode||null}}if(Agent.listen)Agent.listen();return{started:true,native:false,language:lang}}
 function voiceSpeak(a){const ir=a.ir||V.buildVoiceIR(a.prompt||'');let text=String(ir.text||a.text||'').trim();if(!text)try{text=compose('人間へ短く自然に発話する内容を作る。要求: '+String(a.prompt||''))}catch(e){text=String(a.prompt||'')}const cfg={language:ir.language||VOICE_CFG.language,rate:ir.rate||VOICE_CFG.rate,pitch:ir.pitch||VOICE_CFG.pitch};if(window.AndroidVoice){AndroidVoice.speak(text,cfg.language,cfg.rate,cfg.pitch);remember('voice.speak.native',true,cfg);return{spoken:true,native:true,text,...cfg}}if(Agent.speak)Agent.speak(text);return{spoken:true,native:false,text,...cfg}}
-function docFallback(ir,context){const sections=(ir.sections||[]).map((s,i)=>'## '+(i+1)+'. '+s+'\n'+(i===0?'本資料は「'+ir.request+'」を目的として整理したものです。':i===1&&context?'関連文脈: '+String(context).slice(-900):'要件に沿って確認・記録してください。')).join('\n\n');return '# '+ir.title+'\n\n'+sections+'\n'}
+function docFallback(ir,context){
+ const source=String(context||'').trim().slice(-2200),sections=ir.sections||[];
+ const evidence=source?'提供された記録を以下に保持します。記録にない日時、参加者、決定事項は推測で補いません。\n\n'+source:'元の会議記録や資料は提供されていません。この文書は編集用の構成案です。実際の日時、参加者、発言、決定事項を確認してから共有してください。';
+ const body=sections.map((name,i)=>'## '+(i+1)+'. '+name+'\n'+(i===0?'目的: '+ir.request+'\n対象: 提供された記録の整理と共有。事実と確認事項を分けて記載します。':i===1?evidence:'確認事項: この節に対応する事実を元の記録と照合します。担当者、期限、合意事項が記録にある場合は原文に沿って記載し、記録がない項目は追加確認が必要と明記します。')).join('\n\n');
+ return '# '+ir.title+'\n\n'+body+'\n\n## 出典と確認\n'+(source?'出典: この依頼で提供された文脈。内容の正確性と公開範囲は元の記録で確認してください。':'出典資料なし。具体的な事実を記入するまでは完成した議事録として扱わないでください。')+'\n';
+}
 function validateDoc(body,ir){
  const s=String(body||''),heads=(s.match(/^##?\s+/gm)||[]).length,tests=[];const check=(name,pass,detail)=>tests.push({name,pass:!!pass,detail:detail||''});
  check('minimum-length',s.length>=220,'length='+s.length);check('required-sections',heads>=Math.min(3,(ir.sections||[]).length),'headings='+heads);check('no-placeholder',!/\bTODO\b|未定です|十分な知識がない/.test(s));
@@ -250,11 +268,32 @@ function makeDoc(format,a){
   if(!/^#\s+/m.test(body)||body.length<220)body=docFallback(ir,a.context);
   const validation=validateDoc(body,ir),score=baseScore(validation,body,terms)+.02;candidates.push({body,validation,score,stage:'repair',strategy:'diagnostic-repair'});
  }
- const review=reviewSelect('document.create.'+format,candidates,ctrl,{type:ir.type,quality:ir.quality}),best=review.best||candidates[0]||{body:docFallback(ir,a.context),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0};
+ const review=reviewSelect('document.create.'+format,candidates,ctrl,{type:ir.type,quality:ir.quality,threadCode:a.threadCode}),best=review.best||candidates[0]||{body:docFallback(ir,a.context),validation:{pass:false,issues:['no-candidate'],tests:[]},score:0};
  const body=best.body,validation=best.validation,title=ir.title||'BANC888資料';let exported=null,outText=body;
  if(review.accepted){if(format==='docx')exported=window.AndroidFiles?safeJson(AndroidFiles.createDocx(title,body,ir.filename||'BANC888_document.docx')):{ok:false,reason:'native file bridge unavailable'};else{const ext=format==='markdown'?'md':format==='html'?'html':'txt',mime=format==='markdown'?'text/markdown':format==='html'?'text/html':'text/plain';if(format==='html')outText='<!doctype html><html lang="ja"><meta charset="utf-8"><title>'+title.replace(/[<>&]/g,'')+'</title><body><pre style="white-space:pre-wrap;font-family:system-ui">'+body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre></body></html>';exported=shareText(outText,ir.filename||('BANC888_document.'+ext),mime)}}
  const out={format,title,body:outText,ir,validation,review,control:ctrl,reward:review.learning,exported};setLast(a.threadCode,'document',out);remember('document.create.'+format,review.accepted,{type:ir.type,quality:ir.quality,issues:best.diagnosis,score:best.score,candidates:review.candidates.length});return out;
 }
+
+function understandContent(a){
+ const prompt=String(a.prompt||''),quoted=[...prompt.matchAll(/[「『]([^」』]+)[」』]/g)].map(x=>x[1]);
+ const source=String(a.source||prompt.split(/本文[:：]|source[:：]/i).slice(1).join(' ')||quoted.join(' ')||a.context||'').slice(0,12000);
+ const question=prompt.split(/本文[:：]|source[:：]/i)[0],latin=question.toLowerCase().match(/[a-z0-9]{2,}/g)||[];
+ const jp=question.replace(/要約|内容|理解|教えて|ください|本文|[\s\p{P}]/gu,'');
+ const terms=[...new Set([...latin,...Array.from({length:Math.max(0,jp.length-1)},(_,i)=>jp.slice(i,i+2))])].slice(0,48);
+ const sentences=source.split(/(?<=[。！？.!?])\s*|\n+/).map(x=>x.trim()).filter(Boolean).slice(0,48);
+ const remaining=sentences.map((text,index)=>({text,index,relevance:terms.filter(t=>text.toLowerCase().includes(t)).length}));
+ const evidence=[],traces=[],kernel=Agent.state.connectomeSelector;
+ while(remaining.length&&evidence.length<3&&kernel?.evaluate){
+  const top=Math.max(...remaining.map(x=>x.relevance)),eligible=top>0?remaining.filter(x=>x.relevance===top):remaining;
+  const rows=eligible.map(x=>({tool:'888.content.'+x.index,routeId:/とは|です|is |means /i.test(x.text)?'o1p1':/ため|ので|because/i.test(x.text)?'o1p2':'o1p3',excitation:1,contentIndex:x.index}));
+  const pick=kernel.evaluate(rows,a.threadCode||'__system__');if(!pick)break;
+  const sentence=remaining.find(x=>x.index===pick.contentIndex);evidence.push(sentence);traces.push(pick.connectome);
+  remaining.splice(remaining.indexOf(sentence),1);
+ }
+ evidence.sort((x,y)=>x.index-y.index);
+ return{mode:'extractive-source-reading',summary:evidence.map(x=>x.text).join(' '),evidence:evidence.map(x=>({sourceIndex:x.index,text:x.text})),sourceLength:source.length,connectome:traces,validation:{pass:evidence.length>0,issues:evidence.length?[]:['source-or-connectome-output-missing']}};
+}
+reg('content.understand','read supplied text and select source evidence through the connectome','read_state','none',understandContent);
 
 reg('code.generate','CodeIR plan -> generate -> static validate -> bounded repair/export','code.write','local',a=>generateCode(a,'generate'));
 reg('code.revise','revise the last thread code artifact with CodeIR and validation','code.write','local',a=>generateCode(a,'revise'));

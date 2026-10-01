@@ -1,0 +1,144 @@
+{
+  "baselineCommit": "3e9e8cdc3a632489b768c2b9a974cbfc0e84d574",
+  "measuredAt": "2026-10-01T04:56:38.207Z",
+  "kernelSha256": "338520dc5a08082f30b69b1808f963e2a7ef4b9b04d034155f8cef76c5e84694",
+  "multiplex": {
+    "lanes": 8,
+    "sharedWorkspaceBytes": 1626,
+    "eightIndependentWorkspacesBytes": 5840,
+    "savedFraction": 0.7215753424657534
+  },
+  "runtime": "v24.19.0",
+  "platform": "linux",
+  "architecture": "x64",
+  "samples": 100,
+  "results": [
+    {
+      "label": "embedded BANC",
+      "nodes": 6,
+      "edges": 16,
+      "candidates": 1,
+      "before": {
+        "sampledPeakHeapGrowthBytes": 2126352,
+        "p50Ms": 0.024326999999999543,
+        "p95Ms": 0.09131700000000365,
+        "numericWorkspaceBytes": null,
+        "traceFramesPerSelection": 6
+      },
+      "after": {
+        "sampledPeakHeapGrowthBytes": 472464,
+        "p50Ms": 0.005127000000001658,
+        "p95Ms": 0.008103000000005522,
+        "numericWorkspaceBytes": 730,
+        "traceFramesPerSelection": 6
+      },
+      "p50Speedup": 4.744880046809377
+    },
+    {
+      "label": "embedded BANC",
+      "nodes": 6,
+      "edges": 16,
+      "candidates": 8,
+      "before": {
+        "sampledPeakHeapGrowthBytes": 2127224,
+        "p50Ms": 0.1366560000000021,
+        "p95Ms": 0.3210239999999942,
+        "numericWorkspaceBytes": null,
+        "traceFramesPerSelection": 48
+      },
+      "after": {
+        "sampledPeakHeapGrowthBytes": 620024,
+        "p50Ms": 0.012028000000000816,
+        "p95Ms": 0.03544300000000078,
+        "numericWorkspaceBytes": 730,
+        "traceFramesPerSelection": 6
+      },
+      "p50Speedup": 11.361489856999738
+    },
+    {
+      "label": "synthetic 128",
+      "nodes": 128,
+      "edges": 512,
+      "candidates": 1,
+      "before": {
+        "sampledPeakHeapGrowthBytes": 4193056,
+        "p50Ms": 0.3506890000000169,
+        "p95Ms": 0.6069249999999897,
+        "numericWorkspaceBytes": null,
+        "traceFramesPerSelection": 6
+      },
+      "after": {
+        "sampledPeakHeapGrowthBytes": 4178112,
+        "p50Ms": 0.08435699999998292,
+        "p95Ms": 0.20399799999998436,
+        "numericWorkspaceBytes": 21636,
+        "traceFramesPerSelection": 6
+      },
+      "p50Speedup": 4.157200943609753
+    },
+    {
+      "label": "synthetic 128",
+      "nodes": 128,
+      "edges": 512,
+      "candidates": 8,
+      "before": {
+        "sampledPeakHeapGrowthBytes": 8391152,
+        "p50Ms": 2.694242000000031,
+        "p95Ms": 3.9833560000000148,
+        "numericWorkspaceBytes": null,
+        "traceFramesPerSelection": 48
+      },
+      "after": {
+        "sampledPeakHeapGrowthBytes": 8296072,
+        "p50Ms": 0.16067200000009052,
+        "p95Ms": 0.28484000000003107,
+        "numericWorkspaceBytes": 21636,
+        "traceFramesPerSelection": 6
+      },
+      "p50Speedup": 16.76858444532036
+    },
+    {
+      "label": "synthetic 512",
+      "nodes": 512,
+      "edges": 2048,
+      "candidates": 1,
+      "before": {
+        "sampledPeakHeapGrowthBytes": 16713360,
+        "p50Ms": 1.766063000000031,
+        "p95Ms": 2.6596289999999954,
+        "numericWorkspaceBytes": null,
+        "traceFramesPerSelection": 6
+      },
+      "after": {
+        "sampledPeakHeapGrowthBytes": 16664008,
+        "p50Ms": 0.664641999999958,
+        "p95Ms": 0.9147700000000896,
+        "numericWorkspaceBytes": 86532,
+        "traceFramesPerSelection": 6
+      },
+      "p50Speedup": 2.657164308003621
+    },
+    {
+      "label": "synthetic 512",
+      "nodes": 512,
+      "edges": 2048,
+      "candidates": 8,
+      "before": {
+        "sampledPeakHeapGrowthBytes": 66234184,
+        "p50Ms": 15.124472000000196,
+        "p95Ms": 19.799580999999762,
+        "numericWorkspaceBytes": null,
+        "traceFramesPerSelection": 48
+      },
+      "after": {
+        "sampledPeakHeapGrowthBytes": 43693056,
+        "p50Ms": 0.6495399999998881,
+        "p95Ms": 1.2125780000001214,
+        "numericWorkspaceBytes": 86532,
+        "traceFramesPerSelection": 6
+      },
+      "p50Speedup": 23.284897004037937
+    }
+  ],
+  "note": "Host CPU results, not Android latency, process RSS, battery usage or AI task accuracy. Workspace excludes graph metadata and retained result objects. Heap growth is sampled after selections with --expose-gc; it includes garbage awaiting collection and is not total app memory."
+}

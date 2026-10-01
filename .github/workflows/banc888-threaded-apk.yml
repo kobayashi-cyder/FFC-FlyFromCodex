@@ -21,7 +21,18 @@ on:
       - "tests/feedback_core.test.cjs"
       - "tests/autonomy_core.test.cjs"
       - "tests/connectome_selector.test.cjs"
+      - "tests/connectome_mobile.test.cjs"
+      - "tests/connectome_multiplex.test.cjs"
+      - "tests/task_review.test.cjs"
+      - "tests/fixtures/connectome_reference.cjs"
+      - "tools/connectome_mobile_benchmark.cjs"
       - "tests/research_physics_core.test.cjs"
+      - ".github/workflows/banc888-threaded-apk.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "tools/connectome_mobile_benchmark.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
 
@@ -91,6 +102,9 @@ jobs:
           node tests/ir_patch_core.test.cjs
           node tests/proxy_agent_core.test.cjs
           node tests/connectome_selector.test.cjs
+          node tests/connectome_mobile.test.cjs
+          node tests/connectome_multiplex.test.cjs
+          node tests/task_review.test.cjs
           node tests/proxy_apk_integration.test.cjs
           node tests/conversation_output_core.test.cjs
           node tests/research_physics_core.test.cjs
@@ -99,20 +113,25 @@ jobs:
           node tests/webview_runtime_contract.test.cjs
           node tests/research_physics_core.test.cjs
 
+      - name: Connectome CPU benchmark
+        run: node --expose-gc tools/connectome_mobile_benchmark.cjs > connectome-mobile-benchmark.json
+
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug
 
       - name: APK inventory
         run: |
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
-          sha256sum app/build/outputs/apk/debug/app-debug.apk | tee app/build/outputs/apk/debug/app-debug.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.5-connectome-mobile-debug.apk
+          ls -lh BANC888-v7.5-connectome-mobile-debug.apk
+          sha256sum BANC888-v7.5-connectome-mobile-debug.apk > BANC888-v7.5-connectome-mobile-debug.apk.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.2-connectome-topology-debug
+          name: BANC888-v7.5-connectome-mobile-debug
           path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/apk/debug/app-debug.apk.sha256
+            BANC888-v7.5-connectome-mobile-debug.apk
+            BANC888-v7.5-connectome-mobile-debug.apk.sha256
+            connectome-mobile-benchmark.json
           if-no-files-found: error
           retention-days: 30
