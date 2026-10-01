@@ -6,6 +6,8 @@ x=V.classify('このJavaScriptコードのバグを修正して');
 assert.equal(x.tool,'code.debug');
 x=V.classify('1024x1024で猫の画像を生成して');
 assert.equal(x.tool,'image.generate'); assert.equal(x.args.size,'1024x1024');
+x=V.classify('猫の画像を作成して');
+assert.equal(x.tool,'image.generate'); assert.equal(x.args.size,'1024x1024'); assert.equal(x.args.aspect,'1:1');
 x=V.classify('マイクの権限状態を診断して');
 assert.equal(x.tool,'voice.status.native');
 x=V.classify('音声入力を開始して');
