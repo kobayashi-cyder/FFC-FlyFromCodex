@@ -75,3 +75,9 @@ class ConnectomeExecutive:
             event.vector,
             learning_scale=event.learning_scale,
         )
+
+    def consume_feedback(self, event: FeedbackEvent) -> tuple[float, ExecutiveDecision]:
+        """Make feedback both a learning signal and a sensory event."""
+        applied = self.reinforce_feedback(event)
+        decision = self.perceive(event.vector.to_stimuli())
+        return applied, decision
