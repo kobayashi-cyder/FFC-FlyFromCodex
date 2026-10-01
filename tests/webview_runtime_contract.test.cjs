@@ -12,6 +12,7 @@ const speech=read('app/src/main/java/com/ffc/banc888/fly/SpeechController.java')
 const index=read('app/src/main/assets/index.html');
 const bridge=read('app/src/main/assets/native-bridge.js');
 const runtime=read('app/src/main/assets/webview-runtime.js');
+const threadRouter=read('app/src/main/assets/thread-router.js');
 const manifest=JSON.parse(read('app/src/main/assets/live-manifest.json'));
 
 must(/SHELL_VERSION\s*=\s*70/.test(config),'shell version must remain 70');
@@ -61,6 +62,15 @@ must(speech.includes('recognitionActivityAtMs'),'speech activity diagnostics mis
 must(index.includes('PCM取得OK'),'UI must distinguish real PCM capture from permission-only state');
 must(index.includes('micProbe'),'UI microphone probe diagnostics missing');
 must(index.includes('id="flyVoiceLoop" type="checkbox" checked'),'hands-free voice loop must default on');
+must(index.includes("agentRegister('research.wiki'"),'general knowledge research tool missing');
+must(index.includes('agentResearchQuery'),'conversation research query normalization missing');
+must(index.includes('agentWikiText'),'human-readable research answer formatter missing');
+must(!index.includes('会話機能を復元しています。何から見ますか？'),'obsolete canned restoration reply must not return');
+must(index.includes('bancWanted'),'ordinary questions must not be hijacked by unrelated BANC context');
+must(threadRouter.includes("quietAgentRun(x.q.text)"),'thread router must send only the latest utterance to intent classification');
+must(threadRouter.includes("{goal:text,context:context(t)}"),'thread context must be separate from latest conversational goal');
+must(!threadRouter.includes("quietAgentRun(prompt(x.t,x.q.text))"),'management-wrapped thread prompt must not reach conversational classifier');
+must(threadRouter.includes('ffcQuickListen'),'mobile conversation view must expose microphone action without scrolling');
 
 must(!activity.includes('webView.saveState('),'WebView state must not be serialized into Activity bundles');
 must(!activity.includes('webView.restoreState('),'oversized Chromium state restore path must remain disabled');
