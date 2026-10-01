@@ -90,6 +90,36 @@ function expand(ir,count=8){
     atmosphere:v[5]
   }));
 }
+function evolve(evaluated,ir,generation=1,count=6){
+  const ranked=[...(evaluated||[])].sort((a,b)=>(b?.quality?.score||0)-(a?.quality?.score||0));
+  const parents=ranked.slice(0,Math.min(3,ranked.length));
+  if(!parents.length)return[];
+  const subject=String(ir?.subject||ir?.request||'').trim();
+  const out=[],n=clamp(Math.trunc(+count||6),3,9);
+  for(let i=0;i<n;i++){
+    const p=parents[i%parents.length],baseSeed=hash32(String(p.seed||subject)+'|g'+generation+'|'+i);
+    const r=(salt)=>((hash32(baseSeed+'|'+salt)%10001)/10000);
+    const detail=clamp(Math.round((+p.detail||5)+(r('detail')-.5)*2),3,6);
+    const blur=+clamp((+p.blur||1)+(r('blur')-.5)*1.4,0,3).toFixed(2);
+    const atmosphere=+clamp((+p.atmosphere||1)+(r('atmo')-.5)*.7,.35,1.7).toFixed(2);
+    const mode=(generation>1&&r('mode')>.72)?'cinematic':(p.mode||'photoish');
+    const mutation=[
+      'evolution generation '+generation,
+      r('crop')>.5?'preserve full subject inside frame':'strong readable silhouette',
+      r('space')>.5?'natural spacing and perspective':'balanced subject scale',
+      r('material')>.5?'refined material texture and local contrast':'coherent soft lighting',
+      'preserve anatomy and object identity'
+    ].join(', ');
+    out.push({
+      id:'g'+generation+'-'+String(i+1).padStart(2,'0'),
+      parentId:p.id||null,
+      prompt:[p.prompt||subject,mutation].filter(Boolean).join(' | '),
+      strategy:'evolve:'+String(p.strategy||'best'),
+      seed:String(baseSeed>>>0),mode,detail,blur,atmosphere,generation
+    });
+  }
+  return out;
+}
 function sceneOf(candidate){
   return candidate?.value?.sceneDetail||candidate?.sceneDetail||candidate?.scene||null;
 }
@@ -221,5 +251,5 @@ function rank(candidates,ir){
   const rejected=evaluated.filter(c=>!c.quality.pass).sort((a,b)=>b.quality.score-a.quality.score);
   return{selected:passed[0]||null,passed,rejected,evaluated};
 }
-return{KIND_WORDS,CATEGORY_PARTS,CATEGORY_GUIDANCE,requestedKinds,expand,evaluate,rank,hash32,visualPartPass,categoryIntegrity};
+return{KIND_WORDS,CATEGORY_PARTS,CATEGORY_GUIDANCE,requestedKinds,expand,evolve,evaluate,rank,hash32,visualPartPass,categoryIntegrity};
 });
