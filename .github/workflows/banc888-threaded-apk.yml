@@ -134,6 +134,14 @@ jobs:
           sha256sum BANC888-v7.11-productivity-debug.apk > BANC888-v7.11-productivity-debug.apk.sha256
           sha256sum BANC888-v7.11-productivity-androidTest.apk > BANC888-v7.11-productivity-androidTest.apk.sha256
 
+      - name: Verify APK signatures and packaged assets
+        run: |
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.11-productivity-debug.apk | tee BANC888-v7.11-productivity-signing.txt
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.11-productivity-androidTest.apk | tee BANC888-v7.11-productivity-androidTest-signing.txt
+          unzip -t BANC888-v7.11-productivity-debug.apk >/dev/null
+          unzip -l BANC888-v7.11-productivity-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -143,6 +151,8 @@ jobs:
             BANC888-v7.11-productivity-debug.apk.sha256
             BANC888-v7.11-productivity-androidTest.apk
             BANC888-v7.11-productivity-androidTest.apk.sha256
+            BANC888-v7.11-productivity-signing.txt
+            BANC888-v7.11-productivity-androidTest-signing.txt
             connectome-mobile-benchmark.json
           if-no-files-found: error
           retention-days: 30
