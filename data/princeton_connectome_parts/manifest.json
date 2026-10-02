@@ -1,0 +1,85 @@
+{
+  "format": "binary-parts-v1",
+  "note": "Concatenate parts in listed order. SHA-256 verifies exact reconstruction.",
+  "files": [
+    {
+      "source": "connections_princeton.csv.gz.csv",
+      "size": 9830400,
+      "sha256": "d52d8eef2889a65ad864239fb0d548216f3a75d6a9e535bfa3958d6bb861130f",
+      "parts": [
+        {
+          "name": "connections_princeton.csv.gz.csv.part000",
+          "size": 1048576,
+          "sha256": "845d569ad8a3635ad3dc55418d4ad64030510f167ff14a87314269e6a85569d0"
+        },
+        {
+          "name": "connections_princeton.csv.gz.csv.part001",
+          "size": 1048576,
+          "sha256": "56ca00bc4421939782a7c671615c3830dcbee6d2947a6839d2f3535fe9fc06c8"
+        },
+        {
+          "name": "connections_princeton.csv.gz.csv.part002",
+          "size": 1048576,
+          "sha256": "467ebcfaf1678d7dbe3e1441ebfb49e96baae5000011c9d310b4ffb7a215405b"
+        },
+        {
+          "name": "connections_princeton.csv.gz.csv.part003",
+          "size": 1048576,
+          "sha256": "15fc431700cc8f4ac9436fd711c12942aacd18bb98bbcf35446ef790fe835e26"
+        },
+        {
+          "name": "connections_princeton.csv.gz.csv.part004",
+          "size": 1048576,
+          "sha256": "81d5a3e5e30f95846e16b8b955fe6131ca8272ec95b2a76fba8ae1aa4c795525"
+        },
+        {
+          "name": "connections_princeton.csv.gz.csv.part005",
+          "size": 1048576,
+          "sha256": "fdb56cbe034d2ba5b1f433f2926f5da3a3cf519f89b3b41c3f0405e296b6ef12"
+        },
+        {
+          "name": "connections_princeton.csv.gz.csv.part006",
+          "size": 1048576,
+          "sha256": "e0c04129840950dc2c373c83fb60507d485518806493520ff94bb94041aa0a53"
+        },
+        {
+          "name": "connections_princeton.csv.gz.csv.part007",
+          "size": 1048576,
+          "sha256": "8a19f56f693618e7f32409d85ea00b7c54b5c14dbfc6ce6eb4fb71fd83ba1b94"
+        },
+        {
+          "name": "connections_princeton.csv.gz.csv.part008",
+          "size": 1048576,
+          "sha256": "3a2e3da549dfbad166f6f19821453e9f22e52b0e95d8de9489b722aab92054f5"
+        },
+        {
+          "name": "connections_princeton.csv.gz.csv.part009",
+          "size": 393216,
+          "sha256": "51a44eada4d9678da4aec910e8d22e875af433b57a4daeceb646229b718e0ec6"
+        }
+      ]
+    },
+    {
+      "source": "neurons.csv.gz.csv",
+      "size": 2881728,
+      "sha256": "40a2201554a8c34d2c4b07c8322543a07c1b3faf5acafbac363fd1a3d0fa617f",
+      "parts": [
+        {
+          "name": "neurons.csv.gz.csv.part000",
+          "size": 1048576,
+          "sha256": "c848cece4af8feffd8cc78d89cab40a30a834f9798748529383dd8c366c2d2a8"
+        },
+        {
+          "name": "neurons.csv.gz.csv.part001",
+          "size": 1048576,
+          "sha256": "78abcf283a584e58fd925c4530c1c3564bc33fd133fb77f8a9c53c90fc8f5319"
+        },
+        {
+          "name": "neurons.csv.gz.csv.part002",
+          "size": 784576,
+          "sha256": "bded5273fc0ce732be3bd866652e01634a7d1045565c84305a8e0b83469cdffd"
+        }
+      ]
+    }
+  ]
+}
