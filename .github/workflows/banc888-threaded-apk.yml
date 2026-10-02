@@ -21,12 +21,23 @@ on:
       - "tests/feedback_core.test.cjs"
       - "tests/autonomy_core.test.cjs"
       - "tests/connectome_selector.test.cjs"
+      - "tests/connectome_mobile.test.cjs"
+      - "tests/connectome_multiplex.test.cjs"
+      - "tests/task_review.test.cjs"
+      - "tests/fixtures/connectome_reference.cjs"
+      - "tools/connectome_mobile_benchmark.cjs"
       - "tests/research_physics_core.test.cjs"
+      - ".github/workflows/banc888-threaded-apk.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "tools/connectome_mobile_benchmark.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -79,6 +90,9 @@ jobs:
           node --check app/src/main/assets/proxy-agent.js
           node --check app/src/main/assets/conversation-output-core.js
           node --check app/src/main/assets/thread-router.js
+          node --check app/src/main/assets/attachments.js
+          node --check app/src/main/assets/artifact-workspace.js
+          node --check app/src/main/assets/workspace-productivity.js
           node --check app/src/main/assets/dev-live.js
           node --check app/src/main/assets/native-bridge.js
           node --check app/src/main/assets/webview-runtime.js
@@ -91,28 +105,54 @@ jobs:
           node tests/ir_patch_core.test.cjs
           node tests/proxy_agent_core.test.cjs
           node tests/connectome_selector.test.cjs
+          node tests/connectome_mobile.test.cjs
+          node tests/connectome_multiplex.test.cjs
+          node tests/task_review.test.cjs
+          node tests/video_export.test.cjs
+          node tests/adaptive_quality.test.cjs
+          node tests/conversation_export.test.cjs
           node tests/proxy_apk_integration.test.cjs
           node tests/conversation_output_core.test.cjs
           node tests/research_physics_core.test.cjs
           node tests/route_on_switch_only.test.cjs
           node tests/live_manifest_verify.test.cjs
           node tests/webview_runtime_contract.test.cjs
+          node tests/workspace_productivity_contract.test.cjs
           node tests/research_physics_core.test.cjs
 
-      - name: Build debug APK
-        run: gradle --no-daemon :app:assembleDebug
+      - name: Connectome CPU benchmark
+        run: node --expose-gc tools/connectome_mobile_benchmark.cjs > connectome-mobile-benchmark.json
+
+      - name: Build debug APKs
+        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
 
       - name: APK inventory
         run: |
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
-          sha256sum app/build/outputs/apk/debug/app-debug.apk | tee app/build/outputs/apk/debug/app-debug.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.11-productivity-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.11-productivity-androidTest.apk
+          ls -lh BANC888-v7.11-productivity-debug.apk BANC888-v7.11-productivity-androidTest.apk
+          sha256sum BANC888-v7.11-productivity-debug.apk > BANC888-v7.11-productivity-debug.apk.sha256
+          sha256sum BANC888-v7.11-productivity-androidTest.apk > BANC888-v7.11-productivity-androidTest.apk.sha256
+
+      - name: Verify APK signatures and packaged assets
+        run: |
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.11-productivity-debug.apk | tee BANC888-v7.11-productivity-signing.txt
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.11-productivity-androidTest.apk | tee BANC888-v7.11-productivity-androidTest-signing.txt
+          unzip -t BANC888-v7.11-productivity-debug.apk >/dev/null
+          unzip -l BANC888-v7.11-productivity-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.2-connectome-topology-debug
+          name: BANC888-v7.11-productivity-debug
           path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/apk/debug/app-debug.apk.sha256
+            BANC888-v7.11-productivity-debug.apk
+            BANC888-v7.11-productivity-debug.apk.sha256
+            BANC888-v7.11-productivity-androidTest.apk
+            BANC888-v7.11-productivity-androidTest.apk.sha256
+            BANC888-v7.11-productivity-signing.txt
+            BANC888-v7.11-productivity-androidTest-signing.txt
+            connectome-mobile-benchmark.json
           if-no-files-found: error
           retention-days: 30

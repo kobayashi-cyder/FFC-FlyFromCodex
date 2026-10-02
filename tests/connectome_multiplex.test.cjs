@@ -1,0 +1,60 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const C=require('../app/src/main/assets/proxy-agent-core.js');
+const {graph}=require('./connectome_mobile.test.cjs');
+const data=graph(),rows=[{tool:'tool.0',excitation:1},{tool:'tool.1',excitation:.8}];
+const mux=new C.ConnectomeMultiplexer(data,{maxLanes:4}),a=new C.ConnectomeSelector(data),b=new C.ConnectomeSelector(data);
+function plain(p){if(!p)return p;const {lane,...connectome}=p.connectome;return{...p,connectome}}
+const batch=mux.selectMany([{lane:'A',candidates:rows},{lane:'B',candidates:rows.slice().reverse()}]);
+assert.deepEqual(plain(batch[0].selection),a.select(rows));assert.deepEqual(plain(batch[1].selection),b.select(rows.slice().reverse()));
+const toolA=batch[0].selection.tool,toolB=batch[1].selection.tool;
+assert.equal(mux.reinforce(toolA,1,{lane:'A'}),a.reinforce(toolA,1));
+assert.deepEqual(mux.snapshot().lanes.find(x=>x.id==='B').factors,{});
+assert.equal(mux.reinforce(toolB,-1,{lane:'B'}),b.reinforce(toolB,-1));
+assert.deepEqual(mux.snapshot().lanes.find(x=>x.id==='A').factors,a.snapshot().factors);
+assert.deepEqual(mux.snapshot().lanes.find(x=>x.id==='B').factors,b.snapshot().factors);
+assert.deepEqual(plain(mux.select(rows,'A')),a.select(rows));
+assert.deepEqual(plain(mux.select(rows,'B')),b.select(rows));
+const pending=mux.lanes.get('A').last;
+assert.ok(mux.evaluate([{tool:'888.output.0',routeId:data.routes[0].id,excitation:1}], 'A'));
+assert.equal(mux.lanes.get('A').last,pending,'artifact review must preserve the enclosing action credit');
+const saved=mux.snapshot(),restored=new C.ConnectomeMultiplexer(data,{maxLanes:4});restored.restore(saved);
+assert.deepEqual(restored.snapshot(),saved);assert.equal(restored.stats().pendingCredits,0);
+assert.deepEqual(plain(restored.select(rows,'A')),a.select(rows));
+const other=new C.ConnectomeMultiplexer({...data,source:'other'});other.restore(saved);assert.equal(other.stats().lanes,0);
+const migrated=new C.ConnectomeMultiplexer(data);migrated.restore(a.snapshot());
+assert.deepEqual(plain(migrated.select(rows,'new-thread')),a.select(rows));
+const holdoutBefore=mux.snapshot().lanes.find(x=>x.id==='A').factors;
+mux.select(rows,'A');assert.equal(mux.reinforce(toolA,1,{lane:'A',tier:'holdout'}),false);
+assert.equal(mux.reinforce(toolA,1,{lane:'A'}),false,'evaluation credit was consumed without learning');
+assert.deepEqual(mux.snapshot().lanes.find(x=>x.id==='A').factors,holdoutBefore);
+const bounded=new C.ConnectomeMultiplexer(data,{maxLanes:2});bounded.select(rows,'A');bounded.select(rows,'B');
+assert.equal(bounded.select(rows,'C'),null,'pending reward credit cannot be evicted');assert.equal(bounded.stats().rejections,1);
+bounded.discard('A');assert.ok(bounded.select(rows,'C'));assert.equal(bounded.stats().evictions,1);
+assert.equal(bounded.stats().lanes,2);assert.ok(bounded.reinforce(bounded.kernel.last.tool,1,{lane:'C'}));
+const stats=mux.stats(),single=new C.ConnectomeSelector(data).stats();
+assert.equal(stats.workspaceBytes,single.workspaceBytes+data.edges.length*8);
+assert.throws(()=>mux.selectMany(Array(65).fill({})));assert.throws(()=>new C.ConnectomeMultiplexer(data,{maxLanes:0}));
+
+// Exercise competing learned/specialist plans in the actual APK proxy.
+const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
+const csv=html.match(/const RAW=\{[\s\S]*?edges:`([\s\S]*?)`/)[1];
+const edges=csv.trim().split('\n').slice(1).map(line=>{const [from,to,count,...nt]=line.split(',');return{from,to,count:+count,pre_top_nt:nt.join(',').replaceAll('"','')}});
+const routes=vm.runInNewContext(html.match(/const O1P_SHORTCUTS=(\[[\s\S]*?\]);/)[1]);
+const embedded={nodes:[...new Set(edges.flatMap(e=>[e.from,e.to]))],edges,routes,toolRoutes:{'learned.action':'o1p0','specialist.action':'o1p3'},source:'embedded aggregate BANC'};
+function proxy(topology){
+ const store=new Map(),calls=[],tools=new Map(['learned.action','specialist.action'].map(name=>[name,{name,capability:'compute'}]));
+ const context={window:{FFCProxyCore:C,FFCIrPatch:{},FFCCapabilityVocabulary:{classify:()=>({handled:true,tool:'specialist.action',confidence:.99})},FFCFeedback:{fromTest:()=>({reward:.2,learningScale:1,learnable:true,tier:'training'}),stimuli:()=>[]},BANC888_FLY_AGENT:{connectome:topology,state:{tools,capabilities:new Set(['compute'])},execute:tool=>{calls.push(tool);return{ok:true,value:5}}},FFC_CAPABILITIES:{autonomy:{matchSkill:()=>({id:'acquired',proposal:{source:'autonomy-skill:acquired',confidence:.8,steps:[{tool:'learned.action'}]}})}}},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)},setTimeout:()=>{},document:{getElementById:()=>null}};
+ vm.runInNewContext(fs.readFileSync('app/src/main/assets/proxy-agent.js','utf8'),context);
+ return{api:context.window.FFC_PROXY_AGENT,calls,store};
+}
+const normal=proxy(embedded),pick=normal.api.execute('applicable task',{threadCode:'A'});
+assert.equal(pick.status,'done');assert.equal(pick.tool,'learned.action');assert.equal(pick.plan.connectomeCandidates,2);
+assert.equal(pick.steps[0].connectome.lane,'A');
+const cut=proxy({...embedded,edges:embedded.edges.filter(e=>e.to!=='MNad21')}),different=cut.api.execute('applicable task',{threadCode:'B'});
+assert.equal(different.tool,'specialist.action','output-path ablation changes competing plan selection');
+const dead=proxy({...embedded,edges:[]});assert.equal(dead.api.execute('task',{threadCode:'A'}).status,'blocked');assert.ok(!dead.calls.includes('learned.action')&&!dead.calls.includes('specialist.action'));
+assert.equal(normal.api.status().connectomeRuntime.sharedTopology,true);
+for(let i=0;i<100;i++)normal.api.execute('applicable task',{threadCode:i%2?'A':'B'});
+assert.equal(JSON.parse(normal.store.get('FFC_PROXY_CHECKPOINT_V2')).goals.length,80,'bound the persisted completed-goal history, not only the status view');
+assert.ok(normal.api.status().connectomeRuntime.lanes<=8);
+console.log('connectome-multiplex: PASS (isolated plasticity/credit, shared graph, bounded lanes, migration, portfolio ablation, actual APK proxy)');

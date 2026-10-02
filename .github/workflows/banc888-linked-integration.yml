@@ -1,9 +1,7 @@
 name: BANC888 Parallel Integration Tests
 
 on:
-  push:
-    branches:
-      - "banc888-apk-*"
+  pull_request:
     paths:
       - "app/**"
       - "tests/**"
@@ -12,7 +10,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -27,7 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Web/runtime contract
-        run: node tests/webview_runtime_contract.test.cjs
+        run: |
+          node tests/webview_runtime_contract.test.cjs
+          node tests/workspace_productivity_contract.test.cjs
 
   android:
     name: Test • ${{ matrix.name }}
@@ -37,6 +37,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: Portrait controls and attachment picker
+            class: com.ffc.banc888.fly.ChatControlsIntegrationTest
+            fixture: false
+          - name: APK and cached UI compatibility
+            class: com.ffc.banc888.fly.LiveBundleUpgradeIntegrationTest
+            fixture: false
+          - name: Fly parallel workers
+            class: com.ffc.banc888.fly.FlyParallelIntegrationTest
+            fixture: false
+          - name: Local model API fixture
+            class: com.ffc.banc888.fly.LocalModelIntegrationTest
+            fixture: false
           - name: WebView bridge
             class: com.ffc.banc888.fly.BridgeIntegrationTest
             fixture: false
@@ -58,8 +70,20 @@ jobs:
           - name: Autonomous capability learning
             class: com.ffc.banc888.fly.AutonomyIntegrationTest
             fixture: false
+          - name: Connectome mobile
+            class: com.ffc.banc888.fly.ConnectomeMobileIntegrationTest
+            fixture: false
+          - name: Chat JSON export
+            class: com.ffc.banc888.fly.ChatJsonIntegrationTest
+            fixture: false
+          - name: MP4 export
+            class: com.ffc.banc888.fly.VideoExportIntegrationTest
+            fixture: false
           - name: Conversation knowledge
             class: com.ffc.banc888.fly.ConversationKnowledgeIntegrationTest
+            fixture: false
+          - name: Workspace productivity
+            class: com.ffc.banc888.fly.WorkspaceProductivityIntegrationTest
             fixture: false
 
     steps:
@@ -108,3 +132,23 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
           script: bash .github/scripts/banc888-voice-ci.sh
+
+      - name: Save MP4 verification artifact
+        if: always() && matrix.class == 'com.ffc.banc888.fly.VideoExportIntegrationTest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BANC888-MP4-verification
+          path: |
+            /tmp/BANC888-connectome-sample.mp4
+            /tmp/instrumentation-result.txt
+          if-no-files-found: warn
+
+      - name: Save Android test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-${{ strategy.job-index }}
+          path: |
+            /tmp/instrumentation-result.txt
+            /tmp/device-logcat.txt
+          if-no-files-found: warn

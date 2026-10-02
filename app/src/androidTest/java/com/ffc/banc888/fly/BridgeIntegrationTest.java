@@ -21,7 +21,7 @@ public class BridgeIntegrationTest {
             assertTrue(TestSupport.awaitJs(scenario,
                     "JSON.parse(AndroidVoice.status()).threadRouter===true", 5000));
             assertTrue(TestSupport.awaitJs(scenario,
-                    "(function(){var s=JSON.parse(AndroidDiagnostics.status());return s.shellVersion===70&&s.bridgeSchema===4&&s.webShell.runtimeVersion===7})()", 5000));
+                    "(function(){var s=JSON.parse(AndroidDiagnostics.status());return s.shellVersion===76&&s.bridgeSchema===8&&s.webShell.runtimeVersion===8})()", 5000));
             assertTrue(TestSupport.awaitJs(scenario,
                     "JSON.parse(__BancVoice.status('wrong-token')).error==='native bridge denied'", 5000));
             assertTrue(TestSupport.awaitJs(scenario,

@@ -40,6 +40,7 @@ final class DevLiveManager {
         return t;
     });
 
+    private final Set<String> verifiedBundles = new HashSet<>();
     private volatile boolean live;
     private volatile String currentBundle;
     private volatile String previousBundle;
@@ -52,8 +53,12 @@ final class DevLiveManager {
         if (!root.exists()) root.mkdirs();
         this.currentBundle = prefs.getString(KEY_CURRENT, "");
         this.previousBundle = prefs.getString(KEY_PREVIOUS, "");
-        this.live = prefs.getBoolean(KEY_LIVE, false) && isReady(currentBundle);
-        if (!live) prefs.edit().putBoolean(KEY_LIVE, false).apply();
+        // APK upgrades always start from their bundled, mutually compatible UI.
+        // Conversation data lives in WebView storage and remains untouched.
+        boolean sameApk = prefs.getInt("installed_apk_version", -1) == BuildConfig.VERSION_CODE;
+        this.live = sameApk && prefs.getBoolean(KEY_LIVE, false) && isReady(currentBundle);
+        prefs.edit().putInt("installed_apk_version", BuildConfig.VERSION_CODE)
+                .putBoolean(KEY_LIVE, live).apply();
     }
 
     File root() {
@@ -73,7 +78,7 @@ final class DevLiveManager {
     InputStream openRuntimeAsset(String name) throws Exception {
         File d = currentBundleDir();
         File f = d == null ? null : new File(d, name);
-        if (f != null && f.isFile()) return new FileInputStream(f);
+        if (f != null) return new FileInputStream(f);
         return activity.getAssets().open(name);
     }
 
@@ -257,10 +262,24 @@ final class DevLiveManager {
         return b.toString();
     }
 
-    private boolean isReady(String bundle) {
-        if (bundle == null || bundle.isEmpty()) return false;
+    private synchronized boolean isReady(String bundle) {
+        if (bundle == null || !bundle.matches("b_[0-9a-fA-F]{12}_[0-9]+")) return false;
+        if (verifiedBundles.contains(bundle)) return true;
         File d = new File(root, bundle);
-        return d.isDirectory() && new File(d, "ready.marker").isFile() && new File(d, "index.html").isFile();
+        try {
+            JSONObject manifest = new JSONObject(readPrefix(new File(d, "ready.marker"), 200_000));
+            validateManifest(manifest);
+            if (!bundle.substring(2, 14).equalsIgnoreCase(manifest.getString("commit").substring(0, 12))) return false;
+            JSONObject files = manifest.getJSONObject("files");
+            for (String name : AppConfig.LIVE_ASSETS) {
+                File asset = new File(d, name);
+                if (!asset.isFile() || !files.getString(name).equalsIgnoreCase(sha256(asset))) return false;
+            }
+            verifiedBundles.add(bundle);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void cleanupBundles() {

@@ -5,14 +5,15 @@ plugins {
 android {
     namespace 'com.ffc.banc888.fly'
     compileSdk 35
+    buildFeatures { buildConfig true }
 
     defaultConfig {
         applicationId 'com.ffc.banc888.fly'
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 81
-        versionName '7.2.0-connectome-topology'
+        versionCode 88
+        versionName '7.11.0-productivity'
     }
 
     buildTypes {

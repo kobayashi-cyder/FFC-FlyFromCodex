@@ -23,6 +23,9 @@ final class BridgeRegistry {
     private final Supplier<String> shellDiagnostics;
     private final SpeechController speech;
     private final DocumentExporter documents;
+    private final VideoExporter videos;
+    private final A1111Client a1111;
+    private final LocalModelClient localModel;
     private final ResearchClient research;
     private final DevLiveManager devLive;
     private final Runnable reload;
@@ -35,6 +38,9 @@ final class BridgeRegistry {
             Supplier<String> shellDiagnostics,
             SpeechController speech,
             DocumentExporter documents,
+            VideoExporter videos,
+            A1111Client a1111,
+            LocalModelClient localModel,
             ResearchClient research,
             DevLiveManager devLive,
             Runnable reload
@@ -46,6 +52,9 @@ final class BridgeRegistry {
         this.shellDiagnostics = shellDiagnostics;
         this.speech = speech;
         this.documents = documents;
+        this.videos = videos;
+        this.a1111 = a1111;
+        this.localModel = localModel;
         this.research = research;
         this.devLive = devLive;
         this.reload = reload;
@@ -54,6 +63,9 @@ final class BridgeRegistry {
     void install() {
         webView.addJavascriptInterface(new VoiceBridge(), "__BancVoice");
         webView.addJavascriptInterface(new FilesBridge(), "__BancFiles");
+        webView.addJavascriptInterface(new ModelBridge(), "__BancModel");
+        webView.addJavascriptInterface(new A1111Bridge(), "__BancA1111");
+        webView.addJavascriptInterface(new VideoBridge(), "__BancVideo");
         webView.addJavascriptInterface(new ResearchBridge(), "__BancResearch");
         webView.addJavascriptInterface(new DevBridge(), "__BancDev");
         webView.addJavascriptInterface(new DiagnosticsBridge(), "__BancDiagnostics");
@@ -63,6 +75,9 @@ final class BridgeRegistry {
         webView.removeJavascriptInterface("__BancVoice");
         webView.removeJavascriptInterface("__BancFiles");
         webView.removeJavascriptInterface("__BancResearch");
+        webView.removeJavascriptInterface("__BancVideo");
+        webView.removeJavascriptInterface("__BancA1111");
+        webView.removeJavascriptInterface("__BancModel");
         webView.removeJavascriptInterface("__BancDev");
         webView.removeJavascriptInterface("__BancDiagnostics");
     }
@@ -119,11 +134,52 @@ final class BridgeRegistry {
     }
 
     public final class FilesBridge {
+        @JavascriptInterface public String saveText(String token, String text, String filename, String mime) {
+            return allow(token) ? documents.saveText(text, filename, mime) : denied();
+        }
+        @JavascriptInterface public String shareSaved(String token, String filename, String mime) {
+            return allow(token) ? documents.shareSaved(filename, mime) : denied();
+        }
         @JavascriptInterface public String createDocx(String token, String title, String body, String filename) {
             return allow(token) ? documents.createDocx(title, body, filename) : denied();
         }
         @JavascriptInterface public String shareText(String token, String text, String filename, String mime) {
             return allow(token) ? documents.shareText(text, filename, mime) : denied();
+        }
+    }
+
+    public final class ModelBridge {
+        @JavascriptInterface public String start(String token,String endpoint,String payload){return allow(token)?localModel.start(endpoint,payload):denied();}
+        @JavascriptInterface public String poll(String token,String id){return allow(token)?localModel.poll(id):denied();}
+        @JavascriptInterface public String cancel(String token,String id){return allow(token)?localModel.cancel(id):denied();}
+    }
+
+    public final class A1111Bridge {
+        @JavascriptInterface public String start(String token,String endpoint,String path,String payload) {return allow(token)?a1111.start(endpoint,path,payload):denied();}
+        @JavascriptInterface public String poll(String token,String id) {return allow(token)?a1111.poll(id):denied();}
+        @JavascriptInterface public String cancel(String token,String id) {return allow(token)?a1111.cancel(id):denied();}
+    }
+    public final class VideoBridge {
+        @JavascriptInterface public String begin(String token, int width, int height, int fps, int frames, String filename) {
+            return allow(token) ? videos.begin(width, height, fps, frames, filename) : denied();
+        }
+        @JavascriptInterface public String beginExternal(String token,int width,int height,int fps,int frames,String name) {
+            return allow(token)?videos.beginExternal(width,height,fps,frames,name):denied();
+        }
+        @JavascriptInterface public String append(String token, String id, int index, String jpeg) {
+            return allow(token) ? videos.append(id, index, jpeg) : denied();
+        }
+        @JavascriptInterface public String finish(String token, String id) {
+            return allow(token) ? videos.finish(id) : denied();
+        }
+        @JavascriptInterface public String status(String token, String id) {
+            return allow(token) ? videos.status(id) : denied();
+        }
+        @JavascriptInterface public String cancel(String token, String id) {
+            return allow(token) ? videos.cancel(id) : denied();
+        }
+        @JavascriptInterface public String share(String token, String id) {
+            return allow(token) ? videos.share(id) : denied();
         }
     }
 
@@ -199,6 +255,7 @@ final class BridgeRegistry {
                 o.put("speech", new JSONObject(speech.statusJson()));
                 o.put("research", new JSONObject(research.diagnosticsJson()));
                 o.put("documents", new JSONObject(documents.diagnosticsJson()));
+                o.put("video", new JSONObject(videos.status("")));
                 o.put("devLive", new JSONObject(devLive.statusJson()));
             } catch (Exception e) {
                 try {

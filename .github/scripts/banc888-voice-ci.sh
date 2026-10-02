@@ -15,6 +15,9 @@ fi
 echo "::endgroup::"
 
 echo "::group::TEST $TEST_NAME"
+# Touch tests need the app window, rather than the emulator lock screen.
+adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard
 adb logcat -c
 rm -f /tmp/device-logcat.txt
 adb logcat -v threadtime > /tmp/device-logcat.txt 2>&1 &
@@ -49,8 +52,22 @@ if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
 fi
 
 if [ "$STATUS" -ne 0 ]; then
+  # Keep assertion summaries accessible through check-run annotations even when
+  # the CI log download host is unavailable to a reviewer.
+  while IFS= read -r failure_line; do
+    failure_line="${failure_line//%/%25}"
+    echo "::error title=Android test assertion::$failure_line"
+  done < <(grep -E 'AssertionError|Exception|FAILURES|INSTRUMENTATION_FAILED' /tmp/instrumentation-result.txt || true)
   echo "=== focused device log ==="
   grep -E -n -C 10 'FATAL EXCEPTION|AndroidRuntime|Process: com\.ffc\.banc888\.fly|BANC_VOICE|BANC888-WebView|chromium|CONSOLE|SpeechRecognizer|RecognitionService|SodaSpeechRecognizer|NetworkSpeechRecognizer|AssertionError|TransactionTooLargeException|TestRunner' /tmp/device-logcat.txt || true
+fi
+
+if [ "$STATUS" -eq 0 ] && [ "$TEST_CLASS" = "com.ffc.banc888.fly.VideoExportIntegrationTest" ]; then
+  MP4_SAMPLE_PATH=$(adb shell run-as com.ffc.banc888.fly find cache/exports -name '*BANC888_video.mp4' | tr -d '\r' | head -n 1)
+  if [ -n "$MP4_SAMPLE_PATH" ]; then
+    adb exec-out run-as com.ffc.banc888.fly cat "$MP4_SAMPLE_PATH" > /tmp/BANC888-connectome-sample.mp4
+    test -s /tmp/BANC888-connectome-sample.mp4
+  fi
 fi
 
 exit "$STATUS"

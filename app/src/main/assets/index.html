@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><meta name="theme-color" content="#09101e"><meta name="color-scheme" content="dark"><meta name="referrer" content="no-referrer">
-<title>BANC888 Fly Agent · Unified Autonomous Conversation v7.4</title>
+<title>BANC888 · 会話・資料・開発</title>
 <style>
 :root{--bg:#09101e;--panel:#111a2d;--line:#293754;--text:#edf2ff;--muted:#98aac7;--accent:#82a7ff;--good:#67da9e;--warn:#ffd16f}
 *{box-sizing:border-box}html{scrollbar-gutter:stable;scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.48 system-ui,sans-serif;padding-bottom:env(safe-area-inset-bottom);overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
@@ -118,9 +118,44 @@ body.ui-compact #v50UnifiedBanner{display:none}
 }
 </style>
 
+<style id="conversationShellStyle">
+/* Conversation first. Existing tools and IDs remain available in the settings drawer. */
+html.chat-root{height:100%;overflow:hidden}
+body.chat-layout{--bg:#212121;--panel:#2b2b2b;--line:#3b3b3b;--text:#f0f0f0;--muted:#aaa;--accent:#e9e9e9;--sidebar:#171717;--composer:#303030;--user:#303030;--surface:#282828;height:100dvh;overflow:hidden;color-scheme:dark;font:15px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body.chat-layout[data-theme="light"]{--bg:#fff;--panel:#f7f7f8;--line:#dedede;--text:#202020;--muted:#737373;--accent:#222;--sidebar:#f7f7f8;--composer:#f4f4f4;--user:#f2f2f2;--surface:#f6f6f6;color-scheme:light}
+body.chat-layout>header{display:none}body.chat-layout main{display:flex;flex-direction:column;width:calc(100% - 260px);height:100%;max-width:none;margin:0 0 0 260px;padding:0!important;min-width:0}
+body.chat-layout button,body.chat-layout input,body.chat-layout select,body.chat-layout textarea{color:var(--text);background:var(--surface);border-color:var(--line)}body.chat-layout button:focus-visible,body.chat-layout input:focus-visible,body.chat-layout textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+body.chat-layout button{transition:background .12s ease}body.chat-layout button:hover{background:var(--line)}body.chat-layout button.primary{background:var(--text);color:var(--bg);border-color:transparent}
+.conversationSidebar{position:fixed;inset:0 auto 0 0;width:260px;display:flex;flex-direction:column;padding:calc(17px + env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));background:var(--sidebar);z-index:15;gap:16px}
+.conversationBrand{display:flex;align-items:center;gap:10px;padding:1px 10px;font-size:18px;font-weight:700;letter-spacing:-.5px}.conversationBrand svg{width:27px;height:27px;flex-shrink:0}.conversationBrand small{margin-left:auto;color:var(--muted);font-size:10px;font-weight:500;letter-spacing:.5px}
+body.chat-layout .conversationNew{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;text-align:left;background:transparent;border:1px solid var(--line);border-radius:12px;font-size:14px;min-height:44px}.conversationNew svg{width:18px;height:18px}
+.conversationHistory{min-height:0;overflow:auto;flex:1}.conversationHistoryLabel{font-size:11px;color:var(--muted);padding:0 12px 8px}.conversationSideFoot{display:grid;gap:4px;border-top:1px solid var(--line);padding-top:12px}.conversationSideFoot>button{display:flex;gap:9px;align-items:center;text-align:left;border:0;background:transparent!important;padding:9px 12px;font-size:13px}.conversationSideFoot>button:hover{background:var(--surface)!important}.conversationSideFoot svg{width:17px;height:17px;flex-shrink:0}.conversationDevice{display:flex;gap:7px;align-items:center;padding:8px 12px 0;color:var(--muted);font-size:11px}.conversationDevice i{width:6px;height:6px;background:#65b58f;border-radius:50%}
+body.chat-layout #uiHub{position:relative;top:0;flex-shrink:0;z-index:5;margin:0;padding:calc(12px + env(safe-area-inset-top)) 24px 12px;border:0;border-radius:0;background:var(--bg);backdrop-filter:none}body.chat-layout .uiHubTop{flex-wrap:nowrap}.conversationHeaderTitle{display:flex;gap:10px;align-items:center;min-width:0;font-weight:600;font-size:17px}.conversationHeaderTitle small{font-size:11px;font-weight:400;color:var(--muted);white-space:nowrap}.conversationHeaderActions{display:flex;gap:6px;align-items:center}.conversationHeaderActions button{border:0;background:transparent!important;min-height:38px;padding:6px 9px}.conversationIcon{width:22px;height:22px;display:block}.conversationMenuButton{display:none!important}.conversationSidebarShade{display:none;position:fixed;inset:0;background:#0008;z-index:14}
+body.chat-layout #flyAgentCard{display:flex;flex-direction:column;flex:1;min-height:0;margin:0;padding:0!important;border:0;box-shadow:none;background:transparent;overflow:hidden}body.chat-layout #flyAgentCard>h2{display:none}
+body.chat-layout #ffcThreadHub{display:flex;flex:1;min-height:0;flex-direction:column;margin:0;padding:0;border:0;border-radius:0;background:transparent;overflow:hidden}body.chat-layout #ffcThreadHub>.ffcThreadTop,body.chat-layout #ffcThreadHub>.ffcThreadBar,body.chat-layout #ffcThreadHub>.ffcReplyPanel{display:none!important}
+body.chat-layout #ffcThreadChips{display:flex;flex-direction:column;gap:3px;overflow:visible;margin:0;padding:0;scrollbar-width:auto}body.chat-layout .ffcThreadChip{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 7px;text-align:left;padding:10px 12px;border:0;border-radius:9px;min-height:44px;min-width:0;width:100%;background:transparent;color:var(--text);outline:none}body.chat-layout .ffcThreadChip.active{background:var(--surface);outline:none}body.chat-layout .ffcThreadChip .ffcThreadName{grid-column:1/3;font-size:13px;color:var(--text)}body.chat-layout .ffcThreadChip b{font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:450}body.chat-layout .ffcThreadChip small{font-size:10px;color:var(--muted)}body.chat-layout .ffcThreadChip span{grid-column:1/3;font-size:10px;color:var(--muted)}
+body.chat-layout #ffcThreadLog{flex:1;min-height:0;height:auto;max-height:none;border:0;border-radius:0;margin:0;padding:24px max(28px,calc((100% - 760px)/2)) 38px;background:transparent;scrollbar-gutter:stable;overscroll-behavior:contain;scroll-behavior:smooth}
+body.chat-layout .ffcMsg{max-width:760px;margin:0 auto 28px;padding:0;border-radius:0;background:transparent;white-space:normal;font-size:15px;line-height:1.75;word-break:break-word}body.chat-layout .ffcMsg.user{width:fit-content;max-width:85%;margin-left:auto;margin-right:0;padding:11px 19px;border-radius:24px;background:var(--user)}body.chat-layout .ffcMsg.assistant{margin-left:0;margin-right:0;padding:0 0 0 38px;position:relative;background:transparent}body.chat-layout .ffcMsg.assistant::before{content:'888';position:absolute;left:0;top:0;width:27px;height:27px;border:1px solid var(--line);border-radius:50%;font-size:9px;line-height:27px;text-align:center;font-weight:700}
+body.chat-layout .ffcMsg>.ffcMessageRole,body.chat-layout .ffcMsg>b{display:none}body.chat-layout .ffcMessageText,body.chat-layout .ffcMsg>div{white-space:pre-wrap}body.chat-layout .ffcMsg .ffcArtifact{white-space:normal;margin-top:14px;max-width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}body.chat-layout .ffcArtifact img,body.chat-layout .ffcArtifact video{display:block;max-width:100%;height:auto;border-radius:9px}body.chat-layout .ffcArtifact pre{margin:8px 0;background:var(--sidebar);border-color:var(--line);max-height:420px;white-space:pre-wrap;color:var(--text);font-size:12px}body.chat-layout .ffcArtifact a{color:var(--text)}body.chat-layout .ffcArtifact button{margin-top:9px}
+.conversationComposerWrap{flex-shrink:0;padding:0 max(28px,calc((100% - 760px)/2)) max(12px,env(safe-area-inset-bottom));background:var(--bg)}body.chat-layout .ffcThreadInput{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0;position:relative;bottom:auto;background:var(--composer);border:1px solid transparent;border-radius:26px;padding:12px 14px 9px;box-shadow:0 3px 12px #0000000a;z-index:3}body.chat-layout .ffcThreadInput:focus-within{border-color:var(--line)}body.chat-layout #ffcThreadText{grid-column:1/3;flex:none;width:100%;min-width:0;min-height:46px;max-height:168px;resize:none;padding:4px 5px 10px;border:0;outline:none!important;background:transparent;font-size:16px;line-height:1.5;box-shadow:none}body.chat-layout #ffcThreadText::placeholder{color:var(--muted)}.conversationComposerTools{display:flex;align-items:center;gap:7px}body.chat-layout .conversationComposerTools button{background:transparent;border:0;border-radius:50%;width:35px;height:35px;min-height:35px;padding:7px}.conversationComposerTools svg{width:20px;height:20px;display:block}body.chat-layout #ffcThreadSend{grid-column:2;grid-row:2;border-radius:50%;width:36px;height:36px;min-height:36px;padding:7px;font-size:21px;font-weight:600;line-height:21px}.conversationComposerNote{text-align:center;margin:8px 0 0;color:var(--muted);font-size:10px;line-height:1.4}body.chat-layout #ffcLogStatus{margin:0 auto;padding:0 12px;min-height:0;max-width:760px;font-size:11px;color:var(--muted)}
+body.chat-layout .ffcEmpty{opacity:1;display:flex;min-height:100%;flex-direction:column;align-items:center;justify-content:center;padding:20px 0 60px;text-align:center;gap:9px}.conversationWelcomeMark{display:grid;place-items:center;width:48px;height:48px;margin-bottom:9px;border:1px solid var(--line);border-radius:50%;font-size:13px;font-weight:750;letter-spacing:-1px}.conversationWelcomeTitle{font-size:27px;font-weight:600;letter-spacing:-1px;line-height:1.35}.conversationWelcomeDescription{color:var(--muted);font-size:13px;max-width:370px;margin:0 0 16px}.conversationStarters{display:flex;gap:9px;flex-wrap:wrap;justify-content:center}body.chat-layout .conversationStarters button{background:transparent;border:1px solid var(--line);border-radius:14px;padding:10px 13px;font-size:12px;min-height:44px}
+body.chat-layout .uiSettingsDrawer,body.chat-layout .uiSettingsHead,body.chat-layout .uiGroup,body.chat-layout .uiGroup>summary,body.chat-layout .agentSubDetails{background:var(--bg);color:var(--text);border-color:var(--line)}body.chat-layout .uiSettingsBody{overflow-x:hidden}body.chat-layout .uiSettingsBody .card,body.chat-layout .uiSettingsBody .flyvoicepanel,body.chat-layout .uiSettingsBody .flydisplay{background:var(--panel);border-color:var(--line)}body.chat-layout .uiSettingsBody .flyvoicegrid{grid-template-columns:minmax(0,1fr)!important}body.chat-layout .uiSettingsBody .row>label{min-width:0!important;max-width:100%}body.chat-layout .uiSettingsBody pre{color:var(--text);background:var(--sidebar);border-color:var(--line)}body.chat-layout .uiSettingsBody .note{background:var(--surface);border-color:var(--line)}body.chat-layout .uiSettingsBody input{min-width:0;max-width:100%}.conversationLogDetails{border:0!important;background:transparent!important;margin:0!important}.conversationLogDetails>summary{padding:8px 12px!important;font-size:12px;color:var(--muted)}body.chat-layout .conversationLogDetails .ffcLogTools{padding:0 8px;gap:4px}body.chat-layout .conversationLogDetails .ffcLogTools button{font-size:11px;padding:6px;min-height:32px;background:var(--surface)}
+@media(max-width:900px){.conversationSidebar{width:230px}body.chat-layout main{width:calc(100% - 230px);margin-left:230px}body.chat-layout #ffcThreadLog{padding-left:22px;padding-right:22px}.conversationComposerWrap{padding-left:22px;padding-right:22px}.conversationHeaderTitle small{display:none}}
+@media(max-width:700px){body.chat-layout main{width:100%;margin:0}body.chat-layout #uiHub{display:block!important;padding:calc(9px + env(safe-area-inset-top)) 10px 9px}body.chat-layout .uiHubTop{gap:7px}.conversationHeaderTitle{font-size:16px}.conversationMenuButton{display:block!important}.conversationSidebar{width:280px;max-width:88vw;transform:translateX(-100%);transition:transform .16s ease;box-shadow:none}body.conversation-sidebar-open .conversationSidebar{transform:translateX(0);box-shadow:8px 0 35px #0005}body.conversation-sidebar-open .conversationSidebarShade{display:block}body.chat-layout #ffcThreadLog{padding:15px 18px 23px}.conversationComposerWrap{padding:0 12px max(10px,env(safe-area-inset-bottom))}body.chat-layout .ffcMsg{font-size:15px;margin-bottom:24px}body.chat-layout .ffcMsg.assistant{padding-left:33px}body.chat-layout .ffcMsg.user{max-width:91%;padding:10px 15px}body.chat-layout .ffcEmpty{padding-bottom:40px}.conversationWelcomeTitle{font-size:25px}.conversationWelcomeDescription{max-width:260px}.conversationStarters{gap:7px}.conversationComposerNote{font-size:9px}body.chat-layout .ffcThreadInput{padding:10px 12px 8px;border-radius:24px}body.chat-layout #ffcThreadText{font-size:16px;min-height:42px}}
+@media(prefers-reduced-motion:reduce){.conversationSidebar,body.chat-layout button{transition:none}body.chat-layout #ffcThreadLog{scroll-behavior:auto}}
+
+/* Explicit sizes and labels keep the header and composer usable in Android WebView. */
+body.chat-layout .conversationHeaderActions svg{width:20px;height:20px;flex-shrink:0}
+body.chat-layout .conversationHeaderActions button{min-width:44px;min-height:44px;white-space:nowrap;padding:8px}
+body.chat-layout .conversationHeaderTitle{white-space:nowrap;font-size:16px}
+body.chat-layout .conversationComposerTools{gap:4px;flex-wrap:wrap}
+body.chat-layout .conversationComposerTools button{width:auto;height:auto;min-width:44px;min-height:44px;border-radius:10px;padding:8px;color:var(--text);font-size:13px}
+@media(max-width:400px){body.chat-layout .conversationHeaderActions{gap:2px}body.chat-layout .conversationHeaderTitle{font-size:14px}.conversationHeaderTitle small{display:none}}
+</style>
+
 </head>
 <body>
-<header><h1>🪰 BANC888 Fly Agent <span class="pill">v7.4 UNIFIED AUTONOMY</span></h1>
+<header><h1>BANC888 <span class="pill">v7.7 CHAT JSON</span></h1>
 <div class="muted">音声会話 + Human Display + ToolBus + BANC/O0 + F38/F42/F46。通常操作はFly Consoleへ集約し、専門パネルは用途別に折りたたみます。</div></header>
 <main>
 <div class="card" id="v50UnifiedBanner"><h2>BANC888 v5.0 Fly Voice + Human Display Agent <span class="pill">v4.8 unified + ears + voice + human display</span></h2><div class="note"><b>操作主体は代理人としてのハエ。</b> v4.8のToolBus/F38/F42/F46を保持したまま、人間→ハエの音声入力、ハエ→人間の音声出力、ハエ→人間向け画面出力を追加。O0は不変です。</div></div>
@@ -2158,7 +2193,9 @@ let CHAT=(()=>{
   }catch{return structuredClone(CHAT_DEFAULT)}
 })();
 CHAT.multimodal={image:null,audio:null,file:null}; // binary/media context is session-local
+let CHAT_THREAD_MODE=false;
 function saveChat(){
+  if(CHAT_THREAD_MODE)return;
   const slim={
     history:CHAT.history.slice(-120),memory:CHAT.memory,learned:CHAT.learned.slice(-1000),
     facts:CHAT.facts,aliases:CHAT.aliases,candidates:CHAT.candidates
@@ -2551,6 +2588,8 @@ function offlineConversationAnswer(text){
 }
 function researchConversationAnswer(text,intent,lang,context=''){
   if(lang!=='ja'||!['question','why','how','unknown','opinion'].includes(intent))return null;
+  const local=offlineConversationAnswer(text);if(local)return local;
+  if(!/検索して|調べて|search|look up/i.test(text)||window.FFCExecution?.status().mode==='offline')return null;
   const q=knowledgeQuery(text,context);if(!q||q.length<2)return null;
   try{
     const api=window.FFC_RESEARCH_PHYSICS_TOOLS;
@@ -2568,10 +2607,11 @@ function researchConversationAnswer(text,intent,lang,context=''){
 function generateConversation(text,context=""){
   text=latestConversationText(text);
   const lang=detectHumanLanguage(text),r=RESP[lang]||RESP.en;
-  const taught=teachFrom(text);if(taught)return{reply:taught,lang,intent:"teach"};
+  updateChatMemory(text);
+  const nameSet=text.match(/(?:私|僕|俺)の名前は\s*([^\s。、！？!?]{1,30})/);if(nameSet&&!/[？?]/.test(text)){CHAT.memory.name=nameSet[1].replace(/(?:です|と申します|といいます)$/,'');saveChat();return{reply:CHAT.memory.name+'さんですね。この会話ではその名前を覚えておきます。',lang,intent:'memory.set'}}
+  const taught=teachFrom(text);if(taught)return{reply:taught,lang,intent:'teach'};
   const mem=memoryAnswer(text);if(mem)return{reply:mem,lang,intent:"memory"};
   const know=adaptiveKnowledgeAnswer(text);if(know)return{reply:know,lang,intent:"knowledge"};
-  updateChatMemory(text);
   learnDeclarativeFact(text);
   const intent=classifyIntent(text);
   const genReq=compileFromChatRequest(text);
@@ -4208,6 +4248,7 @@ function trPayload(job){
   };
 }
 async function trTest(){
+ if(window.FFCExecution?.status().mode==='offline'){trLog('オフラインです。上部でオンラインへ切り替えてください。');return;}
   const base=$("#trEndpoint").value.replace(/\/+$/,"");
   try{
     const r=await fetch(base+"/sdapi/v1/options",{method:"GET"});
@@ -4224,6 +4265,7 @@ function trRenderO2Base(job){
   $("#o2xPrompt").value=oldPrompt;$("#o2xSeed").value=oldSeed;
 }
 async function trRunJob(job){
+ if(window.FFCExecution?.status().mode==='offline')throw new Error('オフラインです。上部でオンラインへ切り替えてください。');
   const base=$("#trEndpoint").value.replace(/\/+$/,"");
   $("#trCurrent").textContent=`${job.id} / ${job.group}\nseed=${job.seed} cfg=${job.cfg_scale} steps=${job.steps}\n${job.sampler_name} ${job.width}x${job.height}`;
   trRenderO2Base(job);
@@ -5794,8 +5836,46 @@ agentRegister('o2.generate','generate through preserved O2/O2 Photo+ runtime','o
   const scene=detail?{width:detail.width,height:detail.height}:O23.scene?{width:O23.scene.width,height:O23.scene.height}:null;
   return{kind,objects,scene,sceneDetail:detail,generationOptions:O2X.scene?.generationOptions||O2X.options};
 });
-agentRegister('o3.generate','generate O3 timeline from preserved O2 scene','o3.write','page',a=>{if(!O23.scene){const p=AGENT.tools.get('o2.generate');p.handler({prompt:a.prompt||''})}o23GenerateO3();return{tracks:O23.timeline?.tracks?.length||0,durationMs:O23.timeline?.durationMs||0,playing:false}});
-agentRegister('chat.compose','compose human-facing reply with preserved adaptive chat','chat.compose','local',a=>{const goal=String(a.goal||''),base=generateConversation(goal),obs=a.observation?agentObservationText(a.observation.tool,a.observation.result,goal):'',ctx=String(a.context||'');if(ctx&&!CHAT.memory.lastTopic){const m=ctx.match(/人間:\s*([^\n]{2,60})/g);if(m?.length){const lastLine=m[m.length-1].replace(/^人間:\s*/,'');const t=topicFromText(lastLine);if(t){CHAT.memory.lastTopic=t;saveChat()}}}return{reply:base.reply+(obs?'\n\n'+obs:''),intent:base.intent,lang:base.lang}});
+function o23CoherentVideo(prompt){
+ // Build a fresh semantic scene; all parts of an actor receive the same motion.
+ SEM.plan=semPlan(prompt);SEM.scene=semSceneFromPlan(SEM.plan);semRender();semSync();
+ O23.scene=JSON.parse(JSON.stringify(SEM.scene));const tracks=[];
+ const still=/静止|動かさない|still/i.test(prompt),jump=/跳|ジャンプ|jump/i.test(prompt);
+ for(const o of O23.scene.objects){
+  const kind=String(o.id||'').match(/^(cat|dog|person|car|bird|insect|cloud)/)?.[1];if(!kind||still)continue;
+  const dx=kind==='cloud'?40:kind==='bird'?90:100,dy=jump?-65:kind==='bird'||kind==='insect'?-30:-4;
+  for(const [prop,delta] of [['x',dx],['y',dy],...(o.type==='line'?[['x2',dx],['y2',dy]]:[])]){
+   const value=Number(o[prop]||0);tracks.push({object:o.id,property:prop,route:'o1p0',keyframes:[[0,value],[.5,value+delta],[1,value]]});
+  }
+ }
+ O23.timeline={format:'BANC888-O3-coherent-v1',durationMs:4000,loop:true,tracks};o23Render(0);o23SyncEditor();
+}
+function o23CaptureVideo(){
+ if(!O23.scene||!O23.timeline)throw new Error('動画シーンを生成してください。');
+ const scene=JSON.parse(JSON.stringify(O23.scene)),timeline=JSON.parse(JSON.stringify(O23.timeline));
+ const objects=scene.objects.map(o=>({...o})),byId=new Map(objects.map(o=>[o.id,o]));
+ return{width:scene.width,height:scene.height,durationMs:timeline.durationMs,render:(t,ctx)=>{
+  for(const track of timeline.tracks){const object=byId.get(track.object);if(object){const v=o23TrackValue(track,t);if(v!==undefined)object[track.property]=v}}
+  ctx.clearRect(0,0,scene.width,scene.height);ctx.fillStyle=scene.background?.type==='linearGradient'?o23Gradient(ctx,scene.background):scene.background||'#07101e';ctx.fillRect(0,0,scene.width,scene.height);
+  for(const object of objects)o23DrawPrimitive(ctx,object);
+ }};
+}
+window.FFCVideoSceneSource=o23CaptureVideo;
+agentRegister('o3.generate','generate coherent semantic motion and save native MP4','o3.write','page',a=>{
+ o23CoherentVideo(String(a.prompt||''));if(window.FFCVideoExport)FFCVideoExport.setSource(o23CaptureVideo);
+ const exported=window.FFCVideoExport?FFCVideoExport.start({filename:a.filename,fps:a.fps}):{ok:false,status:'failed',error:'MP4 runtime unavailable'};
+ return{tracks:O23.timeline.tracks.length,durationMs:O23.timeline.durationMs,playing:false,exported};
+});
+function composeThreadChat(a){
+ const raw=String(a.goal||a.prompt||''),goal=latestConversationText(raw),ctx=String(a.context||''),thread=window.FFC_THREADS?.state.threads.find(t=>CoreThreadCode(t.id)===String(a.threadCode||''));
+ const previous=CHAT,previousMode=CHAT_THREAD_MODE;
+ if(thread){CHAT=thread.chatState||structuredClone(CHAT_DEFAULT);CHAT.memory={...structuredClone(CHAT_DEFAULT.memory),...CHAT.memory};CHAT.multimodal={image:null,audio:null,file:null};CHAT_THREAD_MODE=true;}
+ try{const base=generateConversation(goal,ctx),obs=a.observation?agentObservationText(a.observation.tool,a.observation.result,goal):'';if(thread){thread.chatState=CHAT;thread.chatState.history=thread.chatState.history.slice(-12);thread.chatState.learned=thread.chatState.learned.slice(-96);thread.chatState.facts=Object.fromEntries(Object.entries(thread.chatState.facts||{}).slice(-96));thread.chatState.aliases=Object.fromEntries(Object.entries(thread.chatState.aliases||{}).slice(-96));thread.chatState.candidates=Object.fromEntries(Object.entries(thread.chatState.candidates||{}).slice(-32));}return{reply:base.reply+(obs?'\n\n'+obs:''),intent:base.intent,lang:base.lang}}
+ finally{CHAT=previous;CHAT_THREAD_MODE=previousMode}
+}
+function CoreThreadCode(id){let s='',n=id;while(n>0){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s}
+agentRegister('chat.compose','compose reply with isolated thread memory','chat.compose','local',composeThreadChat);
+
 agentRegister('bridge.propose','proposal for future OS/app/file/network body bridge','bridge.propose','external-proposal',a=>({proposal_only:true,execution:'NOT_PERFORMED',action:String(a.action||'external.operation'),goal:String(a.goal||''),reason:'APK/native bridge deferred; keep fly/tool contract stable'}));
 agentRegister('f38.compile','compile a fly-routed dependency-safe compute organism program','f38.write','local',a=>{f38Stop();const goal=String(a.goal||'agent compute'),mode=['text','code','image','audio','video'].includes(a.mode)?a.mode:'text',n=Math.max(8,Math.min(40,+a.n||16));F38.program=f38CompileProgram(goal,mode,n);F38.current=null;F38.pc=0;F38.regs=null;F38.executed=0;F38.trace=[];F38.done=new Set();F38.skipped=new Set();F38.error=null;f38MarkGated();f38Render(true);f38UI();return{n:F38.program.n,mode:F38.program.mode,totalOps:F38.program.totalOps,effectiveOps:F38.program.effectiveOps,shards:F38.program.shards.length,inputSource:F38.program.inputSource,control:F38.program.control}});
 agentRegister('f38.step','run one bounded dependency-safe F38 slice','f38.write','local',a=>{if(!F38.program)throw new AgentInvalidRequest('F38 program not compiled');f38Stop();const ran=f38RunSlice(Math.max(1,Math.min(65536,+a.maxOps||8192))),done=f38Complete();if(done)f38Render();return{ran,done,executed:F38.executed,total:F38.program.effectiveOps,error:F38.error,stats:done?f38Stats():null}});
@@ -5976,7 +6056,7 @@ function flySpeak(text){
   FLYVOICE.speaking=true;flyVoiceStopListening();speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(clean);u.lang=$('#flyVoiceLang')?.value||'ja-JP';u.rate=+($('#flyVoiceRate')?.value||1);u.pitch=+($('#flyVoicePitch')?.value||1);const ix=+($('#flyVoiceSelect')?.value);if(Number.isInteger(ix)&&FLYVOICE.voices[ix])u.voice=FLYVOICE.voices[ix];
   u.onstart=()=>{FLYVOICE.speaking=true;flyVoiceSetState('speaking','ハエが話しています…')};u.onend=()=>{FLYVOICE.speaking=false;flyVoiceSetState('idle','発話終了');if($('#flyVoiceLoop')?.checked)setTimeout(()=>flyVoiceStartListening(),420)};u.onerror=e=>{FLYVOICE.speaking=false;flyVoiceSetState('error','音声出力: '+(e.error||'error'))};speechSynthesis.speak(u);return{spoken:true,chars:clean.length,lang:u.lang,rate:u.rate,pitch:u.pitch}
 }
-function flyFindVisualSource(packet){const goal=String(packet?.goal||'');const explicitVisual=/(?:画像|image|絵|picture|photo|動画|video|アニメ|映像).*(?:生成|作って|作成|描いて|generate|create)|(?:生成|作って|作成|描いて|generate|create).*(?:画像|image|絵|picture|photo|動画|video|アニメ|映像)/i.test(goal);const tools=(packet?.steps||[]).map(x=>x.tool).reverse();for(const tool of tools){if(tool==='o3.generate')return explicitVisual?['o3v0Canvas','O3 video/frame output']:[null,'text output'];if(tool==='o2.generate')return explicitVisual?['o2xCanvas','O2 image output']:[null,'text output'];if(tool==='banc.neighbors')return['graph','BANC graph output']}return[null,'text output']}
+function flyFindVisualSource(packet){const goal=String(packet?.goal||'');const explicitVisual=/(?:画像|image|絵|picture|photo|動画|video|アニメ|映像).*(?:生成|作って|作成|描いて|generate|create)|(?:生成|作って|作成|描いて|generate|create).*(?:画像|image|絵|picture|photo|動画|video|アニメ|映像)/i.test(goal);const tools=(packet?.steps||[]).map(x=>x.tool).reverse();for(const tool of tools){if(tool==='o3.generate')return explicitVisual?['o23Canvas','O3 video/frame output']:[null,'text output'];if(tool==='o2.generate')return explicitVisual?['o2xCanvas','O2 image output']:[null,'text output'];if(tool==='banc.neighbors')return['graph','BANC graph output']}return[null,'text output']}
 function flyCopyCanvas(srcId){const dst=$('#flyDisplayCanvas'),src=srcId&&$('#'+srcId);if(!dst||!src||typeof src.getContext!=='function'){if(dst)dst.style.display='none';return false}try{const ctx=dst.getContext('2d');ctx.clearRect(0,0,dst.width,dst.height);ctx.fillStyle='#05080f';ctx.fillRect(0,0,dst.width,dst.height);const sw=src.width||1,sh=src.height||1,scale=Math.min(dst.width/sw,dst.height/sh),w=sw*scale,h=sh*scale;ctx.drawImage(src,(dst.width-w)/2,(dst.height-h)/2,w,h);dst.style.display='block';return true}catch(e){dst.style.display='none';return false}}
 function flyPresent(packetOrText,meta={}){const packet=typeof packetOrText==='object'&&packetOrText?packetOrText:null,text=packet?String(packet.finalText||''):String(packetOrText||'');const tool=meta.tool||packet?.selected?.tool||'—',route=meta.route||packet?.selected?.route||'—';if($('#flyDisplayText'))$('#flyDisplayText').textContent=text||'—';if($('#flyDisplayTool'))$('#flyDisplayTool').textContent='tool '+tool;if($('#flyDisplayRoute'))$('#flyDisplayRoute').textContent='route '+route;if($('#flyDisplayState'))$('#flyDisplayState').textContent=meta.state||'FLY OUTPUT';const [srcId,caption]=packet?flyFindVisualSource(packet):[null,'text output'];const copied=flyCopyCanvas(srcId);if($('#flyDisplayCaption'))$('#flyDisplayCaption').textContent=(copied?caption:'text output')+' · human-facing presentation channel';return{displayed:true,tool,route,visual:copied?srcId:null,chars:text.length}}
 function flyDeliver(packet,{dryRun=false}={}){if(!packet)return null;const display=agentExecute('human.display',{packet},{dryRun});let voice=null;if(packet.finalText&&$('#flyVoiceSpeak')?.checked)voice=agentExecute('voice.speak',{text:packet.finalText},{dryRun});packet.outputs={display,voice};return packet.outputs}
@@ -6077,7 +6157,7 @@ window.BANC888_FLY_STACK={
     hub.innerHTML=`<div class="uiHubTop"><div><span class="uiHubTitle">🪰 BANC888</span> <span class="uiHubState">Fly Console</span></div><nav class="uiHubNav"><button id="uiGearButton" class="uiGearButton" aria-label="詳細設定">⚙</button></nav></div>`;
     const shade=document.createElement('div');shade.id='uiSettingsShade';shade.className='uiSettingsShade';
     const drawer=document.createElement('aside');drawer.id='uiSettingsDrawer';drawer.className='uiSettingsDrawer';drawer.setAttribute('aria-hidden','true');
-    drawer.innerHTML='<div class="uiSettingsHead"><div class="uiSettingsTitle">⚙ 詳細</div><button id="uiSettingsClose">閉じる</button></div><div id="uiSettingsBody" class="uiSettingsBody"></div>';
+    drawer.innerHTML='<div class="uiSettingsHead"><div class="uiSettingsTitle">⚙ 設定</div><button id="uiSettingsClose">閉じる</button></div><div id="uiSettingsBody" class="uiSettingsBody"></div>';
     document.body.append(shade,drawer);
     const settingsBody=drawer.querySelector('#uiSettingsBody');
     const setSettings=open=>{drawer.classList.toggle('open',open);shade.classList.toggle('open',open);drawer.setAttribute('aria-hidden',open?'false':'true')};
@@ -6131,6 +6211,85 @@ window.BANC888_FLY_STACK={
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(consolidate,120));
   else setTimeout(consolidate,120);
+})();
+</script>
+
+<script id="conversationShellScript">
+(() => {
+  'use strict';
+  const icon=(path)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+path+'</svg>';
+  const icons={
+    menu:icon('<path d="M4 6h16M4 12h16M4 18h16"/>'),
+    new:icon('<path d="M12 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 3l5 5M10 14l1-5L18 2l5 5-7 7-6 1Z"/>'),
+    settings:icon('<path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1 1-3Z"/>'),
+    download:icon('<path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/>'),
+    share:icon('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 10 6-3M9 14l6 3"/>'),
+    theme:icon('<path d="M20 14a8 8 0 0 1-10-10A8 8 0 1 0 20 14Z"/>'),
+    mic:icon('<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/>'),
+    stop:icon('<rect x="6" y="6" width="12" height="12" rx="2"/>'),
+    brand:icon('<path d="M5 8h14M5 16h14M8 5v14M16 5v14"/><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="16" cy="16" r="3"/>')
+  };
+  const byId=id=>document.getElementById(id);
+  let mounted=false,routerMounted=false;
+  const setSidebar=open=>{document.body.classList.toggle('conversation-sidebar-open',!!open);byId('conversationSidebarToggle')?.setAttribute('aria-expanded',String(!!open));if(innerWidth<=700)byId('conversationSidebar')?.setAttribute('aria-hidden',String(!open))};
+  const applyTheme=theme=>{document.body.dataset.theme=theme;document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='light'?'#ffffff':'#212121');document.querySelector('meta[name="color-scheme"]')?.setAttribute('content',theme==='light'?'light':'dark');const b=byId('conversationThemeToggle');if(b)b.innerHTML=icons.theme+(theme==='light'?'ダーク表示':'ライト表示');try{localStorage.setItem('FFC_CONVERSATION_THEME',theme)}catch(e){}};
+  function shell(){
+    const main=document.querySelector('main'),hub=byId('uiHub'),agent=byId('flyAgentCard'),settings=byId('uiSettingsBody');
+    if(mounted||!main||!hub||!agent||!settings)return;
+    mounted=true;document.documentElement.classList.add('chat-root');document.body.classList.add('chat-layout');
+    const sidebar=document.createElement('aside');sidebar.id='conversationSidebar';sidebar.className='conversationSidebar';sidebar.setAttribute('aria-label','会話一覧');
+    sidebar.innerHTML='<div class="conversationBrand">'+icons.brand+'<span>BANC888</span><small>LOCAL</small></div><button id="conversationNew" class="conversationNew">'+icons.new+'新しい会話</button><div class="conversationHistory"><div class="conversationHistoryLabel">会話</div><nav id="conversationHistoryMount" aria-label="保存された会話"></nav></div><div class="conversationSideFoot"><button id="conversationJsonExport">'+icons.download+'会話JSON保存</button><button id="conversationJsonExportAll">'+icons.download+'全会話JSON保存</button><button id="conversationJsonShare" disabled>'+icons.share+'保存したJSONを共有</button><button id="conversationThemeToggle">'+icons.theme+'ライト表示</button><button id="conversationSettings">'+icons.settings+'設定</button><details id="conversationExportOptions" class="agentSubDetails conversationLogDetails"><summary>JSONの詳細</summary><div id="conversationExportTools"></div></details><div id="conversationJsonStatus" role="status" class="conversationDevice">この端末で会話を保存</div></div>';
+    const shade=document.createElement('div');shade.id='conversationSidebarShade';shade.className='conversationSidebarShade';shade.onclick=()=>setSidebar(false);document.body.append(shade,sidebar);
+    hub.innerHTML='<div class="uiHubTop"><div class="conversationHeaderActions"><button id="conversationSidebarToggle" class="conversationMenuButton" aria-controls="conversationSidebar" aria-expanded="false" aria-label="会話一覧を開く">会話</button><div class="conversationHeaderTitle">BANC888</div></div><div class="conversationHeaderActions"><button id="conversationHeaderNew" aria-label="新しい会話">新規</button><button id="uiGearButton" aria-label="設定を開く">設定</button></div></div>';
+    const openSettings=()=>{byId('uiSettingsDrawer')?.classList.add('open');byId('uiSettingsDrawer')?.setAttribute('aria-hidden','false');byId('uiSettingsShade')?.classList.add('open');setSidebar(false)};
+    byId('uiGearButton').onclick=openSettings;byId('conversationSettings').onclick=openSettings;
+    const newConversation=()=>{window.FFC_THREADS?.create?.();setSidebar(false);byId('ffcThreadText')?.focus()};
+    byId('conversationNew').onclick=newConversation;byId('conversationHeaderNew').onclick=newConversation;
+    byId('conversationSidebarToggle').onclick=()=>setSidebar(!document.body.classList.contains('conversation-sidebar-open'));
+    sidebar.addEventListener('click',e=>{if(e.target.closest('.ffcThreadChip'))setSidebar(false)});
+    byId('conversationThemeToggle').onclick=()=>applyTheme(document.body.dataset.theme==='light'?'dark':'light');
+    let theme='dark';try{theme=localStorage.getItem('FFC_CONVERSATION_THEME')==='light'?'light':'dark'}catch(e){}applyTheme(theme);
+    // Preserve every voice, display and ToolBus control, while making the conversation the primary workspace.
+    const consoleDetails=document.createElement('details');consoleDetails.className='agentSubDetails';consoleDetails.id='conversationLegacyControls';consoleDetails.innerHTML='<summary>音声・画面・実行設定</summary><div class="agentSubBody"></div>';
+    const controls=consoleDetails.querySelector('.agentSubBody');
+    for(const child of [...agent.children])if(child.id!=='ffcThreadHub'&&child.tagName!=='H2')controls.append(child);
+    settings.insertBefore(consoleDetails,settings.firstChild);
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){setSidebar(false);byId('uiSettingsClose')?.click()}});
+    addEventListener('resize',()=>{if(innerWidth>700){setSidebar(false);sidebar.removeAttribute('aria-hidden')}});
+    if(innerWidth<=700)sidebar.setAttribute('aria-hidden','true');
+  }
+  function welcome(){
+    const empty=byId('ffcThreadLog')?.querySelector('.ffcEmpty');if(!empty||empty.dataset.enhanced)return;empty.dataset.enhanced='true';
+    empty.innerHTML='<div class="conversationWelcomeMark">888</div><div class="conversationWelcomeTitle">何をつくりましょうか？</div><p class="conversationWelcomeDescription">文章を整理したり、コードや画像、動画をつくったり。まずはメッセージをどうぞ。</p><div class="conversationStarters"><button data-prompt="PythonでCSVファイルを読み込むコードを生成して">コードをつくる</button><button data-prompt="猫の画像を作成して">画像をつくる</button><button data-prompt="猫が動く動画を生成して">動画をつくる</button></div>';
+    for(const b of empty.querySelectorAll('[data-prompt]'))b.onclick=()=>{const input=byId('ffcThreadText');if(input){input.value=b.dataset.prompt;input.focus();input.dispatchEvent(new Event('input',{bubbles:true}))}};
+  }
+  function routeLayout(){
+    const router=byId('ffcThreadHub');if(!mounted||!router)return;
+    if(!routerMounted){
+      routerMounted=true;byId('flyAgentCard').append(router);
+      const chips=byId('ffcThreadChips');if(chips)byId('conversationHistoryMount').append(chips);
+      const add=byId('ffcAddThread');if(add){add.className='conversationNew';add.setAttribute('aria-label','新しい会話');add.innerHTML=icons.new+'新しい会話';byId('conversationNew').replaceWith(add);add.addEventListener('click',()=>{setSidebar(false);byId('ffcThreadText')?.focus()})}
+      const log=byId('ffcThreadLog');if(log){log.setAttribute('role','log');log.setAttribute('aria-live','polite');log.setAttribute('aria-label','会話メッセージ')}
+      const composer=router.querySelector('.ffcThreadInput');if(composer){
+        const wrapper=document.createElement('div');wrapper.className='conversationComposerWrap';router.append(wrapper);wrapper.append(composer);
+        const tools=document.createElement('div');tools.className='conversationComposerTools';composer.append(tools);
+        const listen=byId('ffcQuickListen'),stop=byId('ffcQuickStop');if(listen){listen.textContent='音声入力';listen.classList.remove('primary');listen.setAttribute('title','音声入力');tools.append(listen)}if(stop){stop.textContent='停止';stop.setAttribute('title','音声入力を停止');tools.append(stop)}
+        const send=byId('ffcThreadSend');if(send){send.textContent='↑';send.setAttribute('aria-label','メッセージを送信');send.setAttribute('title','送信')}
+        const input=byId('ffcThreadText');if(input){input.setAttribute('placeholder','BANC888 にメッセージを送る');input.setAttribute('aria-label','メッセージ');input.setAttribute('rows','2');const resize=()=>{input.style.height='auto';input.style.height=Math.min(168,Math.max(46,input.scrollHeight))+'px'};input.addEventListener('input',resize);send?.addEventListener('click',resize);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing)setTimeout(resize,0)})}
+        const note=document.createElement('div');note.className='conversationComposerNote';note.textContent='生成結果には誤りが含まれる場合があります。大切な内容は確認してください。';wrapper.append(note);
+      }
+      const exports=router.querySelector('.ffcLogTools');if(exports)byId('conversationExportTools').append(exports);
+      const bar=router.querySelector('.ffcThreadBar');if(bar){bar.className='conversationVoiceSetting';byId('conversationExportTools').append(bar)}
+      const overview=byId('ffcOverviewDetails');if(overview)byId('conversationLegacyControls').querySelector('.agentSubBody').append(overview);
+      const status=byId('ffcLogStatus');if(status){status.setAttribute('role','status');byId('conversationExportTools').append(status)}
+      // Notify modules loaded before or after this shell that export controls now exist.
+      window.dispatchEvent(new Event('ffc:conversation-ui-ready'));
+    }
+    const bar=byId('ffcCapabilityBar'),controls=byId('conversationLegacyControls')?.querySelector('.agentSubBody');if(bar&&controls&&bar.parentElement!==controls)controls.append(bar);
+    welcome();
+  }
+  const update=()=>{shell();routeLayout()};
+  const observer=new MutationObserver(update);observer.observe(document.body,{childList:true,subtree:true});update();
 })();
 </script>
 

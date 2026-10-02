@@ -12,6 +12,7 @@ import android.util.Log;
 import android.webkit.ConsoleMessage;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebChromeClient;
+import android.webkit.ValueCallback;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -40,7 +41,7 @@ import java.util.Locale;
 final class WebShellController {
     private static final String TAG = "BANC888-WebView";
 
-    private final Activity activity;
+    private final MainActivity activity;
     private final WebView webView;
     private final DevLiveManager devLive;
     private final NativeSession session;
@@ -62,7 +63,7 @@ final class WebShellController {
     private NavigationListener navigationListener;
     private volatile boolean webMessageBridgeAvailable = false;
 
-    WebShellController(Activity activity, WebView webView, DevLiveManager devLive, NativeSession session) {
+    WebShellController(MainActivity activity, WebView webView, DevLiveManager devLive, NativeSession session) {
         this.activity = activity;
         this.webView = webView;
         this.devLive = devLive;
@@ -115,6 +116,13 @@ final class WebShellController {
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
+            public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback,
+                    WebChromeClient.FileChooserParams params) {
+                if (!trustedMainFrame) return false;
+                return activity.chooseFiles(callback, params);
+            }
+
+            @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 pageProgress = Math.max(0, Math.min(100, newProgress));
                 if (pageProgress == 100) pageFinishedAt = SystemClock.elapsedRealtime();
@@ -148,6 +156,7 @@ final class WebShellController {
 
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                activity.cancelFileSelection();
                 currentMainFrameUrl = url == null ? "" : url;
                 trustedMainFrame = safeTrustedInternal(currentMainFrameUrl);
                 runtimeReady = false;

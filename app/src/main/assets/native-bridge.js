@@ -14,8 +14,29 @@ window.AndroidVoice={
  speak:(text,language,rate,pitch)=>window.__BancVoice?__BancVoice.speak(token,String(text||''),String(language||'ja-JP'),Number(rate||1),Number(pitch||1)):false
 };
 window.AndroidFiles={
+ saveText:(text,filename,mime)=>window.__BancFiles?__BancFiles.saveText(token,String(text||''),String(filename||'BANC888_conversation.json'),String(mime||'application/json')):denied(),
+ shareSaved:(filename,mime)=>window.__BancFiles?__BancFiles.shareSaved(token,String(filename||''),String(mime||'application/json')):denied(),
  createDocx:(title,body,filename)=>window.__BancFiles?__BancFiles.createDocx(token,String(title||''),String(body||''),String(filename||'')):denied(),
  shareText:(text,filename,mime)=>window.__BancFiles?__BancFiles.shareText(token,String(text||''),String(filename||''),String(mime||'text/plain')):denied()
+};
+window.AndroidModel={
+ start:(endpoint,payload)=>window.__BancModel?__BancModel.start(token,String(endpoint),String(payload)):denied(),
+ poll:id=>window.__BancModel?__BancModel.poll(token,String(id)):denied(),
+ cancel:id=>window.__BancModel?__BancModel.cancel(token,String(id)):denied()
+};
+window.AndroidA1111={
+ start:(endpoint,path,payload)=>window.__BancA1111?__BancA1111.start(token,String(endpoint),String(path),String(payload)):denied(),
+ poll:id=>window.__BancA1111?__BancA1111.poll(token,String(id)):denied(),
+ cancel:id=>window.__BancA1111?__BancA1111.cancel(token,String(id)):denied()
+};
+window.AndroidVideo={
+ beginExternal:(w,h,fps,frames,name)=>window.__BancVideo?__BancVideo.beginExternal(token,Number(w),Number(h),Number(fps),Number(frames),String(name||'BANC888_A1111.mp4')):denied(),
+ begin:(w,h,fps,frames,name)=>window.__BancVideo?__BancVideo.begin(token,Number(w),Number(h),Number(fps),Number(frames),String(name||'BANC888_video.mp4')):denied(),
+ append:(id,index,jpeg)=>window.__BancVideo?__BancVideo.append(token,String(id),Number(index),String(jpeg)):denied(),
+ finish:(id)=>window.__BancVideo?__BancVideo.finish(token,String(id)):denied(),
+ status:(id)=>window.__BancVideo?__BancVideo.status(token,String(id||'')):denied(),
+ cancel:(id)=>window.__BancVideo?__BancVideo.cancel(token,String(id)):denied(),
+ share:(id)=>window.__BancVideo?__BancVideo.share(token,String(id)):denied()
 };
 window.AndroidResearch={
  searchWikipedia:(query,limit)=>window.__BancResearch?__BancResearch.searchWikipedia(token,String(query||''),Number(limit||3)):denied(),
