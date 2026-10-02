@@ -12,10 +12,10 @@ final class AppConfig {
     static final String APP_HOST = "appassets.androidplatform.net";
     static final String DEV_REF = "banc888-apk-connectome-mobile-v1";
     static final String REPO = "kobayashi-cyder/FFC-FlyFromCodex";
-    static final int SHELL_VERSION = 75;
-    static final int WEB_RUNTIME_VERSION = 7;
+    static final int SHELL_VERSION = 76;
+    static final int WEB_RUNTIME_VERSION = 8;
     static final int BRIDGE_SCHEMA = 8;
-    static final int ASSET_SCHEMA = 10;
+    static final int ASSET_SCHEMA = 11;
 
     static final String[] RUNTIME_SCRIPTS = new String[]{
             "native-bridge.js",
