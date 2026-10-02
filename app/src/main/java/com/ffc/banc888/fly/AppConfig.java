@@ -45,7 +45,8 @@ final class AppConfig {
             "attachment-core.js",
             "attachments.js",
             "settings-organizer.js",
-            "artifact-workspace.js"
+            "artifact-workspace.js",
+            "workspace-productivity.js"
     };
 
     static final String[] LIVE_ASSETS = new String[]{
@@ -78,6 +79,7 @@ final class AppConfig {
             "attachments.js",
             "settings-organizer.js",
             "artifact-workspace.js",
+            "workspace-productivity.js",
             "fly-task-worker.js"
     };
 
