@@ -19,10 +19,10 @@ const autonomy=read('app/src/main/assets/autonomy-core.js');
 const proxy=read('app/src/main/assets/proxy-agent.js');
 const manifest=JSON.parse(read('app/src/main/assets/live-manifest.json'));
 
-must(/SHELL_VERSION\s*=\s*75/.test(config),'shell version must be 75 for saved JSON exports');
-must(/WEB_RUNTIME_VERSION\s*=\s*7/.test(config),'web runtime version must remain 7');
+must(/SHELL_VERSION\s*=\s*76/.test(config),'shell version must be 76 for saved JSON exports');
+must(/WEB_RUNTIME_VERSION\s*=\s*8/.test(config),'web runtime version must be 8');
 must(/BRIDGE_SCHEMA\s*=\s*8/.test(config),'bridge schema must be 8 for local model JSON exports');
-must(/ASSET_SCHEMA\s*=\s*10/.test(config),'asset schema must be 10 for parallel worker assets exports');
+must(/ASSET_SCHEMA\s*=\s*11/.test(config),'asset schema must be 11 for parallel worker assets exports');
 must(config.includes('"webview-runtime.js"'),'runtime asset must be installed and live-updatable');
 
 must(shell.includes('addWebMessageListener'),'origin-scoped WebMessage bridge missing');
@@ -76,7 +76,7 @@ must(threadRouter.includes("{goal:visibleText(t,text),threadCode:code(t),context
 must(!threadRouter.includes("quietAgentRun(prompt(x.t,x.q.text))"),'management-wrapped thread prompt must not reach conversational classifier');
 must(threadRouter.includes('ffcQuickListen'),'mobile conversation view must expose microphone action without scrolling');
 must(config.includes('"image-quality-core.js"'),'image quality core must be a managed runtime asset');
-must(config.includes('"autonomy-core.js"'),'autonomy core must be a managed runtime asset');
+must(config.includes('"autonomy-core.js"'),'autonomy core must be a managed runtime asset');\nmust(config.includes('"workspace-productivity.js"'),'workspace productivity must be a managed runtime asset');
 must(imageQuality.includes('function expand('),'image prompt multi-expansion missing');
 must(imageQuality.includes('function evaluate('),'image candidate hard-gate evaluation missing');
 must(imageQuality.includes('function rank('),'image candidate ranking missing');
@@ -119,7 +119,7 @@ must(autonomy.includes('matchSkill'),'autonomous skill reuse missing');
 must(proxy.includes('learnedProposal'),'proxy must consult learned skills');
 must(proxy.includes('baseCandidateProposal'),'proxy must autonomize built-in tool routes');
 must(proxy.includes('feedbackEvent'),'proxy must feed outcomes back into learning');
-must(manifest.bridgeSchema===8&&manifest.assetSchema===10&&manifest.minShellVersion===75,'live manifest schema drift');
+must(manifest.bridgeSchema===8&&manifest.assetSchema===11&&manifest.minShellVersion===76,'live manifest schema drift');
 must(Object.hasOwn(manifest.files,'webview-runtime.js'),'live manifest missing webview-runtime.js');
 
 console.log('webview-runtime-contract: PASS');
