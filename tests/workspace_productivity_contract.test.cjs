@@ -19,6 +19,9 @@ assert.equal(window.FFCProductivity.setDraft(1,'再起動後の下書き'),true)
 assert.equal(JSON.parse(store.get('FFC_THREAD_DRAFTS_V1'))['1'],'再起動後の下書き');
 assert(src.includes('会話・本文・添付名を検索'));
 assert(src.includes('全会話（明示的に選択）'));
+assert(src.includes('.ffcSearchRow button{min-width:44px;min-height:44px'));
+assert(src.includes('.ffcWorkspaceItem button{min-height:44px'));
+assert(src.includes('@media(max-width:360px)'));
 const attachments=fs.readFileSync('app/src/main/assets/attachments.js','utf8');
 assert(attachments.includes('reuse(files,id=current())'));
 assert(attachments.includes('128KB以内の資料だけ再添付できます'));
