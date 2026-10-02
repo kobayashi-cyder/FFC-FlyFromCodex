@@ -38,7 +38,7 @@ public class ChatControlsIntegrationTest {
             tap(scenario,"ffcExecutionMode");
             assertTrue("Mode button did not return offline",TestSupport.awaitJs(scenario,"FFCExecution.status().mode==='offline'",3000));
             tap(scenario,"uiGearButton");
-            assertTrue(TestSupport.awaitJs(scenario,"document.getElementById('uiSettingsDrawer').classList.contains('open')&&document.getElementById('ffcInstalledVersion').textContent.indexOf('7.10')>=0&&document.getElementById('ffcInternalRuntime').hidden",3000));
+            assertTrue(TestSupport.awaitJs(scenario,"document.getElementById('uiSettingsDrawer').classList.contains('open')&&document.getElementById('ffcInstalledVersion').textContent.indexOf('7.11')>=0&&document.getElementById('ffcInternalRuntime').hidden",3000));
             tap(scenario,"uiSettingsClose");
             assertTrue(TestSupport.awaitJs(scenario,"!document.getElementById('uiSettingsDrawer').classList.contains('open')",3000));
             assertTrue(TestSupport.awaitJs(scenario,"(function(){FFCA1111Video.configure=__oldConfigure;return true})()",3000));
