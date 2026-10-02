@@ -1,0 +1,108 @@
+{
+  "scope": "Synthetic feedforward tanh circuit. Generation, execution, supervised SGD, PR-style review, adoption and full-state reversion integrated. Validation governs acceptance; final test inputs separate. Fault metric zeros outputs of random units, not graph topology failure. Not BANC, biological rules, free conversation or APK.",
+  "initial_test": {
+    "mse": 0.5300496587943272,
+    "fault_mse": 0.5281821591417848,
+    "units": 8,
+    "connections": 16
+  },
+  "final_test": {
+    "mse": 0.13414454035669462,
+    "fault_mse": 0.14931657355607025,
+    "units": 12,
+    "connections": 24
+  },
+  "events": [
+    {
+      "event": "proposal",
+      "name": "learn-1",
+      "kind": "learn",
+      "base": "34f9483be193d408a043775cbefe940a68b9fb54a02e89972631878e500207f1",
+      "cost": 3200
+    },
+    {
+      "event": "review",
+      "name": "learn-1",
+      "candidate_hash": "347a94c2190e2f51bbb156fa9cd4b00e3db909bbd45d23e898bc364906564cbe",
+      "accepted": true,
+      "before": {
+        "mse": 0.6089708432814921,
+        "fault_mse": 0.6071650095737416,
+        "units": 8,
+        "connections": 16
+      },
+      "after": {
+        "mse": 0.13650369861039993,
+        "fault_mse": 0.18600652575036425,
+        "units": 8,
+        "connections": 16
+      }
+    },
+    {
+      "event": "merge",
+      "name": "learn-1",
+      "revision": 1
+    },
+    {
+      "event": "proposal",
+      "name": "grow-1",
+      "kind": "grow",
+      "base": "347a94c2190e2f51bbb156fa9cd4b00e3db909bbd45d23e898bc364906564cbe",
+      "cost": 6400
+    },
+    {
+      "event": "review",
+      "name": "grow-1",
+      "candidate_hash": "e715ba7b7de2807a57c4e42dbb2ad3150a2385f574b6f3536195756b4b1d5fbf",
+      "accepted": true,
+      "before": {
+        "mse": 0.13650369861039993,
+        "fault_mse": 0.18600652575036425,
+        "units": 8,
+        "connections": 16
+      },
+      "after": {
+        "mse": 0.13151565495018858,
+        "fault_mse": 0.1409304930986552,
+        "units": 16,
+        "connections": 32
+      }
+    },
+    {
+      "event": "merge",
+      "name": "grow-1",
+      "revision": 2
+    },
+    {
+      "event": "proposal",
+      "name": "prune-1",
+      "kind": "prune",
+      "base": "e715ba7b7de2807a57c4e42dbb2ad3150a2385f574b6f3536195756b4b1d5fbf",
+      "cost": 4800
+    },
+    {
+      "event": "review",
+      "name": "prune-1",
+      "candidate_hash": "18391e5dfaeec0b9ed9dc106fb7b34222d7cd03ef6bf620d07836774cf78a751",
+      "accepted": true,
+      "before": {
+        "mse": 0.13151565495018858,
+        "fault_mse": 0.1409304930986552,
+        "units": 16,
+        "connections": 32
+      },
+      "after": {
+        "mse": 0.1255268986059299,
+        "fault_mse": 0.1497204972142796,
+        "units": 12,
+        "connections": 24
+      }
+    },
+    {
+      "event": "merge",
+      "name": "prune-1",
+      "revision": 3
+    }
+  ],
+  "spent_unit_update_cost": 14400
+}
