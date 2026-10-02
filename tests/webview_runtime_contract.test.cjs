@@ -76,7 +76,8 @@ must(threadRouter.includes("{goal:visibleText(t,text),threadCode:code(t),context
 must(!threadRouter.includes("quietAgentRun(prompt(x.t,x.q.text))"),'management-wrapped thread prompt must not reach conversational classifier');
 must(threadRouter.includes('ffcQuickListen'),'mobile conversation view must expose microphone action without scrolling');
 must(config.includes('"image-quality-core.js"'),'image quality core must be a managed runtime asset');
-must(config.includes('"autonomy-core.js"'),'autonomy core must be a managed runtime asset');\nmust(config.includes('"workspace-productivity.js"'),'workspace productivity must be a managed runtime asset');
+must(config.includes('"autonomy-core.js"'),'autonomy core must be a managed runtime asset');
+must(config.includes('"workspace-productivity.js"'),'workspace productivity must be a managed runtime asset');
 must(imageQuality.includes('function expand('),'image prompt multi-expansion missing');
 must(imageQuality.includes('function evaluate('),'image candidate hard-gate evaluation missing');
 must(imageQuality.includes('function rank('),'image candidate ranking missing');
