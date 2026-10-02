@@ -90,6 +90,9 @@ jobs:
           node --check app/src/main/assets/proxy-agent.js
           node --check app/src/main/assets/conversation-output-core.js
           node --check app/src/main/assets/thread-router.js
+          node --check app/src/main/assets/attachments.js
+          node --check app/src/main/assets/artifact-workspace.js
+          node --check app/src/main/assets/workspace-productivity.js
           node --check app/src/main/assets/dev-live.js
           node --check app/src/main/assets/native-bridge.js
           node --check app/src/main/assets/webview-runtime.js
@@ -114,27 +117,32 @@ jobs:
           node tests/route_on_switch_only.test.cjs
           node tests/live_manifest_verify.test.cjs
           node tests/webview_runtime_contract.test.cjs
+          node tests/workspace_productivity_contract.test.cjs
           node tests/research_physics_core.test.cjs
 
       - name: Connectome CPU benchmark
         run: node --expose-gc tools/connectome_mobile_benchmark.cjs > connectome-mobile-benchmark.json
 
-      - name: Build debug APK
-        run: gradle --no-daemon :app:assembleDebug
+      - name: Build debug APKs
+        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
 
       - name: APK inventory
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.10-chat-controls-debug.apk
-          ls -lh BANC888-v7.10-chat-controls-debug.apk
-          sha256sum BANC888-v7.10-chat-controls-debug.apk > BANC888-v7.10-chat-controls-debug.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.11-productivity-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.11-productivity-androidTest.apk
+          ls -lh BANC888-v7.11-productivity-debug.apk BANC888-v7.11-productivity-androidTest.apk
+          sha256sum BANC888-v7.11-productivity-debug.apk > BANC888-v7.11-productivity-debug.apk.sha256
+          sha256sum BANC888-v7.11-productivity-androidTest.apk > BANC888-v7.11-productivity-androidTest.apk.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.10-chat-controls-debug
+          name: BANC888-v7.11-productivity-debug
           path: |
-            BANC888-v7.10-chat-controls-debug.apk
-            BANC888-v7.10-chat-controls-debug.apk.sha256
+            BANC888-v7.11-productivity-debug.apk
+            BANC888-v7.11-productivity-debug.apk.sha256
+            BANC888-v7.11-productivity-androidTest.apk
+            BANC888-v7.11-productivity-androidTest.apk.sha256
             connectome-mobile-benchmark.json
           if-no-files-found: error
           retention-days: 30
