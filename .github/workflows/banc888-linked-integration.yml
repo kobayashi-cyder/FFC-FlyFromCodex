@@ -25,7 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Web/runtime contract
-        run: node tests/webview_runtime_contract.test.cjs
+        run: |
+          node tests/webview_runtime_contract.test.cjs
+          node tests/workspace_productivity_contract.test.cjs
 
   android:
     name: Test • ${{ matrix.name }}
@@ -79,6 +81,9 @@ jobs:
             fixture: false
           - name: Conversation knowledge
             class: com.ffc.banc888.fly.ConversationKnowledgeIntegrationTest
+            fixture: false
+          - name: Workspace productivity
+            class: com.ffc.banc888.fly.WorkspaceProductivityIntegrationTest
             fixture: false
 
     steps:
