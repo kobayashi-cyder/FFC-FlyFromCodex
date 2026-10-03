@@ -70,6 +70,9 @@ jobs:
           - name: Autonomous capability learning
             class: com.ffc.banc888.fly.AutonomyIntegrationTest
             fixture: false
+          - name: AI compatibility pipeline
+            class: com.ffc.banc888.fly.AICompatibilityIntegrationTest
+            fixture: false
           - name: Connectome mobile
             class: com.ffc.banc888.fly.ConnectomeMobileIntegrationTest
             fixture: false

@@ -14,7 +14,7 @@
 
     <application
         android:allowBackup="false"
-        android:label="BANC888 Fly Agent"
+        android:label="BANC888 Compat"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="true">

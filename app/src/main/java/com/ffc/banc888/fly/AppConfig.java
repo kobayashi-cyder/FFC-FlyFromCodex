@@ -10,12 +10,12 @@ import java.util.Set;
 final class AppConfig {
     static final String APP_ORIGIN = "https://appassets.androidplatform.net";
     static final String APP_HOST = "appassets.androidplatform.net";
-    static final String DEV_REF = "banc888-apk-connectome-mobile-v1";
+    static final String DEV_REF = "banc888-apk-ai-compat-stage1";
     static final String REPO = "kobayashi-cyder/FFC-FlyFromCodex";
     static final int SHELL_VERSION = 76;
     static final int WEB_RUNTIME_VERSION = 8;
     static final int BRIDGE_SCHEMA = 8;
-    static final int ASSET_SCHEMA = 11;
+    static final int ASSET_SCHEMA = 12;
 
     static final String[] RUNTIME_SCRIPTS = new String[]{
             "native-bridge.js",
@@ -28,6 +28,7 @@ final class AppConfig {
             "research-physics-core.js",
             "ir-patch-core.js",
             "proxy-agent-core.js",
+            "ai-compat-core.js",
             "capability-tools.js",
             "video-quality-core.js",
             "video-export.js",
@@ -61,6 +62,7 @@ final class AppConfig {
             "research-physics-core.js",
             "ir-patch-core.js",
             "proxy-agent-core.js",
+            "ai-compat-core.js",
             "capability-tools.js",
             "video-quality-core.js",
             "video-export.js",
