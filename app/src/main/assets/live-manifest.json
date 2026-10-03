@@ -2,8 +2,8 @@
   "schema": 1,
   "minShellVersion": 76,
   "bridgeSchema": 8,
-  "assetSchema": 11,
-  "commit": "9c87a9733448968fb9d3de854332c77751d8be58",
+  "assetSchema": 12,
+  "commit": "3e9892b864fd6c83d289915336b2e2cd757a6081",
   "files": {
     "index.html": "7d848da41fa87e1c69a40344e2b734844ed92ad26c7093d363460a4709b9ebf5",
     "native-bridge.js": "8e922e8740186456c6c10197a699c7430993926f3678de1879bb0acfb120f7be",
@@ -24,9 +24,9 @@
     "fly-parallel-core.js": "0cadbc7dd11373decf8aad14e2400a31f7753c46edfdb4764416b6e2d2481652",
     "local-model.js": "6a27b56cf625199e9a26bcf425d0725850498d904c84a7d92c46cd3269b81e8d",
     "fly-parallel.js": "6ead0d878d8fecac49af30836f17a44a8bdb84ae0ab0075589a6ffc9828bbad8",
-    "proxy-agent.js": "d369e8de56d796354a877f6a16dbfee198fa98b1617a4d0f61958d270c3bece8",
+    "proxy-agent.js": "4938cf402c8b815fd9eb68a3a0cdbaaf985a8deba068ef9d3d412bb37969ae93",
     "conversation-output-core.js": "79ecf9c03fb3dbc2a02701442748539fec25c280a3a6cf62558c38552bd8f6a2",
-    "thread-router.js": "1c4d234bb016af1651742835cdb1c39a75df5ee6d034a82d799dabd31ba067a2",
+    "thread-router.js": "04a8eda5b764dadd17e795d12b3674bac1e940d6222e1aba43ac2ae6e2f58dd4",
     "conversation-export.js": "3b829695540ee65d96e90260e327191334e85b6c36e67385d58163b42195a227",
     "dev-live.js": "baabb2c127fe3b0f3e406fbf39b2068392bb0b0bfecec88f7ca577125a856e6b",
     "execution-controls.js": "e7faa4a3837aba649ba26099c90bf4c08ee506026b7adcba8ae617081366bfca",
@@ -35,6 +35,7 @@
     "workspace-productivity.js": "08f442a7d79f981b79607d6402684cb32142a466c8592ef3d8cf0e5e853afd76",
     "fly-task-worker.js": "adbfea2305e7e285ef3631ef743226790936ac3f848e373281316fbcda42142b",
     "attachment-core.js": "741e2eff9fb68c6bd974a16a8332fc83af8cd89df04930cca2387d4bdd440455",
-    "attachments.js": "56bf9bc453fcd5b10b0c9094d492347089da9dc8f1a427769546b30041d81de7"
+    "attachments.js": "56bf9bc453fcd5b10b0c9094d492347089da9dc8f1a427769546b30041d81de7",
+    "ai-compat-core.js": "37d1afe30a4effcfdcb08fe1f3d318210aff0f2eb4d819a4b33200f12dc367d9"
   }
 }

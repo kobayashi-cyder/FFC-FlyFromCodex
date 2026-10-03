@@ -84,6 +84,7 @@ jobs:
           node --check app/src/main/assets/autonomy-core.js
           node --check app/src/main/assets/research-physics-core.js
           node --check app/src/main/assets/ir-patch-core.js
+          node --check app/src/main/assets/ai-compat-core.js
           node --check app/src/main/assets/proxy-agent-core.js
           node --check app/src/main/assets/capability-tools.js
           node --check app/src/main/assets/research-physics-tools.js
@@ -104,6 +105,7 @@ jobs:
           node tests/specialist_capability_v2.test.cjs
           node tests/ir_patch_core.test.cjs
           node tests/proxy_agent_core.test.cjs
+          node tests/ai_compat_core.test.cjs
           node tests/connectome_selector.test.cjs
           node tests/connectome_mobile.test.cjs
           node tests/connectome_multiplex.test.cjs
@@ -120,6 +122,9 @@ jobs:
           node tests/workspace_productivity_contract.test.cjs
           node tests/research_physics_core.test.cjs
 
+      - name: Compatibility evaluation
+        run: node tools/ai_compat_evaluation.cjs > ai-compat-evaluation.json
+
       - name: Connectome CPU benchmark
         run: node --expose-gc tools/connectome_mobile_benchmark.cjs > connectome-mobile-benchmark.json
 
@@ -128,31 +133,32 @@ jobs:
 
       - name: APK inventory
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.11-productivity-debug.apk
-          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.11-productivity-androidTest.apk
-          ls -lh BANC888-v7.11-productivity-debug.apk BANC888-v7.11-productivity-androidTest.apk
-          sha256sum BANC888-v7.11-productivity-debug.apk > BANC888-v7.11-productivity-debug.apk.sha256
-          sha256sum BANC888-v7.11-productivity-androidTest.apk > BANC888-v7.11-productivity-androidTest.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.12-compat-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.12-compat-androidTest.apk
+          ls -lh BANC888-v7.12-compat-debug.apk BANC888-v7.12-compat-androidTest.apk
+          sha256sum BANC888-v7.12-compat-debug.apk > BANC888-v7.12-compat-debug.apk.sha256
+          sha256sum BANC888-v7.12-compat-androidTest.apk > BANC888-v7.12-compat-androidTest.apk.sha256
 
       - name: Verify APK signatures and packaged assets
         run: |
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.11-productivity-debug.apk | tee BANC888-v7.11-productivity-signing.txt
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.11-productivity-androidTest.apk | tee BANC888-v7.11-productivity-androidTest-signing.txt
-          unzip -t BANC888-v7.11-productivity-debug.apk >/dev/null
-          unzip -l BANC888-v7.11-productivity-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.12-compat-debug.apk | tee BANC888-v7.12-compat-signing.txt
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.12-compat-androidTest.apk | tee BANC888-v7.12-compat-androidTest-signing.txt
+          unzip -t BANC888-v7.12-compat-debug.apk >/dev/null
+          unzip -l BANC888-v7.12-compat-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.11-productivity-debug
+          name: BANC888-v7.12-compat-debug
           path: |
-            BANC888-v7.11-productivity-debug.apk
-            BANC888-v7.11-productivity-debug.apk.sha256
-            BANC888-v7.11-productivity-androidTest.apk
-            BANC888-v7.11-productivity-androidTest.apk.sha256
-            BANC888-v7.11-productivity-signing.txt
-            BANC888-v7.11-productivity-androidTest-signing.txt
+            BANC888-v7.12-compat-debug.apk
+            BANC888-v7.12-compat-debug.apk.sha256
+            BANC888-v7.12-compat-androidTest.apk
+            BANC888-v7.12-compat-androidTest.apk.sha256
+            BANC888-v7.12-compat-signing.txt
+            BANC888-v7.12-compat-androidTest-signing.txt
             connectome-mobile-benchmark.json
+            ai-compat-evaluation.json
           if-no-files-found: error
           retention-days: 30

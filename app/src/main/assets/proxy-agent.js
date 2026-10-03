@@ -6,6 +6,7 @@ const KEY='FFC_PROXY_CHECKPOINT_V2',BAK=KEY+'_BAK',TMP=KEY+'_TMP';
 const policy=new C.ToolPolicy(new Set([...(Agent.state?.capabilities||[]),'compute','read_state','write_state','human_output','code.write','image.write','voice.input','document.write','network.read']));
 const executive=new C.Executive({policy,maxPlanSteps:16}),arbiter=new C.BodyArbiter();
 const now=()=>Date.now(),id=()=>Math.random().toString(36).slice(2,14);
+let lastCompatibility=null;
 function safeParse(s,d){try{const x=JSON.parse(s);return x&&typeof x==='object'?x:d}catch{return d}}
 function blank(){return{schema:2,goals:[],events:[],lastThread:null,recovered:false}}
 function trimGoals(goals){
@@ -25,8 +26,7 @@ function selectThroughConnectome(rows,ctx={},credit=false){
  const allowed=rows.filter(x=>{const s=spec(x.tool);return !!(s&&policy.allows(s.capability))});
  const lane=ctx.threadCode||'__system__';
  try{
-  const pick=connectome.select(allowed,lane);
-  if(!credit)connectome.discard(lane);
+  const pick=credit?connectome.select(allowed,lane):connectome.evaluate(allowed,lane);
   if(pick)state.connectomeError=null;
   return pick;
  }catch(e){state.connectomeError=String(e.message||e);return null}
@@ -115,6 +115,11 @@ function proposal(text,ctx){
  }
  const valid=unique.map(x=>x.option).filter(x=>executive.evaluate(x.proposal,spec).accepted);
  if(!valid.length)return options[0]; // Preserve the executive's explicit denial.
+ if(window.FFCAICompat){
+  const prepared=window.FFCAICompat.prepare(text,ctx,valid,rows=>selectThroughConnectome(rows,ctx));
+  if(prepared?.blocked)return{...valid[0],compatBlocked:prepared.reason,compatibility:prepared.compatibility||null};
+  if(prepared){lastCompatibility=window.FFCAICompat.audit(prepared.compatibility);return prepared;}
+ }
  if(valid.length===1)return{...valid[0],plan:{...valid[0].plan,connectomeCandidates:1}};
  const rows=valid.map((option,i)=>({tool:option.proposal.steps[0].tool,excitation:1,confidence:option.proposal.confidence??1,proposalIndex:i}));
  const pick=selectThroughConnectome(rows,ctx);
@@ -130,6 +135,7 @@ function finalText(tool,value,status,patch){
  if(status===C.Status.FAILED)return'生成または検証に失敗しました。'+patchNote;
  if(tool==='content.understand')return String(value?.summary||'本文から回答を抽出できませんでした。');
  if(tool==='chat.compose')return String(value?.reply||'');
+ if(tool==='compute.math')return '計算結果: '+String(value);
  if(tool==='o3.generate')return value?.exported?.ok?'MP4を保存しています。動画パネルで進捗と共有を確認できます。':'MP4生成を開始できませんでした: '+String(value?.exported?.error||'利用できません');
  if(/^code\./.test(tool))return'コード処理を完了しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+patchNote;
  if(/^image\./.test(tool))return'画像処理を完了しました。'+(value&&value.validation?' validation='+(value.validation.pass?'PASS':'CHECK'):'')+patchNote;
@@ -139,6 +145,7 @@ function finalText(tool,value,status,patch){
 }
 function execute(text,ctx){
  ctx=ctx||{};const pp=proposal(text,ctx);if(!pp.handled)return{handled:false,plan:pp.plan};
+ if(pp.compatBlocked)return{handled:true,status:C.Status.BLOCKED,error:pp.compatBlocked,plan:pp.plan,compatibility:pp.compatibility,finalText:'コネクトームの処理経路を選択できませんでした。'};
  const goal={id:id(),text:String(text||''),threadId:ctx.threadCode||null,priority:+ctx.priority||50,status:C.Status.QUEUED,createdAt:now(),updatedAt:now(),attempts:0};
  state.goals.push(goal);save();
  const verdict=executive.evaluate(pp.proposal,spec);
@@ -172,10 +179,11 @@ function execute(text,ctx){
  }else{goal.status=C.Status.DONE;goal.lastError=null;emit('observation','success',{goalId:goal.id,steps:results.map(x=>x.tool)})}
  goal.updatedAt=now();state.goals=trimGoals(state.goals);save();
  const tool=last?.step?.tool||failed?.step?.tool||pp.plan?.tool,value=last?.r?.value;
- return{handled:true,status:goal.status,tool,plan:pp.plan,patch:pp.patch,value,error:failed?.error||null,steps:results,learnedSkill:pp.learnedSkill||null,finalText:finalText(tool,value,goal.status,pp.patch)};
+ return{handled:true,status:goal.status,tool,plan:pp.plan,patch:pp.patch,value,error:failed?.error||null,steps:results,learnedSkill:pp.learnedSkill||null,compatibility:pp.compatibility||null,finalText:finalText(tool,value,goal.status,pp.patch)};
 }
 async function executeAsync(text,ctx){
  ctx=ctx||{};const pp=proposal(text,ctx);if(!pp.handled)return{handled:false,plan:pp.plan};
+ if(pp.compatBlocked)return{handled:true,status:C.Status.BLOCKED,error:pp.compatBlocked,plan:pp.plan,compatibility:pp.compatibility,finalText:'コネクトームの処理経路を選択できませんでした。'};
  const goal={id:id(),text:String(text||''),threadId:ctx.threadCode||null,priority:+ctx.priority||50,status:C.Status.QUEUED,createdAt:now(),updatedAt:now(),attempts:0};
  state.goals.push(goal);save();
  const verdict=executive.evaluate(pp.proposal,spec);
@@ -209,13 +217,18 @@ async function executeAsync(text,ctx){
  }else{goal.status=C.Status.DONE;goal.lastError=null;emit('observation','success',{goalId:goal.id,steps:results.map(x=>x.tool)})}
  goal.updatedAt=now();state.goals=trimGoals(state.goals);save();
  const tool=last?.step?.tool||failed?.step?.tool||pp.plan?.tool,value=last?.r?.value;
- return{handled:true,status:goal.status,tool,plan:pp.plan,patch:pp.patch,value,error:failed?.error||null,steps:results,learnedSkill:pp.learnedSkill||null,finalText:finalText(tool,value,goal.status,pp.patch)};
+ return{handled:true,status:goal.status,tool,plan:pp.plan,patch:pp.patch,value,error:failed?.error||null,steps:results,learnedSkill:pp.learnedSkill||null,compatibility:pp.compatibility||null,finalText:finalText(tool,value,goal.status,pp.patch)};
+}
+async function request(input){
+ const api=window.FFCAICompat;if(!api)return{schema:1,status:'unsupported',choices:[],error:{code:'compatibility_unavailable',message:'compatibility module unavailable'}};
+ let parsed;try{parsed=api.normalizeRequest(input)}catch(e){return{object:'banc888.compat.response',schema:1,status:'unsupported',choices:[],error:{code:e.code||'invalid_request',message:String(e.message||e)}}}
+ try{return api.response(await executeAsync(parsed.text,parsed.ctx))}catch(e){return{object:'banc888.compat.response',schema:1,status:'failed',choices:[],error:{code:'execution_failed',message:String(e.message||e)}}}
 }
 function retry(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||![C.Status.BLOCKED,C.Status.FAILED,C.Status.WAITING].includes(g.status))return false;g.status=C.Status.QUEUED;g.lastError=null;g.updatedAt=now();save();return true}
 function cancel(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||[C.Status.DONE,C.Status.CANCELLED].includes(g.status))return false;g.status=C.Status.CANCELLED;g.updatedAt=now();save();return true}
-function status(){return{schema:state.schema,connectome:connectome?connectome.snapshot():null,connectomeError:state.connectomeError||null,connectomeRuntime:connectome?connectome.stats():null,recovered:!!state.recovered,goals:state.goals.slice(-80),events:state.events.slice(-40),body:arbiter.snapshot(),allowed:[...policy.allowed],autonomy:Caps.autonomyStatus?Caps.autonomyStatus():null}}
+function status(){return{schema:state.schema,connectome:connectome?connectome.snapshot():null,connectomeError:state.connectomeError||null,connectomeRuntime:connectome?connectome.stats():null,compatibility:lastCompatibility,recovered:!!state.recovered,goals:state.goals.slice(-80),events:state.events.slice(-40),body:arbiter.snapshot(),allowed:[...policy.allowed],autonomy:Caps.autonomyStatus?Caps.autonomyStatus():null}}
 function patchIr(ir,ops,scope){return P.apply(ir,ops,scope)}
-window.FFC_PROXY_AGENT={version:'2.1-autonomy',execute,executeAsync,proposal,status,retry,cancel,patchIr,policy,body:arbiter,executive};
+window.FFC_PROXY_AGENT={version:'2.2-compat',execute,executeAsync,request,proposal,status,retry,cancel,patchIr,policy,body:arbiter,executive};
 setTimeout(()=>{const b=document.getElementById('ffcCapabilityBar');if(b&&!document.getElementById('ffcProxyBadge')){const x=document.createElement('span');x.id='ffcProxyBadge';x.textContent='🪰 PROXY EXEC + IR PATCH';b.appendChild(x)}},200);
 if(state.recovered)emit('recovery','checkpoint restored from backup');
 })();

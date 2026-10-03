@@ -3,11 +3,16 @@ set -euo pipefail
 
 TEST_CLASS="${TEST_CLASS:?TEST_CLASS is required}"
 TEST_NAME="${TEST_NAME:-$TEST_CLASS}"
+BANC_AAPT="${ANDROID_HOME:?ANDROID_HOME is required}/build-tools/35.0.0/aapt"
+BANC_APP_ID=$("$BANC_AAPT" dump badging app/build/outputs/apk/debug/app-debug.apk | sed -n "s/^package: name='\([^']*\)'.*/\1/p")
+BANC_TEST_APP_ID=$("$BANC_AAPT" dump badging app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk | sed -n "s/^package: name='\([^']*\)'.*/\1/p")
+test -n "$BANC_APP_ID"
+test -n "$BANC_TEST_APP_ID"
 
 echo "::group::INSTALL"
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb shell pm grant com.ffc.banc888.fly android.permission.RECORD_AUDIO || true
+adb shell pm grant "$BANC_APP_ID" android.permission.RECORD_AUDIO || true
 if [ -s /tmp/ci-mic-speech.raw ]; then
   adb push /tmp/ci-mic-speech.raw /data/local/tmp/ci-mic-speech.raw
   adb shell chmod 0644 /data/local/tmp/ci-mic-speech.raw
@@ -26,7 +31,7 @@ DEVICE_LOGCAT_PID=$!
 set +e
 timeout --signal=TERM --kill-after=5s 120s adb shell am instrument -w -r \
   -e class "$TEST_CLASS" \
-  com.ffc.banc888.fly.test/androidx.test.runner.AndroidJUnitRunner > /tmp/instrumentation-result.txt 2>&1
+  "$BANC_TEST_APP_ID/androidx.test.runner.AndroidJUnitRunner" > /tmp/instrumentation-result.txt 2>&1
 STATUS=$?
 set -e
 cat /tmp/instrumentation-result.txt
@@ -63,9 +68,9 @@ if [ "$STATUS" -ne 0 ]; then
 fi
 
 if [ "$STATUS" -eq 0 ] && [ "$TEST_CLASS" = "com.ffc.banc888.fly.VideoExportIntegrationTest" ]; then
-  MP4_SAMPLE_PATH=$(adb shell run-as com.ffc.banc888.fly find cache/exports -name '*BANC888_video.mp4' | tr -d '\r' | head -n 1)
+  MP4_SAMPLE_PATH=$(adb shell run-as "$BANC_APP_ID" find cache/exports -name '*BANC888_video.mp4' | tr -d '\r' | head -n 1)
   if [ -n "$MP4_SAMPLE_PATH" ]; then
-    adb exec-out run-as com.ffc.banc888.fly cat "$MP4_SAMPLE_PATH" > /tmp/BANC888-connectome-sample.mp4
+    adb exec-out run-as "$BANC_APP_ID" cat "$MP4_SAMPLE_PATH" > /tmp/BANC888-connectome-sample.mp4
     test -s /tmp/BANC888-connectome-sample.mp4
   fi
 fi
