@@ -20,7 +20,7 @@ public class AutonomyIntegrationTest {
                     "(function(){try{window.FFC_CAPABILITIES.syncAutonomy();"
                             + "var s=window.FFC_CAPABILITIES.autonomyStatus();"
                             + "return !!(s&&s.discoveredTools>=window.BANC888_FLY_AGENT.state.tools.size&&s.discoveredTools>=40"
-                            + "&&window.FFC_PROXY_AGENT.version==='2.1-autonomy');}catch(e){return false}})()", 5000));
+                            + "&&window.FFC_PROXY_AGENT.version==='2.2-compat');}catch(e){return false}})()", 5000));
 
             assertTrue(TestSupport.awaitJs(scenario,
                     "(function(){try{"

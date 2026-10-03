@@ -18,7 +18,8 @@ final class TestSupport {
     static void grantMicrophone() throws Exception {
         try (ParcelFileDescriptor ignored = InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
-                .executeShellCommand("pm grant com.ffc.banc888.fly " + Manifest.permission.RECORD_AUDIO)) {
+                .executeShellCommand("pm grant " + InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext().getPackageName() + " " + Manifest.permission.RECORD_AUDIO)) {
             Thread.sleep(250);
         }
     }
