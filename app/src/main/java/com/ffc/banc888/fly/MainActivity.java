@@ -1,6 +1,7 @@
 package com.ffc.banc888.fly;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.webkit.WebView;
@@ -15,6 +16,7 @@ public class MainActivity extends Activity {
     private SpeechController speech;
     private ResearchClient research;
     private DocumentExporter documents;
+    private RecordingController recordings;
     private WebShellController webShell;
     private BridgeRegistry bridges;
 
@@ -29,6 +31,7 @@ public class MainActivity extends Activity {
         devLive = new DevLiveManager(this);
         research = new ResearchClient();
         documents = new DocumentExporter(this);
+        recordings = new RecordingController(this);
         speech = new SpeechController(this, this::evalJs);
 
         webShell = new WebShellController(this, webView, devLive, nativeSession);
@@ -42,6 +45,7 @@ public class MainActivity extends Activity {
                 documents,
                 research,
                 devLive,
+                recordings,
                 () -> webShell.loadCurrentPage()
         );
 
@@ -84,6 +88,18 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
         if (webView != null && webView.canGoBack()) webView.goBack();
         else super.onBackPressed();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (recordings != null) {
+            recordings.onActivityResult(requestCode, resultCode, data);
+            if (requestCode == RecordingController.REQ_RECORDING) {
+                evalJs("window.BANC888_NATIVE_AUTOMATON&&window.BANC888_NATIVE_AUTOMATON.onRecordingSelected"
+                        + "&&window.BANC888_NATIVE_AUTOMATON.onRecordingSelected(__BancAutomaton.status(AndroidSessionToken||''))");
+            }
+        }
     }
 
     @Override
