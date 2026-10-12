@@ -96,8 +96,7 @@ public class MainActivity extends Activity {
         if (recordings != null) {
             recordings.onActivityResult(requestCode, resultCode, data);
             if (requestCode == RecordingController.REQ_RECORDING) {
-                evalJs("window.BANC888_NATIVE_AUTOMATON&&window.BANC888_NATIVE_AUTOMATON.onRecordingSelected"
-                        + "&&window.BANC888_NATIVE_AUTOMATON.onRecordingSelected(__BancAutomaton.status(AndroidSessionToken||''))");
+                evalJs("window.dispatchEvent&&window.dispatchEvent(new Event('banc-recording-selected'))");
             }
         }
     }
