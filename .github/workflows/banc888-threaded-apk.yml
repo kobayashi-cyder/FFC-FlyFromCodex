@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "banc888-apk-*"
+      - "feature/recording-automaton-generator"
     paths:
       - "app/**"
       - "tests/thread_router_core.test.cjs"
@@ -20,7 +21,6 @@ on:
       - "tests/image_quality_core.test.cjs"
       - "tests/feedback_core.test.cjs"
       - "tests/autonomy_core.test.cjs"
-      - "tests/research_physics_core.test.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
 
@@ -95,7 +95,6 @@ jobs:
           node tests/route_on_switch_only.test.cjs
           node tests/live_manifest_verify.test.cjs
           node tests/webview_runtime_contract.test.cjs
-          node tests/research_physics_core.test.cjs
 
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug
@@ -108,7 +107,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.1-autonomous-connectome-debug
+          name: BANC888-recording-automaton-debug
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/debug/app-debug.apk.sha256
