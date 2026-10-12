@@ -1,3 +1,4 @@
+from .automaton import AutomatonRunner, AutomatonSpec, RecordingAutomatonGenerator, RecordingEvent
 from .autonomy import AutonomousSkillLearner, SkillProfile
 from .body import BodyArbiter, BodyLease
 from .checkpoint import AtomicCheckpointStore
@@ -15,6 +16,8 @@ from .voice import VoiceRouter
 
 __all__ = [
     "AtomicCheckpointStore",
+    "AutomatonRunner",
+    "AutomatonSpec",
     "AutonomousSkillLearner",
     "BodyArbiter",
     "BodyLease",
@@ -35,6 +38,8 @@ __all__ = [
     "MachinePlannerAdapter",
     "MemoryFabric",
     "OutputMode",
+    "RecordingAutomatonGenerator",
+    "RecordingEvent",
     "RequirementContract",
     "ResultStatus",
     "RewardVector",

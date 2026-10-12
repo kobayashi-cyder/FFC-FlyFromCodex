@@ -1,9 +1,11 @@
 package com.ffc.banc888.fly;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.os.Looper;
+import android.provider.Settings;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
@@ -25,6 +27,8 @@ final class BridgeRegistry {
     private final DocumentExporter documents;
     private final ResearchClient research;
     private final DevLiveManager devLive;
+    private final RecordingController recordings;
+    private final AutomatonExecutionEngine automatonExecution = new AutomatonExecutionEngine();
     private final Runnable reload;
 
     BridgeRegistry(
@@ -37,6 +41,7 @@ final class BridgeRegistry {
             DocumentExporter documents,
             ResearchClient research,
             DevLiveManager devLive,
+            RecordingController recordings,
             Runnable reload
     ) {
         this.activity = activity;
@@ -48,6 +53,7 @@ final class BridgeRegistry {
         this.documents = documents;
         this.research = research;
         this.devLive = devLive;
+        this.recordings = recordings;
         this.reload = reload;
     }
 
@@ -56,6 +62,7 @@ final class BridgeRegistry {
         webView.addJavascriptInterface(new FilesBridge(), "__BancFiles");
         webView.addJavascriptInterface(new ResearchBridge(), "__BancResearch");
         webView.addJavascriptInterface(new DevBridge(), "__BancDev");
+        webView.addJavascriptInterface(new AutomatonBridge(), "__BancAutomaton");
         webView.addJavascriptInterface(new DiagnosticsBridge(), "__BancDiagnostics");
     }
 
@@ -64,6 +71,7 @@ final class BridgeRegistry {
         webView.removeJavascriptInterface("__BancFiles");
         webView.removeJavascriptInterface("__BancResearch");
         webView.removeJavascriptInterface("__BancDev");
+        webView.removeJavascriptInterface("__BancAutomaton");
         webView.removeJavascriptInterface("__BancDiagnostics");
     }
 
@@ -164,6 +172,57 @@ final class BridgeRegistry {
         }
     }
 
+    public final class AutomatonBridge {
+        @JavascriptInterface public String status(String token) {
+            if (!allow(token)) return denied();
+            JSONObject out = new JSONObject();
+            try {
+                out.put("ok", true);
+                out.put("recording", new JSONObject(recordings.statusJson()));
+                out.put("execution", new JSONObject(automatonExecution.status()));
+            } catch (Exception e) {
+                try { out.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {}
+            }
+            return out.toString();
+        }
+
+        @JavascriptInterface public boolean pickRecording(String token) {
+            return allow(token) && callUiBoolean(recordings::pickRecording);
+        }
+
+        @JavascriptInterface public String analyzeSelected(String token, int sampleMs, int maxFrames) {
+            return allow(token) ? recordings.analyzeSelected(sampleMs, maxFrames) : denied();
+        }
+
+        @JavascriptInterface public String generateSelected(String token, String name, int sampleMs, int maxFrames) {
+            return allow(token) ? recordings.generateSelected(name, sampleMs, maxFrames) : denied();
+        }
+
+        @JavascriptInterface public String load(String token, String automatonJson, boolean allowUnreviewed) {
+            return allow(token) ? automatonExecution.load(automatonJson, allowUnreviewed) : denied();
+        }
+
+        @JavascriptInterface public String step(String token, String observedState) {
+            return allow(token) ? automatonExecution.step(observedState) : denied();
+        }
+
+        @JavascriptInterface public String reset(String token) {
+            return allow(token) ? automatonExecution.reset() : denied();
+        }
+
+        @JavascriptInterface public boolean openAccessibilitySettings(String token) {
+            if (!allow(token)) return false;
+            return callUiBoolean(() -> {
+                try {
+                    activity.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                    return true;
+                } catch (Throwable ignored) {
+                    return false;
+                }
+            });
+        }
+    }
+
     public final class DiagnosticsBridge {
         @JavascriptInterface public String probeMicrophone(String token) {
             if (!allow(token)) return denied();
@@ -200,6 +259,8 @@ final class BridgeRegistry {
                 o.put("research", new JSONObject(research.diagnosticsJson()));
                 o.put("documents", new JSONObject(documents.diagnosticsJson()));
                 o.put("devLive", new JSONObject(devLive.statusJson()));
+                o.put("recording", new JSONObject(recordings.statusJson()));
+                o.put("automatonExecution", new JSONObject(automatonExecution.status()));
             } catch (Exception e) {
                 try {
                     o.put("ok", false);

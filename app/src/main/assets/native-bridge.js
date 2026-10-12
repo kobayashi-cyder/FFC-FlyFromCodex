@@ -28,6 +28,16 @@ window.AndroidDev={
  useBundledAndReload:()=>window.__BancDev?__BancDev.useBundledAndReload(token):false,
  rollbackAndReload:()=>window.__BancDev?__BancDev.rollbackAndReload(token):false
 };
+window.AndroidAutomaton={
+ status:()=>window.__BancAutomaton?__BancAutomaton.status(token):denied(),
+ pickRecording:()=>window.__BancAutomaton?__BancAutomaton.pickRecording(token):false,
+ analyzeSelected:(sampleMs=250,maxFrames=600)=>window.__BancAutomaton?__BancAutomaton.analyzeSelected(token,Number(sampleMs||250),Number(maxFrames||600)):denied(),
+ generateSelected:(name='recording_automaton',sampleMs=250,maxFrames=600)=>window.__BancAutomaton?__BancAutomaton.generateSelected(token,String(name||'recording_automaton'),Number(sampleMs||250),Number(maxFrames||600)):denied(),
+ load:(automatonJson,allowUnreviewed=false)=>window.__BancAutomaton?__BancAutomaton.load(token,String(automatonJson||'{}'),!!allowUnreviewed):denied(),
+ step:(observedState='')=>window.__BancAutomaton?__BancAutomaton.step(token,String(observedState||'')):denied(),
+ reset:()=>window.__BancAutomaton?__BancAutomaton.reset(token):denied(),
+ openAccessibilitySettings:()=>window.__BancAutomaton?__BancAutomaton.openAccessibilitySettings(token):false
+};
 window.AndroidDiagnostics={
  status:()=>window.__BancDiagnostics?__BancDiagnostics.status(token):denied(),
  probeMicrophone:()=>window.__BancDiagnostics?__BancDiagnostics.probeMicrophone(token):denied(),
