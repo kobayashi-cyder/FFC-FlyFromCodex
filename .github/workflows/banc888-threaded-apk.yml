@@ -63,7 +63,25 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Thread router unit tests
+      - name: Build debug APK
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: APK inventory
+        run: |
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+          sha256sum app/build/outputs/apk/debug/app-debug.apk | tee app/build/outputs/apk/debug/app-debug.apk.sha256
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BANC888-recording-automaton-debug
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Legacy web-shell checks
         run: |
           node --check app/src/main/assets/thread-router-core.js
           node --check app/src/main/assets/capability-vocabulary-core.js
@@ -95,21 +113,3 @@ jobs:
           node tests/route_on_switch_only.test.cjs
           node tests/live_manifest_verify.test.cjs
           node tests/webview_runtime_contract.test.cjs
-
-      - name: Build debug APK
-        run: gradle --no-daemon :app:assembleDebug
-
-      - name: APK inventory
-        run: |
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
-          sha256sum app/build/outputs/apk/debug/app-debug.apk | tee app/build/outputs/apk/debug/app-debug.apk.sha256
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: BANC888-recording-automaton-debug
-          path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/apk/debug/app-debug.apk.sha256
-          if-no-files-found: error
-          retention-days: 30
