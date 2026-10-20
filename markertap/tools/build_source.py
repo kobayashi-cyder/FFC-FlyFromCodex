@@ -8,7 +8,7 @@ ROOT = channel.ROOT
 BRANCH = channel.BRANCH
 EXPECTED_CERT = "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1"
 KEY_NAME = "MarkerTap-lite-signing-backup.zip"
-OUTPUT_NAME = "MarkerTap-v1.120-connection-recovery.apk"
+OUTPUT_NAME = "MarkerTap-v1.121-crash-cleanup.apk"
 
 def receive_key(private):
     key = private / "transport-key.pem"
@@ -114,13 +114,13 @@ def main():
             if cert is None or cert.group(1).lower() != EXPECTED_CERT:
                 raise RuntimeError("APK signing certificate does not match the existing version")
             badging = channel.command([str(tools / "aapt2"), "dump", "badging", str(output)]).stdout.decode()
-            if "name='jp.tapmarker.lite'" not in badging or "versionCode='123'" not in badging or "versionName='1.120'" not in badging:
+            if "name='jp.tapmarker.lite'" not in badging or "versionCode='124'" not in badging or "versionName='1.121'" not in badging:
                 raise RuntimeError("unexpected APK identity")
             channel.command([str(tools / "zipalign"), "-c", "-P", "16", "4", str(output)])
             with zipfile.ZipFile(output) as apk:
                 if apk.testzip() is not None:
                     raise RuntimeError("APK ZIP CRC verification failed")
-            validation = {"version_name": "1.120", "version_code": 123, "package": "jp.tapmarker.lite",
+            validation = {"version_name": "1.121", "version_code": 124, "package": "jp.tapmarker.lite",
                 "core_tests": "passed", "signing_certificate_sha256": EXPECTED_CERT,
                 "apk_sha256": channel.digest(output), "apk_size_bytes": output.stat().st_size,
                 "zip_alignment": "passed_16KB", "source_baseline": "1.117",
@@ -139,41 +139,41 @@ def main():
             release = ROOT / "markertap/releases"
             release.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(output, release / OUTPUT_NAME)
-            shutil.copyfile(private / "build.log", release / "build-v1.120.log")
-            shutil.copyfile(private / "tests.log", release / "tests-v1.120.log")
-            (release / "VALIDATION-v1.120.json").write_text(json.dumps(validation, ensure_ascii=False, indent=2) + "\n")
-            (release / "apk-verification-v1.120.txt").write_text(verification + "\n" + badging.splitlines()[0] + "\n")
+            shutil.copyfile(private / "build.log", release / "build-v1.121.log")
+            shutil.copyfile(private / "tests.log", release / "tests-v1.121.log")
+            (release / "VALIDATION-v1.121.json").write_text(json.dumps(validation, ensure_ascii=False, indent=2) + "\n")
+            (release / "apk-verification-v1.121.txt").write_text(verification + "\n" + badging.splitlines()[0] + "\n")
             status = ROOT / "markertap/BACKUP_STATUS.json"
             state = json.loads(status.read_text())
-            state.update({"current_version_name": "1.120", "native_resolution_fix": "built_and_host_tested",
+            state.update({"current_version_name": "1.121", "native_resolution_fix": "built_and_host_tested",
                 "device_tested": False, "apk": "releases/" + OUTPUT_NAME,
                 "apk_sha256": validation["apk_sha256"]})
             status.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n")
-            guide = ROOT / "markertap/code/TapMarker/GUIDE-v1.120.md"
-            guide.write_text(guide.read_text().replace("実装済み。検証待ちです。", "ビルド・core回帰試験（新規の接続復旧・再作成上限テストを含む）・従来版との署名証明書一致・APKの16KB境界配置を検証済みです。結果はmarkertap/releasesに保存しています。"))
+            guide = ROOT / "markertap/code/TapMarker/GUIDE-v1.121.md"
+            guide.write_text(guide.read_text().replace("実装済み。検証待ちです。", "ビルド・core回帰試験（新規の異常終了時の全停止・再作成上限テストを含む）・従来版との署名証明書一致・APKの16KB境界配置を検証済みです。結果はmarkertap/releasesに保存しています。"))
             work = ROOT / "markertap/WORK_NEXT.md"
             work.write_text(work.read_text().replace("ビルド・core回帰試験・同一署名の検証待ち。", "ビルド・core回帰試験・同一署名・16KB境界配置を検証済み。"))
             channel.command(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT)
             channel.command(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=ROOT)
             channel.command(["git", "add", "-f", "markertap/releases", "markertap/BACKUP_STATUS.json",
-                "markertap/WORK_NEXT.md", "markertap/code/TapMarker/GUIDE-v1.120.md"], cwd=ROOT)
-            channel.command(["git", "commit", "-m", "Publish verified MarkerTap v1.120 native-resolution APK"], cwd=ROOT)
+                "markertap/WORK_NEXT.md", "markertap/code/TapMarker/GUIDE-v1.121.md"], cwd=ROOT)
+            channel.command(["git", "commit", "-m", "Publish verified MarkerTap v1.121 native-resolution APK"], cwd=ROOT)
             channel.command(["git", "push", "origin", "HEAD:refs/heads/" + BRANCH], cwd=ROOT)
             stage = "publish_download"
             target = channel.command(["git", "rev-parse", "HEAD"], cwd=ROOT).stdout.decode().strip()
-            bundle = private / "MarkerTap-v1.120.zip"
+            bundle = private / "MarkerTap-v1.121.zip"
             with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED) as z:
                 z.write(output, OUTPUT_NAME)
             sums = private / "SHA256SUMS.txt"
             sums.write_text(channel.digest(output) + "  " + OUTPUT_NAME + "\n" +
                 channel.digest(bundle) + "  " + bundle.name + "\n")
             notes = private / "RELEASE_NOTES.md"
-            notes.write_text((ROOT / "markertap/code/TapMarker/GUIDE-v1.120.md").read_text())
-            channel.command(["gh", "release", "create", "markertap-v1.120", str(output), str(bundle), str(sums),
-                "--repo", channel.REPO, "--target", target, "--title", "MarkerTap v1.120 接続復旧",
+            notes.write_text((ROOT / "markertap/code/TapMarker/GUIDE-v1.121.md").read_text())
+            channel.command(["gh", "release", "create", "markertap-v1.121", str(output), str(bundle), str(sums),
+                "--repo", channel.REPO, "--target", target, "--title", "MarkerTap v1.121 異常終了時の全停止",
                 "--notes-file", str(notes), "--prerelease", "--latest=false"], cwd=ROOT)
             # Check anonymous download bytes, including the APK inside the one-file ZIP.
-            download_base = "https://github.com/" + channel.REPO + "/releases/download/markertap-v1.120/"
+            download_base = "https://github.com/" + channel.REPO + "/releases/download/markertap-v1.121/"
             for name in (OUTPUT_NAME, bundle.name):
                 for attempt in range(6):
                     try:
@@ -193,7 +193,7 @@ def main():
             channel.publish("result.json", {"run_id": channel.RUN_ID, "status": "complete",
                 "download_verified": True, "apk_url": download_base + OUTPUT_NAME,
                 "bundle_url": download_base + bundle.name, **validation})
-            print("MarkerTap v1.120 build, tests and signing verification passed.")
+            print("MarkerTap v1.121 build, tests and signing verification passed.")
         except Exception as error:
             publish_failure(private, stage, error)
             raise
