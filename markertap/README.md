@@ -41,3 +41,12 @@ python3 markertap/tools/restore_source.py --extract-to ./MarkerTap-restored
 - [APK一つ入りのZIP](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.120/MarkerTap-v1.120.zip)
 
 ログインなしのHTTP 200取得と、検証済みAPKとのSHA-256一致を確認済みです。APKを直接保存できない場合はZIPを展開してください。
+
+
+## v1.121 異常終了後に残存を残さない改修（ソース反映済み）
+- 新しい仕様書：[GUIDE-v1.121.md](code/TapMarker/GUIDE-v1.121.md)
+- 不意のアプリ・サービス終了、仮想ディスプレイ失敗、実行部Binder切断で、MarkerTap管理下の実行処理をまとめて終了します。
+- 新しい owner Binder 監視はShizukuとADB両経路に使用。自動で旧画面を再開する挙動は異常終了時には無効化され、手動での再開が必要です。
+- **v1.121は現時点でソース改修段階**です。下記v1.120のAPKにはこの変更は含まれません。
+- 独立したCIで一時的な検証用鍵によるソースビルド・回帰テストを行います。本番の更新APKは従来と同じ署名鍵で署名しなければ既存アプリを上書きできません。
+
