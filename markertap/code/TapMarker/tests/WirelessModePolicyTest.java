@@ -18,6 +18,16 @@ public class WirelessModePolicyTest {
   p.resume();check(p.shouldConnect(true,false,false,200000),"explicit start resumes maintenance");
   p.mode(false);check(!p.shouldConnect(true,false,false,Long.MAX_VALUE),"manual mode never auto-connects");
   p.mode(true);check(p.shouldConnect(true,false,false,0),"explicit automatic mode choice takes effect");
+  p.mode(false);p.requestSessionRecovery();
+  check(p.shouldConnect(true,false,false,0),"an explicitly started manual session can recover after backend death");
+  check(!p.shouldConnect(false,false,false,0),"a lost offline backend waits for Wi-Fi without starting ADB");
+  p.cancelSessionRecovery();check(!p.shouldConnect(true,false,false,0),"cancelled session cannot restart manual mode");
+  p.requestSessionRecovery();p.pause();p.resume();check(!p.shouldConnect(true,false,false,0),"full stop discards the recovery request");
+  p.requestSessionRecovery();p.connected();check(!p.shouldConnect(true,false,false,0),"successful manual recovery does not turn on idle auto-connect");
+  check(!p.cancelForWifiLoss(false,true,true,true),"Wi-Fi loss must not shut down an already connected detached backend");
+  check(p.cancelForWifiLoss(false,true,true,false),"offline discovery without a backend may be cancelled");
+  check(!p.cancelForWifiLoss(false,true,false,false),"explicit pairing is not cancelled by quiet maintenance");
+  check(!p.cancelForWifiLoss(true,true,true,false),"connected Wi-Fi keeps bootstrap active");
   System.out.println("WirelessModePolicyTest: "+checks+" checks passed; Wi-Fi/ADB on-device behavior not tested");
  }
 }

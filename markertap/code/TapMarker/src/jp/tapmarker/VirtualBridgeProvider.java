@@ -11,6 +11,7 @@ public final class VirtualBridgeProvider extends ContentProvider {
  static void cancelLocal(String token){IBinder old=null;synchronized(LOCK){if(token!=null&&token.equals(expectedLocalToken))expectedLocalToken=null;if(token!=null&&token.equals(serviceLocalToken)){old=service;service=null;serviceLocalToken=null;}}if(old!=null)try{new VirtualProtocol(old).shutdown();}catch(RemoteException ignored){}}
  static IBinder connected(){synchronized(LOCK){return service!=null&&service.isBinderAlive()?service:null;}}
  static void forget(IBinder expected){synchronized(LOCK){if(service==expected){service=null;serviceLocalToken=null;expectedLocalToken=null;}}}
+ static boolean localConnected(String token){synchronized(LOCK){return token!=null&&token.equals(serviceLocalToken)&&service!=null&&service.isBinderAlive();}}
  static boolean localDetached(){synchronized(LOCK){return serviceLocalToken!=null&&service!=null&&service.isBinderAlive();}}
  static void closeLocal(){String token;synchronized(LOCK){token=serviceLocalToken;}cancelLocal(token);}
  @Override public boolean onCreate(){return true;}

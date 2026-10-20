@@ -1,4 +1,4 @@
-name: MarkerTap region-capture APK
+name: MarkerTap connection-recovery APK
 on:
   push:
     branches: ["markertap/recovery"]
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: MarkerTap-v1.119-region-capture
+          name: MarkerTap-v1.120-connection-recovery
           path: markertap/releases/*
           if-no-files-found: ignore
           retention-days: 90

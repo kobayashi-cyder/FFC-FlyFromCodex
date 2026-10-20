@@ -9,6 +9,7 @@ final class VirtualWindows {
  // requests before being copied, otherwise a fresh frame expires in the queue.
  final ExecutorService frameCopyWork=Executors.newSingleThreadExecutor(task->new Thread(task,"TapMarker-frame-copy"));
  boolean selected,pending,connecting,bound,adbMode,destroyed,pcPresentation;volatile boolean autoPending;String[] requested;long remoteEpoch;VirtualPreparation preparation;
+ final BackendRecoveryBudget recoveryBudget=new BackendRecoveryBudget();
  boolean recoverPending,recoverRun,recoverMinimized;String[] recoverTargets;
  int previewPercent;boolean panelHeaders;VirtualWindowPanel headings;
  String lastStop="開始前",lastStartError="";final ArrayDeque<String> events=new ArrayDeque<>();
@@ -131,11 +132,11 @@ final class VirtualWindows {
  }
  boolean attach(IBinder binder){remote=new VirtualProtocol(binder);try{if(remote.implementation()!=VirtualProtocol.IMPLEMENTATION)throw new IllegalStateException("実行部が旧版です。「端末だけで接続」から再起動してください");binder.linkToDeath(()->s.h.post(()->{if(remote==null||remote.binder!=binder)return;backendLost();}),0);return true;}catch(Exception e){remote=null;startFailed("仮想画面サービス接続："+brief(e));return false;}}
  void backendLost(){if(s.pilot.learning!=null&&s.pilot.learning.active)s.pilot.learning.cancel();boolean wanted=adbMode&&!windows.isEmpty();boolean running=autoPending||s.pilot.splitPilot.active;boolean small=panelHeaders;String[] targets=requested==null?null:requested.clone();s.stop();closeViews();remote=null;
-  if(wanted&&s.pilot.wireless.automatic()&&!s.pilot.wireless.modePolicy.paused){recoverPending=true;recoverRun=running;recoverMinimized=small;recoverTargets=targets;}
+  if(wanted&&(running||s.pilot.wireless.automatic())&&!s.pilot.wireless.modePolicy.paused){if(recoveryBudget.request(SystemClock.uptimeMillis())){recoverPending=true;recoverRun=running;recoverMinimized=small;recoverTargets=targets;s.pilot.wireless.modePolicy.requestSessionRecovery();}else{record("実行部が10分間に繰り返し終了 / 自動再作成の上限に到達。開始操作で再試行できます");s.pilot.note("実行部が繰り返し終了 / 画面数を確認して開始し直してください");return;}}
   s.pilot.note(recoverPending?"実行部切断 / 本体画面へ移さず、Wi-Fiで仮想画面の復帰を待機":"実行部切断 / 仮想画面停止。接続後に再開してください");
  }
- void cancelRecovery(){recoverPending=false;recoverRun=false;recoverTargets=null;}
- void backendAvailable(){if(!recoverPending||destroyed||!s.pilot.wireless.automatic()||s.pilot.wireless.modePolicy.paused)return;IBinder binder=VirtualBridgeProvider.connected();if(binder==null)return;String[] targets=recoverTargets;boolean run=recoverRun,small=recoverMinimized;if(targets==null||targets.length==0){cancelRecovery();return;}if(attach(binder)){cancelRecovery();requested=targets;adbMode=true;createViews(run);if(small)minimize(true);}}
+ void cancelRecovery(){recoverPending=false;recoverRun=false;recoverTargets=null;s.pilot.wireless.modePolicy.cancelSessionRecovery();}
+ void backendAvailable(){if(!recoverPending||destroyed||s.pilot.wireless.modePolicy.paused)return;IBinder binder=VirtualBridgeProvider.connected();if(binder==null)return;String[] targets=recoverTargets;boolean run=recoverRun,small=recoverMinimized;if(targets==null||targets.length==0){cancelRecovery();return;}if(attach(binder)){cancelRecovery();requested=targets;adbMode=true;createViews(run);if(small)minimize(true);}}
  final ServiceConnection connection=new ServiceConnection(){public void onServiceConnected(ComponentName name,IBinder binder){if(!connecting||adbMode)return;connecting=false;if(attach(binder))createViews(true);}public void onServiceDisconnected(ComponentName name){bound=false;if(adbMode||remote==null&&!connecting)return;connecting=false;backendLost();}};
  void bind(){connecting=true;s.pilot.note("仮想画面サービス接続中");try{Shizuku.bindUserService(args,connection);bound=true;}catch(Exception e){connecting=false;s.pilot.note("接続失敗："+e.getMessage());}}
  boolean restartResolution(){
@@ -271,7 +272,7 @@ final class VirtualWindows {
   s.pilot.note(enabled?"見出しをパネル内に収納 / 各画面の処理を継続":"仮想画面 "+previewPercent+"%表示");
  }
 
- void capture(Window w,java.util.function.BooleanSupplier valid,java.util.function.Consumer<Bitmap> success,Runnable failed){if(w==null||w.id<=0||w.closed||!valid.getAsBoolean()){failed.run();return;}int id=w.id;w.io.execute(()->{Bitmap snapshot=image(w);s.h.post(()->{if(snapshot==null){if(valid.getAsBoolean())failed.run();return;}if(!valid.getAsBoolean()||w.id!=id||w.closed){snapshot.recycle();return;}success.accept(snapshot);});});}
+ void capture(Window w,java.util.function.BooleanSupplier valid,java.util.function.Consumer<Bitmap> success,Runnable failed){if(w==null||w.id<=0||w.closed||!valid.getAsBoolean()){failed.run();return;}int id=w.id;w.io.execute(()->{Bitmap snapshot;try{snapshot=image(w);}catch(RuntimeException|OutOfMemoryError error){if(error instanceof OutOfMemoryError)s.performance.memoryPressure();s.h.post(()->{if(valid.getAsBoolean()&&!w.closed&&w.id==id){record("#"+id+" 画像取得を中断："+brief(error));failed.run();}});return;}s.h.post(()->{if(snapshot==null){if(valid.getAsBoolean())failed.run();return;}if(!valid.getAsBoolean()||w.id!=id||w.closed){snapshot.recycle();return;}success.accept(snapshot);});});}
  void samplePixels(Window w,RegionPlan plan,java.util.function.BooleanSupplier valid,java.util.function.Function<FrameCircuit.Frame,Runnable> sample,Runnable failed){
   if(w==null||w.id<=0||w.closed||!valid.getAsBoolean()){failed.run();return;}int id=w.id,version=generation;
   plan(w,plan);
