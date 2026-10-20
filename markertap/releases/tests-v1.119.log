@@ -1,7 +1,8 @@
+PointPixelsTest: 50112 checks passed; sparse native reads, bounded cache, eviction, exceptions and exact dependency tiles
 FrameResourceTest: 74 checks passed; image replacement, deferred reader retirement, native source release on all graph exits and concurrent stop; Android buffers not exercised
-Region copy experiment: 25600 pixels / 2617920 native pixels; Java workspace=0; synthetic workload, not device performance
+Region copy experiment: 4609 pixels / 2617920 native pixels; Java workspace=0; synthetic workload, not device performance
 RegionCaptureTest: 19081 checks passed; crop/stride/alpha delegation/native features/leases/dirty patches; Android ImageReader and GPU not exercised
-RegionCaptureReplayTest: 1270 checks; 52 recorded frames; full and ROI detector results/coordinates identical; tile reads=357188320, native frame pixels=8389472; no device throughput claim
+RegionCaptureReplayTest: 1271 checks; 52 recorded frames; full and ROI detector results/coordinates identical; source point reads=8932955, native frame pixels=8389472; no device throughput claim
 DisplayReplacementTest: 11 checks; actual replacement orchestrator with fake displays, cancellation, failed launch and lane isolation; Android lifecycle untested
 DisplayRecoveryTest: 19 checks; bounded rebuild, late callbacks, per-display isolation and verified-home release; Android display creation untested
 Incident66ReplayTest: 19 checks; attached farm popup, animation, control confirmation, bounded display replacement and home verification; device delivery untested
@@ -44,7 +45,7 @@ Video6745ReplayTest: 181 checks passed; 48 supplied preview crops, synthetic res
 Video6742ReplayTest: 706 checks passed; actual native recording pixels, synthetic multi-card journeys/result-wait arbitration/cancellation/window events; Android device input untested
 AdContinuationTest: 481 checks passed; exhausted-close recovery, observed new cards, all factory interruptions and three synthetic two-CM journeys using real Poipoi replay pixels; no Android device operation
 GameInputRepairTest: 236 checks passed; fitted 6738, recorded Poipoi, synthetic geometry/occlusion/animation and frame-polled contact; no physical game success claimed
-VisualLocatorTest: 11 checks passed / 485ms; synthetic distant, scaled, ambiguous and missing controls
+VisualLocatorTest: 11 checks passed / 319ms; synthetic distant, scaled, ambiguous and missing controls
 LearnedReflowTest: 10 checks passed; independent recorded-target and guard relocation
 markerless normal: com.kurashiru.fue.usagi
 markerless normal: com.kurashiru.nouen.usagi
@@ -59,32 +60,32 @@ configured replay: com.kurashiru.shopping.usagi / 11 normal, 4 interruptions
 configured replay: com.kurashiru.coin.drop / 3 normal, 4 interruptions
 ConfiguredTargetReplayTest: 150 checks passed; independent templates on held-out normal frames and interruptions; Android input untested
 FarmFeverTapTest: 71 checks passed; actual Pixel/F-52A fever pixels, continuous policy and interruption/freshness checks; physical input untested
-6732 / 7 home=true target=[421.58002, 1561.9199] fever=false reads=177208 tileReads=5260 ms=72
-6732 / 10 home=true target=[420.49997, 1563.0] fever=false reads=492855 tileReads=5283 ms=64
-6732 / 14 home=true target=[422.49997, 1576.5] fever=false reads=338635 tileReads=5290 ms=26
-6732 / 16 home=true target=[420.49997, 1563.0] fever=false reads=179512 tileReads=5260 ms=16
-6732 / 18 home=true target=[420.49997, 1563.0] fever=false reads=179512 tileReads=5260 ms=16
-6732 / 22 home=true target=[420.49997, 1563.0] fever=false reads=179512 tileReads=5260 ms=16
-6732 / 24 home=true target=[420.49997, 1563.0] fever=false reads=179512 tileReads=5260 ms=10
-6732 / 26 home=true target=[420.49997, 1563.0] fever=false reads=179513 tileReads=5260 ms=10
-6732 / 28 home=false target=null fever=false reads=28505482 tileReads=88737 ms=789
-6732 / 30 home=false target=null fever=false reads=27611125 tileReads=87795 ms=700
-6732 / 50 home=true target=[420.49997, 1549.5] fever=false reads=635702 tileReads=5283 ms=16
-6732 / 60 home=false target=null fever=false reads=27169968 tileReads=87058 ms=576
-6732 / 76 home=true target=[421.58002, 1561.9199] fever=false reads=177138 tileReads=5258 ms=9
-6732 / 87 home=true target=[421.58002, 1561.9199] fever=false reads=177055 tileReads=5257 ms=9
-6732 / 90 home=false target=null fever=false reads=26172157 tileReads=80719 ms=563
-6732 / 154 home=true target=[421.58002, 1561.9199] fever=false reads=177208 tileReads=5260 ms=9
-6732 / 158 home=true target=[421.58002, 1561.9199] fever=false reads=177208 tileReads=5260 ms=8
-6732 / 160 home=true target=[421.58002, 1561.9199] fever=false reads=177115 tileReads=5257 ms=9
-6732 / 174 home=true target=[421.58002, 1561.9199] fever=false reads=177219 tileReads=5261 ms=9
-6732 / 176 home=true target=[421.58002, 1561.9199] fever=true reads=176886 tileReads=5252 ms=8
-6732 / 180 home=true target=[421.58002, 1561.9199] fever=true reads=176884 tileReads=5252 ms=9
-6732 / 183 home=false target=null fever=false reads=27052850 tileReads=83808 ms=536
-6732 / 187 home=true target=[421.58002, 1561.9199] fever=true reads=176839 tileReads=5251 ms=8
-6732 / 190 home=true target=[421.58002, 1561.9199] fever=false reads=177051 tileReads=5255 ms=8
-6732 / 192 home=false target=null fever=false reads=29254197 tileReads=90015 ms=614
-6732 / 196 home=true target=[421.58002, 1561.9199] fever=false reads=177347 tileReads=5263 ms=8
+6732 / 7 home=true target=[421.58002, 1561.9199] fever=false reads=177208 tileReads=5260 ms=35
+6732 / 10 home=true target=[420.49997, 1563.0] fever=false reads=492855 tileReads=5283 ms=45
+6732 / 14 home=true target=[422.49997, 1576.5] fever=false reads=338635 tileReads=5290 ms=17
+6732 / 16 home=true target=[420.49997, 1563.0] fever=false reads=179512 tileReads=5260 ms=12
+6732 / 18 home=true target=[420.49997, 1563.0] fever=false reads=179512 tileReads=5260 ms=12
+6732 / 22 home=true target=[420.49997, 1563.0] fever=false reads=179512 tileReads=5260 ms=12
+6732 / 24 home=true target=[420.49997, 1563.0] fever=false reads=179512 tileReads=5260 ms=8
+6732 / 26 home=true target=[420.49997, 1563.0] fever=false reads=179513 tileReads=5260 ms=8
+6732 / 28 home=false target=null fever=false reads=28505482 tileReads=88737 ms=493
+6732 / 30 home=false target=null fever=false reads=27611125 tileReads=87795 ms=372
+6732 / 50 home=true target=[420.49997, 1549.5] fever=false reads=635702 tileReads=5283 ms=9
+6732 / 60 home=false target=null fever=false reads=27169968 tileReads=87058 ms=341
+6732 / 76 home=true target=[421.58002, 1561.9199] fever=false reads=177138 tileReads=5258 ms=5
+6732 / 87 home=true target=[421.58002, 1561.9199] fever=false reads=177055 tileReads=5257 ms=5
+6732 / 90 home=false target=null fever=false reads=26172157 tileReads=80719 ms=327
+6732 / 154 home=true target=[421.58002, 1561.9199] fever=false reads=177208 tileReads=5260 ms=5
+6732 / 158 home=true target=[421.58002, 1561.9199] fever=false reads=177208 tileReads=5260 ms=4
+6732 / 160 home=true target=[421.58002, 1561.9199] fever=false reads=177115 tileReads=5257 ms=4
+6732 / 174 home=true target=[421.58002, 1561.9199] fever=false reads=177219 tileReads=5261 ms=5
+6732 / 176 home=true target=[421.58002, 1561.9199] fever=true reads=176886 tileReads=5252 ms=4
+6732 / 180 home=true target=[421.58002, 1561.9199] fever=true reads=176884 tileReads=5252 ms=5
+6732 / 183 home=false target=null fever=false reads=27052850 tileReads=83808 ms=333
+6732 / 187 home=true target=[421.58002, 1561.9199] fever=true reads=176839 tileReads=5251 ms=4
+6732 / 190 home=true target=[421.58002, 1561.9199] fever=false reads=177051 tileReads=5255 ms=4
+6732 / 192 home=false target=null fever=false reads=29254197 tileReads=90015 ms=349
+6732 / 196 home=true target=[421.58002, 1561.9199] fever=false reads=177347 tileReads=5263 ms=4
 Video6732ReplayTest: 149 checks passed; play_frames=20 play_pixel_requests=4489911 total_pixel_requests=170255690; actual game touch execution untested
 F52AMarkerlessTest: 40 checks passed; exact shipped references and existing native/scaled F-52A recording pixels; physical touch input untested
 PcPlacementRequestTest: 17 checks passed
@@ -312,7 +313,7 @@ ContinuousCoinReplayTest: 19 held-out checks passed; normal play, boost, CM, ret
 CircuitWorkspaceTest: 13 checks passed; per-encode large workspace allocations removed
 PortablePresetTest: 24 checks passed; resampled recorded images, Android rendering untested
 PASS actual circuit dimensions
-Two-image JVM circuit runtime ms=27.869684
+Two-image JVM circuit runtime ms=14.441917
 PASS deterministic image encoding
 PASS different images affect circuit output
 PASS removing graph changes output
