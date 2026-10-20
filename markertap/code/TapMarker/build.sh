@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 BT="$ANDROID_SDK_ROOT/build-tools/35.0.0"
 JAR="$ANDROID_SDK_ROOT/platforms/android-35/android.jar"
 TAPMARKER_ABIS="${TAPMARKER_ABIS:-arm64-v8a,armeabi-v7a,x86,x86_64}"
-TAPMARKER_OUTPUT="${TAPMARKER_OUTPUT:-../MarkerTap-v1.120-connection-recovery.apk}"
+TAPMARKER_OUTPUT="${TAPMARKER_OUTPUT:-../MarkerTap-v1.121-crash-cleanup.apk}"
 export TAPMARKER_ABIS
 python3 - <<'PYBUILD'
 from pathlib import Path
