@@ -33,4 +33,4 @@ python3 markertap/tools/restore_source.py --extract-to ./MarkerTap-restored
 
 ## 次の作業
 
-`WORK_NEXT.md` を最初に読み、解像度修正の未完了状態を引き継いでください。
+`WORK_NEXT.md` を最初に読んでください。v1.119では通常解像度のまま、必要領域の直接取得・差分プレビューを実装しています。詳細は `ROI_MULTIPLEX_SPEC.md` を参照してください。署名済みAPKと検証記録は `releases/` に保存します。

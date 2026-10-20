@@ -27,6 +27,10 @@ final class FramePixels {
   for(int y=0;y<targetHeight;y++){int sy=Math.min(height-1,(int)((y+.5)*height/targetHeight));for(int x=0;x<targetWidth;x++){int sx=Math.min(width-1,(int)((x+.5)*width/targetWidth));result[y*targetWidth+x]=source[sy*width+sx];}}
   return result;
  }
+ static int[] thumbnail(RegionSampler.Pixels source,int width,int height,int targetWidth,int targetHeight){
+  int[] result=new int[targetWidth*targetHeight];
+  for(int y=0;y<targetHeight;y++){int sy=Math.min(height-1,(int)((y+.5)*height/targetHeight));for(int x=0;x<targetWidth;x++){int sx=Math.min(width-1,(int)((x+.5)*width/targetWidth));result[y*targetWidth+x]=source.get(sx,sy);}}return result;
+ }
  static boolean needsBitmapUnpremultiply(int[] pixels){
   for(int color:pixels)if((color>>>24)!=255&&color!=0)return true;
   return false;

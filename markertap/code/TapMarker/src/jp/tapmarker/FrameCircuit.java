@@ -3,7 +3,7 @@ package jp.tapmarker;
 import java.util.function.*;
 
 /** A new, hand-wired processing graph. No biological/BANC topology is imported.
- * Its single workspace is leased only while ANALYZE runs; publications contain
+ * Its optional legacy workspace or native region source is leased only while ANALYZE runs; publications contain
  * results and metadata, never a live pixel view. The Android adapter supplies IO.
  */
 final class FrameCircuit {
@@ -16,8 +16,9 @@ final class FrameCircuit {
  interface Clock {long now();}
  interface Dispatcher {void post(Runnable task);}
  static final class Input {
-  final int width,height;final long capturedAt;
-  Input(int width,int height,long at){this.width=width;this.height=height;capturedAt=at;}
+  final int width,height;final long capturedAt;final RegionSampler.Pixels source;
+  Input(int width,int height,long at){this(width,height,at,null);}
+  Input(int width,int height,long at,RegionSampler.Pixels source){this.width=width;this.height=height;capturedAt=at;this.source=source;}
  }
  static final class Workspace {
   private int[] pixels;long allocations,allocatedBytes;
@@ -32,13 +33,13 @@ final class FrameCircuit {
  static final class Frame implements RegionSampler.Pixels {
   // Access is confined to the synchronous ANALYZE callback. The publication
   // crosses threads only after close(), via the adapter's dispatcher.
-  final int width,height;final long capturedAt;private int[] pixels;
-  Frame(Input input,int[] pixels){width=input.width;height=input.height;capturedAt=input.capturedAt;this.pixels=pixels;}
-  public int get(int x,int y){int[] current=pixels;if(current==null)throw new IllegalStateException("pixel lease has ended");return current[y*width+x];}
+  final int width,height;final long capturedAt;private RegionSampler.Pixels pixels;
+  Frame(Input input,int[] pixels){width=input.width;height=input.height;capturedAt=input.capturedAt;this.pixels=input.source!=null?input.source:new FramePixels.Raster(width,height,pixels,capturedAt);}
+  public int get(int x,int y){RegionSampler.Pixels current=pixels;if(current==null)throw new IllegalStateException("pixel lease has ended");return current.get(x,y);}
   void checkLease(){if(pixels==null)throw new IllegalStateException("pixel lease has ended");}
   // FrameSampleCache rechecks the lease at every cache entry, then samples this
   // final-array view synchronously. No repeated lease check for every subpixel.
-  RegionSampler.Pixels samplingView(){checkLease();return new FramePixels.Raster(width,height,pixels,capturedAt);}
+  RegionSampler.Pixels samplingView(){checkLease();return pixels;}
   void close(){pixels=null;}
  }
  static final class Request {
@@ -60,7 +61,7 @@ final class FrameCircuit {
       case VALIDATE:signal=request.valid.getAsBoolean()&&!Thread.currentThread().isInterrupted();break;
       case COPY:
        input=request.source.copy(workspace);signal=input!=null;
-       if(signal){long size=(long)input.width*input.height;signal=input.width>0&&input.height>0&&size<=Integer.MAX_VALUE&&workspace.pixels!=null&&workspace.pixels.length>=size;if(!signal)throw new IllegalArgumentException("incomplete frame");}
+       if(signal){long size=(long)input.width*input.height;signal=input.width>0&&input.height>0&&size<=Integer.MAX_VALUE&&(input.source!=null||workspace.pixels!=null&&workspace.pixels.length>=size);if(!signal)throw new IllegalArgumentException("incomplete frame");}
        break;
       case FRESH:{long now=clock.now();signal=input.capturedAt>0&&now>=input.capturedAt&&now-input.capturedAt<=1500;if(!signal)failure=new IllegalStateException("stale input frame");break;}
       case ANALYZE:

@@ -8,7 +8,7 @@ ROOT = channel.ROOT
 BRANCH = channel.BRANCH
 EXPECTED_CERT = "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1"
 KEY_NAME = "MarkerTap-lite-signing-backup.zip"
-OUTPUT_NAME = "MarkerTap-v1.118-native-resolution.apk"
+OUTPUT_NAME = "MarkerTap-v1.119-region-capture.apk"
 
 def receive_key(private):
     key = private / "transport-key.pem"
@@ -114,50 +114,51 @@ def main():
             if cert is None or cert.group(1).lower() != EXPECTED_CERT:
                 raise RuntimeError("APK signing certificate does not match the existing version")
             badging = channel.command([str(tools / "aapt2"), "dump", "badging", str(output)]).stdout.decode()
-            if "name='jp.tapmarker.lite'" not in badging or "versionCode='121'" not in badging or "versionName='1.118'" not in badging:
+            if "name='jp.tapmarker.lite'" not in badging or "versionCode='122'" not in badging or "versionName='1.119'" not in badging:
                 raise RuntimeError("unexpected APK identity")
             channel.command([str(tools / "zipalign"), "-c", "-P", "16", "4", str(output)])
             with zipfile.ZipFile(output) as apk:
                 if apk.testzip() is not None:
                     raise RuntimeError("APK ZIP CRC verification failed")
-            validation = {"version_name": "1.118", "version_code": 121, "package": "jp.tapmarker.lite",
+            validation = {"version_name": "1.119", "version_code": 122, "package": "jp.tapmarker.lite",
                 "core_tests": "passed", "signing_certificate_sha256": EXPECTED_CERT,
                 "apk_sha256": channel.digest(output), "apk_size_bytes": output.stat().st_size,
                 "zip_alignment": "passed_16KB", "source_baseline": "1.117",
                 "source_overlay_commit": os.environ["GITHUB_SHA"], "device_tested": False,
                 "native_resolution": "implemented", "legacy_low_resolution_selection": "disabled",
-                "signing_key_included": False}
+                "signing_key_included": False,
+                "region_capture": "native_tile_reads_no_full_argb_array",
+                "region_preview": "fresh_pixel_comparison_per_patch",
+                "graph_external_helpers": "same_frame_dynamic_tile_expansion",
+                "device_multiplex_capacity": "not_measured"}
             stage = "publish"
             channel.command(["git", "pull", "--ff-only", "origin", BRANCH], cwd=ROOT)
             release = ROOT / "markertap/releases"
             release.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(output, release / OUTPUT_NAME)
-            shutil.copyfile(private / "build.log", release / "build-v1.118.log")
-            shutil.copyfile(private / "tests.log", release / "tests-v1.118.log")
-            (release / "VALIDATION-v1.118.json").write_text(json.dumps(validation, ensure_ascii=False, indent=2) + "\n")
-            (release / "apk-verification-v1.118.txt").write_text(verification + "\n" + badging.splitlines()[0] + "\n")
+            shutil.copyfile(private / "build.log", release / "build-v1.119.log")
+            shutil.copyfile(private / "tests.log", release / "tests-v1.119.log")
+            (release / "VALIDATION-v1.119.json").write_text(json.dumps(validation, ensure_ascii=False, indent=2) + "\n")
+            (release / "apk-verification-v1.119.txt").write_text(verification + "\n" + badging.splitlines()[0] + "\n")
             status = ROOT / "markertap/BACKUP_STATUS.json"
             state = json.loads(status.read_text())
-            state.update({"current_version_name": "1.118", "native_resolution_fix": "built_and_host_tested",
+            state.update({"current_version_name": "1.119", "native_resolution_fix": "built_and_host_tested",
                 "device_tested": False, "apk": "releases/" + OUTPUT_NAME,
                 "apk_sha256": validation["apk_sha256"]})
             status.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n")
-            guide = ROOT / "markertap/code/TapMarker/GUIDE-v1.118.md"
+            guide = ROOT / "markertap/code/TapMarker/GUIDE-v1.119.md"
             guide.write_text(guide.read_text().replace("実装をGitHubへ保存済み。ビルド・署名・回帰試験は実行待ちです。",
                 "ビルド・core回帰試験・従来版との署名証明書一致・APKの16KB境界配置を検証済みです。結果はGitHubのmarkertap/releases内に保存しています。"))
             work = ROOT / "markertap/WORK_NEXT.md"
-            work.write_text("# 再開時の状態\n\nv1.117の完全ソースを分割アーカイブとして保存し、v1.118の変更をcode/に保存済み。\n復元スクリプトの--extract-toは、検証した基礎アーカイブに最新のcode/を重ねます。\n\n"
-                "通常解像度・DPIへの復帰、旧320px等の指定解除、実験機能の無効化を実装済み。\nビルド・core回帰試験・従来版と同じ証明書・16KB境界配置を検証済み。\n\n"
-                "残る確認はAndroid実機での通常解像度起動、保存済み設定の移行、画面数とメモリ、広告復帰・実タップの継続動作です。\n"
-                "端末での成功や、対象アプリ側の判定はまだ確認していません。\n署名鍵はこのリポジトリに含めず、別保管のバックアップを使ってください。\n")
+            work.write_text("# 再開時の状態\n\nv1.117完全アーカイブ + code/のv1.119変更を保存済み。restore_source.py --extract-toで復元できます。\n\nv1.119: 通常解像度・DPIを維持し、仮想画面の認識はImageReaderの元バッファから32pxタイル単位で直接取得します。通常経路の全画面ARGB配列化と再コピーを廃止。補助検出は同一画像の依存タイルを追加取得し、表示は新しい画素が同じならパッチを再利用します。\n\nビルド・core回帰試験（領域取得・52録画フレーム比較を含む）・既存版と同じ署名・16KB境界配置を検証済み。\n実機でのImageReader/GPU互換性、メモリ・解析時間・実タップ・多重化可能数は未確認。上限4と既存のメモリ判定を保持しています。\n手動学習・明示的な画像取得では必要に応じ全サイズBitmapを作ります。通常の認識では作りません。\n署名鍵は別保管です。\n")
             channel.command(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT)
             channel.command(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=ROOT)
             channel.command(["git", "add", "-f", "markertap/releases", "markertap/BACKUP_STATUS.json",
-                "markertap/WORK_NEXT.md", "markertap/code/TapMarker/GUIDE-v1.118.md"], cwd=ROOT)
-            channel.command(["git", "commit", "-m", "Publish verified MarkerTap v1.118 native-resolution APK"], cwd=ROOT)
+                "markertap/WORK_NEXT.md", "markertap/code/TapMarker/GUIDE-v1.119.md"], cwd=ROOT)
+            channel.command(["git", "commit", "-m", "Publish verified MarkerTap v1.119 native-resolution APK"], cwd=ROOT)
             channel.command(["git", "push", "origin", "HEAD:refs/heads/" + BRANCH], cwd=ROOT)
             channel.publish("result.json", {"run_id": channel.RUN_ID, "status": "complete", **validation})
-            print("MarkerTap v1.118 build, tests and signing verification passed.")
+            print("MarkerTap v1.119 build, tests and signing verification passed.")
         except Exception as error:
             publish_failure(private, stage, error)
             raise

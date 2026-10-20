@@ -1,4 +1,4 @@
-name: MarkerTap native-resolution APK
+name: MarkerTap region-capture APK
 on:
   push:
     branches: ["markertap/recovery"]
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: MarkerTap-v1.118-native-resolution
+          name: MarkerTap-v1.119-region-capture
           path: markertap/releases/*
           if-no-files-found: ignore
           retention-days: 90

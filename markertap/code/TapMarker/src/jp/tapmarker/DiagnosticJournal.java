@@ -36,10 +36,10 @@ final class DiagnosticJournal {
  boolean action(String app,int display,int run,String type,float x,float y,long now){
   synchronized(this){Lane lane=lane(app,display,run);if(!lane.policy.beginAction(type,now))return false;lane.action++;lane.actionFrames.clear();try{JSONObject json=new JSONObject(lane.selection.json);json.put("action",type).put("action_uptime_ms",now).put("tap_x",Float.isFinite(x)?x:JSONObject.NULL).put("tap_y",Float.isFinite(y)?y:JSONObject.NULL);lane.selection=new Selection(json.toString(),x,y,lane.selection.bounds);}catch(JSONException ignored){}return true;}
  }
- void frame(String app,int display,int run,int width,int height,int[] pixels,long at,String forced){
+ void frame(String app,int display,int run,int width,int height,RegionSampler.Pixels pixels,long at,String forced){
   final Lane lane;final String kind,observation;final Selection selection;final long action;final int[] size,copy;
   synchronized(this){
-   if(closed||pixels==null||width<=0||height<=0||pixels.length<(long)width*height)return;
+   if(closed||pixels==null||width<=0||height<=0)return;
    lane=lane(app,display,run);kind=forced.isEmpty()?lane.policy.kind(at,false):forced;if(kind.isEmpty())return;
    if(!rawCopies.tryAcquire()){dropped++;return;}
    try{size=DiagnosticCapturePolicy.size(width,height);copy=FramePixels.thumbnail(pixels,width,height,size[0],size[1]);}catch(RuntimeException|OutOfMemoryError unavailable){rawCopies.release();dropped++;return;}
