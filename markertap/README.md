@@ -33,11 +33,11 @@ python3 markertap/tools/restore_source.py --extract-to ./MarkerTap-restored
 
 ## 次の作業
 
-`WORK_NEXT.md` を最初に読んでください。v1.119では通常解像度のまま、必要領域の直接取得・差分プレビューを実装しています。詳細は `ROI_MULTIPLEX_SPEC.md` を参照してください。署名済みAPKと検証記録は `releases/` に保存します。
+`WORK_NEXT.md` を最初に読んでください。v1.120は通常解像度の領域取得を維持し、起動中のWi-Fi切断で接続済み実行部を終了させる経路を修正。実行中セッションの復旧と、全体画像取得の例外・OOM処理を追加しています。詳細は `ROI_MULTIPLEX_SPEC.md` を参照してください。署名済みAPKと検証記録は `releases/` に保存します。
 
 ## ダウンロード
 
-- [MarkerTap v1.119 APK](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.119/MarkerTap-v1.119-region-capture.apk)
-- [APK一つ入りのZIP](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.119/MarkerTap-v1.119.zip)
+- [MarkerTap v1.120 APK](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.120/MarkerTap-v1.120-connection-recovery.apk)
+- [APK一つ入りのZIP](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.120/MarkerTap-v1.120.zip)
 
 ログインなしのHTTP 200取得と、検証済みAPKとのSHA-256一致を確認済みです。APKを直接保存できない場合はZIPを展開してください。
