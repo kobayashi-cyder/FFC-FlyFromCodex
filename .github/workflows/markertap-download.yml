@@ -1,0 +1,77 @@
+name: MarkerTap downloadable APK
+on:
+  push:
+    branches: ["markertap/recovery"]
+    paths: [".github/workflows/markertap-download.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish-download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 61fad9f1b37dd2cebea6ffb379f2761713e211af
+          fetch-depth: 1
+      - name: Prepare exact verified APK and one-file ZIP
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib,shutil,zipfile
+          source=pathlib.Path("markertap/releases/MarkerTap-v1.119-region-capture.apk")
+          expected="e021b8b833e77bfca53988d07cf7f2baf4c11b0f181b8ee9bb111e958ce29a7a"
+          assert hashlib.sha256(source.read_bytes()).hexdigest()==expected,"APK mismatch"
+          with zipfile.ZipFile(source) as apk:
+              assert apk.testzip() is None,"APK CRC mismatch"
+          out=pathlib.Path("delivery")
+          out.mkdir()
+          apk=out/source.name
+          shutil.copyfile(source,apk)
+          archive=out/"MarkerTap-v1.119.zip"
+          with zipfile.ZipFile(archive,"w",compression=zipfile.ZIP_DEFLATED) as z:
+              z.write(apk,apk.name)
+          with zipfile.ZipFile(archive) as z:
+              assert z.namelist()==[apk.name]
+              assert hashlib.sha256(z.read(apk.name)).hexdigest()==expected
+          (out/"SHA256SUMS.txt").write_text("".join(hashlib.sha256(p.read_bytes()).hexdigest()+"  "+p.name+"\n" for p in (apk,archive)))
+          (out/"RELEASE_NOTES.md").write_text("MarkerTap v1.119 更新APK\n\n端末の通常解像度・DPIを維持し、オートマトンの必要画素を直接取得、静止表示パッチを再利用します。\n\n検証済みAPKとバイト一致。既存版と同じ署名、core回帰、録画52フレームの判定・座標一致、16KB配置を確認済み。Android実機動作・同時稼働数は未検証です。\n\nAPKを直接取得できない場合はMarkerTap-v1.119.zipを展開してください。中身は更新APK一つです。\n")
+          print("Exact signed APK SHA-256 and the one-file ZIP verified.")
+          PY
+      - name: Publish direct download assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create markertap-v1.119 delivery/MarkerTap-v1.119-region-capture.apk delivery/MarkerTap-v1.119.zip delivery/SHA256SUMS.txt --repo kobayashi-cyder/FFC-FlyFromCodex --target 61fad9f1b37dd2cebea6ffb379f2761713e211af --title "MarkerTap v1.119 APK" --notes-file delivery/RELEASE_NOTES.md --prerelease --latest=false
+      - name: Verify public downloads without login
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib,time,urllib.request,zipfile,io
+          base="https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.119/"
+          expected="e021b8b833e77bfca53988d07cf7f2baf4c11b0f181b8ee9bb111e958ce29a7a"
+          report={}
+          for name in ("MarkerTap-v1.119-region-capture.apk","MarkerTap-v1.119.zip"):
+              for attempt in range(10):
+                  try:
+                      with urllib.request.urlopen(urllib.request.Request(base+name,headers={"User-Agent":"MarkerTap-download-check"}),timeout=30) as response:
+                          data=response.read()
+                          report[name]={"status":response.status,"size":len(data),"url":base+name,"content_type":response.headers.get("Content-Type"),"disposition":response.headers.get("Content-Disposition")}
+                      break
+                  except Exception:
+                      if attempt==9: raise
+                      time.sleep(2)
+              if name.endswith(".apk"):
+                  assert hashlib.sha256(data).hexdigest()==expected
+              else:
+                  with zipfile.ZipFile(io.BytesIO(data)) as z:
+                      assert len(z.namelist())==1
+                      assert hashlib.sha256(z.read(z.namelist()[0])).hexdigest()==expected
+              print(name+": public HTTP 200 and exact APK content verified")
+          pathlib.Path("delivery/download-verification.json").write_text(json.dumps(report,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarkerTap-v1.119-download-check
+          path: delivery/*
+          retention-days: 90
