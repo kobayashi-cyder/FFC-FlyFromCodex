@@ -28,7 +28,7 @@ final class VirtualWindows {
   final String pkg;final ExecutorService io=Executors.newSingleThreadExecutor();final Object frameLock=new Object();final DisplayLane inputLane=new DisplayLane();final InputTargetRecovery inputRecovery=new InputTargetRecovery();
   final RestoreReceipt restoreReceipt=new RestoreReceipt();
   volatile int id=-1;int width,height,density,startIndex,laneCount,resolutionWidth;String trialId="";long trialStartedAt;volatile boolean closed,rebuilding;boolean failed,launched;volatile boolean minimized;String runState="準備中",error="",inputError="",lastInputError="",stopReason="";volatile String frameIssue="";int frameFailures;long missingScreenAt;long inputs,inputAt;volatile long frameAt;long decodedAt,previewAt,decodeDueAt,decodePeriod;
-  ImageReader reader;HandlerThread frames;Surface surface;VirtualDisplay local;RegionPreviewView preview;LinearLayout view;TextView title,subtitle;WindowManager.LayoutParams layout;int basePreviewWidth,expandedWidth,expandedHeight,previewRevision;boolean previewTouchActive,tinyPreview;
+  ImageReader reader;FrameResource readerLifetime;HandlerThread frames;Surface surface;VirtualDisplay local;RegionPreviewView preview;LinearLayout view;TextView title,subtitle;WindowManager.LayoutParams layout;int basePreviewWidth,expandedWidth,expandedHeight,previewRevision;boolean previewTouchActive,tinyPreview;
   RegionImage latest;volatile RegionPlan roiPlan;volatile long roiCopiedPixels,roiCoveredPixels;volatile boolean previewPending;Handler frameHandler;volatile int errors;long screenInfoAt;int screenInfoId=-1;Screen screenInfo;Window(String pkg){this.pkg=pkg;}
  }
  static final class Screen {String pkg="",text="";Rect bounds;}
@@ -161,7 +161,7 @@ final class VirtualWindows {
     else if(action==MotionEvent.ACTION_UP){boolean send=w.previewTouchActive;w.previewTouchActive=false;if(send){if(live)s.pilot.splitPilot.manualTap(w,point);else manual(w,point);}}
     return true;
    });
-   try{w.frames=new HandlerThread("TapMarker-frame-"+i);w.frames.start();w.frameHandler=new Handler(w.frames.getLooper());w.reader=ImageReader.newInstance(width,height,PixelFormat.RGBA_8888,3);w.reader.setOnImageAvailableListener(reader->frame(w,reader,task),w.frameHandler);w.surface=w.reader.getSurface();long delay=VirtualLoadPolicy.creationDelay(s.performance.profile(),i,requested.length);if(delay>0)s.h.postDelayed(()->create(w,task),delay);else create(w,task);}catch(Exception e){failure(w,e.getClass().getSimpleName()+": "+e.getMessage());}
+   try{w.frames=new HandlerThread("TapMarker-frame-"+i);w.frames.start();w.frameHandler=new Handler(w.frames.getLooper());w.reader=ImageReader.newInstance(width,height,PixelFormat.RGBA_8888,4);ImageReader ownedReader=w.reader;w.readerLifetime=new FrameResource(ownedReader::close);w.reader.setOnImageAvailableListener(reader->frame(w,reader,task),w.frameHandler);w.surface=w.reader.getSurface();long delay=VirtualLoadPolicy.creationDelay(s.performance.profile(),i,requested.length);if(delay>0)s.h.postDelayed(()->create(w,task),delay);else create(w,task);}catch(Exception e){failure(w,e.getClass().getSimpleName()+": "+e.getMessage());}
   }
   s.compactPanel(true);s.pilot.note(requested.length+"個の仮想画面を作成中 / "+(remote==null?"標準方式":"独立した画面処理"));s.h.postDelayed(()->ready(task,0,run),300);
  }
@@ -182,7 +182,7 @@ final class VirtualWindows {
    if(w.frameAt>0&&now<w.decodeDueAt)return;w.decodedAt=now;w.decodeDueAt=VirtualLoadPolicy.nextDecodeAt(now,interval,w.startIndex,w.laneCount);
    synchronized(w.frameLock){
     if(reader!=w.reader||w.closed||task!=generation)return;
-    RegionImage next=RegionImage.fromImage(image,w.width,w.height,now);image=null;
+    RegionImage next=RegionImage.fromImage(image,w.width,w.height,now,w.readerLifetime);image=null;
     if(w.latest!=null)w.latest.close();w.latest=next;w.frameAt=now;w.errors=0;w.frameIssue="";
     if(s.progressErrors!=null)s.progressErrors.image(w,"");
    }
@@ -278,15 +278,17 @@ final class VirtualWindows {
   java.util.function.BooleanSupplier current=()->!destroyed&&version==generation&&!w.closed&&w.id==id&&valid.getAsBoolean();
   RegionPlan.Builder dependencies=new RegionPlan.Builder(plan);long[] copied={0};
   FrameCircuit.Request request=new FrameCircuit.Request(current,workspace->{
-   if(!current.getAsBoolean()||w.latest==null)return null;
-   return new FrameCircuit.Input(w.width,w.height,w.frameAt,w.latest.tiles(dependencies,copied));
+   synchronized(w.frameLock){
+    if(!current.getAsBoolean()||w.latest==null)return null;RegionImage image=w.latest.retain();
+    try{return new FrameCircuit.Input(w.width,w.height,w.frameAt,image.tiles(dependencies,copied),image::close);}
+    catch(RuntimeException|OutOfMemoryError error){image.close();throw error;}
+   }
   },frame->{
    Runnable result=sample.apply(frame);RegionPlan observed=dependencies.build();
    return result==null?null:()->{w.roiCopiedPixels=copied[0];w.roiCoveredPixels=observed.coveredPixels();if(w.roiPlan!=null&&plan.scope.equals(w.roiPlan.scope))w.roiPlan=observed;result.run();};
   },task->{s.h.post(task);},failure->{if(failure instanceof OutOfMemoryError)s.performance.memoryPressure();failed.run();});
-  // Keep this native image immutable until synchronous analysis ends. The frame
-  // thread may acquire the next image, but cannot replace/close this one yet.
-  try{frameWork.execute(()->{synchronized(w.frameLock){frameCircuit.run(request);}});}catch(RejectedExecutionException stopped){if(current.getAsBoolean())failed.run();}
+  // Leased immutable image: UI and capture keep moving while this worker analyzes.
+  try{frameWork.execute(()->frameCircuit.run(request));}catch(RejectedExecutionException stopped){if(current.getAsBoolean())failed.run();}
  }
  void trimFrameCircuit(){frameCircuit.requestTrim();try{frameWork.execute(frameCircuit::trim);}catch(RejectedExecutionException ignored){}}
  boolean check(Window w){if(w==null||w.id<=0||w.closed)return false;requestFrameRefresh(w);if(w.errors>=3){state(w,"画像取得エラー");return false;}if(w.frameAt<=0||SystemClock.uptimeMillis()-w.frameAt>1500){state(w,"新しい画像を待機");return false;}Screen info=screen(w);if(info.pkg.isEmpty()){long now=SystemClock.uptimeMillis();if(w.missingScreenAt==0)w.missingScreenAt=now;if(now-w.missingScreenAt>=5000)requestDisplayRecovery(w,"対象アプリの表示情報が5秒以上取得できません");state(w,"表示情報待ち");return false;}w.missingScreenAt=0;if(DialogSafety.classify(info.text)!=0){state(w,"保護表示で待機");s.pilot.note(s.appLabel(w.pkg)+"：アカウント・異常表示のためタップ禁止");return false;}return true;}
@@ -319,10 +321,10 @@ final class VirtualWindows {
   final ImageReader fresh;
   try{fresh=ImageReader.newInstance(w.width,w.height,PixelFormat.RGBA_8888,3);fresh.setOnImageAvailableListener(reader->frame(w,reader,task),w.frameHandler);}
   catch(Exception error){failed.accept(brief(error));return;}
-  final ImageReader prior=w.reader;
+  final ImageReader prior=w.reader;final FrameResource priorLifetime=w.readerLifetime;final FrameResource freshLifetime=new FrameResource(fresh::close);
   w.rebuilding=true;w.launched=false;w.id=-1;w.inputLane.cancel();frameQueue.remove(oldId,task);
-  synchronized(w.frameLock){w.reader=fresh;w.surface=fresh.getSurface();if(w.latest!=null)w.latest.close();w.latest=null;w.roiPlan=RegionPlan.full(w.width,w.height,"rebuild:"+task+":"+oldId);w.frameAt=0;w.decodeDueAt=0;}
-  if(prior!=null){prior.setOnImageAvailableListener(null,null);prior.close();}
+  synchronized(w.frameLock){w.reader=fresh;w.readerLifetime=freshLifetime;w.surface=fresh.getSurface();if(w.latest!=null)w.latest.close();w.latest=null;w.roiPlan=RegionPlan.full(w.width,w.height,"rebuild:"+task+":"+oldId);w.frameAt=0;w.decodeDueAt=0;}
+  if(prior!=null){prior.setOnImageAvailableListener(null,null);priorLifetime.release();}
   w.screenInfo=null;w.screenInfoId=-1;w.screenInfoAt=0;w.previewTouchActive=false;w.preview.clear();
   state(w,"この画面を再作成中");record("#"+oldId+" "+s.appLabel(w.pkg)+" 復帰上限後に対象画面だけを再作成 / "+w.width+"x"+w.height+" / "+w.density+" dpi");
   if(s.progressErrors!=null)s.progressErrors.action(w.pkg,"仮想画面の再作成を要求",oldId,Float.NaN,Float.NaN);
@@ -363,7 +365,7 @@ final class VirtualWindows {
  }
  void cleanupDisplay(Window w,VirtualProtocol service,int id){if(w.id==id)w.id=-1;try{if(service!=null)service.release(id);else if(w.local!=null){w.local.release();w.local=null;}}catch(Exception ignored){}}
  void release(Window w){int id=w.id;frameQueue.remove(id,generation);w.id=-1;w.inputLane.cancel();VirtualProtocol service=remote;if(id>0&&!w.io.isShutdown())w.io.execute(()->cleanupDisplay(w,service,id));w.io.shutdown();
-  synchronized(w.frameLock){if(w.latest!=null){w.latest.close();w.latest=null;}if(w.reader!=null){w.reader.setOnImageAvailableListener(null,null);w.reader.close();w.reader=null;}}
+  synchronized(w.frameLock){if(w.latest!=null){w.latest.close();w.latest=null;}if(w.reader!=null){w.reader.setOnImageAvailableListener(null,null);w.readerLifetime.release();w.readerLifetime=null;w.reader=null;}}
   if(w.frames!=null)w.frames.quitSafely();w.preview.clear();
  }
  void remove(Window w){if(pcPresentation&&PcControl.ownsRun(s)){hidePreview(w);record("#"+w.id+" スマホのプレビューを非表示（PC処理継続）");s.pilot.note("スマホのプレビューを隠しました / PCの各画面は処理継続");return;}s.stop();w.closed=true;release(w);windows.remove(w);if(windows.isEmpty())selected=false;try{s.wm.removeView(w.view);}catch(Exception ignored){}s.pilot.note("仮想画面を閉じました / 自律停止");}

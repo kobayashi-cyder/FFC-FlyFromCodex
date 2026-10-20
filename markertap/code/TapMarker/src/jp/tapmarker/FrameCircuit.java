@@ -16,9 +16,11 @@ final class FrameCircuit {
  interface Clock {long now();}
  interface Dispatcher {void post(Runnable task);}
  static final class Input {
-  final int width,height;final long capturedAt;final RegionSampler.Pixels source;
+  final int width,height;final long capturedAt;final RegionSampler.Pixels source;private Runnable release;
   Input(int width,int height,long at){this(width,height,at,null);}
-  Input(int width,int height,long at,RegionSampler.Pixels source){this.width=width;this.height=height;capturedAt=at;this.source=source;}
+  Input(int width,int height,long at,RegionSampler.Pixels source){this(width,height,at,source,null);}
+  Input(int width,int height,long at,RegionSampler.Pixels source,Runnable release){this.width=width;this.height=height;capturedAt=at;this.source=source;this.release=release;}
+  void close(){Runnable current=release;release=null;if(current!=null)current.run();}
  }
  static final class Workspace {
   private int[] pixels;long allocations,allocatedBytes;
@@ -38,7 +40,7 @@ final class FrameCircuit {
   public int get(int x,int y){RegionSampler.Pixels current=pixels;if(current==null)throw new IllegalStateException("pixel lease has ended");return current.get(x,y);}
   void checkLease(){if(pixels==null)throw new IllegalStateException("pixel lease has ended");}
   // FrameSampleCache rechecks the lease at every cache entry, then samples this
-  // final-array view synchronously. No repeated lease check for every subpixel.
+  // immutable view synchronously. No repeated lease check for every subpixel.
   RegionSampler.Pixels samplingView(){checkLease();return pixels;}
   void close(){pixels=null;}
  }
@@ -77,7 +79,7 @@ final class FrameCircuit {
     }catch(RuntimeException|OutOfMemoryError error){failure=error;failures++;signal=false;if(node==CANCEL||node==RELEASE)break;}
     node=signal?YES[node]:NO[node];
    }
-  }finally{if(frame!=null)frame.close();if(trimRequested){workspace.clear();trimRequested=false;}lastTrace=trace;retainedBytes=workspace.retainedBytes();}
+  }finally{if(frame!=null)frame.close();if(input!=null)input.close();if(trimRequested){workspace.clear();trimRequested=false;}lastTrace=trace;retainedBytes=workspace.retainedBytes();}
  }
  void requestTrim(){trimRequested=true;}
  synchronized void trim(){workspace.clear();retainedBytes=0;trimRequested=false;}
