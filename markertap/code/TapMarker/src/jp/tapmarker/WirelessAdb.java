@@ -19,6 +19,40 @@ final class WirelessAdb {
  void note(String message){s.pilot.note(message);}
  void guide(boolean openWindows){if(Build.VERSION.SDK_INT<30){note("端末内接続にはAndroid11以降が必要です");return;}AlertDialog d=new UiStrings.DialogBuilder(s).setTitle("端末だけで接続").setMessage("PC・Shizukuは不要です。起動時にはWi-Fi接続が必要です。起動した実行部はADB接続から切り離します。起動済みの実行部はWi-Fi切断だけでは終了させません。実行部が終了した場合はWi-Fi復帰後に再接続し、実行中だった仮想画面を復旧します。USBデバッグはオンに保ってください（ケーブル接続は不要）。再起動やアプリの強制停止後は再度起動が必要です。\n\nワイヤレスデバッグを有効にし、「ペア設定コードを使用してデバイスをペア設定」を開いてください。表示されたコードと接続先をユーザー補助で読み取り、ペアリング・接続・実行部の起動を進めます。\n\n保存済みの鍵が使える場合は再ペアリングせず接続します。読み取り不可の場合は「接続情報を入力」を使えます。「全停止」で接続準備も取り消します。").setPositiveButton("接続を開始",(a,b)->begin(openWindows)).setNegativeButton("閉じる",null).create();d.getWindow().setType(WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY);d.show();}
  void begin(boolean openWindows){resumeMaintenance();s.stop();s.pilot.virtualWindows.close();bootstrap(openWindows,false);}
+/** Explicit user action: retire the current ADB backend before reconnecting. */
+ void confirmRestart(){
+  if(PcControl.ownsRun(s)||s.pilot.virtualWindows.pcPresentation){note("PC利用中の実行部はPC側を停止してから再起動してください");return;}
+  AlertDialog dialog=new UiStrings.DialogBuilder(s).setTitle("端末内実行部を再起動").setMessage("すべての自動操作と仮想画面を停止し、古い実行部を終了してから接続をやり直します。アプリの選択と設定は保持しますが、画面は再度開く必要があります。\n\n再接続にはWi-Fiとワイヤレスデバッグが必要です。Wi-Fi未接続の場合は停止のみ行います。")
+   .setPositiveButton("再起動する",(d,which)->restartBackend()).setNegativeButton("キャンセル",null).create();
+  dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY);dialog.show();
+ }
+ void restartBackend(){
+  if(destroyed)return;
+  if(PcControl.ownsRun(s)||s.pilot.virtualWindows.pcPresentation){note("PC側で実行中のため再起動しません");return;}
+  // An explicit restart must not trigger stale-session automatic restoration.
+  s.stopAll("手動の実行部再起動");
+  VirtualWindows windows=s.pilot.virtualWindows;
+  windows.cancelRecovery();windows.closeViews();windows.remote=null;windows.selected=false;
+  windows.pending=false;windows.connecting=false;windows.autoPending=false;
+  windows.requested=null;windows.adbMode=false;
+  final IBinder old=VirtualBridgeProvider.connected();
+  note("再起動：仮想画面を解放し、古い実行部の終了を確認しています");
+  // Binder shutdown may block; keep it off the accessibility/UI thread.
+  worker.execute(()->{
+   boolean stopped=true;String error="";
+   if(old!=null)try{new VirtualProtocol(old).shutdown();}
+   catch(Exception failure){stopped=false;error=VirtualWindows.brief(failure);}
+   final boolean complete=stopped;final String failureText=error;
+   s.h.post(()->{
+    if(destroyed)return;
+    if(!complete){note("古い実行部の終了を確認できません："+failureText+" / 再接続を中断しました");return;}
+    if(old!=null)VirtualBridgeProvider.forget(old);
+    if(!wifiConnected()){note("実行部を停止しました。Wi-Fi接続後に「端末内接続」から開始してください");return;}
+    resumeMaintenance();bootstrap(false,false);
+    note("再接続を開始しました。接続後に対象アプリの画面を開き直してください");
+   });
+  });
+ }
  void bootstrap(boolean openWindows,boolean silent){cancel();quiet=silent;working=true;pairing=false;connecting=false;int task=++generation;after=openWindows?()->s.pilot.virtualWindows.openAdb():null;connectPort=lastTriedPort=0;attempted="";settingsOpened=false;until=SystemClock.uptimeMillis()+(silent?30000:300000);
   IBinder existing=VirtualBridgeProvider.connected();if(existing!=null){VirtualProtocol backend=new VirtualProtocol(existing);boolean current=false;try{current=backend.implementation()==VirtualProtocol.IMPLEMENTATION;}catch(Exception ignored){}if(current){finish(task);return;}VirtualBridgeProvider.forget(existing);try{backend.shutdown();}catch(Exception ignored){}note("旧実行部を終了 / 更新済みAPKから接続し直します");}
   if(!wifiConnected()){cancel();note("実行部が未起動です / 起動時にはWi-Fi接続が必要です。通常画面の連打は利用できます");return;}
