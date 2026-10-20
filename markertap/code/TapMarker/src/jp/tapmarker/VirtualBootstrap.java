@@ -19,7 +19,7 @@ public final class VirtualBootstrap {
    if(result==null)throw new IllegalStateException("APKから接続確認を取得できません");
    if(result.getBoolean("alreadyConnected")){System.out.println("TAPMARKER_ADB_ALREADY_CONNECTED");return;}
    IBinder host=result.getBinder("host");if(host==null)throw new IllegalStateException("APKの接続監視を開始できません");
-   host.linkToDeath(()->{running.closeAll();System.exit(0);},0);
+   host.linkToDeath(()->{try{running.closeAll();}finally{System.exit(0);}},0);
    Runtime.getRuntime().addShutdownHook(new Thread(()->running.closeAll(),"tapmarker-cleanup"));
    System.out.println("TAPMARKER_ADB_CONNECTED");System.out.flush();
    Looper.loop();
