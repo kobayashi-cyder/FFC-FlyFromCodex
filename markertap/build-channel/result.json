@@ -1,7 +1,22 @@
 {
-  "run_id": "39492670305",
-  "status": "failed",
-  "stage": "publish",
-  "error_type": "CalledProcessError",
-  "apk_published": false
+  "run_id": "39493653046",
+  "status": "complete",
+  "version_name": "1.119",
+  "version_code": 122,
+  "package": "jp.tapmarker.lite",
+  "core_tests": "passed",
+  "signing_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "apk_sha256": "40615591b25dce893545a2827213e06e4f35cf4c87864080c58737477f1bbe80",
+  "apk_size_bytes": 5786452,
+  "zip_alignment": "passed_16KB",
+  "source_baseline": "1.117",
+  "source_overlay_commit": "bffbf72adebb65f73550a6849631e889c17d0ee9",
+  "device_tested": false,
+  "native_resolution": "implemented",
+  "legacy_low_resolution_selection": "disabled",
+  "signing_key_included": false,
+  "region_capture": "native_tile_reads_no_full_argb_array",
+  "region_preview": "fresh_pixel_comparison_per_patch",
+  "graph_external_helpers": "same_frame_dynamic_tile_expansion",
+  "device_multiplex_capacity": "not_measured"
 }
