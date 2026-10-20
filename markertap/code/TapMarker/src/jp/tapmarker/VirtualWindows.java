@@ -8,7 +8,7 @@ final class VirtualWindows {
  // A screenshot buffer must not wait behind up to four expensive recognition
  // requests before being copied, otherwise a fresh frame expires in the queue.
  final ExecutorService frameCopyWork=Executors.newSingleThreadExecutor(task->new Thread(task,"TapMarker-frame-copy"));
- boolean selected,pending,connecting,bound,adbMode,destroyed,pcPresentation;volatile boolean autoPending;String[] requested;long remoteEpoch;VirtualPreparation preparation;
+ boolean selected,pending,connecting,bound,adbMode,destroyed,pcPresentation,fatalClosing;volatile boolean autoPending;String[] requested;long remoteEpoch;VirtualPreparation preparation;
  final BackendRecoveryBudget recoveryBudget=new BackendRecoveryBudget();
  boolean recoverPending,recoverRun,recoverMinimized;String[] recoverTargets;
  int previewPercent;boolean panelHeaders;VirtualWindowPanel headings;
@@ -130,10 +130,23 @@ final class VirtualWindows {
   if(!attach(binder))throw new IllegalStateException(lastStartError);
   createViews(true);
  }
- boolean attach(IBinder binder){remote=new VirtualProtocol(binder);try{if(remote.implementation()!=VirtualProtocol.IMPLEMENTATION)throw new IllegalStateException("実行部が旧版です。「端末だけで接続」から再起動してください");binder.linkToDeath(()->s.h.post(()->{if(remote==null||remote.binder!=binder)return;backendLost();}),0);return true;}catch(Exception e){remote=null;startFailed("仮想画面サービス接続："+brief(e));return false;}}
- void backendLost(){if(s.pilot.learning!=null&&s.pilot.learning.active)s.pilot.learning.cancel();boolean wanted=adbMode&&!windows.isEmpty();boolean running=autoPending||s.pilot.splitPilot.active;boolean small=panelHeaders;String[] targets=requested==null?null:requested.clone();s.stop();closeViews();remote=null;
-  if(wanted&&(running||s.pilot.wireless.automatic())&&!s.pilot.wireless.modePolicy.paused){if(recoveryBudget.request(SystemClock.uptimeMillis())){recoverPending=true;recoverRun=running;recoverMinimized=small;recoverTargets=targets;s.pilot.wireless.modePolicy.requestSessionRecovery();}else{record("実行部が10分間に繰り返し終了 / 自動再作成の上限に到達。開始操作で再試行できます");s.pilot.note("実行部が繰り返し終了 / 画面数を確認して開始し直してください");return;}}
-  s.pilot.note(recoverPending?"実行部切断 / 本体画面へ移さず、Wi-Fiで仮想画面の復帰を待機":"実行部切断 / 仮想画面停止。接続後に再開してください");
+ boolean attach(IBinder binder){remote=new VirtualProtocol(binder);try{if(remote.implementation()!=VirtualProtocol.IMPLEMENTATION)throw new IllegalStateException("実行部が旧版です。「端末だけで接続」から再起動してください");remote.registerOwner(VirtualBridgeProvider.ownerBinder());binder.linkToDeath(()->s.h.post(()->{if(remote==null||remote.binder!=binder)return;backendLost();}),0);return true;}catch(Exception e){remote=null;startFailed("仮想画面サービス接続："+brief(e));return false;}}
+ // A dead backend or a crashed display is a fatal whole-session stop, not a recovery.
+ void backendLost(){fatalSession("実行部の異常終了 / すべて停止");}
+ void fatalSession(String reason){
+  if(destroyed||fatalClosing)return;
+  fatalClosing=true;
+  try{
+   try{s.stopAll(reason);}catch(Throwable ignored){}
+   try{cancelRecovery();}catch(Throwable ignored){}
+   try{closeViews();}catch(Throwable ignored){}
+   VirtualProtocol previous=remote;
+   remote=null;selected=false;pending=false;connecting=false;autoPending=false;adbMode=false;pcPresentation=false;requested=null;
+   if(previous!=null)try{previous.destroyAsync();}catch(Throwable ignored){}
+   VirtualBridgeProvider.emergencyStop();
+   record("異常検出・全停止："+reason);
+   s.pilot.note("全停止："+reason+" / 残存実行部も終了要求済み。再開は手動操作");
+  }finally{fatalClosing=false;}
  }
  void cancelRecovery(){recoverPending=false;recoverRun=false;recoverTargets=null;s.pilot.wireless.modePolicy.cancelSessionRecovery();}
  void backendAvailable(){if(!recoverPending||destroyed||s.pilot.wireless.modePolicy.paused)return;IBinder binder=VirtualBridgeProvider.connected();if(binder==null)return;String[] targets=recoverTargets;boolean run=recoverRun,small=recoverMinimized;if(targets==null||targets.length==0){cancelRecovery();return;}if(attach(binder)){cancelRecovery();requested=targets;adbMode=true;createViews(run);if(small)minimize(true);}}
@@ -252,7 +265,7 @@ final class VirtualWindows {
   w.io.execute(()->{int id=-1;try{if(w.closed||task!=generation||!autoPending)return;if(service==null){DisplayManager manager=(DisplayManager)s.getSystemService(Context.DISPLAY_SERVICE);w.local=manager.createVirtualDisplay("TapMarker:"+w.pkg,w.width,w.height,w.density,w.surface,VirtualDisplayPolicy.flags(Build.VERSION.SDK_INT,false),null,s.h);if(w.local==null)throw new IllegalStateException("仮想画面作成失敗");id=w.local.getDisplay().getDisplayId();if(id<=0)throw new IllegalStateException("画面IDが無効です");if(w.closed||task!=generation||!autoPending){cleanupDisplay(w,service,id);return;}w.id=id;launchLocal(w,intent);}else{id=service.create(w.surface,w.width,w.height,w.density,intent.getComponent().flattenToString());if(w.closed||task!=generation||!autoPending){service.release(id);return;}service.launch(id);}final int created=id;s.h.post(()->{if(w.closed||task!=generation||!autoPending){cleanupDisplay(w,service,created);return;}w.id=created;w.launched=true;preparation.launched(w.startIndex);state(w,"表示確認中");});}catch(Exception error){if(id>0)cleanupDisplay(w,service,id);s.h.post(()->{if(task==generation&&!w.closed)failure(w,error.getClass().getSimpleName()+": "+error.getMessage());});}});
  }
  void launchLocal(Window w,Intent intent){if(w.id<=0)throw new IllegalStateException("仮想画面がありません");intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP);ActivityManager manager=(ActivityManager)s.getSystemService(Context.ACTIVITY_SERVICE);if(!manager.isActivityStartAllowedOnDisplay(s,w.id,intent))throw new SecurityException("Androidが標準権限でのゲーム起動を拒否（画面作成は成功）");s.startActivity(intent,ActivityOptions.makeBasic().setLaunchDisplayId(w.id).toBundle());}
- void failure(Window w,String reason){if(w.failed)return;if(s.progressErrors!=null)s.progressErrors.fatal(w.pkg,null,"WINDOW_FAILED",reason);w.failed=true;w.closed=true;w.error=reason;VirtualResolutionLab.failed(s,w,reason);if(preparation!=null)preparation.fail(w.startIndex);release(w);state(w,"起動不可");TextView error=new UiStrings.DisplayText(s);error.setTextColor(Color.WHITE);error.setTextSize(12);error.setPadding(8,8,8,8);error.setText(reason);((FrameLayout)w.preview.getParent()).addView(error,new FrameLayout.LayoutParams(-1,-1));s.pilot.note(s.appLabel(w.pkg)+"："+reason);}
+ void failure(Window w,String reason){if(w.failed)return;if(s.progressErrors!=null)s.progressErrors.fatal(w.pkg,null,"WINDOW_FAILED",reason);w.failed=true;w.closed=true;w.error=reason;VirtualResolutionLab.failed(s,w,reason);if(preparation!=null)preparation.fail(w.startIndex);release(w);state(w,"起動不可");TextView error=new UiStrings.DisplayText(s);error.setTextColor(Color.WHITE);error.setTextSize(12);error.setPadding(8,8,8,8);error.setText(reason);((FrameLayout)w.preview.getParent()).addView(error,new FrameLayout.LayoutParams(-1,-1));s.pilot.note(s.appLabel(w.pkg)+"："+reason);s.h.post(()->fatalSession("仮想画面の起動失敗："+reason));}
  Screen screen(Window w){long now=SystemClock.uptimeMillis();if(w.screenInfo!=null&&w.screenInfoId==w.id&&now-w.screenInfoAt<100)return w.screenInfo;Screen result=readScreen(w);w.screenInfo=result;w.screenInfoId=w.id;w.screenInfoAt=now;return result;}
  void invalidateScreenInfo(){for(Window w:windows)w.screenInfo=null;}
  Screen readScreen(Window w){Screen result=new Screen();if(w.id<=0)return result;List<AccessibilityWindowInfo> list=s.getWindowsOnAllDisplays().get(w.id);if(list==null)return result;int layer=Integer.MIN_VALUE;for(AccessibilityWindowInfo a:list){if(a.getType()!=AccessibilityWindowInfo.TYPE_APPLICATION||a.getLayer()<layer)continue;AccessibilityNodeInfo root=a.getRoot();if(root==null)continue;try{result.pkg=root.getPackageName()==null?"":root.getPackageName().toString();StringBuilder text=new StringBuilder();collect(root,text,new int[]{400});result.text=text.toString();result.bounds=new Rect();a.getBoundsInScreen(result.bounds);layer=a.getLayer();}finally{root.recycle();}}return result;}
@@ -370,7 +383,7 @@ final class VirtualWindows {
   if(w.frames!=null)w.frames.quitSafely();w.preview.clear();
  }
  void remove(Window w){if(pcPresentation&&PcControl.ownsRun(s)){hidePreview(w);record("#"+w.id+" スマホのプレビューを非表示（PC処理継続）");s.pilot.note("スマホのプレビューを隠しました / PCの各画面は処理継続");return;}s.stop();w.closed=true;release(w);windows.remove(w);if(windows.isEmpty())selected=false;try{s.wm.removeView(w.view);}catch(Exception ignored){}s.pilot.note("仮想画面を閉じました / 自律停止");}
- void closeViews(){generation++;for(Window w:new ArrayList<>(windows)){w.closed=true;release(w);try{s.wm.removeView(w.view);}catch(Exception ignored){}}windows.clear();trimFrameCircuit();refreshHeadings();}
+ void closeViews(){generation++;for(Window w:new ArrayList<>(windows)){w.closed=true;try{release(w);}catch(Throwable ignored){}try{s.wm.removeView(w.view);}catch(Throwable ignored){}}windows.clear();try{trimFrameCircuit();}catch(Throwable ignored){}try{refreshHeadings();}catch(Throwable ignored){}}
  void close(){pcPresentation=false;selected=false;pending=false;connecting=false;s.stop();closeViews();}
  void destroy(){destroyed=true;if(displayManager!=null)displayManager.unregisterDisplayListener(displayListener);close();frameWork.shutdown();frameCopyWork.shutdown();Shizuku.removeRequestPermissionResultListener(permissions);if(bound&&Shizuku.pingBinder())try{Shizuku.unbindUserService(args,connection,true);}catch(Exception ignored){}remote=null;}
 }
