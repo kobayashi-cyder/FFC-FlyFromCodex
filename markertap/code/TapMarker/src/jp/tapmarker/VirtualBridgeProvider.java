@@ -8,7 +8,7 @@ public final class VirtualBridgeProvider extends ContentProvider {
  private static String expectedLocalToken,serviceLocalToken;
  static void prepareLocal(String token){if(!LocalLaunch.validToken(token))throw new IllegalArgumentException();synchronized(LOCK){expectedLocalToken=token;}}
  static void finishLocal(String token){synchronized(LOCK){if(token!=null&&token.equals(expectedLocalToken))expectedLocalToken=null;}}
- static void cancelLocal(String token){IBinder old=null;synchronized(LOCK){if(token!=null&&token.equals(expectedLocalToken))expectedLocalToken=null;if(token!=null&&token.equals(serviceLocalToken)){old=service;service=null;serviceLocalToken=null;}}if(old!=null)try{new VirtualProtocol(old).shutdown();}catch(RemoteException ignored){}}
+ static void cancelLocal(String token){IBinder old=null;synchronized(LOCK){if(token!=null&&token.equals(expectedLocalToken))expectedLocalToken=null;if(token!=null&&token.equals(serviceLocalToken)){old=service;service=null;serviceLocalToken=null;}}if(old!=null)try{new VirtualProtocol(old).destroyAsync();}catch(Throwable ignored){}}
  static IBinder connected(){synchronized(LOCK){return service!=null&&service.isBinderAlive()?service:null;}}
  static void forget(IBinder expected){synchronized(LOCK){if(service==expected){service=null;serviceLocalToken=null;expectedLocalToken=null;}}}
  static boolean localConnected(String token){synchronized(LOCK){return token!=null&&token.equals(serviceLocalToken)&&service!=null&&service.isBinderAlive();}}
@@ -22,7 +22,7 @@ public final class VirtualBridgeProvider extends ContentProvider {
   int uid=Binder.getCallingUid();if(uid!=2000&&uid!=0)throw new SecurityException("ADBからの接続だけを受け付けます");
   if(method!=null&&method.startsWith("pc_"))return PcControl.call(method,argument,getContext());
   if("status".equals(method)){Bundle reply=new Bundle();String token=extras==null?null:extras.getString("localToken");synchronized(LOCK){reply.putBoolean("connected",token!=null&&token.equals(serviceLocalToken)&&service!=null&&service.isBinderAlive());}return reply;}
-  if("stop".equals(method)){IBinder old;synchronized(LOCK){old=service;service=null;serviceLocalToken=null;expectedLocalToken=null;}if(old!=null)try{new VirtualProtocol(old).shutdown();}catch(RemoteException ignored){}return new Bundle();}
+  if("stop".equals(method)){IBinder old;synchronized(LOCK){old=service;service=null;serviceLocalToken=null;expectedLocalToken=null;}if(old!=null)try{new VirtualProtocol(old).destroyAsync();}catch(Throwable ignored){}return new Bundle();}
   if(!"connect".equals(method)||extras==null||extras.getInt("version")!=VERSION)throw new IllegalArgumentException("ADB実行部とAPKのバージョンが一致しません");
   IBinder incoming=extras.getBinder("service");
   try{if(incoming==null||!incoming.isBinderAlive()||!VirtualProtocol.DESCRIPTOR.equals(incoming.getInterfaceDescriptor()))throw new IllegalArgumentException("仮想画面の実行部が無効です");}catch(RemoteException e){throw new IllegalStateException("ADB実行部が終了しました",e);}
