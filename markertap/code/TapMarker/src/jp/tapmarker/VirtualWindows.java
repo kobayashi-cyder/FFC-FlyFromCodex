@@ -244,7 +244,7 @@ final class VirtualWindows {
    try{synchronized(w.frameLock){if(!w.closed&&task==generation&&w.latest!=null)data=RegionPreviewData.capture(plan,width,w.frameAt,w.latest.points());}}
    catch(Exception unavailable){}catch(OutOfMemoryError pressure){s.performance.memoryPressure();}
    final RegionPreviewData ready=data;
-   s.h.post(()->{w.previewPending=false;if(ready==null||w.closed||w.minimized||task!=generation||id!=w.id||revision!=w.previewRevision||w.roiPlan==null||!plan.scope.equals(w.roiPlan.scope)||SystemClock.uptimeMillis()-ready.capturedAt>1500)return;try{w.preview.publish(ready);}catch(OutOfMemoryError pressure){s.performance.memoryPressure();}});
+   s.h.post(()->{w.previewPending=false;if(ready==null||w.closed||w.minimized||task!=generation||id!=w.id||revision!=w.previewRevision||w.roiPlan==null||!plan.sameCoverage(w.roiPlan)||SystemClock.uptimeMillis()-ready.capturedAt>1500)return;try{w.preview.publish(ready);}catch(OutOfMemoryError pressure){s.performance.memoryPressure();}});
   }))w.previewPending=false;
  }
  void create(Window w,int task){if(task!=generation||w.closed||!autoPending||!preparation.begin(w.startIndex))return;Intent intent=s.getPackageManager().getLaunchIntentForPackage(w.pkg);if(intent==null||intent.getComponent()==null){failure(w,"起動先が見つかりません");return;}VirtualProtocol service=remote;
@@ -323,7 +323,7 @@ final class VirtualWindows {
   w.rebuilding=true;w.launched=false;w.id=-1;w.inputLane.cancel();frameQueue.remove(oldId,task);
   synchronized(w.frameLock){w.reader=fresh;w.surface=fresh.getSurface();if(w.latest!=null)w.latest.close();w.latest=null;w.roiPlan=RegionPlan.full(w.width,w.height,"rebuild:"+task+":"+oldId);w.frameAt=0;w.decodeDueAt=0;}
   if(prior!=null){prior.setOnImageAvailableListener(null,null);prior.close();}
-  w.screenInfo=null;w.screenInfoId=-1;w.screenInfoAt=0;w.previewTouchActive=false;
+  w.screenInfo=null;w.screenInfoId=-1;w.screenInfoAt=0;w.previewTouchActive=false;w.preview.clear();
   state(w,"この画面を再作成中");record("#"+oldId+" "+s.appLabel(w.pkg)+" 復帰上限後に対象画面だけを再作成 / "+w.width+"x"+w.height+" / "+w.density+" dpi");
   if(s.progressErrors!=null)s.progressErrors.action(w.pkg,"仮想画面の再作成を要求",oldId,Float.NaN,Float.NaN);
   int receipt=w.restoreReceipt.begin(true,SystemClock.uptimeMillis());

@@ -29,6 +29,14 @@ public final class RegionCaptureTest {
   RegionPlan.Builder expanded=new RegionPlan.Builder(plan);expanded.add(400,100,32,32);
   check(!plan.contains(401,101)&&expanded.build().contains(401,101),"helper dependency expansion leaves original plan immutable");
   check(plan.coveredPixels()<1080L*2424/100,"small disjoint regions stay small");
+  check(!plan.sameCoverage(expanded.build())&&!plan.previewKey.equals(expanded.build().previewKey),"runtime layout/helper dependency movement changes render identity");
+  PhaseEngine engine=new PhaseEngine();PhaseEngine.Phase phase=new PhaseEngine.Phase();phase.id="work";engine.phases.put(phase.id,phase);
+  for(int i=0;i<3;i++){PhaseEngine.Region region=new PhaseEngine.Region();region.id="r"+i;region.name=region.id;region.bounds=new float[]{i*.3f,.1f,i*.3f+.05f,.15f};engine.regions.put(region.id,region);}
+  PhaseEngine.Watch watch=new PhaseEngine.Watch();watch.id="check";watch.regionId="r0";watch.guardIds=new String[]{"r1"};phase.watches.add(watch);engine.enter("work",1000);
+  RegionPlan graph=RegionPlan.regions(1080,2424,"graph:work",engine.activeRegions());
+  check(graph.contains(10,250)&&graph.contains(330,250)&&!graph.contains(660,250),"automaton plan selects current target and guard, excludes inactive region");
+  String oldKey=graph.previewKey;engine.regions.get("r0").bounds=new float[]{.8f,.1f,.85f,.15f};
+  check(!RegionPlan.regions(1080,2424,"graph:work",engine.activeRegions()).previewKey.equals(oldKey)&&graph.contains(10,250),"mutable graph bounds produce a new identity without mutating in-flight plan");
   RegionPlan.Builder edges=new RegionPlan.Builder(65,67,"edges");edges.add(64,66,4,4);check(edges.build().coveredPixels()==3&&edges.build().contains(64,66),"last native tile clips at exact screen dimensions");
  }
  static void circuit(){
@@ -64,6 +72,8 @@ public final class RegionCaptureTest {
   for(RegionPreviewData.Patch p:same.patches)check(!cache.update(p)&&cache.pixels.get(p.key())==identity.get(p.key()),"fresh identical pixels keep bitmap backing");
   RegionPreviewData moved=RegionPreviewData.capture(plan,128,1200,(x,y)->x==2&&y==3?0xffffffff:0xff000000|x<<8|y);
   changed=0;for(RegionPreviewData.Patch p:moved.patches)if(cache.update(p))changed++;check(changed==1,"single dirty region updates one display patch");
+  RegionPlan.Builder changedLayout=new RegionPlan.Builder(plan);changedLayout.add(40,40,32,32);
+  check(cache.resetFor(RegionPreviewData.capture(changedLayout.build(),128,1250,(x,y)->0xff112233))&&cache.pixels.isEmpty(),"helper/layout tile changes clear stale display patches");
   RegionPlan next=RegionPlan.full(128,256,"display12:state2");check(cache.resetFor(RegionPreviewData.capture(next,64,1300,(x,y)->0xff112233))&&cache.pixels.isEmpty(),"state/display/resize clears retained image history");
   int count=0;RegionPlan.Builder narrow=new RegionPlan.Builder(128,256,"narrow");narrow.add(1,1,1,1);
   RegionPreviewData masked=RegionPreviewData.capture(narrow.build(),64,1400,(x,y)->0xff123456);for(RegionPreviewData.Patch p:masked.patches)count+=p.present.cardinality();check(count==256,"only included source tiles generate preview pixels at reduced display scale");

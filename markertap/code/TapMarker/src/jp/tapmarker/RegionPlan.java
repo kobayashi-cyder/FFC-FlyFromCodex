@@ -3,8 +3,8 @@ import java.util.*;
 /** Native-coordinate dependency tiles. Distant areas never become a bounding box. */
 final class RegionPlan {
  static final int SIDE=32;
- final int width,height,columns;final String scope;private final BitSet tiles;
- private RegionPlan(int w,int h,String scope,BitSet tiles){width=w;height=h;columns=(w+SIDE-1)/SIDE;this.scope=scope;this.tiles=(BitSet)tiles.clone();}
+ final int width,height,columns;final String scope,previewKey;private final BitSet tiles;
+ private RegionPlan(int w,int h,String scope,BitSet tiles){width=w;height=h;columns=(w+SIDE-1)/SIDE;this.scope=scope;this.tiles=(BitSet)tiles.clone();previewKey=scope+":"+w+"x"+h+":"+Arrays.toString(this.tiles.toLongArray());}
  static RegionPlan full(int w,int h,String scope){Builder b=new Builder(w,h,scope);b.add(0,0,w,h);return b.build();}
  static RegionPlan regions(int w,int h,String scope,List<PhaseEngine.Region> regions){
   Builder b=new Builder(w,h,scope);StringBuilder identity=new StringBuilder(scope);
@@ -12,6 +12,7 @@ final class RegionPlan {
   return new RegionPlan(w,h,identity.toString(),b.tiles);
  }
  boolean contains(int x,int y){return x>=0&&y>=0&&x<width&&y<height&&tiles.get((y/SIDE)*columns+x/SIDE);}
+ boolean sameCoverage(RegionPlan other){return other!=null&&width==other.width&&height==other.height&&scope.equals(other.scope)&&tiles.equals(other.tiles);}
  int tileCount(){return tiles.cardinality();}
  long coveredPixels(){long n=0;for(int bit=tiles.nextSetBit(0);bit>=0;bit=tiles.nextSetBit(bit+1)){int x=(bit%columns)*SIDE,y=(bit/columns)*SIDE;n+=(long)Math.min(SIDE,width-x)*Math.min(SIDE,height-y);}return n;}
  static final class Builder {

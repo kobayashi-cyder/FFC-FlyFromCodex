@@ -9,7 +9,7 @@ final class RegionPreviewData {
   Patch(int x,int y,int w,int h){this.x=x;this.y=y;width=w;height=h;pixels=new int[w*h];}
   String key(){return x+":"+y;}
  }
- RegionPreviewData(RegionPlan plan,int w,int h,long at,List<Patch> patches){nativeWidth=plan.width;nativeHeight=plan.height;width=w;height=h;scope=plan.scope;capturedAt=at;this.patches=Collections.unmodifiableList(patches);}
+ RegionPreviewData(RegionPlan plan,int w,int h,long at,List<Patch> patches){nativeWidth=plan.width;nativeHeight=plan.height;width=w;height=h;scope=plan.previewKey;capturedAt=at;this.patches=Collections.unmodifiableList(patches);}
  static RegionPreviewData capture(RegionPlan plan,int requestedWidth,long at,RegionSampler.Pixels source){
   if(requestedWidth<=0||source==null)throw new IllegalArgumentException("preview");
   int width=Math.min(plan.width,requestedWidth),height=Math.max(1,Math.round(width*plan.height/(float)plan.width));
