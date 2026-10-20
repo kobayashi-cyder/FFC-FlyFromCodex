@@ -47,6 +47,7 @@ public class MainActivity extends Activity {
   LinearLayout setup=UiKit.card(this,content,"接続と確認","初回はユーザー補助を有効にし、端末内接続を設定します。");
   UiKit.full(this,setup,UiKit.button(this,"ユーザー補助を設定",false,()->startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))));
   LinearLayout checks=UiKit.row(this,setup);UiKit.cell(this,checks,UiKit.button(this,"端末内接続",false,()->service(s->s.pilot.wireless.guide(false))));UiKit.cell(this,checks,UiKit.button(this,"詳しい状況",false,()->service(s->s.pilot.virtualWindows.showStatus())));
+  UiKit.full(this,setup,UiKit.button(this,"端末内実行部を再起動",false,()->service(s->s.pilot.wireless.confirmRestart())));
  }
  void refreshStatus(){
   TapService s=TapService.instance;summary.setText(s==null?"ユーザー補助の接続が必要です":"画面ごとの状態を確認して操作できます");if(status==null)return;
