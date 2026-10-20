@@ -42,7 +42,7 @@ public final class RegionCaptureTest {
  static void circuit(){
   int w=1080,h=2424;int[] oracle=new int[w*h];ByteBuffer data=plane(w,h,w*4+16,4,7,new Random(91),oracle);
   RgbaRegionSource rgba=new RgbaRegionSource(data,w,h,w*4+16,4,null);long[] copied={0};RegionPlan.Builder dependencies=new RegionPlan.Builder(w,h,"native");
-  TilePixels tiles=new TilePixels(w,h,(x,y,cw,ch,p,stride)->{rgba.read(x,y,cw,ch,p,stride);dependencies.add(x,y,cw,ch);copied[0]+=(long)cw*ch;},64);
+  PointPixels tiles=new PointPixels(w,h,(x,y)->{copied[0]++;return rgba.get(x,y);},256,(x,y,cw,ch)->dependencies.add(x,y,cw,ch));
   FrameCircuit circuit=new FrameCircuit(()->1000);FrameCircuit.Frame[] leak={null};FrameSampleCache[] cache={null};
   List<Runnable> ui=new ArrayList<>();float[][] regions={{.01f,.02f,.07f,.06f},{.9f,.9f,.96f,.94f}};
   circuit.run(new FrameCircuit.Request(()->true,workspace->new FrameCircuit.Input(w,h,1000,tiles),frame->{
@@ -52,7 +52,7 @@ public final class RegionCaptureTest {
    return ()->{};
   },ui::add,error->{throw new AssertionError(error);}));
   check(circuit.workspace.allocations==0&&circuit.retainedBytes==0,"ROI input allocates no full-frame circuit workspace");
-  check(copied[0]<(long)w*h/20&&tiles.tiles.size()<=64,"native copy volume and tile retention are bounded");
+  check(copied[0]<(long)w*h/20&&tiles.tiles.size()<=256,"native copy volume and tile retention are bounded");
   check(dependencies.build().contains(400,200)&&!dependencies.build().contains(500,1200),"dynamic helper tiles are recorded without filling the gap");
   boolean refused=false;try{leak[0].get(1,1);}catch(IllegalStateException correct){refused=true;}check(refused,"native frame lease revoked before UI publication");
   refused=false;try{RegionSampler.sample(w,h,regions[0],cache[0]);}catch(IllegalStateException correct){refused=true;}check(refused,"cached features cannot bypass lease revocation");

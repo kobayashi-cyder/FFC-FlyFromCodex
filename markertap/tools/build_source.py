@@ -127,7 +127,7 @@ def main():
                 "source_overlay_commit": os.environ["GITHUB_SHA"], "device_tested": False,
                 "native_resolution": "implemented", "legacy_low_resolution_selection": "disabled",
                 "signing_key_included": False,
-                "region_capture": "native_tile_reads_no_full_argb_array",
+                "region_capture": "native_sparse_point_reads_no_full_argb_array",
                 "region_preview": "fresh_pixel_comparison_per_patch",
                 "graph_external_helpers": "same_frame_dynamic_tile_expansion",
                 "device_multiplex_capacity": "not_measured"}
@@ -150,7 +150,7 @@ def main():
             guide.write_text(guide.read_text().replace("実装をGitHubへ保存済み。ビルド・署名・回帰試験は実行待ちです。",
                 "ビルド・core回帰試験・従来版との署名証明書一致・APKの16KB境界配置を検証済みです。結果はGitHubのmarkertap/releases内に保存しています。"))
             work = ROOT / "markertap/WORK_NEXT.md"
-            work.write_text("# 再開時の状態\n\nv1.117完全アーカイブ + code/のv1.119変更を保存済み。restore_source.py --extract-toで復元できます。\n\nv1.119: 通常解像度・DPIを維持し、仮想画面の認識はImageReaderの元バッファから32pxタイル単位で直接取得します。通常経路の全画面ARGB配列化と再コピーを廃止。補助検出は同一画像の依存タイルを追加取得し、表示は新しい画素が同じならパッチを再利用します。\n\nビルド・core回帰試験（領域取得・52録画フレーム比較を含む）・既存版と同じ署名・16KB境界配置を検証済み。\n実機でのImageReader/GPU互換性、メモリ・解析時間・実タップ・多重化可能数は未確認。上限4と既存のメモリ判定を保持しています。\n手動学習・明示的な画像取得では必要に応じ全サイズBitmapを作ります。通常の認識では作りません。\n署名鍵は別保管です。\n")
+            work.write_text("# 再開時の状態\n\nv1.117完全アーカイブ + code/のv1.119変更を保存済み。restore_source.py --extract-toで復元できます。\n\nv1.119: 通常解像度・DPIを維持し、仮想画面の認識はImageReaderの元バッファから32pxタイルで管理し、要求された画素だけを直接取得します。通常経路の全画面ARGB配列化と再コピーを廃止。補助検出は同一画像の依存タイルを追加取得し、表示は新しい画素が同じならパッチを再利用します。\n\nビルド・core回帰試験（領域取得・52録画フレーム比較を含む）・既存版と同じ署名・16KB境界配置を検証済み。\n実機でのImageReader/GPU互換性、メモリ・解析時間・実タップ・多重化可能数は未確認。上限4と既存のメモリ判定を保持しています。\n手動学習・明示的な画像取得では必要に応じ全サイズBitmapを作ります。通常の認識では作りません。\n署名鍵は別保管です。\n")
             channel.command(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT)
             channel.command(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=ROOT)
             channel.command(["git", "add", "-f", "markertap/releases", "markertap/BACKUP_STATUS.json",

@@ -29,7 +29,9 @@ final class RegionImage implements AutoCloseable {
   return new RegionImage(w,h,at,source,new TilePixels(w,h,source,64),hardware::recycle);
  }
  RegionSampler.Pixels tiles(RegionPlan.Builder dependencies,long[] copied){
-  check();return new TilePixels(width,height,(x,y,w,h,out,stride)->{check();source.read(x,y,w,h,out,stride);if(dependencies!=null)dependencies.add(x,y,w,h);if(copied!=null)copied[0]+=(long)w*h;},64);
+  check();
+  if(points instanceof RgbaRegionSource)return new PointPixels(width,height,(x,y)->{check();int color=points.get(x,y);if(copied!=null)copied[0]++;return color;},256,(x,y,w,h)->{if(dependencies!=null)dependencies.add(x,y,w,h);});
+  return new TilePixels(width,height,(x,y,w,h,out,stride)->{check();source.read(x,y,w,h,out,stride);if(dependencies!=null)dependencies.add(x,y,w,h);if(copied!=null)copied[0]+=(long)w*h;},64);
  }
  RegionSampler.Pixels points(){check();return (x,y)->{check();return points.get(x,y);};}
  RegionImage retain(){resource.retain();return this;}
