@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
   setContentView(root);root.requestApplyInsets();
   LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);root.addView(header);
   TextView title=UiKit.text(this,"MarkerTap",28,UiKit.INK,true);header.addView(title,new LinearLayout.LayoutParams(0,-2,1));
-  header.addView(UiKit.text(this,"v1.121",13,UiKit.MUTED,false));
+  header.addView(UiKit.text(this,"v1.122",13,UiKit.MUTED,false));
   summary=UiKit.text(this,"",14,UiKit.MUTED,false);summary.setPadding(0,dp(4),0,dp(12));root.addView(summary);
   LinearLayout nav=UiKit.row(this,root);String[] names={"ホーム","設定","作成"};
   for(int i=0;i<names.length;i++){final int p=i;tabs[i]=UiKit.button(this,names[i],false,()->showPage(p));UiKit.cell(this,nav,tabs[i]);}
