@@ -17,18 +17,19 @@ public class PerformancePolicyTest {
   for(PerformancePolicy.Profile p:new PerformancePolicy.Profile[]{PerformancePolicy.ECO,PerformancePolicy.NORMAL,PerformancePolicy.QUICK,PerformancePolicy.F52A}){
    for(int requested:new int[]{1,3,50,500,1000})check(PerformancePolicy.effectiveTap(requested,p)>=requested,"saved slower pacing is never made faster");
    for(int screens=1;screens<=6;screens++)for(long heap:new long[]{64L<<20,128L<<20,256L<<20}){
-    int[] size=PerformancePolicy.geometry(p,1080,2424,420,screens,heap);
-    long bytes=(long)size[0]*size[1]*8*screens,budget=Math.max(8L<<20,Math.min(64L<<20,heap/3));
-    check(bytes<=budget+screens*8*size[0],"reusable images fit within the reserved heap, allowing one rounded row");
-    check(size[0]<=1080&&size[0]<=p.width,"small devices are never rendered at an enlarged width");
-    check(Math.abs(size[1]/(double)size[0]-2424/1080.0)<.01,"recognition and input retain the native aspect ratio");
+    long required=VirtualResolutionPolicy.imageBytes(1080,2424,screens),budget=Math.max(8L<<20,heap/2);
+    try{int[] size=PerformancePolicy.geometry(p,1080,2424,420,screens,heap);
+     check(required<=budget,"native arrays fit the reserved heap");
+     check(size[0]==1080&&size[1]==2424&&size[2]==420,"load profiles do not change pixels or density");
+    }catch(IllegalArgumentException limited){check(required>budget,"memory pressure refuses the request without scaling");}
+
    }
    check(PerformancePolicy.scanInterval(p,600,4,2)>=1200,"slow analysis backs off instead of monopolizing the CPU");
    check(PerformancePolicy.scanInterval(p,0,4,8)==p.scanMs,"idle analysis uses the selected cadence");
   }
   for(int screens=1;screens<=6;screens++){
    int[] size=PerformancePolicy.geometry(PerformancePolicy.F52A,1080,2280,420,screens,256L<<20);
-   check(size[0]==540&&size[1]==1140&&size[2]==210,"F-52A maintains 19:9 geometry and logical UI size for "+screens+" windows");
+   check(size[0]==1080&&size[1]==2280&&size[2]==420,"F-52A also retains native pixels and density for "+screens+" windows");
    check(PerformancePolicy.startupDelay(PerformancePolicy.F52A,screens-1)==(screens-1)*650L,"F-52A launch loads are staggered without removing a window");
   }
   check(PerformancePolicy.startupDelay(PerformancePolicy.F52A,0)==0&&PerformancePolicy.startupDelay(PerformancePolicy.NORMAL,3)==0,"first app and other profiles keep immediate launch");

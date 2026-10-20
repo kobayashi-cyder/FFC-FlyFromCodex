@@ -139,11 +139,11 @@ final class VirtualWindows {
  final ServiceConnection connection=new ServiceConnection(){public void onServiceConnected(ComponentName name,IBinder binder){if(!connecting||adbMode)return;connecting=false;if(attach(binder))createViews(true);}public void onServiceDisconnected(ComponentName name){bound=false;if(adbMode||remote==null&&!connecting)return;connecting=false;backendLost();}};
  void bind(){connecting=true;s.pilot.note("仮想画面サービス接続中");try{Shizuku.bindUserService(args,connection);bound=true;}catch(Exception e){connecting=false;s.pilot.note("接続失敗："+e.getMessage());}}
  boolean restartResolution(){
-  if(pcPresentation||PcControl.waitingForPc(s)){VirtualResolutionLab.toast(s,"PC表示中は端末の解像度実験を開始できません。");return false;}
+  if(pcPresentation||PcControl.waitingForPc(s)){VirtualResolutionLab.toast(s,"PC表示中は端末の仮想画面を作り直せません。");return false;}
   if(autoPending||pending||connecting||recoverPending){VirtualResolutionLab.toast(s,"起動・接続の完了を待ってから開き直してください。");return false;}
-  if(windows.isEmpty()){VirtualResolutionLab.toast(s,"ホームから対象アプリの仮想画面を開いてください。保存した幅で起動します。");return false;}
+  if(windows.isEmpty()){VirtualResolutionLab.toast(s,"ホームから対象アプリの仮想画面を開いてください。端末の通常解像度で起動します。");return false;}
   String[] targets=targets();try{DisplayMetrics dm=new DisplayMetrics();s.wm.getDefaultDisplay().getRealMetrics(dm);s.performance.geometry(dm.widthPixels,dm.heightPixels,dm.densityDpi,targets.length);}catch(IllegalArgumentException limited){VirtualResolutionLab.toast(s,limited.getMessage());return false;}
-  ArrayList<Window> previous=new ArrayList<>(windows);s.stop("起動解像度の実験で画面を再作成");closeViews();requested=targets;selected=true;autoPending=true;int task=generation;
+  ArrayList<Window> previous=new ArrayList<>(windows);s.stop("通常解像度で仮想画面を再作成");closeViews();requested=targets;selected=true;autoPending=true;int task=generation;
   try{frameWork.execute(()->{boolean released=true;try{long until=SystemClock.uptimeMillis()+5000;for(Window old:previous){long left=until-SystemClock.uptimeMillis();if(left<=0||!old.io.awaitTermination(left,TimeUnit.MILLISECONDS)){released=false;break;}}}catch(InterruptedException cancelled){Thread.currentThread().interrupt();released=false;}final boolean complete=released;s.h.post(()->{if(destroyed||task!=generation||!autoPending)return;autoPending=false;if(!complete){startFailed("前の仮想画面の終了を確認できません。接続し直してください。");return;}createViews(false);});});}catch(RejectedExecutionException busy){autoPending=false;startFailed("画像処理の完了を待ってから画面を開き直してください。");return false;}return true;
  }
  void createViews(boolean run){if(!pcPresentation&&(requested==null||requested.length==0||requested.length>VirtualLoadPolicy.MAX_LIMIT)){startFailed(s.getString(R.string.virtual_limit_exceeded,VirtualLoadPolicy.MAX_LIMIT));return;}s.stop();preparation=new VirtualPreparation(requested.length,run);autoPending=true;s.removeCapture();int task=++generation;

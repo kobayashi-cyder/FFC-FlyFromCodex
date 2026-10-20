@@ -2,6 +2,8 @@
 
 このブランチは MarkerTap の再開用です。既存の FFC/BANC888 の main とは別に管理します。
 
+v1.117のソース実体を保存し、結合後のSHA-256とZIP CRCを検証済みです。code/にはその後の変更を保存します。
+
 ## 保存状態
 
 `BACKUP_STATUS.json` が `source_backed_up` になるまでは、ソース実体の保存は未完了です。
@@ -17,6 +19,7 @@ python3 markertap/tools/restore_source.py --extract-to ./MarkerTap-restored
 ```
 
 復元ツールは各分割ファイルと結合後アーカイブの SHA-256 を検証します。
+--extract-to は基礎アーカイブを展開後、code/の最新変更を重ねます。v1.117だけを復元する場合は --baseline-only を加えてください。
 復元したソース内の `build.sh` と `run-tests.sh`、各版のガイドを確認してください。
 
 既存ガイドの再ビルド要件は Java 17、Android API 35、Build Tools 35.0.0、Python 3 です。

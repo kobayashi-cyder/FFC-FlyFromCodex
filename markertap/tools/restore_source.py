@@ -13,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default="MarkerTap-v1.117-restored.zip")
     parser.add_argument("--extract-to")
+    parser.add_argument("--baseline-only", action="store_true")
     args = parser.parse_args()
     base = pathlib.Path(__file__).resolve().parent.parent / "archive"
     manifest = json.loads((base / "manifest.json").read_text())
@@ -50,7 +51,19 @@ def main():
                 path = pathlib.PurePosixPath(member.filename)
                 if path.is_absolute() or ".." in path.parts or "\\" in member.filename:
                     raise RuntimeError("Unsafe archive path")
-                archive.extract(member, target)
+                path_on_disk = pathlib.Path(archive.extract(member, target))
+                mode = (member.external_attr >> 16) & 0o777
+                if mode:
+                    path_on_disk.chmod(mode)
+        if not args.baseline_only:
+            overlay = pathlib.Path(__file__).resolve().parent.parent / "code"
+            for source in sorted(overlay.rglob("*")):
+                if source.is_file():
+                    destination = target / source.relative_to(overlay)
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(source, destination)
+                    if source.suffix == ".sh":
+                        destination.chmod(destination.stat().st_mode | 0o100)
     print("Verified source archive: " + str(output))
 
 if __name__ == "__main__":

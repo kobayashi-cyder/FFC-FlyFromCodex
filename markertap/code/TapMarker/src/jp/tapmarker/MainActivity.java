@@ -14,7 +14,7 @@ public class MainActivity extends Activity {
  final Runnable ticker=new Runnable(){public void run(){refreshStatus();handler.postDelayed(this,1000);}};
  int dp(float n){return UiKit.dp(this,n);}
  public void onCreate(Bundle state){
-  super.onCreate(state);getWindow().setStatusBarColor(UiKit.BG);getWindow().setNavigationBarColor(UiKit.BG);
+  super.onCreate(state);VirtualResolutionLab.migrate(this);getWindow().setStatusBarColor(UiKit.BG);getWindow().setNavigationBarColor(UiKit.BG);
   getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
   root=UiKit.column(this);root.setBackgroundColor(UiKit.BG);root.setPadding(dp(20),dp(32),dp(20),dp(16));
   root.setOnApplyWindowInsetsListener((v,insets)->{int top,bottom;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());top=bars.top;bottom=bars.bottom;}else{top=insets.getSystemWindowInsetTop();bottom=insets.getSystemWindowInsetBottom();}root.setPadding(dp(20),top+dp(12),dp(20),bottom+dp(12));return insets;});
@@ -67,7 +67,7 @@ public class MainActivity extends Activity {
   LinearLayout connection=UiKit.card(this,content,"接続の維持","自動接続でも初回のペア設定が必要です。全停止すると自動復帰も休止します。");
   connectionMode=spinner(connection,new String[]{"Wi-Fi接続中は自動で維持","手動で接続する"},getSharedPreferences("wirelessAdb",0).getBoolean("automaticWifi",false)?0:1,pos->{boolean enabled=pos==0;if(getSharedPreferences("wirelessAdb",0).getBoolean("automaticWifi",false)!=enabled)getSharedPreferences("wirelessAdb",0).edit().putBoolean("automaticWifi",enabled).apply();});
   UiKit.full(this,connection,UiKit.button(this,"接続情報を入力",false,()->service(s->s.pilot.wireless.input())));
-  LinearLayout resolution=UiKit.card(this,content,"仮想画面の起動解像度","最小幅32pxから段階的に上げ、表示・認識・タップが成立する幅を記録します。");UiKit.full(this,resolution,UiKit.button(this,"起動解像度の実験",false,()->VirtualResolutionLab.show(this)));
+  LinearLayout resolution=UiKit.card(this,content,"仮想画面の起動解像度","端末の通常解像度・DPIで起動します。");UiKit.full(this,resolution,UiKit.button(this,"解像度を確認",false,()->VirtualResolutionLab.show(this)));
   LinearLayout display=UiKit.card(this,content,"仮想画面の見え方","縮小・最小表示でも内部の画像判定と入力座標を維持します。");UiKit.full(this,display,UiKit.button(this,"表示サイズを変更",false,()->service(s->s.pilot.virtualWindows.previewSizeDialog())));
  }
  void inputChanged(){TapService s=TapService.instance;if(s!=null){s.stop("タップ設定を変更");s.contacts().refresh();s.refresh();}UiStrings.toast(this,"設定を保存しました。自動開始で再開します。",Toast.LENGTH_SHORT).show();}
