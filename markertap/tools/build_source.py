@@ -160,7 +160,7 @@ def main():
                 "apk_sha256": validation["apk_sha256"]})
             status.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n")
             guide = ROOT / "markertap/code/TapMarker/GUIDE-v1.122.md"
-            guide.write_text(guide.read_text().replace("実装済み。検証待ちです。", "ビルド・core回帰試験（ロック画面保護・異常終了時全停止テストを含む）・従来版との署名証明書一致・APKの16KB境界配置を検証済みです。結果はmarkertap/releasesに保存しています。"))
+            guide.write_text(guide.read_text().replace("実装済み。検証待ちです。", "ビルド・既存core回帰試験・従来版との署名証明書一致・APKの16KB境界配置を検証済みです。ロック画面の描画異常への効果はPixel 10実機で未検証です。結果はmarkertap/releasesに保存しています。"))
             work = ROOT / "markertap/WORK_NEXT.md"
             work.write_text(work.read_text().replace("ビルド・core回帰試験・同一署名の検証待ち。", "ビルド・core回帰試験・同一署名・16KB境界配置を検証済み。"))
             channel.command(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT)
