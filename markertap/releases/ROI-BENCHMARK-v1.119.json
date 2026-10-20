@@ -1,0 +1,23 @@
+{
+  "version_name": "1.119",
+  "source_overlay_commit": "e52b47c93af2fd6ed91e114896d52b4c9b7b82c8",
+  "fixture": "video6774 recorded preview crops",
+  "recorded_frames": 52,
+  "observations_per_frame": 2,
+  "fresh_point_cache_per_observation": true,
+  "total_fixture_pixels": 8389472,
+  "initial_roi_bulk_tile_pixel_conversions": 357188320,
+  "final_native_point_conversions": 8932955,
+  "reduction_vs_initial_roi_tile_implementation_percent": 97.4990909557177,
+  "detector_results_and_coordinates": "exactly_equal_to_original_full_raster",
+  "copy_bound": "final_native_point_conversions <= 2 * total_fixture_pixels",
+  "device_tested": false,
+  "device_fps_and_capacity_measured": false,
+  "synthetic_native_crop": {
+    "width": 1080,
+    "height": 2424,
+    "source_pixel_reads": 4609,
+    "circuit_full_frame_workspace_bytes": 0
+  },
+  "note": "This counts conversions in host replay. It does not measure Android GPU/OS memory, total end-to-end time, game rendering or multiplex capacity."
+}

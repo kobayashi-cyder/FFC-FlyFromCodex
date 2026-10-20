@@ -73,3 +73,9 @@ Android実機のImageReader/GPU読み戻し互換性、GPU/OSメモリ、スル�
 
 初期の領域版は52録画フレームで判定一致を確認したが、32pxタイル全体の読み込みを繰り返して357,188,320画素を変換した（録画画素総数8,389,472、各フレーム2回観測）。
 最終版ではPointPixelsが要求座標だけを読み出す。空のキャッシュ枠を確保しても、そのタイル全体を変換しない。読み込み失敗は有効画素としてキャッシュせず、従来通り操作を保留する。
+
+## 最終検証結果
+
+最終版のコピー量試験: 録画52フレーム×2観測（各観測でキャッシュを新規作成）。初期ROIタイル方式357,188,320画素から、要求画素方式8,932,955画素へ削減。判定・操作座標は完全一致。詳細はreleases/ROI-BENCHMARK-v1.119.json。実機FPS・GPUメモリ・多重化数の測定ではありません。
+
+PointPixelsTest 50,112 checks / FrameResourceTest 74 checks / RegionCaptureTest 19,081 checks / RegionCaptureReplayTest 1,271 checksに加え、既存のcore回帰試験・既存証明書一致・APK ZIP CRC・16KB境界配置が通過。Android実機は未接続です。
