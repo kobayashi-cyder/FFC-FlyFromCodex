@@ -1,0 +1,26 @@
+{
+  "versionName": "1.56-virtual-run",
+  "versionCode": 59,
+  "apk_sha256": "8ec61fb8bffa9b3de666c1a672353e4a6ce911421b18ab3c79cdc49ad90f4f68",
+  "signing_certificate_sha256": "c5dc233afc842c2fe2e362264bc2fee147cf2c6c1ba01aebff17dc33a4395fcb",
+  "test_suites": 32,
+  "tests": "passed",
+  "automation_router_checks": 40,
+  "virtual_run_activation_checks": 33,
+  "targeted_input_adapter_checks": 83,
+  "cancelled_action_checks": 36,
+  "virtual_preset_preview_checks": 33,
+  "signature_schemes": [
+    "v2",
+    "v3"
+  ],
+  "native_libraries": 8,
+  "elf_and_apk_alignment": 16384,
+  "android_device_connected": false,
+  "parallel_android_input_verified": false,
+  "raw_720px_virtual_frame_matching_verified": false,
+  "virtual_reward_and_ad_screens_verified": false,
+  "screenshot_issue_reproduced_on_device": false,
+  "preview_evidence_source": "Screenshot_20261008-163208.png",
+  "preview_evidence_sha256": "f7ff0db58ab2a4660d35588b1be8edbd2473b2576ad34e45c16b0cf7cb068e26"
+}

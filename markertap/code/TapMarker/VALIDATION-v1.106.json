@@ -1,0 +1,105 @@
+{
+  "version_name": "1.106",
+  "version_code": 109,
+  "package": "jp.tapmarker.lite",
+  "apk": "MarkerTap-v1.106-usagi-panel.apk",
+  "apk_sha256": "c0a94251231f2892d16fc1ea27241f5154da4be213116e15f222baf2c7597bec",
+  "apk_size_bytes": 5684052,
+  "signing_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "matches_previous_signer": true,
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "signature_and_16kb_zip_alignment": "passed",
+  "apk_dex_matches_tested_build_output": true,
+  "apk_assets_match_source": true,
+  "tested_classfile_runtime_sha256": "b4324fafdf004a502f0439015612d0e521c648610450dcfd879542d715a2665a",
+  "primary_regression_java_programs": 108,
+  "additional_java_programs": 6,
+  "new_recording_checks": 646,
+  "existing_usagi_control_checks": 349,
+  "locale_checks": 3179,
+  "baseline": {
+    "version": "1.105",
+    "recorded_frames": 10,
+    "mission_recognized": 0,
+    "log": "tests/video6759-v1.105-baseline.log"
+  },
+  "recording_holdouts_seconds": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18
+  ],
+  "fitted_images": [
+    "6759 / 0s Get label and Back arrow"
+  ],
+  "synthetic": [
+    "Preview resize",
+    "Window offset",
+    "Label/title occlusion",
+    "Get label moved to next task row",
+    "Reward popup retaining a visible mission header",
+    "Input completion callbacks",
+    "Three Get/reward/Play/home journeys combining 6759, 6677 and 6753 pixels",
+    "One mission CM-state interruption"
+  ],
+  "relative_input": "Verified control bounds in the current app viewport; control center translated to the target display/frame. Page classification and action eligibility remain separately required.",
+  "limits": [
+    "New panel UI built against API35; no Android rendering/touch test",
+    "No connected Android device",
+    "Holdouts are nine moments of one static claimable mission scene",
+    "No ImageReader/native capture from the affected display",
+    "No demonstrated completed collection, numeric reward increase or amount upgrade on the new APK",
+    "Unseen layouts/advertisements and long-running operation untested",
+    "Optional full-group old recordings 6651/6662/6666/6669 not run; their fixtures are absent from the supplied source"
+  ],
+  "logs": [
+    "tests-v1.106.log",
+    "build-v1.106.log",
+    "signature-v1.106.log",
+    "apk-badging-v1.106.log"
+  ],
+  "core_run_exit_code": 0,
+  "mock_adb_scenarios": 8,
+  "all_primary_and_additional_programs_completed": true,
+  "panel_headings": [
+    "Bounded collapsible list inside the operation panel",
+    "Per-window Expand/Dock changes existing preview visibility",
+    "Default headings-only mode and stored all-preview mode",
+    "Dock clears the thumbnail but preserves ImageReader, full recognition frames, display ID, input lane and engine",
+    "Actual device UI rendering and touch interactions untested"
+  ],
+  "virtual_app_limit": 2,
+  "memory_estimate": {
+    "method": "OpenJDK 17 Instrumentation.getObjectSize with identity-based traversal; fresh default runtime-copy engine, adaptive layout, upgrade engine; no observations or learned skills. Not Android PSS, APK size, or a new connectome implementation.",
+    "usagi_engine_layout_upgrade_bytes": 632096,
+    "usagi_template_vector_bytes": 548832,
+    "usagi_non_template_object_bytes": 83264,
+    "farm_engine_layout_upgrade_bytes": 314312,
+    "farm_template_vector_bytes": 271248,
+    "farm_non_template_object_bytes": 43064,
+    "two_screen_structural_bytes_sum": 126328,
+    "two_screen_argb_array_examples": [
+      {
+        "width": 540,
+        "height": 1212,
+        "bytes": 10471680
+      },
+      {
+        "width": 720,
+        "height": 1616,
+        "bytes": 18616320
+      }
+    ],
+    "limits": "Per-app measurements summed; common objects may be counted twice. Android object layout differs. Frame figures are only two int arrays per screen, excluding ImageReader/gralloc/GPU/game processes and transient allocations. No new-connectome saving percentage has been measured."
+  }
+}

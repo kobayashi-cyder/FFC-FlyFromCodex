@@ -1,0 +1,9 @@
+{
+  "core_tested_runtime_sha256": "9fec429dfad0799ec6b31c498a1a470efd36c16da7df20496aa7c00ce1854b35",
+  "final_runtime_sha256": "74fb2c2d1e084d095250e9d6bb9f5d1b1dd67003c0de5bfce77714ffc2ae5872",
+  "changed_classes_after_core": [
+    "jp/tapmarker/DiagnosticJournal.class",
+    "jp/tapmarker/SplitPilot.class"
+  ],
+  "host_tested_core_classes_unchanged": true
+}

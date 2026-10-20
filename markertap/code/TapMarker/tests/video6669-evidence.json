@@ -1,0 +1,131 @@
+{
+  "source": "6669.mp4",
+  "video_sha256": "40d2baaf47f79b423c5b474198293df837d792bc79cadfb400801a27806fd948",
+  "width": 1080,
+  "height": 2424,
+  "training_seconds": {
+    "farm-stable-home": 22,
+    "farm-stable-pressed": 12
+  },
+  "header_bounds": [
+    0.75,
+    0.077,
+    0.805,
+    0.092
+  ],
+  "harvest_label_bounds": [
+    0.392,
+    0.802,
+    0.593,
+    0.825
+  ],
+  "white_min_channel": 222,
+  "white_max_channel_spread": 35,
+  "replay_frames": [
+    {
+      "seconds": 0,
+      "rgb_sha256": "066b9926701e88b9005f865993a710fc5c09bf1f4316c4ad325426b8503053ce"
+    },
+    {
+      "seconds": 1,
+      "rgb_sha256": "77ebf18c15b801f78a79977779d9ac4c461da947a15bbb57079736b0121794f1"
+    },
+    {
+      "seconds": 2,
+      "rgb_sha256": "5f98b0f001dd647cee00b743eb1ddb22929f6a9ad46eca7172a3e96f05aa7d26"
+    },
+    {
+      "seconds": 3,
+      "rgb_sha256": "affe2fdb359a0f8505ebb73e4ba40f5202e8300936c6f1c9db1340810d5b63bc"
+    },
+    {
+      "seconds": 4,
+      "rgb_sha256": "70b322c765d2d522bfebf6133bde03b45e2a78e596f1b7346346bfd166f5e3e5"
+    },
+    {
+      "seconds": 5,
+      "rgb_sha256": "4301b94b2b5cc2f1b36130330a869e39df04dca2769b97ff37e323787a6e3cce"
+    },
+    {
+      "seconds": 6,
+      "rgb_sha256": "7b16bb5e4b0ac39823872d494c5fc4ceebd0065f1b770fcbceab41eec890b5fa"
+    },
+    {
+      "seconds": 8,
+      "rgb_sha256": "dfae5ab2b969cb56c5e6e65dc90bbfa4b25c7feb106d7072c02c0e9c2e3c965c"
+    },
+    {
+      "seconds": 10,
+      "rgb_sha256": "dd7fb76b79d6552f007295c52cfac446d2b929198f6dd4580b56f2af5aee14fc"
+    },
+    {
+      "seconds": 12,
+      "rgb_sha256": "0f37b5add70d18e5017b98d1ee8ebe1fd55cb863b948701b0d047d0f2080c60b"
+    },
+    {
+      "seconds": 14,
+      "rgb_sha256": "7bc50d1db24760420675cb882a37e24ede3ac754797a7ae10481abb324d04bc3"
+    },
+    {
+      "seconds": 15,
+      "rgb_sha256": "32419151527a55b29641f4b9f42c846a926a743bf0906ca46545868c1253dd0f"
+    },
+    {
+      "seconds": 16,
+      "rgb_sha256": "d41847e691adb556d18d2ececbdfdaf71e13d60a7f4dc9db2132e97b8df17bc1"
+    },
+    {
+      "seconds": 17,
+      "rgb_sha256": "d78936efd389f086107c019006d28a365f2c2090e15901a9b0723a2b134e20a3"
+    },
+    {
+      "seconds": 18,
+      "rgb_sha256": "aa59f520f0eff12b53df5b21504afda338466b50b353697aa71baaa11325e512"
+    },
+    {
+      "seconds": 19,
+      "rgb_sha256": "23e96f76b439cf1d31bfc63b82c1f93b9efd1c3e4990c535257755d04696e799"
+    },
+    {
+      "seconds": 20,
+      "rgb_sha256": "75251390366188af6763ba1dd3e073ffacc04cacfd082deb3f9c2021e38ebbd1"
+    },
+    {
+      "seconds": 22,
+      "rgb_sha256": "dc531978563f44aa6cf15e5f5c14a7a1b2d5aecd6ed72e535801ed73b19d21bb"
+    },
+    {
+      "seconds": 24,
+      "rgb_sha256": "43b6391df7403de659032ea12fe745a28d75d868af3577a8cac0a9a735c9a79e"
+    },
+    {
+      "seconds": 30,
+      "rgb_sha256": "f926fd69c35b720433549477b6ab329be9e40dcc23360d0f2eeb9e8e9187c051"
+    },
+    {
+      "seconds": 40,
+      "rgb_sha256": "89619478af0a97c729bea5752125f5d5dda1a58f009cf183592d37b49f75ab86"
+    },
+    {
+      "seconds": 48,
+      "rgb_sha256": "d9b374ef502fc2e14f084dbc3dcd0cfc46b5625115800c1cdbcb93a02d35824f"
+    },
+    {
+      "seconds": 54,
+      "rgb_sha256": "eb2812695d02866c7ec092ea27d4491e14477b5bd944eed752d6109b9d1b3132"
+    },
+    {
+      "seconds": 55,
+      "rgb_sha256": "1216c34bce5ee891ec3891f685aa658e92050681dc671e67034496db562b7e0e"
+    },
+    {
+      "seconds": 58,
+      "rgb_sha256": "3bcec2038a1e9eac93e15c4f8f11363709cfb3503908e7c0a93a8550e58f8c40"
+    },
+    {
+      "seconds": 61,
+      "rgb_sha256": "3ec335bc3572f9c48d0453b12053326a64248369f31fd77c671435204bb782ca"
+    }
+  ],
+  "limits": "Recorded pixel recognition only. Input dispatch and long-running parallel operation on the phone are not tested."
+}

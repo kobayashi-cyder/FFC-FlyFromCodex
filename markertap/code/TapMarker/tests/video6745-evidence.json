@@ -1,0 +1,61 @@
+{
+  "source_name": "6745.mp4",
+  "source_sha256": "33b62b15666812bec0ebdecb75f372e3eda130ac76de94d245f1a3993aac72b8",
+  "seconds": [
+    0,
+    8,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    44,
+    48,
+    52,
+    60,
+    64,
+    68,
+    72,
+    76,
+    80,
+    84,
+    88,
+    92,
+    100,
+    108,
+    110
+  ],
+  "preview_crop_boxes": {
+    "farm": [
+      60,
+      1272,
+      502,
+      2264
+    ],
+    "poipoi": [
+      559,
+      1272,
+      1002,
+      2264
+    ]
+  },
+  "screenshot_crop_boxes": {
+    "farm": [
+      46,
+      425,
+      326,
+      1054
+    ],
+    "poipoi": [
+      389,
+      484,
+      669,
+      1113
+    ]
+  },
+  "limitations": "These are displayed preview pixels cropped from the recording/screenshot, not original virtual-display framebuffer pixels. Input completions and repeated sequences are simulated. Android device not connected.",
+  "screenshot_name": "6746.png",
+  "screenshot_sha256": "120ac0660000d5278051eb69962671c828f530ea2a1f99ab5d35faf6871819db",
+  "header_reference": "poipoi-0.png, Google Play heading only"
+}

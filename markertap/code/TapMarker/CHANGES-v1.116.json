@@ -1,0 +1,18 @@
+{
+  "version": "1.116",
+  "versionCode": 119,
+  "base_version": "1.115",
+  "changes": [
+    "Require independently verified home evidence before replenishing recovery attempts",
+    "Retain footer close attempts across missing detections and named/pixel detector switches",
+    "Probe home independently without allowing input through a popup",
+    "Save bounded before/after/error diagnostic images and decision metadata locally; user-initiated ZIP sharing",
+    "Permit manual preview taps during a virtual run with per-display pause and fresh-image recheck"
+  ],
+  "device_validation": {
+    "pixel10_android17": false,
+    "actual_input_delivery": false,
+    "android_jpeg_and_share_ui": false,
+    "four_window_long_run": false
+  }
+}

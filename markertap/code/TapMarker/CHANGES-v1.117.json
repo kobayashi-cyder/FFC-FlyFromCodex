@@ -1,0 +1,28 @@
+{
+  "base_version": "1.116",
+  "version": "1.117",
+  "version_code": 120,
+  "changed_files": [
+    "src/jp/tapmarker/AdExitPolicy.java",
+    "src/jp/tapmarker/DisplayRecovery.java",
+    "src/jp/tapmarker/DisplayReplacement.java",
+    "src/jp/tapmarker/PopupActionConfirmation.java",
+    "src/jp/tapmarker/PopupVisualEvidence.java",
+    "src/jp/tapmarker/ProgressErrors.java",
+    "src/jp/tapmarker/SplitPilot.java",
+    "src/jp/tapmarker/VirtualWindowEvidence.java",
+    "src/jp/tapmarker/VirtualWindows.java",
+    "AndroidManifest.xml",
+    "build.sh",
+    "run-tests.sh",
+    "README.md"
+  ],
+  "additional_tests": [
+    "tests/DisplayReplacementTest.java",
+    "tests/DisplayRecoveryTest.java",
+    "tests/Incident66ReplayTest.java",
+    "tests/incident66-evidence.json",
+    "tests/incident66-replay.bin.gz"
+  ],
+  "guide": "GUIDE-v1.117.md"
+}

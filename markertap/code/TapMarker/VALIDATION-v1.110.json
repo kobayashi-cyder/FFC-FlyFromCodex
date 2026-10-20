@@ -1,0 +1,62 @@
+{
+  "versionName": "1.110",
+  "versionCode": 113,
+  "package": "jp.tapmarker.lite",
+  "backendRevision": 90,
+  "baseSource": "MarkerTap-v1.109-resolution-lab-source.zip",
+  "baseSourceSha256": "16b06c08dae3aa1975cb8aa4e6b767c326edcf6243a68cbf44e941f5b575c8f6",
+  "apkName": "MarkerTap-v1.110-resolution-lab.apk",
+  "apkSha256": "b62baed3c8ddcbc074dc58ce8d743fcfe7bae12b422c182f89e7bf671b48f6ac",
+  "apkBytes": 5716820,
+  "certificateSha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "verifiedSignatureSchemes": [
+    "v2",
+    "v3"
+  ],
+  "zipalign16KiBVerified": true,
+  "finalRelatedRegression": {
+    "exitCode": 0,
+    "javaTestClasses": 18,
+    "resolutionPolicyChecks": 538,
+    "mockAdbScenarios": 8,
+    "log": "tests-v1.110-resolution.log"
+  },
+  "changeScope": "Ascending startup-width UI, first-use migration and reset. Production recognition and input engines unchanged.",
+  "relativeElementAblation": {
+    "exitCode": 0,
+    "trainingImages": 12,
+    "evaluationImages": 24,
+    "positiveImages": 17,
+    "otherStateImages": 7,
+    "nonmatchingComparisonsPerSetting": 79,
+    "widthStages": 16,
+    "regionCounts": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "source": "existing ObservationLearner.signature and FlyCircuit.distance",
+    "trainingReferenceWidthMax": 192,
+    "evaluationInput": "materialized bilinear resize from each original recorded image; no capture downsampling before evaluation resize",
+    "csv": "relative-elements-v1.110.csv",
+    "detailCsv": "relative-element-details-v1.110.csv",
+    "metadata": "relative-element-metadata-v1.110.txt",
+    "width320CorrectRange": [
+      13,
+      13
+    ],
+    "allStatesPass": false,
+    "deployedAsRuntimePreset": false,
+    "limitations": "Few correlated videos, normalized viewport, no arbitrary reflow or moved-landmark test. Counts refer to selected image regions, not independent semantic landmarks. No actual Android rendering or input."
+  },
+  "deviceTests": {
+    "connectedDevice": false,
+    "lowResolutionLaunch": false,
+    "settingsUi": false,
+    "actualGameReaction": false
+  },
+  "previousResults": "Historical v1.109 core and production-preset replay logs are retained separately. Their cases and methods differ from this new ablation."
+}

@@ -1,6 +1,10 @@
 {
-  "status": "source_import_pending",
+  "status": "source_backed_up",
   "version_name": "1.117",
+  "archive_sha256": "a4a61232a93dde26898e58a1608e5515063764b975daca8727088f700f753187",
+  "restoration_verified": true,
   "signing_key_included": false,
-  "native_resolution_fix": "pending"
+  "native_resolution_fix": "pending",
+  "source_parts": 4,
+  "code_mirror_files": 781
 }

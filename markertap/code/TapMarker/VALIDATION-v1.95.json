@@ -1,0 +1,71 @@
+{
+  "version": "1.95",
+  "version_code": 98,
+  "package": "jp.tapmarker.lite",
+  "source_baseline": "MarkerTap v1.94",
+  "screenshot6738": {
+    "baseline_playable": true,
+    "baseline_main_point": null,
+    "after_main_point": [
+      342,
+      1239.552
+    ],
+    "fitted_evidence": true
+  },
+  "new_regression_checks": 236,
+  "java_regression_groups": 101,
+  "mock_adb_scenarios": 8,
+  "core_regression_exit_code": 0,
+  "android_build_exit_code": 0,
+  "tested_runtime": "build/shrunk.jar",
+  "abi": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "apk_dex_and_assets_consistency": true,
+  "alignment_16k": true,
+  "signing": {
+    "release_signed": false,
+    "validation_only_key_used": true,
+    "original_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+    "original_private_key_available": false,
+    "mismatched_certificate_publication_guard": "passed",
+    "unsigned_apk": "release/MarkerTap-v1.95-unsigned.apk"
+  },
+  "device_validation": false,
+  "limits": [
+    "6738 is fitted evidence, not held-out accuracy",
+    "Poipoi live no-tap root cause not established",
+    "17ms press/release is a conservative 60Hz input profile; game FPS not measured",
+    "No original-key signed update APK produced"
+  ],
+  "changed_files": [
+    "AndroidManifest.xml",
+    "build.sh",
+    "run-tests.sh",
+    "src/jp/tapmarker/AndroidTapDriver.java",
+    "src/jp/tapmarker/MainActivity.java",
+    "src/jp/tapmarker/SplitPilot.java",
+    "src/jp/tapmarker/TapContactPolicy.java",
+    "src/jp/tapmarker/TapContactSettings.java",
+    "src/jp/tapmarker/TapService.java",
+    "src/jp/tapmarker/VirtualWindows.java",
+    "tests/prepare-visual-targets.py",
+    "assets/visual-targets.json",
+    "tests/visual-targets.bin",
+    "tests/visual-targets-evidence.json",
+    "tests/GameInputRepairTest.java",
+    "tests/image6738-replay.bin.gz",
+    "tests/image6738-evidence.json",
+    "sign-release.sh",
+    "GUIDE-v1.95.md"
+  ],
+  "artifacts_sha256": {
+    "release/MarkerTap-v1.95-unsigned.apk": "b18bce1f9c8abe2ef7f2961a596591a18258d0883238654ef677e8f67bb86eb0",
+    "build/shrunk.jar": "6d04b79e74bb3a3e8fa4d47bfaa2118f3c44250724d738f7b96d7e579e34a8fe",
+    "assets/visual-targets.json": "5f99595f70df078c96a9a2d6dd70995ff8622838e243e054c377ed46e6894a00",
+    "tests/visual-targets.bin": "c5ce25e948f67ef6b7a7e36fadcdf3247356903044ac7c9e5cb7d45685e879bb"
+  }
+}

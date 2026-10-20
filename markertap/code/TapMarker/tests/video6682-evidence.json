@@ -1,0 +1,443 @@
+{
+  "source": "6682.mp4",
+  "sha256": "f6bb7684b4f9e4b6b87af870adb02f8a198e4cca8926a942a67f8347820ce0dc",
+  "app": "com.kurashiru.coin.drop",
+  "width": 1080,
+  "height": 2424,
+  "duration_seconds": 54.545944,
+  "timestamp_selection": "ffmpeg -ss seconds before input; VFR recording, no frame-index assumptions",
+  "training_seconds": {
+    "bonus": 2,
+    "reward": 38,
+    "boost-pocket": 50,
+    "ad-next": 12
+  },
+  "pairs": {
+    "bonus": [
+      [
+        0.265,
+        0.574,
+        0.735,
+        0.589
+      ],
+      [
+        0.595,
+        0.775,
+        0.675,
+        0.797
+      ]
+    ],
+    "reward": [
+      [
+        0.179,
+        0.35,
+        0.824,
+        0.368
+      ],
+      [
+        0.421,
+        0.556,
+        0.576,
+        0.577
+      ]
+    ],
+    "boost-pocket": [
+      [
+        0.272,
+        0.577,
+        0.745,
+        0.609
+      ],
+      [
+        0.256,
+        0.74,
+        0.739,
+        0.769
+      ]
+    ]
+  },
+  "ready_next_bounds": [
+    0.912962962962963,
+    0.08457095709570957,
+    0.9712962962962963,
+    0.11056105610561057
+  ],
+  "untouched_original_keys": [
+    "ad-skip",
+    "bonus",
+    "boost-pocket",
+    "boost-rare",
+    "clear",
+    "fever",
+    "fever-gold",
+    "get",
+    "home",
+    "home-gold",
+    "missions",
+    "play",
+    "reward"
+  ],
+  "replay_frames": [
+    {
+      "id": "0",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "5d9e1b1f6a8f975c9e8e38219a6f9ebab2b4561b8d3abf3f952e1da6dcfbe545"
+    },
+    {
+      "id": "4",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "8c31635b3a0ec112d7c063b79b5a1c7c2d1881d80386fd8d9c4a5926943dd05f"
+    },
+    {
+      "id": "6",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "f521806dcad8ab65d8b6f17f780953b409b68f0572d3a05a8ae957aa0ef55521"
+    },
+    {
+      "id": "8",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "1b191b2b22ce16a60a3fbf1878da4cabfc4d2da9c8011ce612f6a8a2148533c1"
+    },
+    {
+      "id": "10",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "c1388b8be6cb83a10f0d99b4a830710a1a21c1c29af790d502a5a9f9fb4900ef"
+    },
+    {
+      "id": "12.5",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "bb45b101a557719e970353ac9f8ecb644c5a457b2339c74fbba8dff843964393"
+    },
+    {
+      "id": "13.2",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "035c8e9c76e431f7aec8c698425189aef210914f6807054b8dfad5bea1d689c7"
+    },
+    {
+      "id": "14",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "1642af4715279e828087288b9a0ff80df3fe3a47fd49e0cf4c17e929fe9ebe2d"
+    },
+    {
+      "id": "16",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "3f687d180698fa188227b61763707cd4e6cafc8fb262e53d9a4ce855e9e591ae"
+    },
+    {
+      "id": "18",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "4da0c31ccb625b4032ac33ab38dcdf92d965d6b36b29f0a9e8f0ac5cb521ebb9"
+    },
+    {
+      "id": "19.8",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "e8c7beae68b98a3087ac4e750322b7aaee2eab2452d2abe7e672c280db992519"
+    },
+    {
+      "id": "20.5",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "4b9d07b81fa0994d586890507e4311c23b50f3a3a2fe8eea060aaafba2525433"
+    },
+    {
+      "id": "21",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "bd43896729827d0143d7ef8c5aa4cb95e628b1911fbdf3b084f04df40e39f311"
+    },
+    {
+      "id": "22",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "2eef17b7a35e1ffec7b9cc4d34093b166cca674119753848d2c104ec6babbdfa"
+    },
+    {
+      "id": "24",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "b866648c0787bf39abb7d149d7a8e1ea0e287bf0362a17c9421464004f954fb1"
+    },
+    {
+      "id": "25",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "aae0f6337d3c7ce5aa0ca3cc63d0e1129d81afbed4d74e57d2c7c6e78812314e"
+    },
+    {
+      "id": "26",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "28ae680f87396d433428886a4df0bda29f692012fccb49915107636c6bcdf154"
+    },
+    {
+      "id": "30",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "4960fac9f69597b2ed23156f1a48c8e7b8e4d78ef4aa5ee79be65732d02da10e"
+    },
+    {
+      "id": "32",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "03bd4adda8ea9901c8b2525f816406bf2b2d0bbe39a492421335972a6e157d7f"
+    },
+    {
+      "id": "34",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "f8a8a71ff54a12c2ba105313dd3cf6913b59e24211380d7ec505bb62c5e4171a"
+    },
+    {
+      "id": "36",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "781b39bb3ea8fc6165376c2d77af168a9667f854f19a59db42d8a1df990e6dea"
+    },
+    {
+      "id": "37.3",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "6a9fed61de4b6d0150e92583ad016e97ba031f28485f10c0e6ea0626cf715ce5"
+    },
+    {
+      "id": "37.6",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "87c81bdfe5b023fd62e91bd9436135ebbd88bf6eadbff5cca7138f36e29aa7b6"
+    },
+    {
+      "id": "38.5",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "66259b59f43d870521d43530680cd7faba89d72e87008f7594005ab6e80d9936"
+    },
+    {
+      "id": "39",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "ff099d3fb3b4e33aac7f104248d8786086e0c81f9146834349c3efd7912d9255"
+    },
+    {
+      "id": "39.5",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "dcfd908627ec3bc334a9f5ae3d3e323d5b5ac5fcb2b3d202379c9c71c5710764"
+    },
+    {
+      "id": "40",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "63230bf72fdf548949e07d1aa4eacced33d1558ce28aa20166bae5f9852a84c6"
+    },
+    {
+      "id": "40.5",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "eb6c9c1121ea6c199815cab5f2f8d3669ba69110ad020902b2abc74bca7671a0"
+    },
+    {
+      "id": "41",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "3195c50864c3c1c5b0a8fefd3423b259f2050d2a3d6c058fe76951b4a6897ace"
+    },
+    {
+      "id": "42",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "06918ee821fe6ba33208f2fd4dc27740f9da653e2270033ba15fcb859b385494"
+    },
+    {
+      "id": "44",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "df1284d85bf74075cab79fa86f1ebeba1037e4ee192eadf8e5f133eeea01b75b"
+    },
+    {
+      "id": "46",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "4442f9ac5b5bbdf82f7836b67bce62d56a3422cefdfa293f0fd2cc984b8b8b79"
+    },
+    {
+      "id": "48",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "f54e3d7f34311616807b318579a62488d80557f1d959001300fa82c0b270b043"
+    },
+    {
+      "id": "49",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "7cec37e505aa0af26c72660c6f18e5fad5262359194c55e455a3961339c52879"
+    },
+    {
+      "id": "49.5",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "4a4fee796e7d1ad1e3f45c337262418284d628c893920084638c36c30f98469e"
+    },
+    {
+      "id": "50.3",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "338949b39b7ac46d4900d53d7035d68ba9f92b70a8079cd809182c1813efa0ad"
+    },
+    {
+      "id": "51",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "ba37c215fdfe45142f8a6e25d93ce82bdb5bbd302713057777cce94473323743"
+    },
+    {
+      "id": "52.5",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "4a434c0446d1277a8bfddabf07e714102778af73b89d47defb8268c5a25d812f"
+    },
+    {
+      "id": "54",
+      "size": [
+        540,
+        1212
+      ],
+      "rgb_sha256": "6c6c5a80b006edb448f548afa80e3abdf2612112ef580e9d4bf747db8093f67c"
+    },
+    {
+      "id": "14-native",
+      "size": [
+        1080,
+        2424
+      ],
+      "rgb_sha256": "8868e014445fbb001b4c948f02a4a585ff20519934fa2950c8ae113959b7ec43"
+    },
+    {
+      "id": "24-native",
+      "size": [
+        1080,
+        2424
+      ],
+      "rgb_sha256": "a2abac8d102c5fd84f020eca5b05d3d4405c0d24b04c65d60ac51aac88dd741d"
+    },
+    {
+      "id": "38.5-native",
+      "size": [
+        1080,
+        2424
+      ],
+      "rgb_sha256": "0ae6940e69a797c1a5198aeaedb66a974bbfd3bb39a736bc1abf2e55dfd2d9ac"
+    },
+    {
+      "id": "44-native",
+      "size": [
+        1080,
+        2424
+      ],
+      "rgb_sha256": "75951ab949da1f8694ade5bf52ea2ed4ec9a03712b8844fb125dfa066352eae5"
+    },
+    {
+      "id": "50.3-native",
+      "size": [
+        1080,
+        2424
+      ],
+      "rgb_sha256": "d80ad39355c2c697eae6be36544353a27e4ce53cee52b5d749c5b176a30e5ee2"
+    },
+    {
+      "id": "32-native",
+      "size": [
+        1080,
+        2424
+      ],
+      "rgb_sha256": "7f4376fe0f56540a69bd5d54606f74c77c91fd90b7fc6d9ae6d7f8a19cf4c61a"
+    }
+  ],
+  "limits": "Control training timestamps are excluded from the replay frames. Native holdouts, reduced frames, actual overlay/marker, browser/ad/system UI are included. Translated/inset/missing-anchor tests are synthetic. Device identity, new APK input, Chromebook-specific UI and all-daily-done screen are unverified."
+}

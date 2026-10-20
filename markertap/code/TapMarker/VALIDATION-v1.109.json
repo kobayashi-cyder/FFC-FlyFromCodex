@@ -1,0 +1,57 @@
+{
+  "versionName": "1.109",
+  "versionCode": 112,
+  "package": "jp.tapmarker.lite",
+  "backendRevision": 90,
+  "baseSource": "MarkerTap-v1.108-source.zip",
+  "baseSourceSha256": "97375984772a5d3a8cad2fadc8791fc04bd213aa6e64f59894b6b75de5c52d72",
+  "apkName": "MarkerTap-v1.109-resolution-lab.apk",
+  "apkSha256": "0b044b53b7802774e79bceea4c44c439d289a20527d21752bda5de40515946bf",
+  "apkBytes": 5716820,
+  "dexSha256": {
+    "classes.dex": "5e07ff470a30192eb5d7b4d60c4465660d01d4c7f457b77ec76773b84a4006fc"
+  },
+  "certificateSha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "verifiedSignatureSchemes": [
+    "v2",
+    "v3"
+  ],
+  "zipalign16KiBVerified": true,
+  "sdkPlatform": 35,
+  "buildTools": "35.0.0",
+  "coreRegression": {
+    "exitCode": 0,
+    "javaTestClasses": 118,
+    "mockAdbScenarios": 8,
+    "log": "tests-v1.109.log",
+    "scope": "Complete core regression before the final display-release wait and UI restore refinements; recognition and input engines unchanged afterwards."
+  },
+  "finalResolutionRegression": {
+    "exitCode": 0,
+    "javaTestClasses": 18,
+    "newGeometryChecks": 511,
+    "mockAdbScenarios": 8,
+    "log": "tests-v1.109-final-resolution.log",
+    "runtime": "build/shrunk.jar",
+    "runtimeSha256": "c503cfdd57c458558b7293462884d6da74767271626a8b9344bb5ae49a08b72a"
+  },
+  "syntheticResizeProbe": {
+    "exitCode": 0,
+    "csv": "resolution-replay-v1.109.csv",
+    "widthStages": 16,
+    "heldOutSceneCount": 15,
+    "scope": "9 Usagi Get scenes and 6 Farm Close/Start scenes. Existing video pixels bilinearly resized to a materialized integer pixel array before shipped recognition and target-coordinate checks. No Android rendering or touch dispatch."
+  },
+  "deviceTests": {
+    "connectedDevice": false,
+    "androidLowResolutionLaunch": false,
+    "uiPreferencesClipboardAndRestart": false,
+    "actualMemorySavingsMeasured": false
+  },
+  "sourceExcludes": [
+    "build outputs",
+    "old unsigned APK releases",
+    "private signing key",
+    "downloaded SDK"
+  ]
+}

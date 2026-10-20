@@ -1,0 +1,92 @@
+PASS one matching frame never triggers
+PASS two matching frames confirm
+PASS main self-loop repeats after fresh two-frame confirmation
+PASS reappeared display needs two frames
+PASS display departure and reappearance rearms
+PASS ambiguous equal-priority branches wait
+PASS priority never selects a runtime branch
+PASS stale image candidate discarded before execution
+PASS change needs second stable observation
+PASS stable changed image confirms change action
+PASS unrecorded image does not block automaton start
+PASS unrecorded image never fires and reports reason
+PASS structural reference errors still block start
+TOTAL 13 stable transition checks passed; device UI not tested.
+PASS 7 stability duration checks
+PASS main operation selected while exit absent
+PASS first exit frame pauses continuous marker taps
+PASS main loop cannot destroy exit before second confirmation
+PASS exit wins over simultaneously matching main loop
+PASS exit operation completion changes actual state
+PASS main queued actions do not survive transition
+PASS loop starts after external change baseline established
+PASS change candidate also pauses main loop
+PASS self loop preserves external change baseline
+PASS change branch updates state
+TOTAL 10 main-loop branching checks passed; device UI not tested.
+PASS visible, two-frame disappearance, one tap, and reappearance rearm
+PASS 5 stale/removed/duplicate completion checks
+PASS 14 sensitive/error/normal text checks; visual-only dialogs not covered
+PASS only current-phase regions active
+PASS inactive-phase region excluded
+PASS first frame only establishes change baselines
+PASS simultaneous changes choose highest priority
+PASS other simultaneous event retained for sequential execution
+PASS declared next phase entered
+PASS old-phase queued action canceled on transition
+PASS new phase receives fresh baseline
+PASS new phase reacts only to its region
+PASS changes outside active regions ignored
+PASS many registered regions with no fixed count limit
+PASS timeout-only phase needs no pixel sampling
+PASS timeout does not fire early
+PASS timeout uses phase entry time
+PASS timeout fires once per phase entry
+PASS reentered phase rearms timeout
+PASS taught regional state triggers match
+PASS unchanged match is latched
+PASS leaving and reentering matching state rearms
+PASS unrecorded match blocks execution
+PASS missing next phase rejected
+PASS valid multiphase configuration accepted
+PASS another app engine has independent baselines
+PASS named phase prompt maps exact user example
+PASS named prompt priority and wait interpreted
+PASS mismatched prompt region rejected
+PASS unsupported phase instruction rejected
+TOTAL 27 phase checks passed; Android UI and gestures not tested.
+PASS exact requested prompt interpreted
+PASS equivalent possessive wording interpreted
+PASS multiline wait and threshold interpreted
+PASS conflicting center-tap instruction rejected
+PASS conflicting center-tap instruction rejected
+PASS initial frame registers baseline without tap
+PASS unchanged region does not trigger
+PASS small noise does not trigger
+PASS subthreshold accumulated change waits
+PASS accumulated region change triggers once
+PASS same changed frame does not repeat trigger
+PASS post-tap first frame only rebaselines
+PASS baseline copied rather than aliased
+PASS tap uses monitor center rather than screen center
+PASS optional taught completion stop interpreted
+PASS second individual region uses its own center
+PASS distinct regions never share one global center
+TOTAL 17 center-tap checks passed; device gesture not tested.
+PASS all-state arrow clearing, queued event clearing, node/region/start/layout preservation, history clearing and repeat clearing; device UI not tested.
+PASS history model expanded into explicit states
+PASS configured start preserved
+PASS original backup model unmodified
+PASS common display split into context states
+PASS converted transition has no history guards
+PASS converted transition has no history guards
+PASS converted transition has no history guards
+PASS converted transition has no history guards
+PASS reward entry action available
+PASS same image branches to reward using state only
+PASS reward branch reaches final state
+PASS upgrade and reward histories now distinct nodes
+PASS same image branches to upgrade using state only
+PASS converted automaton validates
+PASS history-free settings remain unchanged
+TOTAL 15 migration checks passed; device UI not tested.

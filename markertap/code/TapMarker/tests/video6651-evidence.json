@@ -1,0 +1,372 @@
+{
+  "video": "6651.mp4",
+  "sha256": "c2b97740d79edc11a85fde1bf69ab14323a5795e626836fa95c903b7ce4b2d7a",
+  "native_size": [
+    1080,
+    2424
+  ],
+  "template_regions": {
+    "missions": {
+      "time_s": 50,
+      "heading": [
+        0.29,
+        0.167,
+        0.715,
+        0.188
+      ],
+      "control": [
+        0.08,
+        0.549,
+        0.455,
+        0.574
+      ]
+    },
+    "get": {
+      "time_s": 50,
+      "heading": [
+        0.29,
+        0.167,
+        0.715,
+        0.188
+      ],
+      "control": [
+        0.72,
+        0.643,
+        0.865,
+        0.666
+      ]
+    },
+    "play": {
+      "time_s": 65,
+      "heading": [
+        0.29,
+        0.167,
+        0.715,
+        0.188
+      ],
+      "control": [
+        0.72,
+        0.643,
+        0.865,
+        0.666
+      ]
+    },
+    "reward": {
+      "time_s": 61,
+      "heading": [
+        0.605,
+        0.342,
+        0.819,
+        0.366
+      ],
+      "control": [
+        0.42,
+        0.553,
+        0.575,
+        0.574
+      ]
+    },
+    "close": {
+      "time_s": 61,
+      "heading": [
+        0.605,
+        0.342,
+        0.819,
+        0.366
+      ],
+      "control": [
+        0.42,
+        0.553,
+        0.575,
+        0.574
+      ]
+    },
+    "bonus": {
+      "time_s": 47,
+      "heading": [
+        0.605,
+        0.276,
+        0.814,
+        0.298
+      ],
+      "control": [
+        0.32,
+        0.62,
+        0.68,
+        0.64
+      ]
+    },
+    "offline": {
+      "time_s": 8,
+      "heading": [
+        0.3,
+        0.243,
+        0.7,
+        0.308
+      ],
+      "control": [
+        0.45,
+        0.65,
+        0.555,
+        0.675
+      ]
+    },
+    "claim": {
+      "time_s": 8,
+      "heading": [
+        0.3,
+        0.243,
+        0.7,
+        0.308
+      ],
+      "control": [
+        0.45,
+        0.65,
+        0.555,
+        0.675
+      ]
+    },
+    "promo": {
+      "time_s": 7,
+      "heading": [
+        0.25,
+        0.298,
+        0.756,
+        0.326
+      ],
+      "control": [
+        0.862,
+        0.261,
+        0.912,
+        0.293
+      ]
+    },
+    "promo-close": {
+      "time_s": 7,
+      "heading": [
+        0.25,
+        0.298,
+        0.756,
+        0.326
+      ],
+      "control": [
+        0.862,
+        0.261,
+        0.912,
+        0.293
+      ]
+    }
+  },
+  "limitations": "ROI replay verifies pixel classification and coordinates; Android input and actual device execution remain untested.",
+  "replay_frames": [
+    {
+      "name": "promo",
+      "time_s": 7,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "promo-later",
+      "time_s": 7.15,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "offline",
+      "time_s": 8,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "offline-later",
+      "time_s": 8.2,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "bonus",
+      "time_s": 47,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "bonus-later",
+      "time_s": 47.3,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "mission-get",
+      "time_s": 50,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "mission-get-later",
+      "time_s": 56,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "mission-play",
+      "time_s": 65,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "mission-play-later",
+      "time_s": 64,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "reward",
+      "time_s": 61,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "reward-later",
+      "time_s": 61.1,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "reward-native",
+      "time_s": 61,
+      "size": [
+        1080,
+        2424
+      ]
+    },
+    {
+      "name": "reward-native-later",
+      "time_s": 61.1,
+      "size": [
+        1080,
+        2424
+      ]
+    },
+    {
+      "name": "reward-loading",
+      "time_s": 60,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "reward-transition",
+      "time_s": 62,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "reward-pressed",
+      "time_s": 63,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "main",
+      "time_s": 10,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "main-later",
+      "time_s": 14,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "main-badge",
+      "time_s": 48,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "main-no-badge",
+      "time_s": 67,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "main-stopped",
+      "time_s": 72,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "ad",
+      "time_s": 37,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "ad-skip",
+      "time_s": 41,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "ad-store",
+      "time_s": 43,
+      "size": [
+        540,
+        1212
+      ]
+    },
+    {
+      "name": "chrome",
+      "time_s": 61.35,
+      "size": [
+        540,
+        1212
+      ]
+    }
+  ],
+  "holdout_note": "References were sampled at 7, 8, 47, 50, 61, 65 seconds. Later frames and negatives were not used for template creation; the Chrome frame at 61.35s is a negative, not a reward holdout."
+}

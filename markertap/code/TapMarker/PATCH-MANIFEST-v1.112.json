@@ -1,0 +1,97 @@
+{
+  "base_source_library_version": 61,
+  "target_version": "1.112",
+  "status": "validated_host_tests",
+  "changes": [
+    {
+      "path": "AndroidManifest.xml",
+      "before_sha256": "f9266d3eed58118962586c0015c06954f29b8935102cff51c6f15a653d5895dc",
+      "after_sha256": "209ff1de494b54bb3761af4fa504f0c804c59616098ce96145706e357d02e5b6"
+    },
+    {
+      "path": "CHANGES-v1.112.md",
+      "before_sha256": null,
+      "after_sha256": "0b993aee3c46b2e04d9c67eefd56368f92affc59e3e7897bdfb0d24fdec0a660"
+    },
+    {
+      "path": "GUIDE-v1.112.md",
+      "before_sha256": null,
+      "after_sha256": "3bdf91541e9f776e91e425bac1fc4af69cfa354c9c240cbbad88cd5b9ef63f6b"
+    },
+    {
+      "path": "VALIDATION-v1.112.json",
+      "before_sha256": null,
+      "after_sha256": "d268c476e265e4c96356f83dca3042c452a466934a88b563b8215cd442769a4a"
+    },
+    {
+      "path": "apk-verification-v1.112.json",
+      "before_sha256": null,
+      "after_sha256": "24c56d52b5f35316d95ed47d483e2e2ba43d76cfd2fcbba8d09c6ed6bbd4a281"
+    },
+    {
+      "path": "build.sh",
+      "before_sha256": "2b6f5ecc089c4702508a1e1f91445db1cb50eb827d94b2324977cb22cad7f830",
+      "after_sha256": "574cb61d44c0c63731a670066c4b4b2f0ba241b52f1d40ec1a0492cb03e0676e"
+    },
+    {
+      "path": "src/jp/tapmarker/AdExitPolicy.java",
+      "before_sha256": "b7116554a1bebd03cb0857fc308021abac5fbc60e07e1e7e9308ed34d291f107",
+      "after_sha256": "b3831b3d62b579edb52552c15d3b58d294d364120f1a3c75609ceacc8d66bc9d"
+    },
+    {
+      "path": "src/jp/tapmarker/AutoPilot.java",
+      "before_sha256": "33174542b0c3eebf770d0c1e5573dd8776f297db0d8624c5b3887ab786f7be4a",
+      "after_sha256": "b265c2b36220cddbfcaadf6c406688a3bc9939904535a52361f14391a129998c"
+    },
+    {
+      "path": "src/jp/tapmarker/CoinControlEvidence.java",
+      "before_sha256": "00508be1dc319702fb0933dbccc157649dcd7db631fdd03cf2087376b3215838",
+      "after_sha256": "75cda4a953bb2d3b2849ca823a70b2d424a9b7a6fc3be07df62a22b45329816d"
+    },
+    {
+      "path": "src/jp/tapmarker/CoinLayout.java",
+      "before_sha256": "7df87a9135ec35fdd86ba5deb421e2ee210677c05fe12f43f4acf2a063015771",
+      "after_sha256": "f58f01df494c0478a3d6a5d45d06e180de75bed66c4a563d239a30dde1b945a9"
+    },
+    {
+      "path": "src/jp/tapmarker/ProgressErrors.java",
+      "before_sha256": "45e52bf8eadcf07ba8e25a99835ae069b8f7ad97ac3c601bcb097a117103d67f",
+      "after_sha256": "cdde5824565ae6742cbc69320106a3f16b1c49320c22439132d5bce1c521c0f7"
+    },
+    {
+      "path": "src/jp/tapmarker/RecognitionDiagnostics.java",
+      "before_sha256": null,
+      "after_sha256": "3f2c19688f632b3ec32ae60b6bf6e7ec13895b2ad15e55fc24448e80ae226418"
+    },
+    {
+      "path": "src/jp/tapmarker/RecoveryEscalation.java",
+      "before_sha256": null,
+      "after_sha256": "39abdfc08ad59720cf93f2793e8d4662f52c2599581301d170f606fbc0f34ebf"
+    },
+    {
+      "path": "src/jp/tapmarker/SplitPilot.java",
+      "before_sha256": "4fffbe29ffb10dbe32e720662f50fe31fe776da32114da810e70d9c77d784f5f",
+      "after_sha256": "b44d194e39a954569f995c2af947d9b5ebb9a5bf9a2317f7f047e2a1eca71eb0"
+    },
+    {
+      "path": "src/jp/tapmarker/VirtualWindows.java",
+      "before_sha256": "30e009a587a0e52c5af4394a016ff718d2d04c7a358a24ea8f9aebed33d180d6",
+      "after_sha256": "4db0d574b7a3f70b967604795860121e7065009d1a67420ff3fc55f995911dec"
+    },
+    {
+      "path": "tests/CoinSearchBudgetTest.java",
+      "before_sha256": null,
+      "after_sha256": "b3a2f390278ebe5aad0f463da47a9ccaccb3d0bbca6375cc21358a899be1d183"
+    },
+    {
+      "path": "tests/StateStallRecoveryTest.java",
+      "before_sha256": null,
+      "after_sha256": "f704f87d67abc78d22161e37ca5046af0e472720cf6219e901f8eae795f7b0d1"
+    },
+    {
+      "path": "verify-v1.112.sh",
+      "before_sha256": null,
+      "after_sha256": "fbfd4a232b0222934aeb8759932acdcbd3ca314af0ad6655c58969c311e7d111"
+    }
+  ]
+}

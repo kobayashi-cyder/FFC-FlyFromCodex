@@ -1,0 +1,240 @@
+{
+  "version": "1.68",
+  "version_code": 71,
+  "package": "jp.tapmarker.lite",
+  "apk_bytes": 4966808,
+  "apk_sha256": "55074a49d5b4065d5b3e1d0275bdc8ae33306222206c0478ef761fe45e106dac",
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "native_libraries": [
+    {
+      "name": "lib/arm64-v8a/libconscrypt_jni.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 2001952,
+          "virtual_address": 2018336,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/arm64-v8a/libspake2.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 25920,
+          "virtual_address": 42304,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/armeabi-v7a/libconscrypt_jni.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 1226216,
+          "virtual_address": 1242600,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/armeabi-v7a/libspake2.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 27296,
+          "virtual_address": 43680,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/x86/libconscrypt_jni.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 2210420,
+          "virtual_address": 2226804,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/x86/libspake2.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 40736,
+          "virtual_address": 57120,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/x86_64/libconscrypt_jni.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 2398992,
+          "virtual_address": 2415376,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/x86_64/libspake2.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 32848,
+          "virtual_address": 49232,
+          "alignment": 16384
+        }
+      ]
+    }
+  ],
+  "all_v167_native_libraries_preserved": true,
+  "assets_preserved": [
+    "assets/THIRD-PARTY-NOTICES.txt",
+    "assets/circuit.bin",
+    "assets/coin-preset.json",
+    "assets/farm-preset.json",
+    "assets/licenses/AndroidX-Annotation-License.txt",
+    "assets/licenses/BouncyCastle-License.html",
+    "assets/licenses/Conscrypt-Apache-2.0.txt",
+    "assets/licenses/Conscrypt-NOTICE.txt",
+    "assets/licenses/GPL-3.0.txt",
+    "assets/licenses/LibADB-Apache-2.0.txt",
+    "assets/licenses/SPAKE2-C-License.txt",
+    "assets/licenses/SPAKE2-LGPL-3.0.txt",
+    "assets/licenses/Shizuku-License.txt",
+    "assets/provenance.json",
+    "assets/shopping-preset.json",
+    "assets/third-party/Shizuku-LICENSE.txt",
+    "assets/usagi-preset.json"
+  ],
+  "old_layout_references_preserved": true,
+  "new_dialog_references": 16,
+  "core_java_suites": 52,
+  "mock_adb_scenarios": 8,
+  "farm_dialog_replay_checks": 245,
+  "farm_named_control_checks": 35,
+  "farm_dialog_replay_frames": 12,
+  "farm_dialog_training_seconds": {
+    "close": 66,
+    "start": 70
+  },
+  "farm_dialog_fixture": "tests/farm-dialog-replay.bin.gz",
+  "farm_dialog_reference_source": "6612.mp4",
+  "farm_dialog_fixture_source_sha256": "7a509d66678f65c900b64ff6a99dd871cc41e1ba92c990be6194db81fb983b4f",
+  "baseline_native_reward_rejected": true,
+  "new_native_reward_heldouts_match": true,
+  "resized_geometries": [
+    [
+      444,
+      994
+    ],
+    [
+      540,
+      1140
+    ],
+    [
+      540,
+      1211
+    ],
+    [
+      720,
+      1520
+    ],
+    [
+      1080,
+      2280
+    ]
+  ],
+  "treasure_button_image_supplied": false,
+  "treasure_label_supported_if_exposed_by_accessibility": true,
+  "android_accessibility_collection_device_tested": false,
+  "daily_route_checks": 26,
+  "video6677_checks": 171,
+  "content_viewport_checks": 24,
+  "daily_logic_tested": true,
+  "actual_daily_completion_game_image_available": false,
+  "device_tested": false,
+  "f52a_device_tested": false,
+  "chromebook_device_tested": false,
+  "chromebook_target_app_layouts_provided": false,
+  "old_full_replay_omissions": [
+    "Video6651Replay",
+    "Video6662Replay",
+    "Video6666Replay",
+    "Video6669Replay"
+  ],
+  "v167_update_signer_match": true,
+  "signer_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "signature_v2": true,
+  "signature_v3": true,
+  "scope_notes": [
+    "Normal close/start masks use independent heading and button labels, rather than virtual-dialog heading or animated background.",
+    "The treasure-opening watch requires the actual visible named control and its frame-local point; no lock or full-image center is substituted.",
+    "Accessibility control discovery is scoped to the farm package on the requested display. Exact labels exclude ad-prefixed treasure prompts.",
+    "Missing treasure-button pixels prevent proof for an image-only F-52A treasure UI. Supplied 6612/6614 videos show automatic opening animations.",
+    "Daily completion guard takes priority over new named controls and expired timers.",
+    "Edited/learned configuration is preserved; user-recorded treasure images keep their own sampling and coordinates.",
+    "Held-out video frames are resampled Pixel observations, not F-52A or ChromeOS execution tests."
+  ]
+}

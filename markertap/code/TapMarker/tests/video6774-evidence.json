@@ -1,0 +1,64 @@
+{
+  "source": "6774.mp4",
+  "sha256": "3a428269cd2aea6d3d7b5209457d66b93fd2c53176dfbb43fa712eba13c38193",
+  "training": [
+    "coin:06 offline title and ordinary acquisition label; amount area excluded"
+  ],
+  "seconds": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24
+  ],
+  "preview_crops": {
+    "usagi": [
+      132,
+      264,
+      400,
+      866
+    ],
+    "farm": [
+      672,
+      264,
+      940,
+      866
+    ],
+    "coin": [
+      132,
+      990,
+      400,
+      1592
+    ],
+    "poipoi": [
+      672,
+      990,
+      940,
+      1592
+    ]
+  },
+  "anchors": [
+    [
+      0.2835820895522388,
+      0.2591362126245847,
+      0.7276119402985075,
+      0.3338870431893688
+    ],
+    [
+      0.43656716417910446,
+      0.7558139534883721,
+      0.5634328358208955,
+      0.7940199335548173
+    ]
+  ],
+  "held_out": "Other times of the same incident, not independent app sessions. coin:00 is covered by an advertisement.",
+  "scope": "Visible preview crops only. Resizing, relocation, changed amount, masking and completion are synthetic. Android input delivery, reward credit and multiwindow endurance are unverified."
+}

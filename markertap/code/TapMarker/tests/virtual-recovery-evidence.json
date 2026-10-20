@@ -1,0 +1,89 @@
+{
+  "source": "6645.mp4",
+  "sha256": "670db6dff7b0746cd97fcc36e21c25ea2291a787e8e6467e0284aeba4434adaf",
+  "training": "farm-reward at 70s; prior main evidence remains unchanged except the farm green-button anchor",
+  "held_out": "other video frames and farm reward at 85s",
+  "cases": [
+    {
+      "name": "usagi-main",
+      "seconds": 20,
+      "crop": [
+        42,
+        543,
+        484,
+        1536
+      ]
+    },
+    {
+      "name": "usagi-ad-left",
+      "seconds": 45,
+      "crop": [
+        42,
+        543,
+        484,
+        1536
+      ]
+    },
+    {
+      "name": "farm-main",
+      "seconds": 20,
+      "crop": [
+        538,
+        559,
+        982,
+        1553
+      ]
+    },
+    {
+      "name": "farm-main-pressed",
+      "seconds": 25,
+      "crop": [
+        538,
+        559,
+        982,
+        1553
+      ]
+    },
+    {
+      "name": "farm-ad-right",
+      "seconds": 40,
+      "crop": [
+        538,
+        559,
+        982,
+        1553
+      ]
+    },
+    {
+      "name": "farm-ad-left",
+      "seconds": 55,
+      "crop": [
+        538,
+        559,
+        982,
+        1553
+      ]
+    },
+    {
+      "name": "farm-reward",
+      "seconds": 70,
+      "crop": [
+        538,
+        559,
+        982,
+        1553
+      ]
+    },
+    {
+      "name": "farm-reward-holdout",
+      "seconds": 85,
+      "crop": [
+        538,
+        559,
+        982,
+        1553
+      ]
+    }
+  ],
+  "scope": "Visible virtual previews, not raw 720px ImageReader buffers or actual Android inputs."
+}

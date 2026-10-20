@@ -1,0 +1,5 @@
+package jp.tapmarker;
+import java.util.*;
+public class DisappearTest {
+ public static void main(String[] args){PhaseEngine e=new PhaseEngine();e.strictRuntime=true;PhaseEngine.Phase p=new PhaseEngine.Phase();p.id="ad";e.phases.put(p.id,p);PhaseEngine.Watch w=new PhaseEngine.Watch();w.id="d";w.regionId="use";w.condition=PhaseEngine.DISAPPEAR;w.reference=new float[]{1};p.watches.add(w);e.enter(p.id,0);Map<String,float[]> s=new HashMap<>();s.put("use",new float[]{1});e.observe(s,0);e.observe(s,1);if(e.poll()!=null)throw new AssertionError("visible");s.put("use",new float[]{0});e.observe(s,2);if(e.poll()!=null)throw new AssertionError("single frame");e.observe(s,3);if(e.poll()!=w)throw new AssertionError("disappearance");e.finish(w,4);e.observe(s,5);e.observe(s,6);if(e.poll()!=null)throw new AssertionError("duplicate");s.put("use",new float[]{1});e.observe(s,7);s.put("use",new float[]{0});e.observe(s,8);e.observe(s,9);if(e.poll()!=w)throw new AssertionError("rearm");System.out.println("PASS visible, two-frame disappearance, one tap, and reappearance rearm");}
+}

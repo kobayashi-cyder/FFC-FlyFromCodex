@@ -1,0 +1,19 @@
+{
+  "applicationVersion": "1.87",
+  "versionCode": 90,
+  "backendImplementation": 89,
+  "pcVersion": "2.6",
+  "androidCoreExitCode": 0,
+  "frameQueueChecks": 27,
+  "targetRecoveryChecks": 22,
+  "targetedInputChecks": 97,
+  "pcCoreChecks": 47,
+  "pcRecoveryChecks": 9,
+  "pcWorkerChecks": 54,
+  "pcPlacementAndStateChecks": 17,
+  "actualDeviceInputTested": false,
+  "actualScreenshotApiTested": false,
+  "windowsGuiTested": false,
+  "apkSha256": "84909b522bb91bc5c96d663bfe849af2982d78795b4b1fd2318e9d8b801706fa",
+  "certificateSha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1"
+}

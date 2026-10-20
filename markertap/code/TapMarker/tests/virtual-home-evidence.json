@@ -1,0 +1,52 @@
+{
+  "source": "Screenshot_20261008-163208.png",
+  "source_size": [
+    684,
+    1536
+  ],
+  "boxes": [
+    {
+      "app": "usagi",
+      "bounds": [
+        16,
+        228,
+        296,
+        856
+      ],
+      "header_region": [
+        0.66,
+        0.0096,
+        0.77,
+        0.0396
+      ],
+      "button_region": [
+        0.38,
+        0.758,
+        0.64,
+        0.792
+      ]
+    },
+    {
+      "app": "farm",
+      "bounds": [
+        307,
+        707,
+        588,
+        1337
+      ],
+      "header_region": [
+        0.75,
+        0.077,
+        0.805,
+        0.092
+      ],
+      "button_region": [
+        0.6,
+        0.765,
+        0.64,
+        0.789
+      ]
+    }
+  ],
+  "purpose": "Visible virtual main screens only. Farm green-button anchor updated in v1.57; additional video evidence is in virtual-recovery-evidence.json. Not a native ImageReader or Android input test."
+}

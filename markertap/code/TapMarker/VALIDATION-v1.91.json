@@ -1,0 +1,34 @@
+{
+  "version": "1.91",
+  "versionCode": 94,
+  "package": "jp.tapmarker.lite",
+  "added_profile": "com.kurashiru.poipoi.usagi",
+  "app_identity_source": "https://play.google.com/store/apps/details?hl=ja&id=com.kurashiru.poipoi.usagi",
+  "build_exit_code": 0,
+  "test_group": "core",
+  "test_exit_code": 0,
+  "video6725_checks": 1370,
+  "video6725_replay_images": 137,
+  "video6725_native_images": 8,
+  "training_timestamp_overlap": false,
+  "runtime_tested": "build/shrunk.jar, the class input for the shipped DEX",
+  "apk_sha256": "a31f179c48fc07eed335655aeb44c5c585e5d3de352afdf14072a21298aef3d0",
+  "same_certificate_as_v190": true,
+  "certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "zip_crc_valid": true,
+  "packaged_references_match_source": true,
+  "packaged_dex_matches_build": true,
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "native_libraries_match_v190": true,
+  "device_tested": false,
+  "limits": [
+    "Input delivery, Android HOME behavior and actual reward credits are not device-verified.",
+    "Visible completed Get rows only; unobserved scrolling, optional boost/character CM and full daily completion are not implemented.",
+    "Early HOME is restricted to the foreground single-window runner; split/virtual runners retain display-local recovery."
+  ]
+}

@@ -1,0 +1,236 @@
+{
+  "source": "6680.mp4",
+  "source_sha256": "404d24618c63661c155a4cbab92f3ac2a16035c1a61aa9856b575fd08be52203",
+  "reported_device": "F-52A",
+  "source_size": [
+    1080,
+    2280
+  ],
+  "training_seconds": 2,
+  "virtual_to_recorded_layout": [
+    1.0,
+    0.9649999737739563,
+    0.0,
+    0.04399999976158142
+  ],
+  "header_bounds": [
+    0.6600000262260437,
+    0.05326399952173233,
+    0.7699999809265137,
+    0.08221399784088135
+  ],
+  "label_bounds": [
+    0.17800000309944153,
+    0.8576091527938843,
+    0.30799999833106995,
+    0.870331883430481
+  ],
+  "new_reference_keys": [
+    "usagi-portable-f52a-home-1080x2280-nearest",
+    "usagi-portable-f52a-home-540x1140-nearest",
+    "usagi-portable-f52a-home-540x1140-smooth",
+    "usagi-portable-f52a-home-720x1520-nearest",
+    "usagi-portable-f52a-home-720x1520-smooth"
+  ],
+  "replay_frames": [
+    {
+      "seconds": 0,
+      "size": [
+        1080,
+        2280
+      ],
+      "native_pixels": true,
+      "rgb_sha256": "45cd5cdb0d268595746fd0324d375d4c7a400ea5dce149609674e083221cd7e5"
+    },
+    {
+      "seconds": 0.5,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "2f06a09d9914d654452281ecd35a486b23d89422d323845dc920083f77692295"
+    },
+    {
+      "seconds": 1,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "2658af299abe0d11fc23b1e3795bc76d37952d8f77de76f3b80800026118b957"
+    },
+    {
+      "seconds": 3,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "8acae539427a9e6c37e24d9088f2385a5d03f48c6e3987dd0403b8e86ed4472d"
+    },
+    {
+      "seconds": 6.5,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "f102c1052dd970a22eccf7645b77142545617b356a5960c60c286790de7c74ce"
+    },
+    {
+      "seconds": 8,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "c457dce029b3a920df6468b1d874ac471d1445bac48620c30258ad2d4c1559e4"
+    },
+    {
+      "seconds": 12,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "4041ebcf2bab6b808d318e765aa94da90e93cb3070bf187f231490e7479b637f"
+    },
+    {
+      "seconds": 14,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "66015e45922357a85a5d33f072d4408cb150f28e1efc1baecd05851984ebf9dd"
+    },
+    {
+      "seconds": 17,
+      "size": [
+        1080,
+        2280
+      ],
+      "native_pixels": true,
+      "rgb_sha256": "a2664d5adc7c22862966672c8f5672ff7d3def7da9f4ce08abc6bbd1bb9a5c9c"
+    },
+    {
+      "seconds": 21,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "bb8e767497efc094072dba37538e7a8d1fb936a0e914f5bf6bbdc66fb974f97d"
+    },
+    {
+      "seconds": 27,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "da6111c05f5680e52a49813e9e0843db2eb0a32196a9e7c9b064fa9b553a2f65"
+    },
+    {
+      "seconds": 35,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "8eae77347d005774e52cd6d4533cf6d9dd6c326ef36c0f6e8206e790f26dd1f1"
+    },
+    {
+      "seconds": 48,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "b0e9216731e2793f7c5fead0e8e98e9b805b79158d1a2117cab519063f3b657a"
+    },
+    {
+      "seconds": 63,
+      "size": [
+        1080,
+        2280
+      ],
+      "native_pixels": true,
+      "rgb_sha256": "910a0c689383b1e181b4da59097bd7f661a53bf7382d4238e67e5edd764382ce"
+    },
+    {
+      "seconds": 80,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "2b29ccdad0be8441854f655567628ff69c5a3f92de0bc72acda9731e8be29f88"
+    },
+    {
+      "seconds": 127,
+      "size": [
+        1080,
+        2280
+      ],
+      "native_pixels": true,
+      "rgb_sha256": "8a5dcbfec4ef4ccb26bd430ac942c39e5fcfe63b12cda8f47b5dfc034cf14dd0"
+    },
+    {
+      "seconds": 137,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "fb3f9a47563883eedb600149c0777ec70d25bc86e621970d63e44d59459c0e1e"
+    },
+    {
+      "seconds": 152,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "b190cbef1149cbc7840f3cdcec57c76560b536fe468b5ec60ce2559509bb53d8"
+    },
+    {
+      "seconds": 157,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "ed2ef8c9334c6469633a7864d6620f674caa0091a0e970d5acfd28dadea63fac"
+    },
+    {
+      "seconds": 163,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "7665fc837bc8691ce9671ffffe0c69df1825a6499d6a26a8458b00cf68ad11b2"
+    },
+    {
+      "seconds": 168,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "38c955132b0bdd8f19110f6b76189e55cb66d2d42254f9268ab8277248a4dc78"
+    },
+    {
+      "seconds": 173,
+      "size": [
+        540,
+        1140
+      ],
+      "native_pixels": false,
+      "rgb_sha256": "86d0d087cacb531cc820848c106b74162ccd3fc4ca16d66d76363c48451f3805"
+    }
+  ],
+  "limits": "Native F-52A video recognition and host coordinate replay. No new-APK installation or input test; no treasure, close, start or all-daily-complete button screen in this recording."
+}

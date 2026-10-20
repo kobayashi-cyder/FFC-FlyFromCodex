@@ -1,0 +1,192 @@
+{
+  "source": "6732.mp4",
+  "video_sha256": "77b9da034174a05c862461d9e94a9f571986e5f31e94cc7dc8c9d881d5b7038b",
+  "templates_added": false,
+  "frames": [
+    {
+      "seconds": 7,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "a718e709c30983fd849c1565e979443cd8b3e48f67427db17423010a1562d6ad"
+    },
+    {
+      "seconds": 10,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "63d44de6e9c66babe1b33f051c85ee549abb9ac96f20005a20b9e26813770da9"
+    },
+    {
+      "seconds": 14,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "a44c4807d5c62a6588a008fc2bede4fc2572776b4cbef4ace38f438504ef493b"
+    },
+    {
+      "seconds": 16,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "57ac57544ea309ec4bee972476b62cfbbc1cf9f77b8b7fb86558d7a7160ce590"
+    },
+    {
+      "seconds": 18,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "ee60f5c64ee0253b9da300f5a08c3f3e0bcccda3032923700473a9adfe405728"
+    },
+    {
+      "seconds": 22,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "2502eb68788ab9ef929746d21dead4a64bb4975789209250a938f41ba6f47419"
+    },
+    {
+      "seconds": 24,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "d2fcdc321067cc8490c59a1eb45e59e2ee4aa9fba1893e01195a6e7bbd248be4"
+    },
+    {
+      "seconds": 26,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "06aee51eaa66527b3d5fb112fe0a9324cbb4627d39aeb03ce788032f4b9fb462"
+    },
+    {
+      "seconds": 28,
+      "scene": "chest",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "383cba7b099a1a93df0191ef33221a9adf32219dac09db916f3507b802bac69b"
+    },
+    {
+      "seconds": 30,
+      "scene": "reward",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "2c546f096a464c85dafe5f0f91907136b8aab89f1b66671ff8d3aab0bfed5cff"
+    },
+    {
+      "seconds": 50,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "8e797ed601ff71bfba366cc91f099516833867b87601efe7002697c442a27ab4"
+    },
+    {
+      "seconds": 60,
+      "scene": "ad",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "70ad79ce1c6fda9d1a0476f3499b19ef1498ebe4bc91c75ca72636ef44b49661"
+    },
+    {
+      "seconds": 76,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "0bc39312a1ea830988d2089fe222104d5458a01d8b0fd2d11e102ad7503f776e"
+    },
+    {
+      "seconds": 87,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "48d5d297082b3f6205b258931e00a0c7aa62ff6d93b4784048346dac7e9cf4b2"
+    },
+    {
+      "seconds": 90,
+      "scene": "confirmation",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "1a4897f59f7dddd9aaaff7529168c31a6350c30f61ceaa378b29726b3093a236"
+    },
+    {
+      "seconds": 154,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "9de83145da5528c7b4a53c568815e3231bd105503439091055bf4bba0a52ac25"
+    },
+    {
+      "seconds": 158,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "6f7e7cb939e9d0a7a4e122af36f21949c49d0e05fb47e41d06f64081fc45d312"
+    },
+    {
+      "seconds": 160,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "8edffc3c40f93e69c59eba1ab9355d4f6a5cff58eb0eec78a56efad4d5886d6e"
+    },
+    {
+      "seconds": 174,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "7e8e3bed300a1e23a2ee49f11ad14ae20663c956095224426b3cf59b206e0351"
+    },
+    {
+      "seconds": 176,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "5d996a17f4c31a011e81d767c83206f8cc091cbf361ef627f3ad4a0baede20b3"
+    },
+    {
+      "seconds": 180,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "6ecd4a58f13a109b219aba82d4a6a94452cfaa9619e8aa02952af9904d5a4217"
+    },
+    {
+      "seconds": 183,
+      "scene": "ad during fever",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "7da0b6c5fcafc3d87fec20ddfe23f19fcbe257977c1b578166d02c2aa9b8bd24"
+    },
+    {
+      "seconds": 187,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "86c2cd796a30002504dd9d15f85d96858ca4d6b4176ce671ac2e4ac01ab82e31"
+    },
+    {
+      "seconds": 190,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "1a54978550e3e3b1f57f49a5b1e8d9ad0fdf26f6be8e842f2f0a8048067fcb4c"
+    },
+    {
+      "seconds": 192,
+      "scene": "ad",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "26aa56f124cd0f48132f3a4840f862b697faadf39e9f7704e60b19c9f3340cc4"
+    },
+    {
+      "seconds": 196,
+      "scene": "harvest play",
+      "width": 856,
+      "height": 1920,
+      "rgb_sha256": "028d3ec0f9d43fd22345bf6f5f3ba0341b22615bc6fdb140272bb6b0ef5c67d0"
+    }
+  ],
+  "limits": [
+    "Replay pixels and host workload are checked. Device frame rate, gesture acceptance and game harvest rate are not measured."
+  ]
+}

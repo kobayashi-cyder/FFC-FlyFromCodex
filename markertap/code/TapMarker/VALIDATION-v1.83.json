@@ -1,0 +1,112 @@
+{
+  "version_name": "1.83",
+  "version_code": 86,
+  "package": "jp.tapmarker.lite",
+  "base_version": "1.82",
+  "backend_revision": 85,
+  "changes": [
+    "Shopping paired landmarks outside the visible panel and marker for home, resume, reward, boost and mission controls.",
+    "Resume card uses its verified non-CM label and returns through visual verification.",
+    "White right arrow in a leading black ad band joins bounded exit candidates.",
+    "Standard saved graph migration with backup, edited image/region/tolerance preservation, and cheaper new-card checks during confirmed normal play.",
+    "Finite random main-play locations and coin optional-CM exclusion retained."
+  ],
+  "recording": {
+    "name": "6717.mp4",
+    "sha256": "0ce891cbbc64c4d6ba86f7a7606979faadccc8d19093183bac3ba6bce0f3bcd9",
+    "dimensions": [
+      1080,
+      2424
+    ],
+    "duration_seconds": 185.028044,
+    "replay_frames": 49,
+    "training_seconds": {
+      "home": 1.0,
+      "resume": 117.0,
+      "reward": 167.8,
+      "boost": 121.8,
+      "get": 94.1,
+      "play": 95.9,
+      "arrow": 74.0
+    },
+    "device_and_installed_version": "unproven; overlay wording predates v1.82"
+  },
+  "tests": {
+    "group": "core",
+    "exit_code": 0,
+    "checks": {
+      "Video6717Replay": 508,
+      "RandomTapTargets": 772,
+      "DiscreteTapTargets": 62,
+      "F52AContact": 11364,
+      "GestureDispatchGuard": 22,
+      "DiscreteTouch": 25,
+      "AdExitSwitch": 72,
+      "CoinNoAdPolicy": 77,
+      "CoinCancelScreenshot": 200
+    },
+    "mock_adb_scenarios": 8
+  },
+  "apk_sha256": "9cf62be233f3eb4cf8db9c817b7dfbff7974fa326802725038b55627139d0970",
+  "runtime_jar_sha256": "61084cd60340a295766dae14eb6f0e6a3af7959e9ec35d733ebd9cd8f1790362",
+  "signer_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "same_certificate_as_v182": true,
+  "signatures": [
+    "v2",
+    "v3"
+  ],
+  "dex_and_assets_match_build": true,
+  "changed_assets": [
+    "assets/shopping-preset.json"
+  ],
+  "old_shopping_references_retained": true,
+  "new_paired_reference_variants": 18,
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "native_libraries": [
+    {
+      "path": "lib/arm64-v8a/libconscrypt_jni.so",
+      "min_load_alignment": 16384
+    },
+    {
+      "path": "lib/arm64-v8a/libspake2.so",
+      "min_load_alignment": 16384
+    },
+    {
+      "path": "lib/armeabi-v7a/libconscrypt_jni.so",
+      "min_load_alignment": 16384
+    },
+    {
+      "path": "lib/armeabi-v7a/libspake2.so",
+      "min_load_alignment": 16384
+    },
+    {
+      "path": "lib/x86/libconscrypt_jni.so",
+      "min_load_alignment": 16384
+    },
+    {
+      "path": "lib/x86/libspake2.so",
+      "min_load_alignment": 16384
+    },
+    {
+      "path": "lib/x86_64/libconscrypt_jni.so",
+      "min_load_alignment": 16384
+    },
+    {
+      "path": "lib/x86_64/libspake2.so",
+      "min_load_alignment": 16384
+    }
+  ],
+  "zip_and_elf_16kb_alignment": true,
+  "limits": [
+    "No new APK physical execution on F-52A or another Android device.",
+    "Manual all-stop and touches occur in the recording; visible landing pages alone do not establish an automated incorrect tap.",
+    "Control acknowledgements, missing anchors, dimming, scaling and desktop relocation in tests are explicitly synthetic.",
+    "White black-band arrow support is based on the observed glyph, not general arrow or OCR recognition.",
+    "Legacy optional full group needs four additional recording fixtures."
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "version": "1.108",
+  "versionCode": 111,
+  "package": "jp.tapmarker.lite",
+  "apk_sha256": "32b32275e792949962c14231e6c5116c72bde8046305996f1dbfc588cce81927",
+  "certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "matches_v1_107_certificate": true,
+  "apk_zip_integrity": true,
+  "dex_matches_tested_runtime": true,
+  "alignment_16k_check_exit": 0,
+  "post_notifications_declared": true,
+  "core_regression_exit": 0,
+  "core_loop_java_processes": 111,
+  "additional_java_processes": 6,
+  "mock_adb_scenarios": 8,
+  "new_watchdog_checks": 273,
+  "new_multi_app_checks": 997,
+  "tested_runtime_sha256": "45ecf3911f8891d90ed60ec8dacc8ac7a90c683e021419faab5787f2577b65c2",
+  "android_device_connected": false,
+  "android_notifications_clipboard_ui_tested": false,
+  "four_apps_actual_ram_and_long_run_tested": false,
+  "missing_historical_full_fixtures": [
+    "Video6651",
+    "Video6662",
+    "Video6666",
+    "Video6669"
+  ]
+}

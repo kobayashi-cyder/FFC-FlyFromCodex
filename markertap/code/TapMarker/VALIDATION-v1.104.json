@@ -1,0 +1,96 @@
+{
+  "version_name": "1.104",
+  "version_code": 107,
+  "package": "jp.tapmarker.lite",
+  "source_base": {
+    "name": "MarkerTap-v1.103-source.zip",
+    "library_version": 53
+  },
+  "user_report": {
+    "hint": "キャンセル後の確認",
+    "recording_available": false,
+    "exact_user_error_verified": false
+  },
+  "reproduced_code_path": {
+    "state": "usagi-default-use-wait",
+    "competing_rules": [
+      "cancel disappearance -> classify",
+      "observed ad exit -> ad"
+    ],
+    "baseline_diagnostic": "複数の分岐条件が成立 / 領域と見本画像を確認してください",
+    "baseline_expected_failure": "tests/cancel-ad-v1.103-baseline.log"
+  },
+  "apk": {
+    "name": "MarkerTap-v1.104-ad-confirmation.apk",
+    "sha256": "3a85af253d6b0e45b0cf7f87efae3e8c9d06dedca13b328086a9b89c8f452169",
+    "size_bytes": 5651284,
+    "certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+    "same_certificate_as_v1_103": true,
+    "zipalign_16k": "passed",
+    "dex_matches_built_runtime": {
+      "classes.dex": "79142be950b0eeebd420f9f453a4439329800042101de865fa19d039959b7adc"
+    },
+    "native_libraries": [
+      "lib/arm64-v8a/libconscrypt_jni.so",
+      "lib/arm64-v8a/libspake2.so",
+      "lib/armeabi-v7a/libconscrypt_jni.so",
+      "lib/armeabi-v7a/libspake2.so",
+      "lib/x86/libconscrypt_jni.so",
+      "lib/x86/libspake2.so",
+      "lib/x86_64/libconscrypt_jni.so",
+      "lib/x86_64/libspake2.so"
+    ],
+    "locale_configurations": [
+      "en",
+      "ja"
+    ]
+  },
+  "recognition_assets_unchanged_from_v1_103": [
+    "assets/usagi-preset.json",
+    "assets/virtual-home-preset.json",
+    "assets/visual-targets.json"
+  ],
+  "build": {
+    "result": "passed",
+    "java": 17,
+    "android_platform": 35,
+    "build_tools": "35.0.0"
+  },
+  "tests": {
+    "result": "passed",
+    "runner": "run-tests.sh",
+    "runtime": "build/shrunk.jar",
+    "runtime_sha256": "8c042a03110323ad614aef037249f4f230a1a193a3abe3327293f5aa90a8ec14",
+    "core_java_suites": 112,
+    "cancel_ad_checks": 67,
+    "incident_checks": 9,
+    "previous_video6750_checks": 190,
+    "mock_adb_scenarios": 8
+  },
+  "diagnostics": {
+    "type": "bounded text",
+    "fields": [
+      "time",
+      "application",
+      "state",
+      "reason"
+    ],
+    "manual_stop_does_not_erase": true,
+    "source_hooks": [
+      "single runner poll and failure notes",
+      "multiple screen runner poll and stop reasons"
+    ],
+    "android_preferences_device_tested": false
+  },
+  "scope": {
+    "actual_pixels": "previously provided 6750 recording",
+    "synthetic": [
+      "cancel disappearance/named exit conflict",
+      "input acknowledgements and stale results",
+      "factory result-wait states"
+    ],
+    "android_device_connected": false,
+    "unrecorded_user_incident_replayed": false,
+    "physical_input_and_actual_rewards_tested": false
+  }
+}

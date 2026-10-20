@@ -1,0 +1,16 @@
+PASS history model expanded into explicit states
+PASS configured start preserved
+PASS original backup model unmodified
+PASS common display split into context states
+PASS converted transition has no history guards
+PASS converted transition has no history guards
+PASS converted transition has no history guards
+PASS converted transition has no history guards
+PASS reward entry action available
+PASS same image branches to reward using state only
+PASS reward branch reaches final state
+PASS upgrade and reward histories now distinct nodes
+PASS same image branches to upgrade using state only
+PASS converted automaton validates
+PASS history-free settings remain unchanged
+TOTAL 15 migration checks passed; device UI not tested.

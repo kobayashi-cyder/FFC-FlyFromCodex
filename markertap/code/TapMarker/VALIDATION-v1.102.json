@@ -1,0 +1,157 @@
+{
+  "version_name": "1.102",
+  "version_code": 105,
+  "base_version": "1.101",
+  "package": "jp.tapmarker.lite",
+  "build": "passed",
+  "signing_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "matches_previous_actual_apk_certificate": true,
+  "zipalign_16kb": "passed",
+  "native_libraries": "all 8 unchanged from v1.101",
+  "all_assets_byte_identical_to_previous_apk": true,
+  "packaged_dex_matches_final_build": true,
+  "apk": {
+    "name": "MarkerTap-v1.102-locales.apk",
+    "bytes": 5647188,
+    "sha256": "8933e0b413318fe986ceac1a4df83ec2fe57f1965af09d81be7bd350a433305a"
+  },
+  "localization": {
+    "display_entries": 605,
+    "resource_sets": [
+      "values",
+      "values-en",
+      "values-ja"
+    ],
+    "supported_locales": [
+      "en",
+      "ja"
+    ],
+    "fallback": "English default resources",
+    "app_language_settings_min_api": 33,
+    "locale_only_configuration_branch": "refreshes overlay text without requesting an automation stop",
+    "resource_and_presenter_checks": 3074,
+    "packaged_configurations_verified": true,
+    "locale_config_in_manifest": true,
+    "stored_identifiers_and_reference_data": "unchanged"
+  },
+  "core_source_files_byte_identical": 146,
+  "core_validation": {
+    "status": "passed",
+    "jvm_suites": 109,
+    "mock_adb_scenarios": 8,
+    "log": "tests-v1.102.log"
+  },
+  "android_device_connected": false,
+  "native_ui_render_and_switch_test": "not performed",
+  "continuous_real_device_validation": "not performed",
+  "changed_files": [
+    {
+      "path": "AndroidManifest.xml",
+      "sha256": "3779ee104ab99451b016446c03d48db2974effb575421652f34302b3b8e82848"
+    },
+    {
+      "path": "build.sh",
+      "sha256": "46bb053eeb450122b3cec2a3dc78cf9ec8e5fe92aeaf990757ae62746ec484ee"
+    },
+    {
+      "path": "sign-release.sh",
+      "sha256": "c39a4ab608403754f675b491b0abb6d29af66c38ccddd0f285afe67e70d109fd"
+    },
+    {
+      "path": "run-tests.sh",
+      "sha256": "8912f39d1749a6f28e24dd49f066d5deaea03acbaa9388caae74c9b94a096983"
+    },
+    {
+      "path": "src/jp/tapmarker/AutoPilot.java",
+      "sha256": "c345d1dde3df7fc07fa4d78bd2623385e93d950c334f409a042d9c341cbcc1ff"
+    },
+    {
+      "path": "src/jp/tapmarker/BancSettings.java",
+      "sha256": "d49b92deaa73b25936d31f84933d724c510051652128ba4c8e498ac8a631a215"
+    },
+    {
+      "path": "src/jp/tapmarker/DailyRunner.java",
+      "sha256": "6a7ab0ed88a0c93bc3e52c5034e6d5d3346facba636c3dcbdabbfe069b0a7be5"
+    },
+    {
+      "path": "src/jp/tapmarker/EasyEditorUi.java",
+      "sha256": "998a8f97275889e797382d77482264d6cb5692e6b8007d7d3e99a6f985f9bfc9"
+    },
+    {
+      "path": "src/jp/tapmarker/GameProfiles.java",
+      "sha256": "9af956fb069a3e71ea1af95be66650947896fcd44f07545e8f2f65018df599c9"
+    },
+    {
+      "path": "src/jp/tapmarker/GraphUi.java",
+      "sha256": "18aa5708437c1d7d3f580dc25994de64f3861f1a85e525d6b167584919d8345c"
+    },
+    {
+      "path": "src/jp/tapmarker/InputCheckActivity.java",
+      "sha256": "4bfe8d4c0d96f383266337d8090288642ee586eb104e56412f48e3e9abe5cd8d"
+    },
+    {
+      "path": "src/jp/tapmarker/LearningController.java",
+      "sha256": "095fea6c23798761760accf470fa9ba30b327f5a89d5b4464d7e6cc6aca26130"
+    },
+    {
+      "path": "src/jp/tapmarker/MainActivity.java",
+      "sha256": "0859795bf53915776fad389a11bec32e70fc143c31fec45120db30b2cb013e38"
+    },
+    {
+      "path": "src/jp/tapmarker/PhaseUi.java",
+      "sha256": "0ead549ccf48e9df33e2453dfb7695b7a3d8d67ae4588638a633711b5d2fd796"
+    },
+    {
+      "path": "src/jp/tapmarker/RecordedImportActivity.java",
+      "sha256": "e968e3cadf11ccf35941a8724635efef101a1a880a7502ffee41f13e3aab3553"
+    },
+    {
+      "path": "src/jp/tapmarker/SplitLauncher.java",
+      "sha256": "6d806b299c20b85431cdd7bb253596150e42f11d71f93d9c470436f296e8a5e2"
+    },
+    {
+      "path": "src/jp/tapmarker/TapService.java",
+      "sha256": "5edb705eaac67e94ccec793fbe043e77506a60a8c474b29e8c9f10d643516399"
+    },
+    {
+      "path": "src/jp/tapmarker/UiCatalog.java",
+      "sha256": "4dfbae2fc0d13e98304d18a8db52a76af87b3189711953f95b49cc8d3ea51d73"
+    },
+    {
+      "path": "src/jp/tapmarker/UiKit.java",
+      "sha256": "d47d73ed6dbe25434245e7cbd4026d22337bb8e9056497228f5e5464ebb3fa75"
+    },
+    {
+      "path": "src/jp/tapmarker/UiStrings.java",
+      "sha256": "a56501ca58314d1cf12a9be818a2108463d2c670f8c5694ec3085809827a7c10"
+    },
+    {
+      "path": "src/jp/tapmarker/VirtualWindows.java",
+      "sha256": "79208fdfe30e5d86fbadc2fe44899f42088664db29acac1aaba7d0f51f11ea6f"
+    },
+    {
+      "path": "src/jp/tapmarker/WirelessAdb.java",
+      "sha256": "17b9add29b29851f18e02924d4216b62da0ae75ab8d1be18fae4d3a6f5c9b468"
+    },
+    {
+      "path": "res/values/strings.xml",
+      "sha256": "f5c145fb09b95ca0391cccacabb2c0f5a7c17fccd48d89582a2b5834675d4e7b"
+    },
+    {
+      "path": "res/values-en/strings.xml",
+      "sha256": "f5c145fb09b95ca0391cccacabb2c0f5a7c17fccd48d89582a2b5834675d4e7b"
+    },
+    {
+      "path": "res/values-ja/strings.xml",
+      "sha256": "552cdd150986adec4bb028dd1de001d4c5f58425cb5eeef99b28781e48e7674e"
+    },
+    {
+      "path": "res/xml/locales_config.xml",
+      "sha256": "c53c49672e4f6d35362dea8a33b1c5500cc3770ef2aac70405fccd0c62da2925"
+    },
+    {
+      "path": "tests/UiCatalogTest.java",
+      "sha256": "f5e00b0c2abf68b1320fcef4026d944a2bbed1b32d15ffe3b49d68c6c3aef601"
+    }
+  ]
+}

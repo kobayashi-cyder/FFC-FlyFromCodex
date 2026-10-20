@@ -1,0 +1,1 @@
+AdbStarterTest: 8 mock-ADB scenarios passed; actual ADB transport not tested

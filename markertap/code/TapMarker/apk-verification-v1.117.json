@@ -1,0 +1,31 @@
+{
+  "apk": "MarkerTap-v1.117-display-recovery.apk",
+  "sha256": "bebe21251b875ac68dc26f080397d0eb4df9eabb7eb718173a7adf654a422d3f",
+  "size_bytes": 5782356,
+  "package": "jp.tapmarker.lite",
+  "version_name": "1.117",
+  "version_code": 120,
+  "min_sdk": 24,
+  "target_sdk": 35,
+  "old_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "same_certificate": true,
+  "zip_crc_valid": true,
+  "zipalign_16k_check": true,
+  "dex_matches_final_build": true,
+  "dex_entries": [
+    "classes.dex"
+  ],
+  "native_library_count": 8,
+  "native_libraries_identical_to_v1116": true,
+  "new_runtime_classes": [
+    "DisplayRecovery",
+    "DisplayReplacement",
+    "PopupActionConfirmation",
+    "VirtualWindowEvidence"
+  ],
+  "device_install_test": false,
+  "signer_report": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nSigner #1 certificate DN: CN=TapMarker Portable Lite, O=Local Development, C=JP\nSigner #1 certificate SHA-256 digest: 7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1\nSigner #1 certificate SHA-1 digest: eec6965b378e2bbbabb295e4b6513a72deb80146\nSigner #1 certificate MD5 digest: 1b16aece1f3df35e58c37fe32eb72e0f\nSigner #1 key algorithm: RSA\nSigner #1 key size (bits): 2048\nSigner #1 public key SHA-256 digest: 3f344c84c00c0a7b1dd6e5b4c173bcb400232a34cde49903e5abb0cfaab27764\nSigner #1 public key SHA-1 digest: 225bc975162369957b460c1b862dac70451add87\nSigner #1 public key MD5 digest: 7d5e44a5f665d65c2608199b730899ab\n",
+  "badging": "package: name='jp.tapmarker.lite' versionCode='120' versionName='1.117' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'\nminSdkVersion:'24'\ntargetSdkVersion:'35'\nuses-permission: name='android.permission.POST_NOTIFICATIONS'\nuses-permission: name='android.permission.INTERNET'\nuses-permission: name='android.permission.ACCESS_NETWORK_STATE'\nuses-permission: name='moe.shizuku.manager.permission.API_V23'\napplication-label:'MarkerTap Lite'\napplication-label-en:'MarkerTap Lite'\napplication-label-ja:'マーカー連打 軽量版'\napplication: label='MarkerTap Lite' icon=''\nlaunchable-activity: name='jp.tapmarker.MainActivity'  label='' icon=''\nfeature-group: label=''\n  uses-feature-not-required: name='android.hardware.touchscreen'\n  uses-feature-not-required: name='android.hardware.type.pc'\nprovides-component:'accessibility'\nmain\nother-activities\nsupports-screens: 'small' 'normal' 'large' 'xlarge'\nsupports-any-density: 'true'\nlocales: '--_--' 'en' 'ja'\ndensities: '160'\nnative-code: 'arm64-v8a' 'armeabi-v7a' 'x86' 'x86_64'\n",
+  "cancel_revision_volatile": true
+}

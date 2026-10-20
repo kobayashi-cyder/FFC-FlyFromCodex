@@ -1,0 +1,74 @@
+{
+  "package": {
+    "package": "jp.tapmarker.lite",
+    "version_name": "1.93",
+    "version_code": 96,
+    "sha256": "626f2a5d11c0c79ad083bba0fbe4a1bb4d516e17c854e37be6746ee6f1e3d28b",
+    "bytes": 5507852,
+    "same_update_certificate": true,
+    "certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "v2_v3_signature_verified": true,
+    "zip_alignment_16k_verified": true,
+    "dex_matches_built_runtime": true,
+    "test_references_match_packaged_asset": true,
+    "layout_reference_fixture_matches_asset": true
+  },
+  "validation_time_utc": "2026-10-17T23:05:51.038471+00:00",
+  "core_test_script_exit_code": 0,
+  "test_runtime": "build/shrunk.jar (same reduced classfile input used by the signed APK)",
+  "core_java_suites": 99,
+  "adb_mock_scenarios": 8,
+  "new_targeted_checks": {
+    "VisualLocator": 11,
+    "LearnedReflow": 10,
+    "MarkerlessRelocation": 45,
+    "ConfiguredTargetReplay": 150,
+    "FarmFeverTap": 71,
+    "F52AMarkerless": 40
+  },
+  "new_targeted_checks_total": 327,
+  "new_runtime_java_classes": [
+    "VisualLocator",
+    "ContentRelocator"
+  ],
+  "changes": [
+    "AndroidManifest.xml",
+    "GUIDE-v1.93.md",
+    "README.md",
+    "assets/visual-targets.json",
+    "build.sh",
+    "run-tests.sh",
+    "src/jp/tapmarker/AdaptiveLayout.java",
+    "src/jp/tapmarker/AutoPilot.java",
+    "src/jp/tapmarker/ContentRelocator.java",
+    "src/jp/tapmarker/LearnedInput.java",
+    "src/jp/tapmarker/LearnedLayout.java",
+    "src/jp/tapmarker/MarkerTapLogic.java",
+    "src/jp/tapmarker/PhaseUi.java",
+    "src/jp/tapmarker/RecordedRepairSampling.java",
+    "src/jp/tapmarker/SplitPilot.java",
+    "src/jp/tapmarker/TapService.java",
+    "src/jp/tapmarker/VisualLocator.java",
+    "tests/ConfiguredTargetReplayTest.java",
+    "tests/F52AMarkerlessTest.java",
+    "tests/FarmFeverTapTest.java",
+    "tests/LearnedReflowTest.java",
+    "tests/MarkerlessRelocationTest.java",
+    "tests/VisualLocatorTest.java",
+    "tests/prepare-visual-targets.py",
+    "tests/visual-targets-evidence.json"
+  ],
+  "device_connected": false,
+  "limits": [
+    "No new-APK Android touch execution or measured device speed.",
+    "Fever banner reference reuses recording6612 at20s; recording6680 at168s is a different recording.",
+    "Native/scaled farm-letter variants fit existing normal frames6680 at63s and80s.",
+    "Unseen redesigned UI still requires reference recording/learning."
+  ]
+}

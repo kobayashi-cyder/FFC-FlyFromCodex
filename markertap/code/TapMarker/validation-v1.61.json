@@ -1,0 +1,15 @@
+{
+  "release": "1.61-video-recovery",
+  "version_code": 64,
+  "virtual_implementation": 64,
+  "host_suites": 41,
+  "video_replay_checks": 256,
+  "recovery_checks": 20,
+  "apk_sha256": "4c250205bc585de8df2def96180e029a07e27cdc5d35c32bd59879768a340410",
+  "signer_certificate_sha256": "c5dc233afc842c2fe2e362264bc2fee147cf2c6c1ba01aebff17dc33a4395fcb",
+  "apk_v2_v3_verified": true,
+  "native_16k_alignment_verified": true,
+  "references_match_shipped_assets": true,
+  "device_input_tested": false,
+  "device_continuous_run_tested": false
+}

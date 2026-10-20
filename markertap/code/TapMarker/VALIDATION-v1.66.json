@@ -1,0 +1,132 @@
+{
+  "version": "1.66",
+  "version_code": 69,
+  "package": "jp.tapmarker.lite",
+  "apk_bytes": 3033212,
+  "apk_sha256": "66941a21c8d7f6bceb9dc9ac0564ba44ea7cdd9944b25a2a3fa7c043fdbf3c4d",
+  "core_java_suites": 47,
+  "mock_adb_scenarios": 8,
+  "device_tested": false,
+  "f52a_device_tested": false,
+  "f52a_profile": {
+    "width": 540,
+    "decode_ms": 220,
+    "scan_ms": 400,
+    "preview_ms": 500,
+    "min_tap_ms": 32,
+    "launch_gap_ms": 650
+  },
+  "legacy_input_api_levels": [
+    30,
+    31,
+    32
+  ],
+  "input_guard": "live per-display top visible task, package/user, and Android 12 activity UID before each event; older OS lacks atomic UID injection",
+  "f52a_geometry_cases": [
+    "540x1140",
+    "720x1520"
+  ],
+  "recorded_pixel_resizing_test": true,
+  "old_full_replay_omissions": [
+    "Video6651Replay",
+    "Video6662Replay",
+    "Video6666Replay",
+    "Video6669Replay"
+  ],
+  "v165_in_place_update_signer_match": true,
+  "signer_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "signature_v2": true,
+  "signature_v3": true,
+  "compressed_native_extraction": true,
+  "native_libraries": [
+    {
+      "name": "lib/arm64-v8a/libconscrypt_jni.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 2001952,
+          "virtual_address": 2018336,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/arm64-v8a/libspake2.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 25920,
+          "virtual_address": 42304,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/armeabi-v7a/libconscrypt_jni.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 1226216,
+          "virtual_address": 1242600,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/armeabi-v7a/libspake2.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 27296,
+          "virtual_address": 43680,
+          "alignment": 16384
+        }
+      ]
+    }
+  ],
+  "all_v165_assets_and_native_libraries_unchanged": true,
+  "assets_preserved": [
+    "assets/THIRD-PARTY-NOTICES.txt",
+    "assets/circuit.bin",
+    "assets/coin-preset.json",
+    "assets/farm-preset.json",
+    "assets/licenses/AndroidX-Annotation-License.txt",
+    "assets/licenses/BouncyCastle-License.html",
+    "assets/licenses/Conscrypt-Apache-2.0.txt",
+    "assets/licenses/Conscrypt-NOTICE.txt",
+    "assets/licenses/GPL-3.0.txt",
+    "assets/licenses/LibADB-Apache-2.0.txt",
+    "assets/licenses/SPAKE2-C-License.txt",
+    "assets/licenses/SPAKE2-LGPL-3.0.txt",
+    "assets/licenses/Shizuku-License.txt",
+    "assets/provenance.json",
+    "assets/shopping-preset.json",
+    "assets/third-party/Shizuku-LICENSE.txt",
+    "assets/usagi-preset.json",
+    "assets/virtual-home-preset.json"
+  ]
+}

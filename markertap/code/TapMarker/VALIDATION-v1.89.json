@@ -1,0 +1,46 @@
+{
+  "package": "jp.tapmarker.lite",
+  "versionName": "1.89",
+  "versionCode": 92,
+  "apk_bytes": 5392953,
+  "apk_sha256": "2da229599751d0b9a92ef06e75170add2b9aa229c5dc49d1083279212443e4a3",
+  "same_certificate_as_1_88": true,
+  "signature_v2": true,
+  "signature_v3": true,
+  "zipalign_16KiB": true,
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "dex_and_assets_equal_build": true,
+  "replay_references_equal_apk": true,
+  "core_suite": {
+    "command": "ANDROID_SDK_ROOT=<Android SDK 35> bash run-tests.sh",
+    "exit_code": 0,
+    "runtime": "build/shrunk.jar (same classfile input converted to the shipped APK DEX)",
+    "test_result_lines": 70
+  },
+  "video6722": {
+    "frames": 55,
+    "checks": 416,
+    "training_seconds": [
+      1.0,
+      61.0
+    ],
+    "training_frames_excluded": true
+  },
+  "home_return_sequence": {
+    "checks": 14,
+    "clock": "virtual",
+    "android_home_execution": false
+  },
+  "scope": "Early positive CM/HOME recovery for the supplied coin-drop foreground ad family; existing recovery retained for unknown ads.",
+  "device_execution": false,
+  "limitations": [
+    "HOME and game lifecycle response require real-device verification.",
+    "No assumption that HOME completes or rewards an advertisement.",
+    "No physical tap, Pixel/F-52A/Chromebook or Windows GUI execution in this environment."
+  ]
+}

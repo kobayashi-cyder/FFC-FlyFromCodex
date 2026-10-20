@@ -1,0 +1,39 @@
+{
+  "format_version": 1,
+  "application": "MarkerTap",
+  "version_name": "1.117",
+  "original_filename": "MarkerTap-v1.117-display-recovery-source.zip",
+  "original_size_bytes": 349706693,
+  "original_sha256": "a4a61232a93dde26898e58a1608e5515063764b975daca8727088f700f753187",
+  "archive_sha256": "a4a61232a93dde26898e58a1608e5515063764b975daca8727088f700f753187",
+  "archive_size_bytes": 349706693,
+  "member_count": 1193,
+  "uncompressed_size_bytes": 384287046,
+  "parts": [
+    {
+      "name": "source.zip.part000",
+      "size_bytes": 89128960,
+      "sha256": "c1f336389a77981dc98de18f5fd84a9cb42c0e27f831793f343d94bb51b1155f"
+    },
+    {
+      "name": "source.zip.part001",
+      "size_bytes": 89128960,
+      "sha256": "2acb7de77d3932f3383a5cc4c23768524df0a93a7c536db827a9eb0934c3884a"
+    },
+    {
+      "name": "source.zip.part002",
+      "size_bytes": 89128960,
+      "sha256": "88079671f5e4163bc7cf184875de1f0caafd8a0392e16a2ccf8f21fc73491358"
+    },
+    {
+      "name": "source.zip.part003",
+      "size_bytes": 82319813,
+      "sha256": "3b18645cd815c0e7dfbd513f0fb07b06b50f574721bbd80787fded75c9f3bd7f"
+    }
+  ],
+  "excluded_members": [],
+  "code_mirror_files": 781,
+  "signing_key_included": false,
+  "native_resolution_fix": "pending",
+  "restoration_verified": true
+}

@@ -1,0 +1,38 @@
+{
+  "version_name": "1.79",
+  "version_code": 82,
+  "package": "jp.tapmarker.lite",
+  "base_version": "1.78",
+  "change": "Recognize the supplied pot-count boost modal, cancel at visible right-hand letters, wait for disappearance, verify home before ordinary tapping resumes.",
+  "baseline_reproduction": [
+    "Baseline now=1000 rule=none",
+    "Baseline now=1200 rule=coin-default-main-lost -> coin-default-check",
+    "Baseline pot-cancel registered=false"
+  ],
+  "targeted_checks": 200,
+  "test_command": "ANDROID_SDK_ROOT=/path/to/android-sdk bash run-tests.sh",
+  "test_group": "core",
+  "test_exit_code": 0,
+  "android_abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "apk_sha256": "47c4b708c9b3bd9177e08e31bf609dd535fa9ff91625d34c428c14ca16895961",
+  "apk_signature_schemes": [
+    "v2",
+    "v3"
+  ],
+  "same_signing_certificate_as_v178": true,
+  "dex_matches_build": true,
+  "assets_match_source": true,
+  "zip_and_elf_16kb_alignment": true,
+  "sdk_tools": "Android platform 35 / build-tools 35.0.0",
+  "recognition_evidence": "Screenshot_20261015-133104.png; synthetic occlusions/resizes/insets and dismissal timelines; negative held-out frames from 6687.mp4",
+  "limitations": [
+    "No connected Android device; actual F-52A cancel acceptance and tapping speed remain unverified.",
+    "Only supplied pot-count modal added; other existing booster policies remain as before.",
+    "Full group requires four older video fixtures not included in this source."
+  ]
+}

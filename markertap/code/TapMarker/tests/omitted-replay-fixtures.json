@@ -1,0 +1,25 @@
+{
+  "reason": "Large replay frames are separate from build source; use prior-source fixtures or regeneration scripts.",
+  "fixtures": [
+    {
+      "path": "tests/video6651-replay.bin.gz",
+      "bytes": 9151311,
+      "sha256": "aec54f4a556bceb67ab134c6689654f80598fb0d863cde426471234c577837ea"
+    },
+    {
+      "path": "tests/video6662-replay.bin.gz",
+      "bytes": 19003822,
+      "sha256": "f2cf60439f8ca845cb1e545caa63be7c837cae4914728505e1ea84052268dca8"
+    },
+    {
+      "path": "tests/video6666-replay.bin.gz",
+      "bytes": 81829882,
+      "sha256": "472772e0afe4e8eb17a936cd65e4bc1aab22a962a2a434305487467fa0d8be24"
+    },
+    {
+      "path": "tests/video6669-replay.bin.gz",
+      "bytes": 32528140,
+      "sha256": "78449db2018187103b09666e56fb73917ddec1fbae23e0d1d620f77441748549"
+    }
+  ]
+}

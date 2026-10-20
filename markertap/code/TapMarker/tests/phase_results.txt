@@ -1,0 +1,28 @@
+PASS only current-phase regions active
+PASS inactive-phase region excluded
+PASS first frame only establishes change baselines
+PASS simultaneous changes choose highest priority
+PASS other simultaneous event retained for sequential execution
+PASS declared next phase entered
+PASS old-phase queued action canceled on transition
+PASS new phase receives fresh baseline
+PASS new phase reacts only to its region
+PASS changes outside active regions ignored
+PASS many registered regions with no fixed count limit
+PASS timeout-only phase needs no pixel sampling
+PASS timeout does not fire early
+PASS timeout uses phase entry time
+PASS timeout fires once per phase entry
+PASS reentered phase rearms timeout
+PASS taught regional state triggers match
+PASS unchanged match is latched
+PASS leaving and reentering matching state rearms
+PASS unrecorded match blocks execution
+PASS missing next phase rejected
+PASS valid multiphase configuration accepted
+PASS another app engine has independent baselines
+PASS named phase prompt maps exact user example
+PASS named prompt priority and wait interpreted
+PASS mismatched prompt region rejected
+PASS unsupported phase instruction rejected
+TOTAL 27 phase checks passed; Android UI and gestures not tested.

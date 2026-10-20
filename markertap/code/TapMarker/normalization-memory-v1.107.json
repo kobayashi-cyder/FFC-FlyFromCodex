@@ -1,0 +1,55 @@
+{
+  "method": "OpenJDK Instrumentation identity-based object traversal; fresh runtime engine + adaptive layout + upgrade engine; runtime evidence normalization before UpgradeEngine extracts side events, as production startup does. Same fixtures and reference values. Not Android PSS.",
+  "models": [
+    {
+      "package": "com.kurashiru.fue.usagi",
+      "mode": "BEFORE",
+      "phases": 19,
+      "rules": 105,
+      "total_bytes": 632096,
+      "template_vector_bytes": 548832,
+      "other_bytes": 83264,
+      "objects": 2298
+    },
+    {
+      "package": "com.kurashiru.fue.usagi",
+      "mode": "AFTER",
+      "phases": 19,
+      "rules": 105,
+      "total_bytes": 381928,
+      "template_vector_bytes": 299104,
+      "other_bytes": 82824,
+      "objects": 2213
+    },
+    {
+      "package": "com.kurashiru.nouen.usagi",
+      "mode": "BEFORE",
+      "phases": 8,
+      "rules": 44,
+      "total_bytes": 314312,
+      "template_vector_bytes": 271248,
+      "other_bytes": 43064,
+      "objects": 1040
+    },
+    {
+      "package": "com.kurashiru.nouen.usagi",
+      "mode": "AFTER",
+      "phases": 8,
+      "rules": 44,
+      "total_bytes": 267848,
+      "template_vector_bytes": 224992,
+      "other_bytes": 42856,
+      "objects": 1019
+    }
+  ],
+  "before_bytes_sum": 946408,
+  "after_bytes_sum": 649776,
+  "limits": [
+    "Static metadata, observations and learned skills excluded",
+    "Android object layout differs",
+    "Game, graphics and native capture buffers excluded",
+    "Summed individual app roots can double-count objects shared between apps"
+  ],
+  "tested_classfile_runtime_sha256": "53c4b6fd73bb50914eddf1062cb8d833c500fdc100a7088578c6f3ff9c3f2479",
+  "saved_bytes_sum": 296632
+}

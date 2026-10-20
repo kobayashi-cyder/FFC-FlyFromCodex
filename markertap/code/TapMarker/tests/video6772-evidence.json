@@ -1,0 +1,51 @@
+{
+  "source": "6772.mp4",
+  "sha256": "f9bf31e9207ba46a86a0719cbfd44e1f1cdc8bfb6f386757c4d9ed0376d26fea",
+  "training": [
+    "usagi:0.00 footer appearance",
+    "farm:28.07 announcement headings"
+  ],
+  "existing_evidence": "Poipoi continuation uses the original 6725 heading and ordinary continuation text; no new bonus reference is trained.",
+  "held_out": "Other timestamps; same incident and similar static content, not independent unseen popup designs.",
+  "seconds": [
+    0,
+    3.12,
+    6.24,
+    9.36,
+    12.48,
+    15.6,
+    18.72,
+    21.84,
+    24.96,
+    28.07,
+    31.19,
+    34.31
+  ],
+  "preview_crops": {
+    "usagi": [
+      126,
+      264,
+      406,
+      893
+    ],
+    "farm": [
+      666,
+      264,
+      946,
+      893
+    ],
+    "coin": [
+      240,
+      1430,
+      520,
+      2059
+    ],
+    "poipoi": [
+      628,
+      1450,
+      908,
+      2079
+    ]
+  },
+  "scope": "48 visible preview crops. Repeated observation times, resizes, moved windows, masks and input completions are simulated. No raw 320x718 ImageReader frame, actual tap delivery, app response or reward balance is asserted."
+}

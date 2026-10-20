@@ -1,0 +1,32 @@
+{
+  "version": "1.90",
+  "versionCode": 93,
+  "package": "jp.tapmarker.lite",
+  "build_exit_code": 0,
+  "test_group": "core",
+  "test_exit_code": 0,
+  "box_video_checks": 682,
+  "box_fixture_images": 81,
+  "box_fixture_training_timestamps_excluded": true,
+  "runtime_tested": "build/shrunk.jar; same Java input converted to shipped DEX",
+  "apk_sha256": "c2527a8f9e3495b47f84813deba5ab64ab6efcd83923c218ebe193a0d684489a",
+  "same_certificate_as_v189": true,
+  "certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "zip_crc_valid": true,
+  "packaged_references_match_source": true,
+  "packaged_dex_matches_build": true,
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "device_tested": false,
+  "limits": [
+    "HOME, Android input delivery and in-game rewards are not device-verified.",
+    "Autonomous actions are grounded in supplied 6724.mp4. Unknown mission-list UI and aiming optimization are not implemented.",
+    "Early global HOME applies to the foreground single-window runner; split/virtual runners retain display-local recovery."
+  ],
+  "runtime_classes_identical_after_abi_packaging": true,
+  "native_abi_set_matches_v189": true
+}

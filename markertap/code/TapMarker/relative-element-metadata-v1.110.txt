@@ -1,0 +1,65 @@
+MODEL usagi-get regions=6
+[0.71000004, 0.55249995, 0.89000005, 0.62749994]
+[0.875, 0.375, 1.0, 0.4375]
+[0.875, 0.625, 1.0, 0.6875]
+[0.875, 0.8125, 1.0, 0.875]
+[0.875, 0.4375, 1.0, 0.5]
+[0.875, 0.5, 1.0, 0.5625]
+MODEL usagi-play regions=6
+[0.71000004, 0.54249996, 0.89000005, 0.61749995]
+[0.875, 0.375, 1.0, 0.4375]
+[0.375, 0.875, 0.5, 0.9375]
+[0.25, 0.875, 0.375, 0.9375]
+[0.5, 0.875, 0.625, 0.9375]
+[0.125, 0.875, 0.25, 0.9375]
+MODEL farm-close regions=6
+[0.41, 0.6245, 0.59000003, 0.69949996]
+[0.75, 0.4375, 0.875, 0.5]
+[0.81000006, 0.5725, 0.99000007, 0.6475]
+[0.0, 0.5, 0.125, 0.5625]
+[0.875, 0.5, 1.0, 0.5625]
+[0.0, 0.5625, 0.125, 0.625]
+MODEL farm-start regions=6
+[0.42, 0.803, 0.6, 0.87799996]
+[0.009999998, 0.5725, 0.19, 0.6475]
+[0.009999998, 0.48250005, 0.19, 0.55750006]
+[0.75, 0.4375, 0.875, 0.5]
+[0.81000006, 0.5725, 0.99000007, 0.6475]
+[0.81000006, 0.48250005, 0.99000007, 0.55750006]
+TRAIN 12 TEST 24
+TRAIN get-train usagi-get
+TRAIN play-2 usagi-play
+TRAIN play-8 usagi-play
+TRAIN farm-20 unknown
+TRAIN farm-42 unknown
+TRAIN farm-44 unknown
+TRAIN farm-66.2 farm-close
+TRAIN farm-68 unknown
+TRAIN farm-70.2 farm-start
+TRAIN recovery-usagi-main unknown
+TRAIN recovery-farm-main-pressed unknown
+TRAIN recovery-farm-reward unknown
+TEST get-2 usagi-get
+TEST get-4 usagi-get
+TEST get-6 usagi-get
+TEST get-8 usagi-get
+TEST get-10 usagi-get
+TEST get-12 usagi-get
+TEST get-14 usagi-get
+TEST get-16 usagi-get
+TEST get-18 usagi-get
+TEST play-16 usagi-play
+TEST play-24 usagi-play
+TEST play-32 usagi-play
+TEST play-39 usagi-play
+TEST farm-65.5 farm-close
+TEST farm-66.4 farm-close
+TEST farm-69.8 farm-start
+TEST farm-70.4 farm-start
+TEST farm-71 unknown
+TEST farm-72 unknown
+TEST recovery-usagi-ad-left unknown
+TEST recovery-farm-main unknown
+TEST recovery-farm-ad-right unknown
+TEST recovery-farm-ad-left unknown
+TEST recovery-farm-reward-holdout unknown

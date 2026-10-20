@@ -1,0 +1,33 @@
+{
+  "version": "1.114",
+  "versionCode": 117,
+  "base_version": "1.113",
+  "recorded_source": "6772.mp4",
+  "guide": "GUIDE-v1.114.md",
+  "changes": [
+    "Game-owned popup controls for Usagi and Coin, including an exposed portion of a clipped named Close",
+    "Two sparse footer references and paired Farm announcement headings plus measured X",
+    "Early Poipoi bonus heading and ordinary continuation matching with bounded translation/scale search",
+    "Per-window restore request, acknowledgement, target-package and home confirmation receipts",
+    "Final external-target restore attempt can restart the selected game task; target-UID restrictions retained"
+  ],
+  "scope": "Factory automata only. Named controls and finite recorded visual forms. No unrestricted lower-screen tap, target-list expansion or reward credit assertion.",
+  "device_validation": {
+    "pixel10_android17": false,
+    "raw_320x718_ImageReader": false,
+    "actual_input_delivery": false,
+    "reward_balance": false,
+    "four_window_long_run": false
+  },
+  "apk_sha256": "b0e5c5734870899c5551946529bcef883474a93adb63240aa39a4e272b999bae",
+  "unchanged_native_libraries": [
+    "lib/arm64-v8a/libconscrypt_jni.so",
+    "lib/arm64-v8a/libspake2.so",
+    "lib/armeabi-v7a/libconscrypt_jni.so",
+    "lib/armeabi-v7a/libspake2.so",
+    "lib/x86/libconscrypt_jni.so",
+    "lib/x86/libspake2.so",
+    "lib/x86_64/libconscrypt_jni.so",
+    "lib/x86_64/libspake2.so"
+  ]
+}

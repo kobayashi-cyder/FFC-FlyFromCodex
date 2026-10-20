@@ -1,0 +1,110 @@
+{
+  "version": "1.65-portable-lite",
+  "package": "jp.tapmarker.lite",
+  "original_apk_bytes": 4220897,
+  "apk_bytes": 3029116,
+  "apk_sha256": "9dd958f1712f4c1ac70b62991d75aa663c58c5962b5ae6e4d51b0afd155e9bce",
+  "core_java_suites": 46,
+  "mock_adb_scenarios": 8,
+  "device_tested": false,
+  "omitted_large_replays": [
+    "Video6651Replay",
+    "Video6662Replay",
+    "Video6666Replay",
+    "Video6669Replay"
+  ],
+  "native_libraries": [
+    {
+      "name": "lib/arm64-v8a/libconscrypt_jni.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 2001952,
+          "virtual_address": 2018336,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/arm64-v8a/libspake2.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 25920,
+          "virtual_address": 42304,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/armeabi-v7a/libconscrypt_jni.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 1226216,
+          "virtual_address": 1242600,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/armeabi-v7a/libspake2.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 27296,
+          "virtual_address": 43680,
+          "alignment": 16384
+        }
+      ]
+    }
+  ],
+  "original_assets_preserved": [
+    "assets/THIRD-PARTY-NOTICES.txt",
+    "assets/circuit.bin",
+    "assets/coin-preset.json",
+    "assets/farm-preset.json",
+    "assets/licenses/AndroidX-Annotation-License.txt",
+    "assets/licenses/BouncyCastle-License.html",
+    "assets/licenses/Conscrypt-Apache-2.0.txt",
+    "assets/licenses/Conscrypt-NOTICE.txt",
+    "assets/licenses/GPL-3.0.txt",
+    "assets/licenses/LibADB-Apache-2.0.txt",
+    "assets/licenses/SPAKE2-C-License.txt",
+    "assets/licenses/SPAKE2-LGPL-3.0.txt",
+    "assets/licenses/Shizuku-License.txt",
+    "assets/provenance.json",
+    "assets/shopping-preset.json",
+    "assets/third-party/Shizuku-LICENSE.txt",
+    "assets/usagi-preset.json",
+    "assets/virtual-home-preset.json"
+  ],
+  "compressed_native_extraction": true,
+  "signature_v2": true,
+  "signature_v3": true,
+  "signer_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1"
+}

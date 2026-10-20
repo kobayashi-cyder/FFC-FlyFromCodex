@@ -1,0 +1,14 @@
+PASS one matching frame never triggers
+PASS two matching frames confirm
+PASS main self-loop repeats after fresh two-frame confirmation
+PASS reappeared display needs two frames
+PASS display departure and reappearance rearms
+PASS ambiguous equal-priority branches wait
+PASS priority never selects a runtime branch
+PASS stale image candidate discarded before execution
+PASS change needs second stable observation
+PASS stable changed image confirms change action
+PASS unrecorded image does not block automaton start
+PASS unrecorded image never fires and reports reason
+PASS structural reference errors still block start
+TOTAL 13 stable transition checks passed; device UI not tested.

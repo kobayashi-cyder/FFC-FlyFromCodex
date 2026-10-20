@@ -1,0 +1,11 @@
+{
+  "version": "1.60-automaton-relations",
+  "versionCode": 63,
+  "hostTestSuites": 39,
+  "addedRelationshipChecks": 38,
+  "tests": "tests-v1.60.log",
+  "deviceTested": false,
+  "signatureCertificateSHA256": "c5dc233afc842c2fe2e362264bc2fee147cf2c6c1ba01aebff17dc33a4395fcb",
+  "apkSHA256": "4577b88722a3f242bdb055ce91b5ee6599b44e49c9309f2e648940c6ea89352c",
+  "oldLearnedGraphRequiresNewDemonstrationWhenStatesMissing": true
+}

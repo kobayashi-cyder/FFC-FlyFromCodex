@@ -1,0 +1,158 @@
+{
+  "version": "1.72",
+  "version_code": 75,
+  "package": "jp.tapmarker.lite",
+  "virtual_backend": 75,
+  "apk_bytes": 5097880,
+  "apk_sha256": "e76a3bb01f524426ba5de9c109815a104a589661efc3f57777d231d88c6c6734",
+  "apk_crc_ok": true,
+  "shipped_dex_equals_tested_build": true,
+  "tested_classfile_sha256": "38e6ba8805a328f8a6f14d2feeef896a18bef0ffacd84342d8107a89048b991b",
+  "dex_sha256": {
+    "classes.dex": "23db10a07f0e52e8ec7a09259cf561c67092c4a7ea31a714571108d3ed3c3e70"
+  },
+  "signer_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "signature_v2": true,
+  "signature_v3": true,
+  "zipalign16k_ok": true,
+  "native_libraries": [
+    {
+      "name": "lib/arm64-v8a/libconscrypt_jni.so",
+      "elf_bits": 64,
+      "sha256": "fd5a080ced130e2c2e7982cb9c82b5601fc84df61f41129dd0d3ecdbf2c96155",
+      "load_alignments": [
+        16384,
+        16384
+      ],
+      "compressed": true,
+      "unchanged_from_v170": true
+    },
+    {
+      "name": "lib/arm64-v8a/libspake2.so",
+      "elf_bits": 64,
+      "sha256": "2c243f1aef14dedb6b289bf913858d9b7244fb783e5886c3b8ef286a20677d78",
+      "load_alignments": [
+        16384,
+        16384
+      ],
+      "compressed": true,
+      "unchanged_from_v170": true
+    },
+    {
+      "name": "lib/armeabi-v7a/libconscrypt_jni.so",
+      "elf_bits": 32,
+      "sha256": "009ee440620105adefff81c5af4fafd23aebefff5b8d03d7180212c02983b532",
+      "load_alignments": [
+        16384,
+        16384
+      ],
+      "compressed": true,
+      "unchanged_from_v170": true
+    },
+    {
+      "name": "lib/armeabi-v7a/libspake2.so",
+      "elf_bits": 32,
+      "sha256": "55eaa46950873eb5f25690afb584e9e5a518ee5aa8f551e98cbba8f216fef34e",
+      "load_alignments": [
+        16384,
+        16384
+      ],
+      "compressed": true,
+      "unchanged_from_v170": true
+    },
+    {
+      "name": "lib/x86/libconscrypt_jni.so",
+      "elf_bits": 32,
+      "sha256": "a005cac24028f662269e969b13bca38fa7f759e1479eecbd4e48dba9cfdc889b",
+      "load_alignments": [
+        16384,
+        16384
+      ],
+      "compressed": true,
+      "unchanged_from_v170": true
+    },
+    {
+      "name": "lib/x86/libspake2.so",
+      "elf_bits": 32,
+      "sha256": "d4b012acd779e877fe11f4ef90726465357bcafba12b9e4d4800d01650d0e696",
+      "load_alignments": [
+        16384,
+        16384
+      ],
+      "compressed": true,
+      "unchanged_from_v170": true
+    },
+    {
+      "name": "lib/x86_64/libconscrypt_jni.so",
+      "elf_bits": 64,
+      "sha256": "9ee2eccb596cbbf5316572c11efa5ce4c2612ceba540c215b360e2750a665d87",
+      "load_alignments": [
+        16384,
+        16384
+      ],
+      "compressed": true,
+      "unchanged_from_v170": true
+    },
+    {
+      "name": "lib/x86_64/libspake2.so",
+      "elf_bits": 64,
+      "sha256": "1e9717439ebf69eec3d7a527feefb819c56b70b321cff5654621c2c82e4a8247",
+      "load_alignments": [
+        16384,
+        16384
+      ],
+      "compressed": true,
+      "unchanged_from_v170": true
+    }
+  ],
+  "java_suites": 60,
+  "mock_adb_scenarios": 8,
+  "video6687_replay_checks": 203,
+  "video6687_heldout_frames": 62,
+  "video6687_native_frames": 18,
+  "game_target_checks": 28,
+  "video6682_replay_checks": 380,
+  "video6680_replay_checks": 275,
+  "video6677_replay_checks": 171,
+  "farm_dialog_replay_checks": 245,
+  "migration": [
+    "v169 factory",
+    "v170 factory",
+    "idempotent",
+    "custom configurations preserved"
+  ],
+  "additional_game_support": "recording import and learned operations with separate profiles; no verified factory automata",
+  "usapo_daily": "one embedded game per run; defer completion until confirmed learned input; handoff between games disabled pending actual UI",
+  "unverified": [
+    "Android file picker and media decoding on device",
+    "new APK tap/swipe input on device",
+    "additional four game UIs",
+    "Chromebook-specific target UIs",
+    "actual complete-daily app switch",
+    "long-running stability"
+  ],
+  "full_replay_not_run": [
+    "Video6651",
+    "Video6662",
+    "Video6666",
+    "Video6669"
+  ],
+  "shipped_assets_match_source": true,
+  "coin_reference_count": 34,
+  "previous_coin_reference_count": 25,
+  "previous_coin_references_unchanged": true,
+  "recording_generator_checks": 41,
+  "automaton_audit_checks": 874,
+  "automaton_audit_states": 76,
+  "automaton_audit_transitions": 426,
+  "edit_checks": 27,
+  "edit_history_checks": 19,
+  "recording_limits": {
+    "frames": 600,
+    "state_candidates": 32
+  },
+  "recording_operations": "only explicitly reviewed tap or swipe; source evidence and dedicated post-input display verification; unreviewed editable placeholders retain verification; review gate survives persistence/runtime copy",
+  "docx_pages": 13,
+  "docx_visual_qa": "all pages inspected; unchanged pages confirmed byte-identical after the final text edit",
+  "integrated_from": "Library source version 13 and APK version 7 (other-chat MarkerTap v1.71), plus editor and recording generation"
+}

@@ -1,0 +1,46 @@
+{
+  "version_name": "1.100",
+  "version_code": 103,
+  "base_version": "1.99",
+  "package": "jp.tapmarker.lite",
+  "build": "passed",
+  "signing_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "matches_previous_apk_certificate": true,
+  "zipalign_16kb": "passed",
+  "native_libraries": "all 8 byte-identical to v1.99",
+  "apk": {
+    "name": "MarkerTap-v1.100-recovery.apk",
+    "bytes": 5524236,
+    "sha256": "b00a37b24acb1c412c6fccb7880ac0fd11ef8d667615f83aa29d4c2eba95dd0a"
+  },
+  "compact_runtime_sha256": "1f2036b45f01acc94e4503a697f0b6ac0d742f5b4c23aac5481c7f9bdd0c553b",
+  "core_validation": {
+    "status": "passed",
+    "jvm_suites": 107,
+    "mock_adb_scenarios": 8,
+    "log": "tests-v1.100.log"
+  },
+  "recording_validation": {
+    "test": "Video6745ReplayTest",
+    "checks": 180,
+    "supplied_preview_crops": 48,
+    "header_reference": "poipoi-0.png, heading only",
+    "evidence": "tests/video6745-evidence.json",
+    "limits": "Recording and screenshot preview crops, not original framebuffer. Resizing, occlusion and input completion sequences are synthetic."
+  },
+  "input_target_recovery_checks": 24,
+  "android_device_connected": false,
+  "long_running_device_validation": "not performed",
+  "optional_full_test_group": "not run",
+  "changed_runtime_source_sha256": {
+    "src/jp/tapmarker/AdCloseAutomaton.java": "ec8f529bc777b140e99e8222f1cb45cd16f3d4718af3d85f250628cdb7980c94",
+    "src/jp/tapmarker/AutoPilot.java": "b09d4a4945d6883faf1bc968b6082ab1e53d09f446a5150f89d41f3b5932861e",
+    "src/jp/tapmarker/FarmAdErrorEvidence.java": "79b0b1449cb55daa4287be387ca81b72c1d396523eb4d73b7c659f0547eac990",
+    "src/jp/tapmarker/FarmPreset.java": "f05aebd500b809015f9c863a9f4c5aaa14435a72a8421390c72f62555430796a",
+    "src/jp/tapmarker/InputTargetRecovery.java": "72de40bb3c75386766521319dfe3cbd8390c416f99b52e37b3e024e3962c7ea7",
+    "src/jp/tapmarker/MainActivity.java": "104cf2e1b25559d4dd676bb2ab59c2fe7cbf4b61e7fa3bd286a3ae335a531c03",
+    "src/jp/tapmarker/PlayStoreSheetEvidence.java": "c0f1b117626d4b8ab641936d6553fd86b0c661b6541c2a758fec4bf82eb849f9",
+    "src/jp/tapmarker/PoipoiLayout.java": "35e98c5173834f7cdef3a7811f9f881378717134eff45bd2a6854fc11ea7764a",
+    "src/jp/tapmarker/SplitPilot.java": "83d05e1f8b7c35104079f661e163301c589ed8a78ac567a4e00c5c8d12beacfb"
+  }
+}

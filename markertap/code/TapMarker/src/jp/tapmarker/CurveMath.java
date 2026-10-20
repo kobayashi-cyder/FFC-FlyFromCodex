@@ -1,0 +1,2 @@
+package jp.tapmarker;
+public final class CurveMath {public static void append(java.util.List<Float> points,float x,float y){if(points.size()>=512){for(int i=points.size()-4;i>=2;i-=4){points.remove(i+1);points.remove(i);}}points.add(x);points.add(y);}public static double length(float[] curve){double distance=0;for(int i=2;i+1<curve.length;i+=2)distance+=Math.hypot(curve[i]-curve[i-2],curve[i+1]-curve[i-1]);return distance;}}

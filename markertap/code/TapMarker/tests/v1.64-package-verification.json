@@ -1,0 +1,19 @@
+{
+  "versionName": "1.64-compact-farm",
+  "versionCode": 67,
+  "apk_bytes": 4220897,
+  "previous_apk_bytes": 15092120,
+  "reduction_percent": 72.0324447459999,
+  "apk_sha256": "42f2948b3839dede1ba42a68d7992d57bdfc74ee9ad9200eba70d3cb71d3edfa",
+  "signing_certificate_sha256": "c5dc233afc842c2fe2e362264bc2fee147cf2c6c1ba01aebff17dc33a4395fcb",
+  "native_abis": [
+    "arm64-v8a"
+  ],
+  "entries": {
+    "lib/arm64-v8a/libconscrypt_jni.so": 2103592,
+    "lib/arm64-v8a/libspake2.so": 28192,
+    "classes.dex": 927288,
+    "assets/circuit.bin": 1792604
+  },
+  "unchanged_existing_asset_content": true
+}

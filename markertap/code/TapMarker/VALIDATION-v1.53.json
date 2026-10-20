@@ -1,0 +1,14 @@
+{
+  "version": "1.53-local-adb-pairing",
+  "version_code": 56,
+  "host_test_suites": 23,
+  "test_exit_status": 0,
+  "apk_signature_v2_v3": "passed",
+  "same_signer_as_v1_52": true,
+  "native_elf_and_apk_16kb_alignment": "passed",
+  "pixel_10_pairing": "not_tested",
+  "pixel_10_virtual_game_launch_input": "not_tested",
+  "pixel_10_wifi_disconnect_continuation": "not_tested",
+  "wifi_free_start_after_reboot": "not_supported",
+  "apk_sha256": "fb277f8698e72a059c83b993eb1462ce7c955398767d59787ede791a0b71a3c2"
+}

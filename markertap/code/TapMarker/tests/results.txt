@@ -1,0 +1,23 @@
+PASS actual circuit dimensions
+Two-image JVM circuit runtime ms=14.72355
+PASS deterministic image encoding
+PASS different images affect circuit output
+PASS removing graph changes output
+PASS finite circuit output
+PASS known screen selects taught tap
+PASS other screen selects taught back
+PASS other package waits
+PASS different resolution waits
+PASS unknown image waits
+PASS conflicting indistinguishable actions wait
+PASS circuit output actually drives candidate selection
+PASS bound marker order preserved
+PASS moving marker updates autonomous coordinates
+PASS deleted binding waits instead of stale tap
+PASS empty marker group waits
+PASS known marker screen selects bound burst
+PASS next screen switches from markers to taught back
+PASS conflicting marker groups wait
+PASS identical screen in first app uses its markers
+PASS identical screen in second app uses its own back action
+TOTAL 21 checks passed. Synthetic policy checks; not a device UI benchmark.

@@ -1,0 +1,23 @@
+{
+  "version": "1.115",
+  "versionCode": 118,
+  "package": "jp.tapmarker.lite",
+  "apk_bytes": 5761876,
+  "apk_sha256": "e201bdef981df0cafdc2de3d189c624dddd96b586b5e34b383d20176ebdca47a",
+  "signing_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "signature_matches_v1_114": true,
+  "zipalign_16k_passed": true,
+  "apk_zip_checksum_passed": true,
+  "packaged_dex_matches_built_runtime": true,
+  "native_libraries_unchanged": [
+    "lib/arm64-v8a/libconscrypt_jni.so",
+    "lib/arm64-v8a/libspake2.so",
+    "lib/armeabi-v7a/libconscrypt_jni.so",
+    "lib/armeabi-v7a/libspake2.so",
+    "lib/x86/libconscrypt_jni.so",
+    "lib/x86/libspake2.so",
+    "lib/x86_64/libconscrypt_jni.so",
+    "lib/x86_64/libspake2.so"
+  ],
+  "device_tested": false
+}

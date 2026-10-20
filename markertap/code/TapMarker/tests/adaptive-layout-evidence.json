@@ -1,0 +1,14 @@
+{
+  "source": "tests/virtual-home-replay.bin (Screenshot_20261008-163208.png)",
+  "app": "farm",
+  "roi": [
+    0.42,
+    0.657,
+    0.58,
+    0.707
+  ],
+  "scope": "Top white/green harvest-button rim. Excludes moving carrot and harvest label. Tested separately against video 6645 main and pressed frames; no native display recording.",
+  "sampler": "RegionSampler 16x16 RGB with 3x3 cell averages",
+  "additional_pair": "tests/virtual-recovery-replay.bin / farm-main, video 6645 at 20s, header .75,.077,.805,.092 + same rim ROI",
+  "holdout": "farm-main-pressed (25s), transformed versions and wrong/dim/ad frames"
+}

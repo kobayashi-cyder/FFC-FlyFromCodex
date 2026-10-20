@@ -1,0 +1,7 @@
+package jp.tapmarker;
+import java.util.regex.*;
+public final class PhasePrompt {
+ public String phase,region,next="";public int priority=10,waitMs=800;public boolean change=false;
+ public static PhasePrompt parse(String text){PhasePrompt p=new PhasePrompt();for(String raw:text.split("[。；;"+String.valueOf((char)10)+"]+")){String c=raw.trim();if(c.isEmpty())continue;Matcher a=Pattern.compile("フェーズ「([^」]+)」の間だけ領域「([^」]+)」を監視").matcher(c);Matcher b=Pattern.compile("フェーズ「([^」]+)」へ移る").matcher(c);if(a.matches()){if(p.phase!=null)throw new IllegalArgumentException("フェーズ指定が重複しています");p.phase=a.group(1);p.region=a.group(2);}else if(b.matches()){p.next=b.group(1);}else if(c.equals("監視領域が変わったら監視領域中央をタップ")){p.change=true;}else if(c.matches("優先順位[0-9]+")){p.priority=Integer.parseInt(c.substring(4));}else if(c.matches("待機[0-9]+(ms|ミリ秒)")){Matcher m=Pattern.compile("[0-9]+").matcher(c);m.find();p.waitMs=Integer.parseInt(m.group());if(p.waitMs<250||p.waitMs>10000)throw new IllegalArgumentException("待機は250〜10000msです");}else {Matcher m=Pattern.compile("(.+)が変化したら連打を一時停止し、(.+)の中央を1回タップ").matcher(c);if(m.matches()&&p.region!=null&&m.group(1).equals(p.region)&&m.group(2).equals(p.region))p.change=true;else throw new IllegalArgumentException("未対応："+c);}}if(p.phase==null||p.region==null||!p.change)throw new IllegalArgumentException("フェーズ・領域・変化時の中央タップを指定してください");return p;}
+ public String describe(){return "有効フェーズ："+phase+"\n監視領域："+region+"\n条件：領域の変化\n操作：連打を一時待機し、領域中央を1回タップ\n遷移先："+(next.isEmpty()?"同じフェーズ":next)+"\n優先順位："+priority+"（小さい数が優先）\n操作後待機："+waitMs+"ms";}
+}

@@ -1,0 +1,56 @@
+{
+  "versionName": "1.57-virtual-recovery",
+  "versionCode": 60,
+  "apk_sha256": "3205432250c68ae572cf828509c89d799da2f84f1a1aa0d0c8b06b96de509f4c",
+  "signing_certificate_sha256": "c5dc233afc842c2fe2e362264bc2fee147cf2c6c1ba01aebff17dc33a4395fcb",
+  "test_suites": 33,
+  "tests": "passed",
+  "virtual_recovery_replay_checks": 104,
+  "virtual_profile_legacy_checks": 33,
+  "recorded_virtual_preview_cases": 8,
+  "signature_schemes": [
+    "v2",
+    "v3"
+  ],
+  "native_libraries": [
+    {
+      "path": "lib/arm64-v8a/libconscrypt_jni.so",
+      "minimum_load_alignment": 16384
+    },
+    {
+      "path": "lib/arm64-v8a/libspake2.so",
+      "minimum_load_alignment": 16384
+    },
+    {
+      "path": "lib/armeabi-v7a/libconscrypt_jni.so",
+      "minimum_load_alignment": 16384
+    },
+    {
+      "path": "lib/armeabi-v7a/libspake2.so",
+      "minimum_load_alignment": 16384
+    },
+    {
+      "path": "lib/x86/libconscrypt_jni.so",
+      "minimum_load_alignment": 16384
+    },
+    {
+      "path": "lib/x86/libspake2.so",
+      "minimum_load_alignment": 16384
+    },
+    {
+      "path": "lib/x86_64/libconscrypt_jni.so",
+      "minimum_load_alignment": 16384
+    },
+    {
+      "path": "lib/x86_64/libspake2.so",
+      "minimum_load_alignment": 16384
+    }
+  ],
+  "apk_alignment": 16384,
+  "android_device_connected": false,
+  "release_parallel_android_input_verified": false,
+  "raw_720px_virtual_frame_matching_verified": false,
+  "all_ad_screens_verified": false,
+  "preview_evidence_source": "6645.mp4",
+  "preview_evidence_sha256": "670db6dff7b0746cd97fcc36e21c25ea2291a787e8e6467e0284aeba4434adaf"
+}

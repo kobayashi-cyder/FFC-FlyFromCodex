@@ -1,0 +1,26 @@
+{
+  "video": "6759.mp4",
+  "sha256": "4fab22dd224a7e8cd2f7c2a2bb4e6f3968b073a26745a3c99df6a1f70202475d",
+  "preview_crop": [
+    242,
+    264,
+    558,
+    978
+  ],
+  "training_seconds": [
+    0
+  ],
+  "held_out_seconds": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18
+  ],
+  "observed": "Claimable first stage mission (1/1, Get) remains visible while status says verify return screen.",
+  "limits": "The nine holdouts are the same static scene at different times. Resizing, masking, row movement, callbacks and subsequent reward/home transitions are synthetic. No Android input or completed collection/upgrade is demonstrated."
+}

@@ -1,0 +1,202 @@
+{
+  "version": "1.67",
+  "version_code": 70,
+  "package": "jp.tapmarker.lite",
+  "apk_bytes": 4954520,
+  "apk_sha256": "399fb23672e9eb7e2275e4f07786251a67c5d2496c4af6d640117237fde3010d",
+  "core_java_suites": 50,
+  "mock_adb_scenarios": 8,
+  "daily_route_checks": 26,
+  "video6677_checks": 171,
+  "content_viewport_checks": 24,
+  "daily_logic_tested": true,
+  "actual_daily_completion_game_image_available": false,
+  "device_tested": false,
+  "f52a_device_tested": false,
+  "chromebook_device_tested": false,
+  "chromebook_target_app_layouts_provided": false,
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "native_libraries": [
+    {
+      "name": "lib/arm64-v8a/libconscrypt_jni.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 2001952,
+          "virtual_address": 2018336,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/arm64-v8a/libspake2.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 25920,
+          "virtual_address": 42304,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/armeabi-v7a/libconscrypt_jni.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 1226216,
+          "virtual_address": 1242600,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/armeabi-v7a/libspake2.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 27296,
+          "virtual_address": 43680,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/x86/libconscrypt_jni.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 2210420,
+          "virtual_address": 2226804,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/x86/libspake2.so",
+      "elf_bits": 32,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 40736,
+          "virtual_address": 57120,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/x86_64/libconscrypt_jni.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 2398992,
+          "virtual_address": 2415376,
+          "alignment": 16384
+        }
+      ]
+    },
+    {
+      "name": "lib/x86_64/libspake2.so",
+      "elf_bits": 64,
+      "page16k": true,
+      "segments": [
+        {
+          "offset": 0,
+          "virtual_address": 0,
+          "alignment": 16384
+        },
+        {
+          "offset": 32848,
+          "virtual_address": 49232,
+          "alignment": 16384
+        }
+      ]
+    }
+  ],
+  "all_v166_native_libraries_preserved": true,
+  "assets_preserved": [
+    "assets/THIRD-PARTY-NOTICES.txt",
+    "assets/circuit.bin",
+    "assets/coin-preset.json",
+    "assets/farm-preset.json",
+    "assets/licenses/AndroidX-Annotation-License.txt",
+    "assets/licenses/BouncyCastle-License.html",
+    "assets/licenses/Conscrypt-Apache-2.0.txt",
+    "assets/licenses/Conscrypt-NOTICE.txt",
+    "assets/licenses/GPL-3.0.txt",
+    "assets/licenses/LibADB-Apache-2.0.txt",
+    "assets/licenses/SPAKE2-C-License.txt",
+    "assets/licenses/SPAKE2-LGPL-3.0.txt",
+    "assets/licenses/Shizuku-License.txt",
+    "assets/provenance.json",
+    "assets/shopping-preset.json",
+    "assets/third-party/Shizuku-LICENSE.txt",
+    "assets/usagi-preset.json"
+  ],
+  "assets_extended": [
+    "assets/virtual-home-preset.json"
+  ],
+  "old_full_replay_omissions": [
+    "Video6651Replay",
+    "Video6662Replay",
+    "Video6666Replay",
+    "Video6669Replay"
+  ],
+  "new_video_fixture_frames": 19,
+  "v166_update_signer_match": true,
+  "signer_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "signature_v2": true,
+  "signature_v3": true,
+  "scope_notes": [
+    "Daily completion is configured per app and ordinary/virtual UI from actual all-daily-done and reward-collected images, plus an independent heading.",
+    "No completion from missing buttons or elapsed retries. A single completion frame holds normal Play/Get and timers until a second matching observation.",
+    "Chromebook ABI, manifest and viewport support added; app-specific Chromebook layouts have not been supplied or verified.",
+    "Replay and desktop viewport tests are host tests, not F-52A or ChromeOS device input tests."
+  ]
+}

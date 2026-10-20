@@ -1,0 +1,21 @@
+{
+  "source": "6716.png",
+  "sha256": "626b059c52e17daa6210830fe04f8a145b0af98fe8b47f812408678a1dba3882",
+  "size": [
+    684,
+    1536
+  ],
+  "close_text_bbox": [
+    45,
+    140,
+    102,
+    158
+  ],
+  "button_bounds": [
+    14,
+    126,
+    134,
+    174
+  ],
+  "limits": "One supplied screenshot. Relocation, resizing, alternate-exit overlays and repeated timelines are synthetic; Android input untested."
+}

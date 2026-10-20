@@ -1,0 +1,93 @@
+package: name='jp.tapmarker.lite' versionCode='69' versionName='1.66' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
+sdkVersion:'24'
+targetSdkVersion:'35'
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='android.permission.ACCESS_NETWORK_STATE'
+uses-permission: name='moe.shizuku.manager.permission.API_V23'
+application-label:'マーカー連打 軽量版'
+application: label='マーカー連打 軽量版' icon=''
+launchable-activity: name='jp.tapmarker.MainActivity'  label='' icon=''
+feature-group: label=''
+  uses-feature: name='android.hardware.faketouch'
+  uses-implied-feature: name='android.hardware.faketouch' reason='default feature for all apps'
+provides-component:'accessibility'
+main
+supports-screens: 'small' 'normal' 'large' 'xlarge'
+supports-any-density: 'true'
+locales: '--_--'
+densities: '160'
+native-code: 'arm64-v8a' 'armeabi-v7a'
+
+N: android=http://schemas.android.com/apk/res/android
+  E: manifest (line=1)
+    A: android:versionCode(0x0101021b)=(type 0x10)0x45
+    A: android:versionName(0x0101021c)="1.66" (Raw: "1.66")
+    A: android:compileSdkVersion(0x01010572)=(type 0x10)0x23
+    A: android:compileSdkVersionCodename(0x01010573)="15" (Raw: "15")
+    A: package="jp.tapmarker.lite" (Raw: "jp.tapmarker.lite")
+    A: platformBuildVersionCode=(type 0x10)0x23
+    A: platformBuildVersionName=(type 0x10)0xf
+    E: queries (line=1)
+      E: package (line=1)
+        A: android:name(0x01010003)="com.android.settings" (Raw: "com.android.settings")
+      E: package (line=1)
+        A: android:name(0x01010003)="moe.shizuku.privileged.api" (Raw: "moe.shizuku.privileged.api")
+      E: package (line=1)
+        A: android:name(0x01010003)="com.kurashiru.fue.usagi" (Raw: "com.kurashiru.fue.usagi")
+      E: package (line=1)
+        A: android:name(0x01010003)="com.kurashiru.nouen.usagi" (Raw: "com.kurashiru.nouen.usagi")
+      E: package (line=1)
+        A: android:name(0x01010003)="com.kurashiru.coin.drop" (Raw: "com.kurashiru.coin.drop")
+      E: package (line=1)
+        A: android:name(0x01010003)="com.kurashiru.shopping.usagi" (Raw: "com.kurashiru.shopping.usagi")
+      E: package (line=1)
+        A: android:name(0x01010003)="com.android.chrome" (Raw: "com.android.chrome")
+      E: intent (line=1)
+        E: action (line=1)
+          A: android:name(0x01010003)="android.intent.action.MAIN" (Raw: "android.intent.action.MAIN")
+        E: category (line=1)
+          A: android:name(0x01010003)="android.intent.category.LAUNCHER" (Raw: "android.intent.category.LAUNCHER")
+    E: uses-sdk (line=1)
+      A: android:minSdkVersion(0x0101020c)=(type 0x10)0x18
+      A: android:targetSdkVersion(0x01010270)=(type 0x10)0x23
+    E: uses-permission (line=1)
+      A: android:name(0x01010003)="android.permission.INTERNET" (Raw: "android.permission.INTERNET")
+    E: uses-permission (line=1)
+      A: android:name(0x01010003)="android.permission.ACCESS_NETWORK_STATE" (Raw: "android.permission.ACCESS_NETWORK_STATE")
+    E: uses-permission (line=1)
+      A: android:name(0x01010003)="moe.shizuku.manager.permission.API_V23" (Raw: "moe.shizuku.manager.permission.API_V23")
+    E: application (line=1)
+      A: android:theme(0x01010000)=@0x01030241
+      A: android:label(0x01010001)="マーカー連打 軽量版" (Raw: "マーカー連打 軽量版")
+      A: android:allowBackup(0x01010280)=(type 0x12)0x0
+      A: android:supportsRtl(0x010103af)=(type 0x12)0xffffffff
+      A: android:extractNativeLibs(0x010104ea)=(type 0x12)0xffffffff
+      E: provider (line=1)
+        A: android:name(0x01010003)="rikka.shizuku.ShizukuProvider" (Raw: "rikka.shizuku.ShizukuProvider")
+        A: android:permission(0x01010006)="android.permission.INTERACT_ACROSS_USERS_FULL" (Raw: "android.permission.INTERACT_ACROSS_USERS_FULL")
+        A: android:exported(0x01010010)=(type 0x12)0xffffffff
+        A: android:multiprocess(0x01010013)=(type 0x12)0x0
+        A: android:authorities(0x01010018)="jp.tapmarker.lite.shizuku" (Raw: "jp.tapmarker.lite.shizuku")
+      E: provider (line=1)
+        A: android:name(0x01010003)="jp.tapmarker.VirtualBridgeProvider" (Raw: "jp.tapmarker.VirtualBridgeProvider")
+        A: android:permission(0x01010006)="android.permission.DUMP" (Raw: "android.permission.DUMP")
+        A: android:exported(0x01010010)=(type 0x12)0xffffffff
+        A: android:authorities(0x01010018)="jp.tapmarker.lite.virtualbridge" (Raw: "jp.tapmarker.lite.virtualbridge")
+      E: activity (line=1)
+        A: android:name(0x01010003)="jp.tapmarker.MainActivity" (Raw: "jp.tapmarker.MainActivity")
+        A: android:exported(0x01010010)=(type 0x12)0xffffffff
+        E: intent-filter (line=1)
+          E: action (line=1)
+            A: android:name(0x01010003)="android.intent.action.MAIN" (Raw: "android.intent.action.MAIN")
+          E: category (line=1)
+            A: android:name(0x01010003)="android.intent.category.LAUNCHER" (Raw: "android.intent.category.LAUNCHER")
+      E: service (line=1)
+        A: android:name(0x01010003)="jp.tapmarker.TapService" (Raw: "jp.tapmarker.TapService")
+        A: android:permission(0x01010006)="android.permission.BIND_ACCESSIBILITY_SERVICE" (Raw: "android.permission.BIND_ACCESSIBILITY_SERVICE")
+        A: android:exported(0x01010010)=(type 0x12)0xffffffff
+        E: intent-filter (line=1)
+          E: action (line=1)
+            A: android:name(0x01010003)="android.accessibilityservice.AccessibilityService" (Raw: "android.accessibilityservice.AccessibilityService")
+        E: meta-data (line=1)
+          A: android:name(0x01010003)="android.accessibilityservice" (Raw: "android.accessibilityservice")
+          A: android:resource(0x01010025)=@0x7f020000

@@ -1,0 +1,2 @@
+f8920cd2b730a5e3375f9085c9d66ce927e40d6e42fcf5c158dfbf58e000246b  MarkerTap-v1.107-frame-circuit.apk
+53c4b6fd73bb50914eddf1062cb8d833c500fdc100a7088578c6f3ff9c3f2479  build/shrunk.jar

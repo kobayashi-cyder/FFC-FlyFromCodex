@@ -1,0 +1,66 @@
+{
+  "version_name": "1.94",
+  "version_code": 97,
+  "package": "jp.tapmarker.lite",
+  "validation_time_utc": "2026-10-17T23:57:41.553338+00:00",
+  "status": "RELEASE_VERIFIED",
+  "source_based_on_version": "1.93",
+  "core_java_suites": 100,
+  "adb_mock_scenarios": 8,
+  "core_script_completion_marker_observed": true,
+  "new_video6732_checks": 149,
+  "legacy_fever_checks": 71,
+  "runtime": "build/shrunk.jar, reduced Java input used for verification DEX",
+  "verification_dex_sha256": "ec7a3660ba740cb5e55ca7469f5785db7664f1434526fda6910d7cf2505bec32",
+  "unsigned_apk_compiled": true,
+  "four_abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "alignment_16k_verified": true,
+  "verification_signature_valid": true,
+  "verification_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "required_update_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "update_certificate_matches": true,
+  "update_apk_released": true,
+  "recording6732": {
+    "native_frames": 26,
+    "play_frames": 20,
+    "interruption_frames": 6,
+    "baseline_missing_play_target_frames": [
+      "10",
+      "14",
+      "50"
+    ],
+    "after_missing_play_target_frames": [],
+    "baseline_play_pixel_requests": 292524528,
+    "after_play_pixel_requests": 1914624,
+    "play_pixel_request_reduction_percent": 99.34548257778917,
+    "baseline_all_pixel_requests": 498903312,
+    "after_all_pixel_requests": 165528884,
+    "new_templates_from_recording": false
+  },
+  "implementation_changes": [
+    "AndroidManifest.xml",
+    "README.md",
+    "build.sh",
+    "run-tests.sh",
+    "src/jp/tapmarker/AdaptiveLayout.java",
+    "src/jp/tapmarker/ContentRelocator.java",
+    "src/jp/tapmarker/FarmDialogEvidence.java",
+    "src/jp/tapmarker/TapService.java",
+    "src/jp/tapmarker/VisualLocator.java"
+  ],
+  "device_connected": false,
+  "limits": [
+    "Host pixel/reference and input-policy verification only. Physical input acceptance, live game response and Android speed have not been measured.",
+    "The 1.5-second maximum frame age is unchanged; no stale-frame grace period was added."
+  ],
+  "tested_classfiles_identical_to_final_runtime": true,
+  "apk_sha256": "e5d4e1b6d5ac5501c6280d3a16d77eac3de687c9fde25d8cc6143e35036ac7b9",
+  "apk_bytes": 5507852,
+  "v2_v3_signature_verified": true,
+  "assets_match_source": true
+}

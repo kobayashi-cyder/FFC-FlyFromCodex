@@ -1,0 +1,49 @@
+{
+  "method": "Sequential OpenJDK replay; real scenes synthetically resized; same recognition kernels; Java image arrays only, not Android PSS",
+  "new_circuit_nodes": 8,
+  "scenes": 13,
+  "measurement": "Instrumentation shallow object sizes for actual arrays",
+  "sizes": [
+    {
+      "width": 540,
+      "height": 1212,
+      "legacy_snapshot_payload_bytes": 5235840,
+      "circuit_snapshot_payload_bytes": 2617920,
+      "snapshot_object_bytes_before": 5235872,
+      "snapshot_object_bytes_after": 2617936,
+      "four_to_three_image_array_bytes_before": 10471744,
+      "four_to_three_image_array_bytes_after": 7853808,
+      "legacy_median_ms": 5.9519,
+      "circuit_median_ms": 5.6629,
+      "timed_samples_per_mode": 65
+    },
+    {
+      "width": 720,
+      "height": 1616,
+      "legacy_snapshot_payload_bytes": 9308160,
+      "circuit_snapshot_payload_bytes": 4654080,
+      "snapshot_object_bytes_before": 9308192,
+      "snapshot_object_bytes_after": 4654096,
+      "four_to_three_image_array_bytes_before": 18616384,
+      "four_to_three_image_array_bytes_after": 13962288,
+      "legacy_median_ms": 5.6732,
+      "circuit_median_ms": 5.8877,
+      "timed_samples_per_mode": 65
+    }
+  ],
+  "matched_timed_outputs": 130,
+  "nonempty_timed_decisions": 130,
+  "checks": 548,
+  "limits": [
+    "No Android device",
+    "No process PSS or graphics/game memory measured",
+    "Host timings omit Android callbacks and per-window parallel baseline throughput",
+    "Confirmation times and resize are synthetic",
+    "Only frame orchestration/workspace is newly graph-executed; existing vision and decision kernels remain"
+  ],
+  "tested_classfile_runtime_sha256": "53c4b6fd73bb50914eddf1062cb8d833c500fdc100a7088578c6f3ff9c3f2479",
+  "apk_sha256": "f8920cd2b730a5e3375f9085c9d66ce927e40d6e42fcf5c158dfbf58e000246b",
+  "legacy_evidence_normalized": false,
+  "circuit_evidence_normalized": true,
+  "features_comparison": "Equal map keys and Arrays.equals on every frozen feature vector, plus sorted float-bit fingerprint; freeze/copy done outside timed region"
+}

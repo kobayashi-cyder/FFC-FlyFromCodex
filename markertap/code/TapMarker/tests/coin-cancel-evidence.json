@@ -1,0 +1,29 @@
+{
+  "source": "01-Screenshot_20261015-133104.png",
+  "sha256": "7d07d8f842dec92dc671b68b3048bf5f9d526409139b68406488d4694deabd98",
+  "size": [
+    684,
+    1536
+  ],
+  "anchors": [
+    [
+      0.21198830409356725,
+      0.5924479166666666,
+      0.7909356725146199,
+      0.619140625
+    ],
+    [
+      0.564327485380117,
+      0.8125,
+      0.6359649122807017,
+      0.8411458333333334
+    ]
+  ],
+  "touch_bounds": [
+    0.5760233918128655,
+    0.818359375,
+    0.6242690058479532,
+    0.8359375
+  ],
+  "limits": "One supplied screenshot. Resizes, translations, occlusions and temporal sequences are synthetic. Device input and actual dismissal remain untested."
+}

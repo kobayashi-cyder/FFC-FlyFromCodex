@@ -1,0 +1,26 @@
+package jp.tapmarker;
+import java.util.*;
+
+/** Window-local repair anchors coexist with unchanged screen-relative preset anchors. */
+public final class RecordedRepairSampling {
+ public static final String WINDOW="@repair:window";
+ public static final String TRANSFORM="@repair:transform",ADAPTIVE="@repair:adaptive";
+ static final String OBJECTS="@repair:objects",POINT="@repair:point:",PATH="@repair:path:";
+ public static void sample(PhaseEngine e,Map<String,float[]> samples,List<PhaseEngine.Region> regions,int width,int height,RegionSampler.Pixels pixels,int[] scope){
+  int left=0,top=0,w=width,h=height;if(scope!=null&&scope.length==4){left=scope[0];top=scope[1];w=scope[2]-left;h=scope[3]-top;}if(left<0||top<0||w<=0||h<=0||left+w>width||top+h>height)return;
+  final int x=left,y=top;for(PhaseEngine.Region r:regions)if(r.windowLocal&&!e.windowRelative&&BancAutonomy.validBounds(r.bounds))samples.put(r.id,RegionSampler.sample(w,h,r.bounds,(px,py)->pixels.get(x+px,y+py)));samples.put(WINDOW,new float[]{left,top,w,h});
+ }
+ public static boolean local(PhaseEngine e,PhaseEngine.Watch w){PhaseEngine.Region r=e.regions.get(w.regionId);return r!=null&&r.windowLocal&&!e.windowRelative;}
+ public static void adapt(PhaseEngine e,Map<String,float[]> samples,int width,int height,RegionSampler.Pixels pixels,LearnedLayout layout,long now){
+  if(e.windowRelative||layout==null)return;PhaseEngine.Phase phase=e.phases.get(e.current);float[] scope=samples.get(WINDOW);if(phase==null||scope==null)return;PhaseEngine view=new PhaseEngine();view.windowRelative=true;view.current=e.current;view.sourcePhase=e.sourcePhase;view.lastCompletedRule=e.lastCompletedRule;PhaseEngine.Phase p=new PhaseEngine.Phase();p.id=e.current;p.name=phase.name;for(PhaseEngine.Watch w:phase.watches)if(local(e,w))p.watches.add(w);if(p.watches.isEmpty())return;view.phases.put(p.id,p);for(PhaseEngine.Region r:e.regions.values())if(r.windowLocal)view.regions.put(r.id,r);
+  final int left=(int)scope[0],top=(int)scope[1],w=(int)scope[2],h=(int)scope[3];if(left<0||top<0||w<1||h<1||left+w>width||top+h>height)return;
+  Map<String,float[]> aligned=layout.sample(view,w,h,(x,y)->pixels.get(left+x,top+y),now);samples.put(ADAPTIVE,new float[]{layout.confirmed?1:0});for(PhaseEngine.Region r:view.activeRegions())samples.remove(r.id);samples.putAll(aligned);
+  samples.remove(TRANSFORM);samples.remove(OBJECTS);for(String key:new ArrayList<>(samples.keySet()))if(key.startsWith(POINT)||key.startsWith(PATH))samples.remove(key);
+  if(layout.confirmed){if(layout.independent){samples.put(OBJECTS,new float[]{1});for(PhaseEngine.Watch watch:p.watches){PhaseEngine.Region r=view.regions.get(watch.regionId);if(r==null)continue;if(watch.action==PhaseEngine.CENTER){float[] point=LearnedInput.local(watch,r,layout,w,h);if(point!=null)samples.put(POINT+watch.id,point);}else if(watch.action==PhaseEngine.CURVE){float[] path=LearnedInput.local(watch,r,layout,w,h);if(path!=null)samples.put(PATH+watch.id,path);}}}else samples.put(TRANSFORM,new float[]{layout.transform.sx,layout.transform.sy,layout.transform.left,layout.transform.top});}
+ }
+ public static float[] point(PhaseEngine e,PhaseEngine.Watch watch,Map<String,float[]> samples,int width,int height){
+  if(!local(e,watch))return null;float[] scope=samples.get(WINDOW),adaptive=samples.get(ADAPTIVE);if(scope==null||scope.length!=4||adaptive!=null&&adaptive[0]!=1)return null;float[] object=samples.get(POINT+watch.id);if(samples.containsKey(OBJECTS))return object==null?null:inside(new float[]{scope[0]+object[0],scope[1]+object[1]},scope,width,height);PhaseEngine.Region r=e.regions.get(watch.regionId);float[] relative=watch.touchPoint.length==2?watch.touchPoint:new float[]{(r.bounds[0]+r.bounds[2])/2,(r.bounds[1]+r.bounds[3])/2};float[] transform=samples.get(TRANSFORM);if(transform==null)transform=new float[]{1,1,0,0};float[] p={scope[0]+(transform[2]+relative[0]*transform[0])*scope[2],scope[1]+(transform[3]+relative[1]*transform[1])*scope[3]};return inside(p,scope,width,height);
+ }
+ static float[] inside(float[] p,float[] scope,int width,int height){return p[0]>=scope[0]&&p[1]>=scope[1]&&p[0]<scope[0]+scope[2]&&p[1]<scope[1]+scope[3]&&p[0]<width&&p[1]<height?p:null;}
+ public static float[] path(PhaseEngine e,PhaseEngine.Watch watch,Map<String,float[]> samples,int width,int height){if(!local(e,watch)||!watch.relativeCurve||!ObservationLearner.validPoints(watch.curve))return null;float[] scope=samples.get(WINDOW),adaptive=samples.get(ADAPTIVE);if(scope==null||scope.length!=4||adaptive!=null&&adaptive[0]!=1)return null;if(samples.containsKey(OBJECTS)){float[] local=samples.get(PATH+watch.id);if(local==null)return null;float[] path=LearnedInput.offset(local,(int)scope[0],(int)scope[1]);return LearnedInput.inside(path,(int)scope[0],(int)scope[1],(int)scope[2],(int)scope[3])?path:null;}float[] t=samples.get(TRANSFORM);if(t==null)t=new float[]{1,1,0,0};float[] path=watch.curve.clone();for(int i=0;i<path.length;i+=2){path[i]=scope[0]+(t[2]+path[i]*t[0])*scope[2];path[i+1]=scope[1]+(t[3]+path[i+1]*t[1])*scope[3];if(path[i]<scope[0]||path[i]>=scope[0]+scope[2]||path[i+1]<scope[1]||path[i+1]>=scope[1]+scope[3]||path[i]>=width||path[i+1]>=height)return null;}return path;}
+}

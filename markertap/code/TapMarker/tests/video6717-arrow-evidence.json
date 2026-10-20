@@ -1,0 +1,52 @@
+{
+  "patterns": [
+    "0000380000007c00000078000000f0010000e0030000c0070000800f0000801f0000003e0000807ffeffff7ffffffffffffffffffeffff7f0000807f0000003e0000801f0000800f0000c0070000e0030000f0010000780000007c0000003800",
+    "00003c00000078000000f8000000e0010000c0070000c00f0000000f0000001e0000001e000000ffffffffffffffffffffffffff000080ff000000ff0000001e0000000f0000000f0000c00f0000e0010000e0010000f80000007c0000003c00",
+    "0000380000007800000078000000f8000000f0010000e0070000c0070000800f0000001f0000003fffffff7fffffff7fffffffffffffff7f0000003f0000001f0000800f0000c0070000e0070000f0010000f800000078000000780000003800"
+  ],
+  "training_seconds": 74,
+  "components": [
+    {
+      "size": [
+        1080,
+        2424
+      ],
+      "box": [
+        962,
+        162,
+        1009,
+        195
+      ],
+      "count": 433
+    },
+    {
+      "size": [
+        540,
+        1212
+      ],
+      "box": [
+        481,
+        81,
+        504,
+        97
+      ],
+      "count": 96
+    },
+    {
+      "size": [
+        720,
+        1616
+      ],
+      "box": [
+        642,
+        108,
+        673,
+        130
+      ],
+      "count": 205
+    }
+  ],
+  "source": "6717.mp4",
+  "sampling": "32x24 binary occupancy, 3x3 votes per cell",
+  "meaning": "Observed white right arrow in a black upper ad band; not a general navigation detector."
+}
