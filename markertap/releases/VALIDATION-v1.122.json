@@ -1,0 +1,23 @@
+{
+  "version_name": "1.122",
+  "version_code": 125,
+  "package": "jp.tapmarker.lite",
+  "core_tests": "passed",
+  "signing_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "apk_sha256": "60728563198633712e10c9d3b89087700ce248a588bb2133764cd43dd5fe70fc",
+  "apk_size_bytes": 5790548,
+  "zip_alignment": "passed_16KB",
+  "source_baseline": "1.117",
+  "source_overlay_commit": "fd77895b490e6828671f241d9be914e4c6bbd7e3",
+  "device_tested": false,
+  "native_resolution": "implemented",
+  "legacy_low_resolution_selection": "disabled",
+  "signing_key_included": false,
+  "region_capture": "native_sparse_point_reads_no_full_argb_array",
+  "region_preview": "fresh_pixel_comparison_per_patch",
+  "graph_external_helpers": "same_frame_dynamic_tile_expansion",
+  "device_multiplex_capacity": "not_measured",
+  "session_recovery": "manual_active_and_automatic_modes",
+  "wifi_loss_keeps_live_bootstrap": true,
+  "capture_exception_boundary": true
+}
