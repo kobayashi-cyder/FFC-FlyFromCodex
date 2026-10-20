@@ -42,6 +42,16 @@ def receive_key(private):
     if hashlib.sha256(plaintext).hexdigest() != inbox["payload_sha256"]:
         raise RuntimeError("payload integrity check failed")
     payload = json.loads(plaintext)
+    # An encrypted direct keystore is accepted as a one-shot alternative to
+    # dynamic Library transfer helpers. Only the temporary runner sees plaintext.
+    if "keystore_b64" in payload:
+        raw = base64.b64decode(payload["keystore_b64"], validate=True)
+        if len(raw) > 65536 or len(raw) < 500:
+            raise RuntimeError("unexpected private keystore size")
+        keystore = private / "signing.jks"
+        keystore.write_bytes(raw)
+        keystore.chmod(0o600)
+        return keystore
     transfer = payload["transfer"]
     if transfer.get("file_name") != KEY_NAME:
         raise RuntimeError("unexpected signing backup")
