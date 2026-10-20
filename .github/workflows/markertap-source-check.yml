@@ -1,4 +1,4 @@
-name: MarkerTap source-only crash cleanup verification
+name: MarkerTap lock screen guard source verification
 on:
   push:
     branches: ["markertap/recovery"]
@@ -47,5 +47,5 @@ jobs:
           bash build.sh
           bash run-tests.sh
           test -f "$TAPMARKER_OUTPUT"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2" dump badging "$TAPMARKER_OUTPUT" | grep "versionCode='124' versionName='1.121'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2" dump badging "$TAPMARKER_OUTPUT" | grep "versionCode='125' versionName='1.122'"
           echo "Source compilation and core tests verified using temporary non-release key. Nothing is published."
