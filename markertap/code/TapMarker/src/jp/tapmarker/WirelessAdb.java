@@ -2,7 +2,7 @@ package jp.tapmarker;
 import android.app.*;import android.content.*;import android.net.ConnectivityManager;import android.net.Network;import android.net.NetworkCapabilities;import android.net.NetworkRequest;import android.net.nsd.*;import android.os.*;import android.provider.Settings;import android.view.*;import android.view.accessibility.*;import android.widget.*;import java.net.*;import java.util.*;import java.util.concurrent.*;import java.io.*;import io.github.muntashirakon.adb.*;
 /** User-started, self-device-only wireless ADB bootstrap. Never automates OS authorization switches. */
 final class WirelessAdb {
- final TapService s;final ExecutorService worker=Executors.newSingleThreadExecutor();volatile int generation;volatile boolean working,pairing,connecting;volatile PairingConnectionCtx pairingClient;volatile AdbConnection connection;volatile AdbStream stream;NsdManager nsd;NsdManager.DiscoveryListener discovery;final ArrayDeque<NsdServiceInfo> resolveQueue=new ArrayDeque<>();boolean resolving;int connectPort,lastTriedPort;long until;String attempted="";Runnable after;boolean settingsOpened;volatile String localToken;
+ final TapService s;final ExecutorService worker=Executors.newSingleThreadExecutor();volatile int generation;volatile boolean working,pairing,connecting,restartInProgress;volatile PairingConnectionCtx pairingClient;volatile AdbConnection connection;volatile AdbStream stream;NsdManager nsd;NsdManager.DiscoveryListener discovery;final ArrayDeque<NsdServiceInfo> resolveQueue=new ArrayDeque<>();boolean resolving;int connectPort,lastTriedPort;long until;String attempted="";Runnable after;boolean settingsOpened;volatile String localToken;
  WirelessAdb(TapService s){this.s=s;modeListener=(p,key)->{if("automaticWifi".equals(key))this.s.h.post(()->applyMode());};}
  final WirelessModePolicy modePolicy=new WirelessModePolicy();boolean monitorStarted,destroyed,quiet;
  ConnectivityManager networkManager;ConnectivityManager.NetworkCallback networkCallback;
@@ -28,8 +28,10 @@ final class WirelessAdb {
  }
  void restartBackend(){
   if(destroyed)return;
+  if(restartInProgress){note("手動再起動は処理中です");return;}
   if(PcControl.ownsRun(s)||s.pilot.virtualWindows.pcPresentation){note("PC側で実行中のため再起動しません");return;}
   // An explicit restart must not trigger stale-session automatic restoration.
+  restartInProgress=true;
   s.stopAll("手動の実行部再起動");
   VirtualWindows windows=s.pilot.virtualWindows;
   windows.cancelRecovery();windows.closeViews();windows.remote=null;windows.selected=false;
@@ -41,9 +43,10 @@ final class WirelessAdb {
   worker.execute(()->{
    boolean stopped=true;String error="";
    if(old!=null)try{new VirtualProtocol(old).shutdown();}
-   catch(Exception failure){stopped=false;error=VirtualWindows.brief(failure);}
+   catch(Exception failure){stopped=!old.isBinderAlive();if(!stopped)error=VirtualWindows.brief(failure);}
    final boolean complete=stopped;final String failureText=error;
    s.h.post(()->{
+    restartInProgress=false;
     if(destroyed)return;
     if(!complete){note("古い実行部の終了を確認できません："+failureText+" / 再接続を中断しました");return;}
     if(old!=null)VirtualBridgeProvider.forget(old);
