@@ -55,6 +55,7 @@ class AutoPilot implements AutomationRouter.Host {
   LinearLayout split=s.panelRow();s.panelButton(split,"アプリと配置を選ぶ",()->splitLauncher.choose());s.panelButton(split,"表示中の対象を開始",()->{if(virtualSession())virtualWindows.startAutonomy();else splitPilot.start();});
   s.panelSection("仮想画面と接続");LinearLayout preview=s.panelRow();s.panelButton(preview,"仮想画面を最小化",()->virtualWindows.minimize(true));s.panelButton(preview,"表示サイズ",()->virtualWindows.previewSizeDialog());
   LinearLayout connection=s.panelRow();s.panelButton(connection,"端末内接続",()->wireless.guide(false));s.panelButton(connection,"接続情報を入力",()->wireless.input());
+  LinearLayout manualRestart=s.panelRow();s.panelButton(manualRestart,"実行部を再起動",()->wireless.confirmRestart());
   LinearLayout maintenance=s.panelRow();s.panelButton(maintenance,"自動接続の設定",()->wireless.modeDialog());s.panelButton(maintenance,"接続準備を停止",()->{wireless.pauseMaintenance();note("端末内接続の準備と自動再接続を休止しました");});
   LinearLayout close=s.panelRow();s.panelButton(close,"仮想画面を全て閉じる",()->{PcControl.cancelPlacement(s,"仮想画面を閉じました");virtualWindows.close();});
  }
