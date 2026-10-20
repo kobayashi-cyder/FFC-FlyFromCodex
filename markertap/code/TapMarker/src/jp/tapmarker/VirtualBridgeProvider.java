@@ -13,6 +13,9 @@ public final class VirtualBridgeProvider extends ContentProvider {
  static void forget(IBinder expected){synchronized(LOCK){if(service==expected){service=null;serviceLocalToken=null;expectedLocalToken=null;}}}
  static boolean localConnected(String token){synchronized(LOCK){return token!=null&&token.equals(serviceLocalToken)&&service!=null&&service.isBinderAlive();}}
  static boolean localDetached(){synchronized(LOCK){return serviceLocalToken!=null&&service!=null&&service.isBinderAlive();}}
+ static IBinder ownerBinder(){return HOST;}
+ // Never block the dying app process while trying to destroy the owned backend.
+ static void emergencyStop(){IBinder old;synchronized(LOCK){old=service;service=null;serviceLocalToken=null;expectedLocalToken=null;}if(old!=null)try{new VirtualProtocol(old).destroyAsync();}catch(Throwable ignored){}}
  static void closeLocal(){String token;synchronized(LOCK){token=serviceLocalToken;}cancelLocal(token);}
  @Override public boolean onCreate(){return true;}
  @Override public Bundle call(String method,String argument,Bundle extras){
