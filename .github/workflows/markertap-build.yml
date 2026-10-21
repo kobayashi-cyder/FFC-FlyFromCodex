@@ -1,4 +1,4 @@
-name: MarkerTap lock screen guard APK
+name: MarkerTap preview connectome APK
 on:
   push:
     branches: ["markertap/recovery"]
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: MarkerTap-v1.122-lockscreen-guard
+          name: MarkerTap-v1.123-preview-connectome
           path: markertap/releases/*
           if-no-files-found: ignore
           retention-days: 90
