@@ -7,10 +7,10 @@
   "native_resolution_fix": "built_and_host_tested",
   "source_parts": 4,
   "code_mirror_files": 794,
-  "current_version_name": "1.122",
+  "current_version_name": "1.123",
   "device_tested": false,
-  "apk": "releases/MarkerTap-v1.122-lockscreen-guard.apk",
-  "apk_sha256": "60728563198633712e10c9d3b89087700ce248a588bb2133764cd43dd5fe70fc",
+  "apk": "releases/MarkerTap-v1.123-preview-connectome.apk",
+  "apk_sha256": "456ebe7993d52d79d6304f55d9e5a3a60788b7b4f94827952808d527f743088c",
   "source_overlay_commit": "e52b47c93af2fd6ed91e114896d52b4c9b7b82c8",
   "region_capture_fix": "built_and_host_tested_sparse_native_points",
   "latest_validation_run": "https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/39495111580"
