@@ -1,4 +1,4 @@
-name: MarkerTap lock screen guard source verification
+name: MarkerTap preview connectome source verification
 on:
   push:
     branches: ["markertap/recovery"]
@@ -35,6 +35,7 @@ jobs:
           test -f "$RUNNER_TEMP/markertap-src/TapMarker/src/jp/tapmarker/CrashGuardApplication.java"
           grep -q 'REGISTER_OWNER=13' "$RUNNER_TEMP/markertap-src/TapMarker/src/jp/tapmarker/VirtualProtocol.java"
           grep -q 'fatalSession' "$RUNNER_TEMP/markertap-src/TapMarker/src/jp/tapmarker/VirtualWindows.java"
+          test -f "$RUNNER_TEMP/markertap-src/TapMarker/src/jp/tapmarker/PreviewConnectome.java"
       - name: Compile and run core regression tests (temporary CI signing key only)
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
@@ -47,5 +48,5 @@ jobs:
           bash build.sh
           bash run-tests.sh
           test -f "$TAPMARKER_OUTPUT"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2" dump badging "$TAPMARKER_OUTPUT" | grep "versionCode='125' versionName='1.122'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2" dump badging "$TAPMARKER_OUTPUT" | grep "versionCode='126' versionName='1.123'"
           echo "Source compilation and core tests verified using temporary non-release key. Nothing is published."
