@@ -8,6 +8,16 @@ final class VirtualWindows {
  // A screenshot buffer must not wait behind up to four expensive recognition
  // requests before being copied, otherwise a fresh frame expires in the queue.
  final ExecutorService frameCopyWork=Executors.newSingleThreadExecutor(task->new Thread(task,"TapMarker-frame-copy"));
+ final java.util.concurrent.atomic.AtomicInteger pendingFrameRetirements=new java.util.concurrent.atomic.AtomicInteger();
+ /** Retain/release happens outside frameLock; never dispose native images on UI thread. */
+ void retireFrameAsync(RegionImage expired){
+  if(expired==null)return;
+  pendingFrameRetirements.incrementAndGet();
+  Runnable release=()->{try{expired.close();}catch(RuntimeException error){android.util.Log.w("MarkerTap","Frame release failed",error);}finally{pendingFrameRetirements.decrementAndGet();}};
+  try{frameCopyWork.execute(release);}
+  catch(RejectedExecutionException shutdown){Thread fallback=new Thread(release,"MarkerTap-frame-retire-final");fallback.setDaemon(true);fallback.start();}
+ }
+
  boolean selected,pending,connecting,bound,adbMode,destroyed,pcPresentation,fatalClosing;volatile boolean autoPending;String[] requested;long remoteEpoch;VirtualPreparation preparation;
  final BackendRecoveryBudget recoveryBudget=new BackendRecoveryBudget();
  boolean recoverPending,recoverRun,recoverMinimized;String[] recoverTargets;
@@ -187,19 +197,23 @@ final class VirtualWindows {
  }
  void frame(Window w,ImageReader reader,int task){
   Image image=null;try{
-   if(reader!=w.reader||w.closed||task!=generation)return;
+   if(reader!=w.reader||w.closed||task!=generation||pendingFrameRetirements.get()>=8)return;
    image=reader.acquireLatestImage();if(image==null||reader!=w.reader||w.closed||task!=generation)return;
    long now=SystemClock.uptimeMillis();PerformancePolicy.Profile p=s.performance.profile();
    boolean running=s.pilot.splitPilot.active||autoPending||s.pilot.learning.active;
    long interval=VirtualLoadPolicy.decodeInterval(p,w.laneCount,running,w.minimized);
    if(interval!=w.decodePeriod){w.decodePeriod=interval;w.decodeDueAt=0;}
    if(w.frameAt>0&&now<w.decodeDueAt)return;w.decodedAt=now;w.decodeDueAt=VirtualLoadPolicy.nextDecodeAt(now,interval,w.startIndex,w.laneCount);
+   RegionImage next=RegionImage.fromImage(image,w.width,w.height,now,w.readerLifetime);image=null;
+   RegionImage previous=null;boolean accepted=false;
    synchronized(w.frameLock){
-    if(reader!=w.reader||w.closed||task!=generation)return;
-    RegionImage next=RegionImage.fromImage(image,w.width,w.height,now,w.readerLifetime);image=null;
-    if(w.latest!=null)w.latest.close();w.latest=next;w.frameAt=now;w.errors=0;w.frameIssue="";
-    if(s.progressErrors!=null)s.progressErrors.image(w,"");
+    if(reader==w.reader&&!w.closed&&task==generation){
+     previous=w.latest;w.latest=next;w.frameAt=now;w.errors=0;w.frameIssue="";accepted=true;
+    }
    }
+   if(!accepted){retireFrameAsync(next);return;}
+   retireFrameAsync(previous);
+   if(s.progressErrors!=null)s.progressErrors.image(w,"");
    if(!w.minimized&&now-w.previewAt>=p.previewMs&&!w.previewPending){w.previewAt=now;w.previewPending=true;s.h.post(()->preview(w,task));}
   }catch(OutOfMemoryError pressure){s.performance.memoryPressure();if(reader==w.reader){w.errors=3;s.h.post(()->{if(!w.closed)s.pilot.note(s.appLabel(w.pkg)+"：メモリ不足 / 画面数を減らしてください");});}}catch(Exception error){if(reader==w.reader&&!w.closed&&++w.errors==3)s.h.post(()->{if(task==generation&&!w.closed)s.pilot.note(s.appLabel(w.pkg)+"：画面取得 "+error.getClass().getSimpleName());});}
   finally{if(image!=null)image.close();}
@@ -228,14 +242,15 @@ final class VirtualWindows {
       }catch(Exception failure){issue=brief(failure);}catch(OutOfMemoryError pressure){issue="画像再取得時のメモリ不足";s.performance.memoryPressure();}
       finally{if(hardware!=null)hardware.recycle();result.getHardwareBuffer().close();}
       final RegionImage ready=captured;final String failure=issue;s.h.post(()->{
-       if(!frameQueue.current(request)){if(ready!=null)ready.close();return;}
-       long completed=SystemClock.uptimeMillis();Window current=frameWindow(request);boolean usable=false;
+       if(!frameQueue.current(request)){retireFrameAsync(ready);return;}
+       long completed=SystemClock.uptimeMillis();Window current=frameWindow(request);boolean usable=false;RegionImage previous=null;
        synchronized(w.frameLock){
         if(current==w&&ready!=null&&completed-request.startedAt<=1500&&frameQueue.accepts(request,w.id,generation,w.frameAt,completed)){
-         if(w.latest!=null)w.latest.close();w.latest=ready;w.frameAt=request.startedAt;w.errors=0;usable=true;
+         previous=w.latest;w.latest=ready;w.frameAt=request.startedAt;w.errors=0;usable=true;
         }
        }
-       if(!usable&&ready!=null)ready.close();
+       retireFrameAsync(previous);
+       if(!usable)retireFrameAsync(ready);
        if(usable){w.frameFailures=0;w.frameIssue="";w.screenInfo=null;if(s.progressErrors!=null)s.progressErrors.image(w,"");if(!w.minimized)preview(w,generation);}
        frameQueue.complete(request,completed,usable);if(current==w&&!usable)frameFailed(request,failure.isEmpty()?"再取得した画像が古いため破棄しました":failure,false);scheduleFramePump();
       });
@@ -256,8 +271,14 @@ final class VirtualWindows {
   final PreviewConnectome.Schedule schedule=w.preview.schedule(plan,width,w.frameAt);
   if(!w.frameHandler.post(()->{
    RegionPreviewData data=null;
-   try{synchronized(w.frameLock){if(!w.closed&&task==generation&&w.latest!=null)data=RegionPreviewData.capture(plan,width,w.frameAt,w.latest.points(),schedule);}}
+   RegionImage snapshot=null;
+   try{
+    long capturedAt=0;
+    synchronized(w.frameLock){if(!w.closed&&task==generation&&w.latest!=null){snapshot=w.latest.retain();capturedAt=w.frameAt;}}
+    if(snapshot!=null)data=RegionPreviewData.capture(plan,width,capturedAt,snapshot.points(),schedule);
+   }
    catch(Exception unavailable){}catch(OutOfMemoryError pressure){s.performance.memoryPressure();}
+   finally{if(snapshot!=null)retireFrameAsync(snapshot);}
    final RegionPreviewData ready=data;
    s.h.post(()->{w.previewPending=false;if(ready==null||w.closed||w.minimized||task!=generation||id!=w.id||revision!=w.previewRevision||w.roiPlan==null||!plan.sameCoverage(w.roiPlan)||SystemClock.uptimeMillis()-ready.capturedAt>1500)return;try{w.preview.publish(ready);}catch(OutOfMemoryError pressure){s.performance.memoryPressure();}});
   }))w.previewPending=false;
@@ -273,11 +294,14 @@ final class VirtualWindows {
  void collect(AccessibilityNodeInfo n,StringBuilder text,int[] remaining){if(--remaining[0]<0)return;if(n.getText()!=null)text.append(n.getText()).append(' ');if(n.getContentDescription()!=null)text.append(n.getContentDescription()).append(' ');for(int i=0;i<n.getChildCount();i++){AccessibilityNodeInfo child=n.getChild(i);if(child!=null){collect(child,text,remaining);child.recycle();}}}
  void ready(int task,int attempt,boolean run){if(task!=generation||!autoPending)return;for(Window w:windows){requestFrameRefresh(w);}for(Window w:windows)if(!w.failed&&w.launched&&w.frameAt>0&&w.pkg.equals(screen(w).pkg)){preparation.confirm(w.startIndex);state(w,"開始待ち");}int result=preparation.result();if(result==VirtualPreparation.ALL_READY){boolean launch=preparation.shouldRun();autoPending=false;if(launch)s.pilot.splitPilot.startVirtual(targets());else s.pilot.note("仮想画面を復元 / 自律停止のままです");return;}if(result==VirtualPreparation.FINISHED_WITH_ERRORS){autoPending=false;s.pilot.note("仮想画面：表示確認"+preparation.count(VirtualPreparation.CONFIRMED)+" / 起動不可"+preparation.count(VirtualPreparation.FAILED)+" / 自律停止");return;}if(attempt<Math.max(60,requested.length*40)){s.h.postDelayed(()->ready(task,attempt+1,run),300);return;}for(Window w:windows)if(!w.failed&&preparation.state(w.startIndex)!=VirtualPreparation.CONFIRMED)failure(w,w.launched?"仮想画面で対象アプリの表示を確認できません":"仮想画面の起動がタイムアウトしました");autoPending=false;}
  /** Full-size image only for an explicit learning/export request, never routine recognition. */
- Bitmap image(Window w){synchronized(w.frameLock){
-  if(w.closed||w.latest==null)return null;Bitmap result=Bitmap.createBitmap(w.width,w.height,Bitmap.Config.ARGB_8888);
-  try{int[] rows=new int[w.width*Math.min(32,w.height)];for(int y=0;y<w.height;y+=32){int h=Math.min(32,w.height-y);w.latest.source.read(0,y,w.width,h,rows,w.width);result.setPixels(rows,0,w.width,0,y,w.width,h);}return result;}
-  catch(RuntimeException|OutOfMemoryError error){result.recycle();throw error;}
- }}
+ Bitmap image(Window w){
+  RegionImage snapshot;int width,height;
+  synchronized(w.frameLock){if(w.closed||w.latest==null)return null;snapshot=w.latest.retain();width=w.width;height=w.height;}
+  Bitmap result=null;
+  try{result=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);int[] rows=new int[width*Math.min(32,height)];for(int y=0;y<height;y+=32){int h=Math.min(32,height-y);snapshot.source.read(0,y,width,h,rows,width);result.setPixels(rows,0,width,0,y,width,h);}return result;}
+  catch(RuntimeException|OutOfMemoryError error){if(result!=null)result.recycle();throw error;}
+  finally{retireFrameAsync(snapshot);}
+ }
  void minimize(boolean enabled){
   DisplayMetrics dm=new DisplayMetrics();s.wm.getDefaultDisplay().getRealMetrics(dm);
   panelHeaders=enabled;s.getSharedPreferences("virtualPreview",0).edit().putBoolean("panelHeaders",enabled).apply();
@@ -293,11 +317,13 @@ final class VirtualWindows {
   java.util.function.BooleanSupplier current=()->!destroyed&&version==generation&&!w.closed&&w.id==id&&valid.getAsBoolean();
   RegionPlan.Builder dependencies=new RegionPlan.Builder(plan);long[] copied={0};
   FrameCircuit.Request request=new FrameCircuit.Request(current,workspace->{
+   RegionImage image;int width,height;long capturedAt;
    synchronized(w.frameLock){
-    if(!current.getAsBoolean()||w.latest==null)return null;RegionImage image=w.latest.retain();
-    try{return new FrameCircuit.Input(w.width,w.height,w.frameAt,image.tiles(dependencies,copied),image::close);}
-    catch(RuntimeException|OutOfMemoryError error){image.close();throw error;}
+    if(!current.getAsBoolean()||w.latest==null)return null;
+    image=w.latest.retain();width=w.width;height=w.height;capturedAt=w.frameAt;
    }
+   try{return new FrameCircuit.Input(width,height,capturedAt,image.tiles(dependencies,copied),image::close);}
+   catch(RuntimeException|OutOfMemoryError error){retireFrameAsync(image);throw error;}
   },frame->{
    Runnable result=sample.apply(frame);RegionPlan observed=dependencies.build();
    return result==null?null:()->{w.roiCopiedPixels=copied[0];w.roiCoveredPixels=observed.coveredPixels();if(w.roiPlan!=null&&plan.scope.equals(w.roiPlan.scope))w.roiPlan=observed;result.run();};
@@ -338,8 +364,10 @@ final class VirtualWindows {
   catch(Exception error){failed.accept(brief(error));return;}
   final ImageReader prior=w.reader;final FrameResource priorLifetime=w.readerLifetime;final FrameResource freshLifetime=new FrameResource(fresh::close);
   w.rebuilding=true;w.launched=false;w.id=-1;w.inputLane.cancel();frameQueue.remove(oldId,task);
-  synchronized(w.frameLock){w.reader=fresh;w.readerLifetime=freshLifetime;w.surface=fresh.getSurface();if(w.latest!=null)w.latest.close();w.latest=null;w.roiPlan=RegionPlan.full(w.width,w.height,"rebuild:"+task+":"+oldId);w.frameAt=0;w.decodeDueAt=0;}
-  if(prior!=null){prior.setOnImageAvailableListener(null,null);priorLifetime.release();}
+  RegionImage previous;
+  synchronized(w.frameLock){w.reader=fresh;w.readerLifetime=freshLifetime;w.surface=fresh.getSurface();previous=w.latest;w.latest=null;w.roiPlan=RegionPlan.full(w.width,w.height,"rebuild:"+task+":"+oldId);w.frameAt=0;w.decodeDueAt=0;}
+  retireFrameAsync(previous);
+  if(prior!=null){prior.setOnImageAvailableListener(null,null);if(priorLifetime!=null)frameCopyWork.execute(priorLifetime::release);}
   w.screenInfo=null;w.screenInfoId=-1;w.screenInfoAt=0;w.previewTouchActive=false;w.preview.clear();
   state(w,"この画面を再作成中");record("#"+oldId+" "+s.appLabel(w.pkg)+" 復帰上限後に対象画面だけを再作成 / "+w.width+"x"+w.height+" / "+w.density+" dpi");
   if(s.progressErrors!=null)s.progressErrors.action(w.pkg,"仮想画面の再作成を要求",oldId,Float.NaN,Float.NaN);
@@ -380,7 +408,10 @@ final class VirtualWindows {
  }
  void cleanupDisplay(Window w,VirtualProtocol service,int id){if(w.id==id)w.id=-1;try{if(service!=null)service.release(id);else if(w.local!=null){w.local.release();w.local=null;}}catch(Exception ignored){}}
  void release(Window w){int id=w.id;frameQueue.remove(id,generation);w.id=-1;w.inputLane.cancel();VirtualProtocol service=remote;if(id>0&&!w.io.isShutdown())w.io.execute(()->cleanupDisplay(w,service,id));w.io.shutdown();
-  synchronized(w.frameLock){if(w.latest!=null){w.latest.close();w.latest=null;}if(w.reader!=null){w.reader.setOnImageAvailableListener(null,null);w.readerLifetime.release();w.readerLifetime=null;w.reader=null;}}
+  RegionImage previous;ImageReader reader;FrameResource lifetime;
+  synchronized(w.frameLock){previous=w.latest;w.latest=null;reader=w.reader;lifetime=w.readerLifetime;w.readerLifetime=null;w.reader=null;}
+  if(reader!=null){reader.setOnImageAvailableListener(null,null);if(lifetime!=null)try{frameCopyWork.execute(lifetime::release);}catch(RejectedExecutionException shutdown){Thread finalRelease=new Thread(lifetime::release,"MarkerTap-reader-retire-final");finalRelease.setDaemon(true);finalRelease.start();}}
+  retireFrameAsync(previous);
   if(w.frames!=null)w.frames.quitSafely();w.preview.clear();
  }
  void remove(Window w){if(pcPresentation&&PcControl.ownsRun(s)){hidePreview(w);record("#"+w.id+" スマホのプレビューを非表示（PC処理継続）");s.pilot.note("スマホのプレビューを隠しました / PCの各画面は処理継続");return;}s.stop();w.closed=true;release(w);windows.remove(w);if(windows.isEmpty())selected=false;try{s.wm.removeView(w.view);}catch(Exception ignored){}s.pilot.note("仮想画面を閉じました / 自律停止");}
