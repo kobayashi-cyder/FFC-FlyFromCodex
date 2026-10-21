@@ -11,10 +11,16 @@ final class RegionPreviewData {
  }
  RegionPreviewData(RegionPlan plan,int w,int h,long at,List<Patch> patches){nativeWidth=plan.width;nativeHeight=plan.height;width=w;height=h;scope=plan.previewKey;capturedAt=at;this.patches=Collections.unmodifiableList(patches);}
  static RegionPreviewData capture(RegionPlan plan,int requestedWidth,long at,RegionSampler.Pixels source){
+  return capture(plan,requestedWidth,at,source,null);
+ }
+ static RegionPreviewData capture(RegionPlan plan,int requestedWidth,long at,RegionSampler.Pixels source,PreviewConnectome.Schedule schedule){
   if(requestedWidth<=0||source==null)throw new IllegalArgumentException("preview");
   int width=Math.min(plan.width,requestedWidth),height=Math.max(1,Math.round(width*plan.height/(float)plan.width));
+  if(schedule!=null&&(schedule.width!=width||schedule.height!=height||!schedule.scope.equals(plan.previewKey)))
+   throw new IllegalArgumentException("stale preview schedule");
   List<Patch> patches=new ArrayList<>();
   for(int ty=0;ty<height;ty+=SIDE)for(int tx=0;tx<width;tx+=SIDE){
+   if(schedule!=null&&!schedule.includes(tx,ty))continue;
    Patch patch=null;int pw=Math.min(SIDE,width-tx),ph=Math.min(SIDE,height-ty);
    for(int y=0;y<ph;y++){int sy=Math.min(plan.height-1,(int)((ty+y+.5)*plan.height/height));
     for(int x=0;x<pw;x++){int sx=Math.min(plan.width-1,(int)((tx+x+.5)*plan.width/width));
