@@ -92,6 +92,27 @@ final class ProgressErrors {
  }
  static void shareLatest(Context context){DiagnosticJournal.share(context,context.getSharedPreferences("automationDiagnostics",0).getString("progressArchive",""));}
  static void shareReport(Context context,String body){String name="";try{JSONArray history=new JSONArray(context.getSharedPreferences("automationDiagnostics",0).getString("progressHistory","[]"));for(int i=history.length()-1;i>=0;i--){JSONObject row=history.getJSONObject(i);if(body.equals(row.optString("body"))){name=row.optString("archive");break;}}}catch(JSONException ignored){}DiagnosticJournal.share(context,name);}
+ /** User initiated handoff, not background upload. ChatGPT may not support ZIP in shares. */
+ static void shareToChatGPT(Context context,String body){
+  if(body==null||body.isEmpty()){UiStrings.toast(context,"共有できる診断文がありません",0).show();return;}
+  Intent send=new Intent(Intent.ACTION_SEND).setType("text/plain")
+    .putExtra(Intent.EXTRA_TEXT,"MarkerTap 障害診断（原因・修正案の確認をお願いします）\\n\\n"+body);
+  send.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_GRANT_READ_URI_PERMISSION);
+  // A ZIP is additional context only; EXTRA_TEXT remains available independently.
+  try{
+   String name="";JSONArray history=new JSONArray(context.getSharedPreferences("automationDiagnostics",0).getString("progressHistory","[]"));
+   for(int i=history.length()-1;i>=0;i--){JSONObject entry=history.getJSONObject(i);if(body.equals(entry.optString("body"))){name=entry.optString("archive");break;}}
+   if(!name.isEmpty()){
+    java.io.File zip=DiagnosticArchive.resolve(new java.io.File(context.getFilesDir(),"diagnostic-incidents"),name);
+    if(zip.isFile()){android.net.Uri uri=new android.net.Uri.Builder().scheme("content").authority(context.getPackageName()+".diagnostics").appendPath(zip.getName()).build();send.setClipData(ClipData.newRawUri("MarkerTap incident ZIP",uri));}
+   }
+  }catch(Exception unavailable){android.util.Log.w("MarkerTap","Optional diagnostic attachment unavailable",unavailable);}
+  try{context.startActivity(new Intent(send).setPackage("com.openai.chatgpt"));}
+  catch(android.content.ActivityNotFoundException|SecurityException unsupported){
+   try{context.startActivity(Intent.createChooser(send,UiStrings.text(context,"ChatGPTなどに診断文を共有")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));}
+   catch(RuntimeException failed){ClipboardManager clip=(ClipboardManager)context.getSystemService(Context.CLIPBOARD_SERVICE);if(clip!=null)clip.setPrimaryClip(ClipData.newPlainText("MarkerTap diagnostic",body));UiStrings.toast(context,"共有先を開けません。診断文をコピーしました。",1).show();}
+  }
+ }
  static String version(Context c){try{return c.getPackageManager().getPackageInfo(c.getPackageName(),0).versionName;}catch(Exception missing){return "unknown";}}
  static boolean notificationsEnabled(Context c){NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);return nm!=null&&nm.areNotificationsEnabled()&&(Build.VERSION.SDK_INT<33||c.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)==PackageManager.PERMISSION_GRANTED);}
  void post(ProgressWatchdog.Event event,String body){
@@ -113,8 +134,8 @@ final class ProgressErrors {
   if(TapService.instance!=null&&TapService.instance.pilot!=null&&!TapService.instance.pilot.virtualSession())TapService.instance.stop("進行エラーの診断文を表示");
   if(body.equals(context.getSharedPreferences("automationDiagnostics",0).getString("progressReport","")))context.getSharedPreferences("automationDiagnostics",0).edit().putBoolean("progressUnread",false).apply();if(TapService.instance!=null&&TapService.instance.progressErrors!=null)TapService.instance.progressErrors.refreshBanner();
   TextView text=new TextView(context);text.setText(body);text.setTextIsSelectable(true);text.setTextSize(13);text.setPadding(20,16,20,16);ScrollView scroll=new ScrollView(context);scroll.addView(text);
-  LinearLayout box=new LinearLayout(context);box.setOrientation(1);int h=(int)(context.getResources().getDisplayMetrics().heightPixels/context.getResources().getDisplayMetrics().density);box.addView(scroll,new LinearLayout.LayoutParams(-1,UiKit.dp(context,Math.max(100,Math.min(360,h*.45f)))));Button share=UiKit.button(context,"画像付き診断を共有",false,()->shareReport(context,body));box.addView(share,new LinearLayout.LayoutParams(-1,-2));
-  AlertDialog dialog=new UiStrings.DialogBuilder(context).setTitle("進行エラーの診断文").setView(box).setPositiveButton("診断文をコピー",(d,i)->{ClipboardManager clipboard=(ClipboardManager)context.getSystemService(Context.CLIPBOARD_SERVICE);clipboard.setPrimaryClip(ClipData.newPlainText("MarkerTap progress report",body));UiStrings.toast(context,"診断文をコピーしました。ChatGPT Workに貼り付けてください。",Toast.LENGTH_LONG).show();}).setNegativeButton("閉じる",null).setNeutralButton("過去のエラー",(d,i)->showHistory(context)).create();if(context instanceof TapService)dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY);dialog.show();
+  LinearLayout box=new LinearLayout(context);box.setOrientation(1);int h=(int)(context.getResources().getDisplayMetrics().heightPixels/context.getResources().getDisplayMetrics().density);box.addView(scroll,new LinearLayout.LayoutParams(-1,UiKit.dp(context,Math.max(100,Math.min(360,h*.45f)))));Button toChatGPT=UiKit.button(context,"ChatGPTに診断を送る（共有画面で確認）",false,()->shareToChatGPT(context,body));box.addView(toChatGPT,new LinearLayout.LayoutParams(-1,-2));Button share=UiKit.button(context,"画像付き診断ZIPを共有",false,()->shareReport(context,body));box.addView(share,new LinearLayout.LayoutParams(-1,-2));
+  AlertDialog dialog=new UiStrings.DialogBuilder(context).setTitle("進行エラーの診断文").setView(box).setPositiveButton("診断文をコピー",(d,i)->{ClipboardManager clipboard=(ClipboardManager)context.getSystemService(Context.CLIPBOARD_SERVICE);clipboard.setPrimaryClip(ClipData.newPlainText("MarkerTap progress report",body));UiStrings.toast(context,"診断文をコピーしました。ChatGPTの会話に貼り付けてください（Workも利用できます）。",Toast.LENGTH_LONG).show();}).setNegativeButton("閉じる",null).setNeutralButton("過去のエラー",(d,i)->showHistory(context)).create();if(context instanceof TapService)dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY);dialog.show();
  }
  static void showHistory(Context context){
   try{JSONArray saved=new JSONArray(context.getSharedPreferences("automationDiagnostics",0).getString("progressHistory","[]"));if(saved.length()==0){showLatest(context);return;}String[] titles=new String[saved.length()],bodies=new String[saved.length()];for(int i=0;i<saved.length();i++){JSONObject row=saved.getJSONObject(saved.length()-1-i);titles[i]=row.getString("title");bodies[i]=row.getString("body");}AlertDialog dialog=new UiStrings.DialogBuilder(context).setTitle("過去のエラー").setItems(titles,(d,i)->showReport(context,bodies[i])).setNegativeButton("閉じる",null).create();if(context instanceof TapService)dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY);dialog.show();}catch(JSONException invalid){UiStrings.toast(context,"進行エラーは記録されていません",0).show();}
