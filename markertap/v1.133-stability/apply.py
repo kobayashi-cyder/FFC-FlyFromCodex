@@ -85,6 +85,18 @@ def apply(project):
     if "FrameLockBridge" in runtime:
         raise RuntimeError("v1.133 VirtualWindows unexpectedly depends on legacy bridge")
     stale_bridge.unlink()
+    # In v1.133 no bridge is allowed: audit the real, current frame path
+    # instead of requiring its obsolete 1.132 synthetic-lambda bindings.
+    replace_once(project / "tools/IntegrationAudit.java",
+        '  binding("VirtualWindows","FrameLockBridge","preview");\\n'
+        '  binding("VirtualWindows","FrameLockBridge","copy");\\n'
+        '  binding("VirtualWindows","FrameLockBridge","image");',
+        '  binding("VirtualWindows","RegionPreviewData","capture");\\n'
+        '  binding("VirtualWindows","RegionImage","fromHardware");\\n'
+        '  binding("VirtualWindows","FrameCircuit","run");')
+    replace_once(project / "tools/IntegrationAudit.java",
+        '  binding("FrameLockBridge","RegionPreviewData","capture");',
+        '  binding("RegionPreviewView","PreviewConnectome","observed");')
     # Existing v1.132 tests and signature checks remain mandatory.
     return ["virtual-window-isolation", "dual-circuit-parallel-regression", "manifest-1.133-code-136"]
 
