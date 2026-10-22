@@ -1,7 +1,7 @@
 {
-  "run_id": "39761781365",
+  "run_id": "39761985474",
   "status": "failed",
-  "stage": "source_verification",
-  "error_type": "RuntimeError",
+  "stage": "build_and_dex_verification",
+  "error_type": "CalledProcessError",
   "apk_published": false
 }
