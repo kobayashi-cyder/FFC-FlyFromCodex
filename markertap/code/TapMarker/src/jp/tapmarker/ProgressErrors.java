@@ -96,7 +96,7 @@ final class ProgressErrors {
  static void shareToChatGPT(Context context,String body){
   if(body==null||body.isEmpty()){UiStrings.toast(context,"共有できる診断文がありません",0).show();return;}
   Intent send=new Intent(Intent.ACTION_SEND).setType("text/plain")
-    .putExtra(Intent.EXTRA_TEXT,"MarkerTap 障害診断（原因・修正案の確認をお願いします）\\n\\n"+body);
+    .putExtra(Intent.EXTRA_TEXT,"MarkerTap 障害診断（原因・修正案の確認をお願いします）\n\n"+body);
   send.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_GRANT_READ_URI_PERMISSION);
   // A ZIP is additional context only; EXTRA_TEXT remains available independently.
   try{
