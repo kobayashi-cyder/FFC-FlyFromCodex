@@ -115,6 +115,31 @@ def apply(project):
         ' static void field(String name,String field,String type){',
         ' static void methodExists(String owner,String name){checks++;ClassDef c=classes.get("Ljp/tapmarker/"+owner+";");if(c==null)throw new AssertionError("missing class "+owner);for(Method method:c.getMethods())if(method.getName().equals(name))return;throw new AssertionError("missing method "+owner+"."+name);}' +
         '\n static void field(String name,String field,String type){')
+    # Retired bridge cannot be used as a host test fixture. Replace both
+    # old checks with live preview and per-display isolation coverage.
+    host_tests = project / "run-host-tests.sh"
+    host = host_tests.read_text(encoding="utf-8")
+    first = host.index("python3 tests/FrameLockBridgeSourceTest.py")
+    last_marker = "java -cp build/bridge-host jp.tapmarker.FrameLockBridgeHostTest\n"
+    last = host.index(last_marker, first) + len(last_marker)
+    old_block = host[first:last]
+    replacement = """# v1.133: verify no legacy bridge survives in the compiled app.
+python3 - <<'PY'
+from pathlib import Path
+virtual = Path('src/jp/tapmarker/VirtualWindows.java').read_text()
+assert 'w.frameCircuit.run(request)' in virtual
+assert 'RegionPreviewData.capture(plan,width,capturedAt,snapshot.points(),schedule)' in virtual
+assert not Path('src/jp/tapmarker/FrameLockBridge.java').exists()
+print('V1133SourceTest: independent circuits and sparse preview verified')
+PY
+mkdir -p build/host-unit
+"""
+    if host.count(old_block) != 1:
+        raise RuntimeError("unexpected legacy host bridge test")
+    host_tests.write_text(host.replace(old_block, replacement), encoding="utf-8")
+    replace_once(project / "run-tests.sh",
+        'python3 tests/FrameLockBridgeSourceTest.py',
+        'java -cp "build/runtime:build/tests:baseline-runtime.jar:$TEST_LIBS:$JAR:$LIBS" jp.tapmarker.PreviewConnectomeTest')
     # Existing v1.132 tests and signature checks remain mandatory.
     return ["virtual-window-isolation", "dual-circuit-parallel-regression", "manifest-1.133-code-136"]
 
