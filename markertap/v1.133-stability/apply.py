@@ -73,6 +73,18 @@ def apply(project):
         'owners.add("Ljp/tapmarker/FlyCircuit");',
         'owners.add("Ljp/tapmarker/FlyCircuit");\n'
         '  owners.add("Ljp/tapmarker/FrameLockBridge"); // obsolete 1.132 compiled lambda bridge')
+    # 1.130 archive still compiles a legacy FrameLockBridge using
+    # VirtualWindows$ExternalSyntheticLambda29's obsolete constructor.
+    # Do not package that class alongside the canonical v1.133 window owner.
+    stale_bridge = project / "src/jp/tapmarker/FrameLockBridge.java"
+    if not stale_bridge.is_file():
+        raise RuntimeError("expected archived FrameLockBridge source missing")
+    bridge_source = stale_bridge.read_text(encoding="utf-8")
+    if "class FrameLockBridge" not in bridge_source:
+        raise RuntimeError("archived FrameLockBridge no longer matches verified legacy source")
+    if "FrameLockBridge" in runtime:
+        raise RuntimeError("v1.133 VirtualWindows unexpectedly depends on legacy bridge")
+    stale_bridge.unlink()
     # Existing v1.132 tests and signature checks remain mandatory.
     return ["virtual-window-isolation", "dual-circuit-parallel-regression", "manifest-1.133-code-136"]
 
