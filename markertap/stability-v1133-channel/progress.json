@@ -1,4 +1,4 @@
 {
   "run_id": "39765282037",
-  "stage": "build_and_dex_verification"
+  "stage": "regression_rejects_previous_journal_lock"
 }
