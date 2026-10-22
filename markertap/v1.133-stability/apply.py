@@ -39,6 +39,13 @@ def apply(project):
             raise RuntimeError("missing canonical source: " + str(source))
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(source.read_bytes())
+    # Android may interrupt accessibility feedback without destroying this
+    # service. Do not tear down both virtual displays for that transient event.
+    # Explicit stop, onDestroy, and Binder owner death still perform teardown.
+    # ReleaseRuntimeAudit checks the compiled onInterrupt method is RETURN_VOID.
+    replace_once(project / "src/jp/tapmarker/TapService.java",
+        'public void onInterrupt(){if(pilot!=null)pilot.virtualWindows.fatalSession("ユーザー補助の割込み / 全実行部停止");else stopAll("ユーザー補助の割込み");}',
+        "public void onInterrupt(){}")
     src = project / "src/jp/tapmarker/VirtualWindows.java"
     runtime = src.read_text(encoding="utf-8")
     test_source = (project / "tests/FrameCircuitTest.java").read_text(encoding="utf-8")
