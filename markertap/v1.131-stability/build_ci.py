@@ -87,11 +87,10 @@ def restore_source(private):
     return project, manifest, overlays
 
 def public_mirror(apk):
-    api = '/repos/' + channel.REPO
-    blob = channel.api(api + '/git/blobs', {'encoding': 'base64', 'content': base64.b64encode(apk.read_bytes()).decode()})
+    blob = channel.api('git/blobs', {'encoding': 'base64', 'content': base64.b64encode(apk.read_bytes()).decode()})
     branch = 'apk-v1.131'
     try:
-        ref = channel.api(api + '/git/ref/heads/' + branch)
+        ref = channel.api('git/ref/heads/' + branch)
         parent = ref['object']['sha']
         exists = True
     except urllib.error.HTTPError as error:
@@ -104,14 +103,14 @@ def public_mirror(apk):
         'Version 1.131 / code 134. Feedback interruption no longer tears down the automation session. ' \
         'Corrected two malformed invoke-range calls; visible version agrees with manifest. ' \
         'Build and host regression tests passed; device long-run stability remains unverified.\n'
-    tree = channel.api(api + '/git/trees', {'tree': [
+    tree = channel.api('git/trees', {'tree': [
         {'path': apk.name, 'mode': '100644', 'type': 'blob', 'sha': blob['sha']},
         {'path': 'README.md', 'mode': '100644', 'type': 'blob', 'content': readme}]})
-    commit = channel.api(api + '/git/commits', {'message': 'Publish verified MarkerTap v1.131 APK', 'tree': tree['sha'], 'parents': [parent]})
+    commit = channel.api('git/commits', {'message': 'Publish verified MarkerTap v1.131 APK', 'tree': tree['sha'], 'parents': [parent]})
     if exists:
-        channel.api(api + '/git/refs/heads/' + branch, {'sha': commit['sha'], 'force': False}, method='PATCH')
+        channel.api('git/refs/heads/' + branch, {'sha': commit['sha'], 'force': False}, method='PATCH')
     else:
-        channel.api(api + '/git/refs', {'ref': 'refs/heads/' + branch, 'sha': commit['sha']})
+        channel.api('git/refs', {'ref': 'refs/heads/' + branch, 'sha': commit['sha']})
     with urllib.request.urlopen(url, timeout=60) as response:
         if response.status != 200 or hashlib.sha256(response.read()).hexdigest() != digest(apk):
             raise RuntimeError('anonymous public APK download verification failed')
