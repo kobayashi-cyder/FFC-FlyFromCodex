@@ -52,5 +52,30 @@ public final class FrameCircuitTest {
   for(int i=0;i<20;i++){final int color=i;jobs.add(workers.submit(()->{try{start.await();}catch(InterruptedException e){throw new RuntimeException(e);}circuit.run(request(source(64,96,color,1000),()->true,frame->{int concurrent=inFlight.incrementAndGet();max.accumulateAndGet(concurrent,Math::max);for(int p=0;p<6000;p++)if(frame.get(p%64,p/64)!=color)throw new AssertionError("cross-window pixel contamination");inFlight.decrementAndGet();return ()->done.incrementAndGet();},Runnable::run,failure->{throw new AssertionError(failure);}));}));}
   start.countDown();for(Future<?> job:jobs)job.get(10,TimeUnit.SECONDS);workers.shutdown();check(done.get()==20&&max.get()==1,"concurrent callers cannot hold two mutable workspace leases");check(circuit.workspace.allocations==1,"concurrent lanes retain one image allocation");
  }
- public static void main(String[] args)throws Exception{normal();cancellations();failures();concurrent();System.out.println("FrameCircuitTest: "+checks+" checks passed; new graph execution, result-only publication, cancellation, stale images, exceptions and concurrent leases; no Android execution");}
+
+ static void independentWindows()throws Exception{
+  FrameCircuit first=new FrameCircuit(()->1000),second=new FrameCircuit(()->1000);
+  ExecutorService pool=Executors.newFixedThreadPool(2);
+  CountDownLatch bothEntered=new CountDownLatch(2),release=new CountDownLatch(1);
+  AtomicInteger done=new AtomicInteger();
+  List<Future<?>> jobs=new ArrayList<>();
+  for(int i=0;i<2;i++){
+   final int color=0xff123456+i;
+   final FrameCircuit circuit=i==0?first:second;
+   jobs.add(pool.submit(()->circuit.run(request(source(20,20,color,1000),()->true,frame->{
+    check(frame.get(0,0)==color,"isolated window retains correct image");
+    bothEntered.countDown();
+    try{if(!release.await(3,TimeUnit.SECONDS))throw new IllegalStateException("parallel test timed out");}
+    catch(InterruptedException e){Thread.currentThread().interrupt();throw new IllegalStateException(e);}
+    return ()->done.incrementAndGet();
+   },Runnable::run,failure->{throw new AssertionError(failure);}))));
+  }
+  try{check(bothEntered.await(2,TimeUnit.SECONDS),"two window circuits must analyze simultaneously, not serialize");}
+  finally{release.countDown();}
+  try{for(Future<?> job:jobs)job.get(3,TimeUnit.SECONDS);}
+  finally{pool.shutdownNow();}
+  check(done.get()==2&&first.completed==1&&second.completed==1,"both windows publish independently");
+  check(first.workspace.allocations==1&&second.workspace.allocations==1,"each window has its own bounded workspace");
+ }
+ public static void main(String[] args)throws Exception{normal();cancellations();failures();concurrent();independentWindows();System.out.println("FrameCircuitTest: "+checks+" checks passed; new graph execution, result-only publication, cancellation, stale images, exceptions and concurrent leases; no Android execution");}
 }
