@@ -1,7 +1,0 @@
-{
-  "run_id": "39726318247",
-  "status": "failed",
-  "stage": "public_download_verification",
-  "error_type": "HTTPError",
-  "apk_published": false
-}

@@ -1,8 +1,0 @@
-PASS main operation selected while exit absent
-PASS exit wins over simultaneously matching main loop
-PASS exit operation completion changes actual state
-PASS main queued actions do not survive transition
-PASS loop starts after external change baseline established
-PASS self loop preserves external change baseline
-PASS change branch updates state
-TOTAL 7 main-loop branching checks passed; device UI not tested.

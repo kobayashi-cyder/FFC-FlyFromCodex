@@ -1,2 +1,0 @@
-b00a37b24acb1c412c6fccb7880ac0fd11ef8d667615f83aa29d4c2eba95dd0a  MarkerTap-v1.100-recovery.apk
-1f2036b45f01acc94e4503a697f0b6ac0d742f5b4c23aac5481c7f9bdd0c553b  build/shrunk.jar
