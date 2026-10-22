@@ -204,7 +204,14 @@ final class VirtualWindows {
    long interval=VirtualLoadPolicy.decodeInterval(p,w.laneCount,running,w.minimized);
    if(interval!=w.decodePeriod){w.decodePeriod=interval;w.decodeDueAt=0;}
    if(w.frameAt>0&&now<w.decodeDueAt)return;w.decodedAt=now;w.decodeDueAt=VirtualLoadPolicy.nextDecodeAt(now,interval,w.startIndex,w.laneCount);
-   RegionImage next=RegionImage.fromImage(image,w.width,w.height,now,w.readerLifetime);image=null;
+   FrameResource owner;int frameWidth,frameHeight;
+   synchronized(w.frameLock){
+    if(reader!=w.reader||w.closed||task!=generation||w.readerLifetime==null)return;
+    owner=w.readerLifetime;owner.retain();frameWidth=w.width;frameHeight=w.height;
+   }
+   RegionImage next;
+   try{next=RegionImage.fromImage(image,frameWidth,frameHeight,now,owner);image=null;}
+   finally{owner.release();}
    RegionImage previous=null;boolean accepted=false;
    synchronized(w.frameLock){
     if(reader==w.reader&&!w.closed&&task==generation){
@@ -367,7 +374,7 @@ final class VirtualWindows {
   RegionImage previous;
   synchronized(w.frameLock){w.reader=fresh;w.readerLifetime=freshLifetime;w.surface=fresh.getSurface();previous=w.latest;w.latest=null;w.roiPlan=RegionPlan.full(w.width,w.height,"rebuild:"+task+":"+oldId);w.frameAt=0;w.decodeDueAt=0;}
   retireFrameAsync(previous);
-  if(prior!=null){prior.setOnImageAvailableListener(null,null);if(priorLifetime!=null)frameCopyWork.execute(priorLifetime::release);}
+  if(prior!=null){prior.setOnImageAvailableListener(null,null);if(priorLifetime!=null)try{frameCopyWork.execute(priorLifetime::release);}catch(RejectedExecutionException shutdown){Thread finalRelease=new Thread(priorLifetime::release,"MarkerTap-reader-retire-final");finalRelease.setDaemon(true);finalRelease.start();}}
   w.screenInfo=null;w.screenInfoId=-1;w.screenInfoAt=0;w.previewTouchActive=false;w.preview.clear();
   state(w,"この画面を再作成中");record("#"+oldId+" "+s.appLabel(w.pkg)+" 復帰上限後に対象画面だけを再作成 / "+w.width+"x"+w.height+" / "+w.density+" dpi");
   if(s.progressErrors!=null)s.progressErrors.action(w.pkg,"仮想画面の再作成を要求",oldId,Float.NaN,Float.NaN);
