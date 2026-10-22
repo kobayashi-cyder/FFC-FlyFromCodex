@@ -8,6 +8,10 @@ final class VirtualWindows {
  // A screenshot buffer must not wait behind up to four expensive recognition
  // requests before being copied, otherwise a fresh frame expires in the queue.
  final ExecutorService frameCopyWork=Executors.newSingleThreadExecutor(task->new Thread(task,"TapMarker-frame-copy"));
+ // Do not decode preview patches on the ImageReader callback thread: a slow
+ // Bitmap JNI read/recycle would otherwise stall new frames for the same display.
+ // Two screens can have at most one active/queued preview each.
+ final ThreadPoolExecutor previewWork=new ThreadPoolExecutor(1,1,0,TimeUnit.MILLISECONDS,new ArrayBlockingQueue<Runnable>(2),task->new Thread(task,"TapMarker-preview-worker"));
  final java.util.concurrent.atomic.AtomicInteger pendingFrameRetirements=new java.util.concurrent.atomic.AtomicInteger();
  /** Retain/release happens outside frameLock; never dispose native images on UI thread. */
  void retireFrameAsync(RegionImage expired){
@@ -276,7 +280,7 @@ final class VirtualWindows {
   RegionPlan plan=w.roiPlan;
   if(plan==null){w.previewPending=false;return;}
   final PreviewConnectome.Schedule schedule=w.preview.schedule(plan,width,w.frameAt);
-  if(!w.frameHandler.post(()->{
+  try{previewWork.execute(()->{
    RegionPreviewData data=null;
    RegionImage snapshot=null;
    try{
@@ -288,7 +292,7 @@ final class VirtualWindows {
    finally{if(snapshot!=null)retireFrameAsync(snapshot);}
    final RegionPreviewData ready=data;
    s.h.post(()->{w.previewPending=false;if(ready==null||w.closed||w.minimized||task!=generation||id!=w.id||revision!=w.previewRevision||w.roiPlan==null||!plan.sameCoverage(w.roiPlan)||SystemClock.uptimeMillis()-ready.capturedAt>1500)return;try{w.preview.publish(ready);}catch(OutOfMemoryError pressure){s.performance.memoryPressure();}});
-  }))w.previewPending=false;
+  });}catch(RejectedExecutionException saturated){w.previewPending=false;}
  }
  void create(Window w,int task){if(task!=generation||w.closed||!autoPending||!preparation.begin(w.startIndex))return;Intent intent=s.getPackageManager().getLaunchIntentForPackage(w.pkg);if(intent==null||intent.getComponent()==null){failure(w,"起動先が見つかりません");return;}VirtualProtocol service=remote;
   w.io.execute(()->{int id=-1;try{if(w.closed||task!=generation||!autoPending)return;if(service==null){DisplayManager manager=(DisplayManager)s.getSystemService(Context.DISPLAY_SERVICE);w.local=manager.createVirtualDisplay("TapMarker:"+w.pkg,w.width,w.height,w.density,w.surface,VirtualDisplayPolicy.flags(Build.VERSION.SDK_INT,false),null,s.h);if(w.local==null)throw new IllegalStateException("仮想画面作成失敗");id=w.local.getDisplay().getDisplayId();if(id<=0)throw new IllegalStateException("画面IDが無効です");if(w.closed||task!=generation||!autoPending){cleanupDisplay(w,service,id);return;}w.id=id;launchLocal(w,intent);}else{id=service.create(w.surface,w.width,w.height,w.density,intent.getComponent().flattenToString());if(w.closed||task!=generation||!autoPending){service.release(id);return;}service.launch(id);}final int created=id;s.h.post(()->{if(w.closed||task!=generation||!autoPending){cleanupDisplay(w,service,created);return;}w.id=created;w.launched=true;preparation.launched(w.startIndex);state(w,"表示確認中");});}catch(Exception error){if(id>0)cleanupDisplay(w,service,id);s.h.post(()->{if(task==generation&&!w.closed)failure(w,error.getClass().getSimpleName()+": "+error.getMessage());});}});
@@ -424,5 +428,5 @@ final class VirtualWindows {
  void remove(Window w){if(pcPresentation&&PcControl.ownsRun(s)){hidePreview(w);record("#"+w.id+" スマホのプレビューを非表示（PC処理継続）");s.pilot.note("スマホのプレビューを隠しました / PCの各画面は処理継続");return;}s.stop();w.closed=true;release(w);windows.remove(w);if(windows.isEmpty())selected=false;try{s.wm.removeView(w.view);}catch(Exception ignored){}s.pilot.note("仮想画面を閉じました / 自律停止");}
  void closeViews(){generation++;for(Window w:new ArrayList<>(windows)){w.closed=true;try{release(w);}catch(Throwable ignored){}try{s.wm.removeView(w.view);}catch(Throwable ignored){}}windows.clear();try{trimFrameCircuit();}catch(Throwable ignored){}try{refreshHeadings();}catch(Throwable ignored){}}
  void close(){pcPresentation=false;selected=false;pending=false;connecting=false;s.stop();closeViews();}
- void destroy(){destroyed=true;if(displayManager!=null)displayManager.unregisterDisplayListener(displayListener);close();frameWork.shutdown();frameCopyWork.shutdown();Shizuku.removeRequestPermissionResultListener(permissions);if(bound&&Shizuku.pingBinder())try{Shizuku.unbindUserService(args,connection,true);}catch(Exception ignored){}remote=null;}
+ void destroy(){destroyed=true;if(displayManager!=null)displayManager.unregisterDisplayListener(displayListener);close();frameWork.shutdown();frameCopyWork.shutdown();previewWork.shutdown();Shizuku.removeRequestPermissionResultListener(permissions);if(bound&&Shizuku.pingBinder())try{Shizuku.unbindUserService(args,connection,true);}catch(Exception ignored){}remote=null;}
 }
