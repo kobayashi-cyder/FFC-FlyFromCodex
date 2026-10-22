@@ -15,7 +15,22 @@ def apply(project):
     # Restore v1.132 first, then overlay the current branch's exact Java sources.
     # Never pretend a non-existent archived file has been patched.
     root = Path(__file__).resolve().parents[2]
-    for relative in ["src/jp/tapmarker/VirtualWindows.java", "tests/FrameCircuitTest.java"]:
+    for relative in [
+        # VirtualWindows from the current branch is not source-compatible with
+        # the archived 1.130 foundation. Port the full, mutually compatible
+        # safety/preview dependency closure instead of stubbing features away.
+        "src/jp/tapmarker/VirtualWindows.java",
+        "src/jp/tapmarker/BackendRecoveryBudget.java",
+        "src/jp/tapmarker/PreviewConnectome.java",
+        "src/jp/tapmarker/RegionPreviewData.java",
+        "src/jp/tapmarker/RegionPreviewView.java",
+        "src/jp/tapmarker/TapService.java",
+        "src/jp/tapmarker/VirtualBridgeProvider.java",
+        "src/jp/tapmarker/VirtualProtocol.java",
+        "src/jp/tapmarker/VirtualShell.java",
+        "tests/FrameCircuitTest.java",
+        "tests/PreviewConnectomeTest.java",
+    ]:
         source = root / "markertap/code/TapMarker" / relative
         target = project / relative
         if not source.is_file():
