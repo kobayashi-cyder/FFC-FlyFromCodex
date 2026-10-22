@@ -251,5 +251,7 @@ if __name__ == '__main__':
             channel.publish('result.json', failure)
         except Exception:
             pass
-        print('Build stopped at ' + STAGE + '; inspect build logs.', file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        print('Build stopped at ' + STAGE + ' (' + type(error).__name__ + ': ' + str(error) + ')', file=sys.stderr)
         raise SystemExit(1)
