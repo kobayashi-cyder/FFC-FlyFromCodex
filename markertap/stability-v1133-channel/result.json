@@ -1,7 +1,16 @@
 {
-  "run_id": "39763914204",
-  "status": "failed",
-  "stage": "core_and_anr_tests",
-  "error_type": "CalledProcessError",
-  "apk_published": false
+  "run_id": "39765282037",
+  "status": "unsigned_host_verified",
+  "source_commit": "27147074cf75a8de4e4ac9c684a44aaf22d72a6f",
+  "version": "1.133",
+  "version_code": 136,
+  "source_verification": "passed",
+  "build_and_dex_verification": "passed",
+  "core_and_anr_tests": "passed",
+  "release_runtime_audit": "passed",
+  "previous_journal_lock_regression": "passed",
+  "unsigned_apk_built": true,
+  "artifact_url": "https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/39765282037/artifacts/12420710131",
+  "signed_apk_published": false,
+  "device_tested": false
 }
