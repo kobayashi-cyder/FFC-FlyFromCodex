@@ -19,10 +19,12 @@ RESULTS = ROOT / 'crash-build-results'
 RESULTS.mkdir(exist_ok=True)
 sys.path.insert(0, str(ROOT / 'markertap/tools'))
 import import_source as channel
-channel.CHANNEL = 'markertap/crash-v1130-channel/'
 spec = importlib.util.spec_from_file_location('existing_signing_transport', ROOT / 'markertap/tools/build_source.py')
 transport = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(transport)
+# The reused transport module initializes its legacy channel during import.
+# Select this build's channel after that import so progress and signing agree.
+channel.CHANNEL = 'markertap/crash-v1130-channel/'
 EXPECTED_CERT = '7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1'
 stage = 'source_verification'
 
