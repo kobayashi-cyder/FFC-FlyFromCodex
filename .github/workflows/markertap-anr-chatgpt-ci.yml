@@ -62,6 +62,22 @@ jobs:
           assert "forceStopPackage(" not in source, "Unsafe third-party force-stop in owner cleanup"
           print("Owner-death cleanup is overlaid, bounded, and scoped to MarkerTap shell")
           PY
+      - name: Verify native image retirement is isolated from screenshot copying
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          source = (Path(os.environ["RUNNER_TEMP"]) / "MarkerTap-restored/TapMarker/src/jp/tapmarker/VirtualWindows.java").read_text()
+          assert "final ExecutorService frameRetireWork=" in source
+          assert "try{frameRetireWork.execute(release);}" in source
+          assert "try{frameRetireWork.execute(priorLifetime::release);}" in source
+          assert "try{frameRetireWork.execute(lifetime::release);}" in source
+          assert "frameRetireWork.shutdown();" in source
+          assert "try{frameCopyWork.execute(release);}" not in source
+          print("Native image retirement uses an independent worker; no cleanup under frameLock")
+          PY
       - name: Build CI-only APK with ephemeral test key
         shell: bash
         run: |
