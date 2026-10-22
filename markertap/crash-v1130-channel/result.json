@@ -1,0 +1,26 @@
+{
+  "status": "built_signed_and_host_verified",
+  "version_name": "1.130",
+  "version_code": 133,
+  "package": "jp.tapmarker.lite",
+  "apk_sha256": "d37173e2e7097d5a301e15e854154552749e5c4b92104075a8eba2d32b70d7a2",
+  "apk_size_bytes": 5081883,
+  "signing_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "zipalign": "16KiB passed",
+  "source_archive_sha256": "e828867afbc3319ecfec49366764b44b1259f1287c768b054d4d061566a128f1",
+  "original_source_sha256": "7f372d0515020bad4cd91bf9c00b0d29bb5a840c7464397be854eb0db4dc2b53",
+  "source_commit": "54c06612736b34fa06b86a714408068d08459682",
+  "run_id": "39722768909",
+  "core_tests": "passed",
+  "anr_host_regression": "passed",
+  "integration_audit": "passed",
+  "device_tested": false,
+  "device_anr_resolved": null,
+  "changes": [
+    "native image reads outside shared UI frame lock",
+    "temporary bitmap disposal uses independent retirement worker",
+    "owner-death backend hard-stop independent of native cleanup"
+  ],
+  "apk_published": true,
+  "apk_url": "https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.130-crashfix/MarkerTap-v1.130-crashfix.apk"
+}
