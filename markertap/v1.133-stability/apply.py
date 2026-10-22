@@ -140,6 +140,14 @@ mkdir -p build/host-unit
     replace_once(project / "run-tests.sh",
         'python3 tests/FrameLockBridgeSourceTest.py',
         'java -cp "build/runtime:build/tests:baseline-runtime.jar:$TEST_LIBS:$JAR:$LIBS" jp.tapmarker.PreviewConnectomeTest')
+    # PreviewConnectomeTest uses RegionPlan, compiled into build/api rather
+    # than build/runtime by the pinned 1.132 build. Include the source-compatible
+    # API jar in host test compilation and execution, not the stale baseline.
+    tests_script = project / "run-tests.sh"
+    tests_text = tests_script.read_text(encoding="utf-8")
+    if tests_text.count("build/runtime:") < 2:
+        raise RuntimeError("unexpected test classpath topology")
+    tests_script.write_text(tests_text.replace("build/runtime:", "build/runtime:build/api:"), encoding="utf-8")
     # Existing v1.132 tests and signature checks remain mandatory.
     return ["virtual-window-isolation", "dual-circuit-parallel-regression", "manifest-1.133-code-136"]
 
