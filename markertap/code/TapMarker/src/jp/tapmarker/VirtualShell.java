@@ -29,12 +29,28 @@ public final class VirtualShell extends Binder {
    }
   }catch(Exception e){Throwable cause=e instanceof InvocationTargetException?((InvocationTargetException)e).getTargetException():e;reply.writeException(new IllegalStateException("仮想画面："+cause.getClass().getSimpleName()+" / "+cause.getMessage()));return true;}
  }
+ /** A dead APK owner must not leave shell-owned displays or tap workers running.
+  * If a native VirtualDisplay.release() blocks, hard-stop this shell process
+  * after five seconds. Android then reclaims the shell-owned descriptors.
+  * This never force-stops the game applications themselves.
+  */
+ void closeAfterOwnerDeath(){
+  Thread watchdog=new Thread(()->{
+   SystemClock.sleep(5000);
+   android.os.Process.killProcess(android.os.Process.myPid());
+  },"MarkerTap-owner-death-hard-stop");
+  watchdog.setDaemon(true);watchdog.start();
+  try{closeAll();}finally{
+   android.os.Process.killProcess(android.os.Process.myPid());
+   System.exit(0);
+  }
+ }
  synchronized void registerOwner(IBinder host)throws RemoteException{
   if(closed||host==null||!host.isBinderAlive())throw new IllegalStateException("所有アプリが切断されています");
   if(ownerHost==host)return;
   if(ownerHost!=null&&ownerHost.isBinderAlive())throw new SecurityException("別の生存中プロセスが所有しています");
   ownerHost=host;
-  host.linkToDeath(()->{try{closeAll();}finally{System.exit(0);}},0);
+  host.linkToDeath(this::closeAfterOwnerDeath,0);
  }
  int create(int w,int h,int dpi,String component,Surface surface)throws Exception{
   if(closed){surface.release();throw new IllegalStateException("実行部は停止済みです");}
