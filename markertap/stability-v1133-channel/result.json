@@ -1,7 +1,7 @@
 {
-  "run_id": "39761985474",
+  "run_id": "39763623661",
   "status": "failed",
-  "stage": "build_and_dex_verification",
+  "stage": "core_and_anr_tests",
   "error_type": "CalledProcessError",
   "apk_published": false
 }
