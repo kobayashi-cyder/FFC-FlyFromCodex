@@ -64,6 +64,15 @@ def apply(project):
         if "1.132" not in source:
             raise RuntimeError(name + ": unexpected version lineage")
         path.write_text(source.replace("1.132", "1.133").replace("versionCode135", "versionCode136"), encoding="utf-8")
+    # Base 1.132 ships FrameLockBridge compiled against a *different*
+    # VirtualWindows synthetic lambda constructor. The complete current
+    # VirtualWindows now handles bounded frame copy/preview internally; the
+    # unreferenced stale bridge must not survive in the merged DEX.
+    # DexAudit will fail closed if anything still calls the removed bridge.
+    replace_once(project / "tools/PatchRuntime.java",
+        'owners.add("Ljp/tapmarker/FlyCircuit");',
+        'owners.add("Ljp/tapmarker/FlyCircuit");\n'
+        '  owners.add("Ljp/tapmarker/FrameLockBridge"); // obsolete 1.132 compiled lambda bridge')
     # Existing v1.132 tests and signature checks remain mandatory.
     return ["virtual-window-isolation", "dual-circuit-parallel-regression", "manifest-1.133-code-136"]
 
