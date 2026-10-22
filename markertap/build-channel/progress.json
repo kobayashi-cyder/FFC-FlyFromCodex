@@ -1,4 +1,6 @@
 {
-  "run_id": "39552160074",
-  "stage": "core_tests"
+  "run_id": "39722768909",
+  "stage": "private_signing_reference",
+  "build_passed": true,
+  "tests_passed": true
 }
