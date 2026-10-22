@@ -1,0 +1,26 @@
+[
+  {
+    "path": "tools/PatchRuntime.java",
+    "sha256": "46cd1f3a8c9c4af21b8fbee7a9b1878b56d73c08ac84dcb8fd8d75f585580f29"
+  },
+  {
+    "path": "tools/DexAudit.java",
+    "sha256": "03f3409c8a34f6e7b6ceaa840d3033708a5e8b2059749ea8b9025b0888a08fc4"
+  },
+  {
+    "path": "tools/ReleaseRuntimeAudit.java",
+    "sha256": "56f82f785585a1c4eda3dd3bfce49691fa89a4aa987abb92bbb45a6426f3a389"
+  },
+  {
+    "path": "tools/package_apk.py",
+    "sha256": "db43c61714ac679bb840a4f6d30ff4de9942b4b6525f83f3e7ada6df8ff83af5"
+  },
+  {
+    "path": "build.sh",
+    "sha256": "05a35f1fc3c8efa76c7378c8efda26576ca9231ee3f53105243b40acdb47eebc"
+  },
+  {
+    "path": "run-host-tests.sh",
+    "sha256": "505ba22aeb7faa794ce89032b99bd25eca9086de9c060f6dc67d3fcc7382b906"
+  }
+]
