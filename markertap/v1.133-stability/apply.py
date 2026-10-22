@@ -28,6 +28,8 @@ def apply(project):
         "src/jp/tapmarker/VirtualBridgeProvider.java",
         "src/jp/tapmarker/VirtualProtocol.java",
         "src/jp/tapmarker/VirtualShell.java",
+        "src/jp/tapmarker/VirtualResolutionLab.java",
+        "src/jp/tapmarker/VirtualResolutionPolicy.java",
         "tests/FrameCircuitTest.java",
         "tests/PreviewConnectomeTest.java",
     ]:
