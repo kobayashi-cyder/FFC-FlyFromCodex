@@ -1,1 +1,0 @@
-PASS all-state arrow clearing, queued event clearing, node/region/start/layout preservation, history clearing and repeat clearing; device UI not tested.

@@ -1,2 +1,0 @@
-9c3eb3e95f47e9d7432ba9c35c66cb77c495df3574af769d222e401e9c6fc0b0  MarkerTap-v1.105-usagi-controls.apk
-2e8f86b82d1fed44450a68c659d54eaf43d5fbc6e61e0ddea4e6b4569f6d3d68  release/MarkerTap-v1.105-unsigned.apk
