@@ -97,6 +97,24 @@ def apply(project):
     replace_once(project / "tools/IntegrationAudit.java",
         '  binding("FrameLockBridge","RegionPreviewData","capture");',
         '  binding("RegionPreviewView","PreviewConnectome","observed");')
+    # v1.133 shell registers its own binder-death receiver and performs
+    # closeAll()/killProcess() instead of delegating to ShellOwnerDeath.close.
+    # Demand both the source wiring and a DEX-visible handler at integration.
+    shell = (project / "src/jp/tapmarker/VirtualShell.java").read_text(encoding="utf-8")
+    for binding in ["host.linkToDeath(this::closeAfterOwnerDeath,0)",
+                    "void closeAfterOwnerDeath()",
+                    "try{closeAll();}finally{",
+                    "android.os.Process.killProcess(android.os.Process.myPid())"]:
+        if binding not in shell:
+            raise RuntimeError("v1.133 owner-death safety missing: " + binding)
+    replace_once(project / "tools/IntegrationAudit.java",
+        '  binding("VirtualShell","ShellOwnerDeath","close");',
+        '  methodExists("VirtualShell","closeAfterOwnerDeath");\n'
+        '  binding("VirtualShell","VirtualShell","closeAll");')
+    replace_once(project / "tools/IntegrationAudit.java",
+        ' static void field(String name,String field,String type){',
+        ' static void methodExists(String owner,String name){checks++;ClassDef c=classes.get("Ljp/tapmarker/"+owner+";");if(c==null)throw new AssertionError("missing class "+owner);for(Method method:c.getMethods())if(method.getName().equals(name))return;throw new AssertionError("missing method "+owner+"."+name);}' +
+        '\n static void field(String name,String field,String type){')
     # Existing v1.132 tests and signature checks remain mandatory.
     return ["virtual-window-isolation", "dual-circuit-parallel-regression", "manifest-1.133-code-136"]
 
