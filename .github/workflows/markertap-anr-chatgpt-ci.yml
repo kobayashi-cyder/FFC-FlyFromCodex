@@ -1,0 +1,66 @@
+name: MarkerTap ANR + ChatGPT handoff CI (recovery-base only)
+on:
+  push:
+    branches: ["markertap/fix-anr-chatgpt-20261022"]
+    paths:
+      - ".github/workflows/markertap-anr-chatgpt-ci.yml"
+      - "markertap/code/TapMarker/**"
+      - "markertap/patches/ANR-CHATGPT-20261022.md"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: markertap-anr-chatgpt-validation
+  cancel-in-progress: true
+jobs:
+  recovery-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android platform and pinned build-tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          if ! command -v rg >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y -qq ripgrep; fi
+      - name: Recover source and overlay GitHub fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 markertap/tools/restore_source.py --extract-to "$RUNNER_TEMP/MarkerTap-restored"
+          test -f "$RUNNER_TEMP/MarkerTap-restored/TapMarker/build.sh"
+          grep -q 'shareToChatGPT' "$RUNNER_TEMP/MarkerTap-restored/TapMarker/src/jp/tapmarker/ProgressErrors.java"
+          grep -q 'retireFrameAsync' "$RUNNER_TEMP/MarkerTap-restored/TapMarker/src/jp/tapmarker/VirtualWindows.java"
+      - name: Build CI-only APK with ephemeral test key
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/results"
+          keytool -genkeypair -noprompt -alias tapmarker -keyalg RSA -keysize 2048 -validity 1 \
+            -keystore "$RUNNER_TEMP/ci-only.jks" -storepass android -keypass android \
+            -dname "CN=MarkerTap Ephemeral CI Validation"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export TAPMARKER_KEYSTORE="$RUNNER_TEMP/ci-only.jks"
+          export TAPMARKER_OUTPUT="$RUNNER_TEMP/results/MarkerTap-v1.123-base-ANR-ChatGPT-CI-ONLY.apk"
+          cd "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
+          bash build.sh 2>&1 | tee "$RUNNER_TEMP/results/build.log"
+          bash run-tests.sh 2>&1 | tee "$RUNNER_TEMP/results/tests.log"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$TAPMARKER_OUTPUT" 2>&1 | tee "$RUNNER_TEMP/results/apk-verify.log"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 "$TAPMARKER_OUTPUT"
+          echo "NOTICE: Test key / v1.123 recovery baseline; NOT installable as an update over v1.128" > "$RUNNER_TEMP/results/NOT-FOR-INSTALL.txt"
+      - name: Archive smoke-test result
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarkerTap-v1.123-base-anr-chatgpt-ci-only
+          path: ${{ runner.temp }}/results/
+          if-no-files-found: warn
+          retention-days: 14
