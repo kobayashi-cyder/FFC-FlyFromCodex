@@ -45,6 +45,14 @@ def download(url, target):
 def logged(args, project, env, name, timeout=400, check=True):
     with (RESULTS / name).open('w') as output:
         result = subprocess.run(args, cwd=project, env=env, stdout=output, stderr=subprocess.STDOUT, timeout=timeout)
+    if result.returncode != 0:
+        # Preserve diagnostics produced before build.sh fails. Without these,
+        # the DEX audit reports only "1 broken references" and loses the
+        # precise class/method name when the temporary build directory closes.
+        for relative in ['dex-audit.log', 'dex-merge.log', 'integration-audit.log', 'signature.log']:
+            source = project / 'build' / relative
+            if source.is_file():
+                shutil.copyfile(source, RESULTS / relative)
     if check:
         result.check_returncode()
     return result
@@ -180,7 +188,7 @@ def main():
                 'two_display_test': 'passed', 'unsigned_apk_sha256': unsigned_hash,
                 'signed_apk_published': False, 'device_tested': False
             }
-            (RESULTS / 'validation.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\\n')
+            (RESULTS / 'validation.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
             shutil.copyfile(unsigned, RESULTS / unsigned.name)
             return
         stage('private_signing_reference')
