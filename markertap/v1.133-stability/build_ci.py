@@ -170,6 +170,19 @@ def main():
         unsigned = project / 'output/MarkerTap-v1.133-unsigned.apk'
         logged(['java', '-cp', cp, 'ReleaseRuntimeAudit', str(unsigned), '1.133'], project, env, 'unsigned-release-runtime.log')
         logged(['java', '-cp', cp, 'JournalAnrAudit', str(unsigned)], project, env, 'unsigned-journal-anr.log')
+        if os.environ.get('TAPMARKER_VALIDATE_ONLY') == '1':
+            stage('unsigned_host_verified')
+            unsigned_hash = digest(unsigned)
+            report = {
+                'status': 'unsigned_host_verified', 'version_name': '1.133', 'version_code': 136,
+                'source_commit': os.environ['GITHUB_SHA'], 'source_overlays': overlays,
+                'changes': changes, 'core_tests': 'passed', 'host_anr_tests': 'passed',
+                'two_display_test': 'passed', 'unsigned_apk_sha256': unsigned_hash,
+                'signed_apk_published': False, 'device_tested': False
+            }
+            (RESULTS / 'validation.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\\n')
+            shutil.copyfile(unsigned, RESULTS / unsigned.name)
+            return
         stage('private_signing_reference')
         keystore = transport.receive_key(private)
         stage('signing_and_final_apk_verification')
