@@ -36,6 +36,14 @@ public final class PhysicalFlowRecoveryTest {
   ok(observe(r,"farm-default-main",true,false,false,false,12100,12200)==WAIT);
   ok(observe(r,MAIN,true,false,false,false,12200,12300)==WAIT);
   ok(observe(r,MAIN,true,false,false,false,14200,14300)==CLASSIFY);
+  // Incident archive reports package com.kurashiru.nouen.usagi and
+  // state farm-default-verify; both must enter the same guarded recovery.
+  ok(PhysicalFlowRecovery.supportsGame("com.kurashiru.fue.usagi"));
+  ok(PhysicalFlowRecovery.supportsGame("com.kurashiru.nouen.usagi"));
+  ok(!PhysicalFlowRecovery.supportsGame("com.example.unrelated"));
+  r.reset();
+  ok(observe(r,"farm-default-verify",true,false,false,false,20000,20100)==WAIT);
+  ok(observe(r,"farm-default-verify",true,false,false,false,22000,22100)==CLASSIFY);
   System.out.println("PhysicalFlowRecoveryTest: "+n+" assertions passed");
  }
 }
