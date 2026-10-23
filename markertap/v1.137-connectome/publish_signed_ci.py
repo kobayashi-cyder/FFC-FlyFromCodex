@@ -16,6 +16,8 @@ channel.CHANNEL="markertap/v1137-signed-publish-channel/"
 spec=importlib.util.spec_from_file_location("secure_signing",ROOT/"markertap/tools/build_source.py")
 transport=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(transport)
+# build_source sets a default channel during import; override it for this run.
+channel.CHANNEL="markertap/v1137-signed-publish-channel/"
 
 CERT="7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1"
 UNSIGNED_SHA="0538c5810223a9253ce6ca2fd17f6eff4ce56c89264e8865e0406a8f44158107"
