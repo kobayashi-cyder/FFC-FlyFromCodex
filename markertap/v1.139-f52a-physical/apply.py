@@ -25,7 +25,7 @@ def apply(project):
   '''if(pilot.target.equals(current)){
    run.gate.reset();
    if("F-52A".equalsIgnoreCase(android.os.Build.MODEL)
-      &&PhysicalFlowRecovery.GAME.equals(pilot.target)
+      &&PhysicalFlowRecovery.supportsGame(pilot.target)
       &&!pilot.phases.customized&&pilot.usagiPresetActive()
       &&pilot.phases.engine!=null){
     PhysicalFlowRecovery.Decision d=run.physical.observe(
