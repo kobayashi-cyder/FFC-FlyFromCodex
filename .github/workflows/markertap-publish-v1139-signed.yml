@@ -1,0 +1,41 @@
+name: MarkerTap v1.139 original-certificate signed release
+on:
+  push:
+    branches:
+      - "markertap/publish-signed-v1.139"
+    paths:
+      - ".github/workflows/markertap-publish-v1139-signed.yml"
+      - "markertap/v1.139-f52a-physical/publish_signed_ci.py"
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Obtain pinned v1.139 unsigned APK and validation
+        uses: actions/download-artifact@v4
+        with:
+          name: MarkerTap-v1.139-F52A-unsigned-evidence
+          path: signed-upload-input
+          github-token: ${{ github.token }}
+          run-id: 40033135831
+      - name: Install Android signature verification tools
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"
+      - name: Receive one-shot encrypted signer, verify original certificate, publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 markertap/v1.139-f52a-physical/publish_signed_ci.py
+      - name: Retain nonsecret release verification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1.139-signed-release-receipt
+          path: signed-publication/validation.json
+          if-no-files-found: ignore
+          retention-days: 30
