@@ -4,6 +4,7 @@ on:
     branches: ["markertap/connectome-multiplex-v1.137"]
     paths:
       - "markertap/v1.137-connectome/**"
+      - "markertap/v1.136-frameguard/**"
       - ".github/workflows/markertap-v1137-connectome.yml"
   workflow_dispatch:
 permissions:
