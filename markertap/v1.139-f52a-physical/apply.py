@@ -61,7 +61,7 @@ def apply(project):
   if "1.138" not in original:raise RuntimeError(name+": unexpected v1.138 lineage")
   p.write_text(original.replace("1.138","1.139").replace("versionCode141","versionCode142"),encoding="utf-8")
  with (project/"run-tests.sh").open("a",encoding="utf-8") as f:
-  f.write('\\njava -cp "build/runtime:build/api:build/tests:baseline-runtime.jar:$TEST_LIBS:$JAR:$LIBS" jp.tapmarker.PhysicalFlowRecoveryTest\\n')
+  f.write('\njava -cp "build/runtime:build/api:build/tests:baseline-runtime.jar:$TEST_LIBS:$JAR:$LIBS" jp.tapmarker.PhysicalFlowRecoveryTest\n')
  print("v1.139 F-52A physical recognition recovery integrated into DEX AutoPilot bridge")
 if __name__=="__main__":
  import sys
