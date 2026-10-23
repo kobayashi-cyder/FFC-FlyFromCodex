@@ -124,6 +124,29 @@ def apply(project):
  }
 """)
 
+    # Replace the incompatible archived synthetic diagnostic encoder with a
+    # real source-compatible async capture. The entrypoint has NO journal
+    # monitor; thumbnails are taken outside the monitor, and JPEG encode runs
+    # on the bounded worker. Restore verifies both code and bytecode.
+    bridge=Path(__file__).resolve().parent/"overlay/src/jp/tapmarker/DiagnosticFrameCapture.java"
+    if not bridge.is_file():raise RuntimeError("missing audited diagnostic bridge")
+    shutil.copyfile(bridge,java/"DiagnosticFrameCapture.java")
+    p=java/"DiagnosticJournal.java"
+    text=p.read_text(encoding="utf-8")
+    start=' void frame(String app,int display,int run,int width,int height,RegionSampler.Pixels pixels,long at,String forced){'
+    end=' String reserve(String app){'
+    if text.count(start)!=1 or text.count(end)!=1:raise RuntimeError("unexpected journal capture source")
+    i=text.index(start);j=text.index(end,i)
+    wrapper=' void frame(String app,int display,int run,int width,int height,RegionSampler.Pixels pixels,long at,String forced){DiagnosticFrameCapture.frame(this,app,display,run,width,height,pixels,at,forced);}\n'
+    p.write_text(text[:i]+wrapper+text[j:],encoding="utf-8")
+
+    p=project/"tools/JournalAnrAudit.java"
+    once(p,
+         '  int fields=0;for(Field f:type("DiagnosticJournal$ExternalSyntheticLambda0").getFields())fields++;\n  for(Method m:type("DiagnosticJournal$ExternalSyntheticLambda0").getMethods())if(m.getName().equals("run")&&calls(m,"Ljp/tapmarker/DiagnosticJournal;","lambda$1$jp-tapmarker-DiagnosticJournal"))encoder=true;\n  if(!readback||!source||!encoder||fields<12)throw new AssertionError("readback binding or preserved real diagnostic encoder missing");',
+         '  boolean queued=false;for(Method m:type("DiagnosticFrameCapture").getMethods()){if(m.getName().equals("frame")&&calls(m,"Ljava/util/concurrent/ThreadPoolExecutor;","execute"))queued=true;if(m.getName().equals("encode")&&calls(m,"Landroid/graphics/Bitmap;","compress"))encoder=true;}\n  if(!readback||!source||!encoder||!queued)throw new AssertionError("readback binding or async diagnostic encoder missing");')
+    # Legacy encoder already carried a constructor signature tied to another
+    # Journal source. Never falsely reuse that old synthetic class.
+
     # Fail closed: source API/runtime may vary. Every source anchor must be
     # confirmed, no broad blind replacements or rewritten detector thresholds.
     t = project / "run-tests.sh"
