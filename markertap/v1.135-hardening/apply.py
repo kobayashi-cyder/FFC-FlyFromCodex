@@ -9,6 +9,10 @@ from pathlib import Path
 def once(path, before, after):
     path = Path(path)
     src = path.read_text(encoding="utf-8")
+    if path.name == "JournalAnrAudit.java":
+        # Preserve the Android synthetic owner spelled with TWO dollar signs.
+        before = before.replace("DiagnosticJournal$ExternalSyntheticLambda0",
+                                "DiagnosticJournal"+chr(36)*2+"ExternalSyntheticLambda0")
     count = src.count(before)
     if count != 1:
         raise RuntimeError(f"{path}: expected one verified anchor, found {count}: {before[:140]}")
