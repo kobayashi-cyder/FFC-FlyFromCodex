@@ -10,4 +10,13 @@ source=source.replace("versionCode='137'","versionCode='138'")
 source=source.replace("'version_code':137","'version_code':138")
 source=source.replace("'new_regression_checks':38","'new_regression_checks':'38 baseline plus 3 new suites'")
 source=source.replace("'autonomy-build-results'","'hardening-build-results'")
-exec(compile(source,str(here/"build_ci-v1135-generated.py"),"exec"),{"__file__":str(here/"build_ci.py"),"__name__":"__main__"})
+try:
+    exec(compile(source,str(here/"build_ci-v1135-generated.py"),"exec"),{"__file__":str(here/"build_ci.py"),"__name__":"__main__"})
+except Exception:
+    # The temporary restoration directory is removed on failure. Surface the
+    # actionable failure in the Actions log, not only in an artifact ZIP.
+    for log in sorted((here.parents[1]/"hardening-build-results").glob("*.log")):
+        lines=log.read_text(errors="replace").splitlines()
+        print(f"--- {log.name}: last 70 lines ---", flush=True)
+        print("\\n".join(lines[-70:]), flush=True)
+    raise
