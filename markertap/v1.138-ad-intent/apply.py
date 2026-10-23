@@ -11,23 +11,35 @@ def once(path,before,after):
 def apply(project):
  project=Path(project);here=Path(__file__).resolve().parent
  java=project/"src/jp/tapmarker"
- shutil.copyfile(here/"overlay/src/jp/tapmarker/ExternalAdHandoff.java",java/"ExternalAdHandoff.java")
+ shutil.copyfile(here/"overlay/src/jp/tapmarker/ExternalAdHandoff.java",java/"ExternalAdHandoff.java")\n shutil.copyfile(here/"overlay/src/jp/tapmarker/ExternalAdHandoffBridge.java",java/"ExternalAdHandoffBridge.java")
  shutil.copyfile(here/"tests/ExternalAdHandoffTest.java",project/"tests/ExternalAdHandoffTest.java")
- p=java/"AutoPilot.java"
+ p=project/"tools/PatchRuntime.java"
+ # The real APK preserves AutoPilot from the original compiled DEX.
+ # Wrap only its phaseCycle(int) method with a fail-closed admission hook.
+ # The original method is retained as phaseCycleOriginal(int).
  once(p,
-  'final AdHomeRecovery adHome=new AdHomeRecovery();',
-  'final AdHomeRecovery adHome=new AdHomeRecovery();final ExternalAdHandoff externalAdHandoff=new ExternalAdHandoff();')
+  'static ClassDef migrateLoader(ClassDef original){\n  List<Method> methods=new ArrayList<>();\n  for(Method method:original.getMethods()){\n   if(method.getName().equals("load")',
+  '''static ClassDef migrateLoader(ClassDef original){
+  List<Method> methods=new ArrayList<>();boolean sawPhysicalPhase=false;
+  for(Method method:original.getMethods()){
+   if(method.getName().equals("phaseCycle")&&method.getParameterTypes().size()==1&&method.getParameterTypes().get(0).toString().equals("I")){
+    sawPhysicalPhase=true;
+    methods.add(new ImmutableMethod(method.getDefiningClass(),"phaseCycleOriginal",method.getParameters(),method.getReturnType(),method.getAccessFlags(),method.getAnnotations(),method.getHiddenApiRestrictions(),method.getImplementation()));
+    ImmutableMethodReference bridge=new ImmutableMethodReference("Ljp/tapmarker/ExternalAdHandoffBridge;","defer",Arrays.asList("Ljp/tapmarker/AutoPilot;","I"),"Z");
+    ImmutableMethodReference originalRef=new ImmutableMethodReference(method.getDefiningClass(),"phaseCycleOriginal",Arrays.asList("I"),"V");
+    ImmutableMethodImplementation replacement=new ImmutableMethodImplementation(3,Arrays.asList(
+      new ImmutableInstruction35c(Opcode.INVOKE_STATIC,2,1,2,0,0,0,bridge),
+      new ImmutableInstruction11x(Opcode.MOVE_RESULT,0),
+      new ImmutableInstruction21t(Opcode.IF_EQZ,0,3),
+      new ImmutableInstruction10x(Opcode.RETURN_VOID),
+      new ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL,2,1,2,0,0,0,originalRef),
+      new ImmutableInstruction10x(Opcode.RETURN_VOID)),Collections.emptyList(),Collections.emptyList());
+    methods.add(new ImmutableMethod(method.getDefiningClass(),"phaseCycle",method.getParameters(),method.getReturnType(),method.getAccessFlags(),method.getAnnotations(),method.getHiddenApiRestrictions(),replacement));
+   }else if(method.getName().equals("load")''')
  once(p,
-  'target=packageNow();configuredEngine=phases.engine;',
-  'target=packageNow();externalAdHandoff.reset();configuredEngine=phases.engine;')
- once(p,
-  'if(!target.equals(packageNow())){usagiGameConfirmed=false;',
-  'if(!target.equals(packageNow())){ExternalAdHandoff.Decision handoff=externalAdHandoff.observe(target,packageNow(),AdExitPolicy.adState(phases.engine.current),SystemClock.uptimeMillis());if(handoff==ExternalAdHandoff.Decision.WAIT){s.stopMarkers();phaseOwnedMarkers=false;note("広告遷移先の表示確定待ち / 連打保留");schedulePhase(expected,350);return;}usagiGameConfirmed=false;')
- once(p,
-  'schedulePhase(expected,800);return;}PhaseEngine.Phase p=phases.engine.phases.get(phases.engine.current);',
-  'schedulePhase(expected,800);return;}externalAdHandoff.reset();PhaseEngine.Phase p=phases.engine.phases.get(phases.engine.current);')
- # Preserve existing returnRegistered/launchRegisteredReturn Intent routing,
- # including target-package checks, cancel tokens and bounded retries.
+  '  return new ImmutableClassDef(original.getType(),original.getAccessFlags(),original.getSuperclass(),original.getInterfaces(),original.getSourceFile(),original.getAnnotations(),original.getFields(),methods);\n }\n public static void main',
+  '  if(!sawPhysicalPhase)throw new IllegalStateException("physical phaseCycle(int) bridge missing from shipping AutoPilot");\n  return new ImmutableClassDef(original.getType(),original.getAccessFlags(),original.getSuperclass(),original.getInterfaces(),original.getSourceFile(),original.getAnnotations(),original.getFields(),methods);\n }\n public static void main')
+ # Existing returnRegistered/launchRegisteredReturn Intent logic remains in DEX.
  once(project/"tools/package_apk.py",
   'def manifest_version(data, code=140, version="1.137"):',
   'def manifest_version(data, code=141, version="1.138"):')
