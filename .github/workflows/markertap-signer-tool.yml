@@ -18,9 +18,11 @@ jobs:
           test -s "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar"
           sha256sum "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar"
           unzip -t "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" >/dev/null
+          mkdir -p signer-tool
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" signer-tool/apksigner.jar
       - uses: actions/upload-artifact@v4
         with:
           name: markertap-local-apksigner-v35
-          path: ${{ env.ANDROID_HOME }}/build-tools/35.0.0/lib/apksigner.jar
+          path: signer-tool/apksigner.jar
           if-no-files-found: error
           retention-days: 1
