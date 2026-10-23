@@ -17,7 +17,7 @@ jobs:
           set -eu
           test -s "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar"
           sha256sum "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar"
-          unzip -t "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" >/dev/null
+          java -jar "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" --version
           mkdir -p signer-tool
           cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" signer-tool/apksigner.jar
       - uses: actions/upload-artifact@v4
