@@ -14,7 +14,7 @@ assert 'now-frameAt>=REFRESH_AGE_MS' in gate
 assert 'return !analysisPending&&now>=frameAt' in gate
 assert 'if(!w.analysisPending.compareAndSet(false,true)){s.h.postDelayed(()->{if(current.getAsBoolean()){requestFrameRefresh(w);failed.run();}},250);return;}' in windows
 assert 'failure->{if(!current.getAsBoolean())return;w.analysisIssue=' in windows
-assert 'w.analysisIssueAt=SystemClock.uptimeMillis();requestFrameRefresh(w);' in windows
+assert 'w.analysisIssueAt=SystemClock.uptimeMillis();if(failure instanceof OutOfMemoryError)s.performance.memoryPressure();else requestFrameRefresh(w);' in windows
 assert '同じ状態への再入場を含む' in watch
 assert '1500' in (java/"FrameCircuit.java").read_text(encoding="utf-8")
 print("v1.136 source audit: 8 frame freshness and isolation invariants passed")
