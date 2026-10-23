@@ -152,6 +152,26 @@ def apply(project):
     legacy_call='binding("DiagnosticFrameCapture","DiagnosticJournal'+chr(36)*2+'ExternalSyntheticLambda0","<init>");'
     once(p,legacy_call,'binding("DiagnosticFrameCapture","DiagnosticFrameCapture","encode");')
 
+    # The 1.132 host fixture compiles DiagnosticFrameCapture against a stub
+    # for the now-removed synthetic encoder. Keep independent native-pixel
+    # coverage, replace that obsolete fixture with a source guard, and require
+    # JournalAnrAudit against the REAL merged DEX during build validation.
+    p=project/"run-host-tests.sh"
+    old="""javac -cp baseline-runtime.jar -d build/diagnostic-host \\
+ tests/anr-stubs/android/graphics/Bitmap.java tests/anr-stubs/jp/tapmarker/AnrHostStubs.java \\
+ src/jp/tapmarker/DiagnosticFrameCapture.java src/jp/tapmarker/HardwarePixelSource.java \\
+ tests/DiagnosticCaptureAnrTest.java tests/HardwarePixelSourceTest.java
+java -cp build/diagnostic-host:baseline-runtime.jar jp.tapmarker.DiagnosticCaptureAnrTest
+java -cp build/diagnostic-host:baseline-runtime.jar jp.tapmarker.HardwarePixelSourceTest"""
+    new="""javac -cp baseline-runtime.jar -d build/diagnostic-host \\
+ tests/anr-stubs/android/graphics/Bitmap.java tests/anr-stubs/jp/tapmarker/AnrHostStubs.java \\
+ src/jp/tapmarker/HardwarePixelSource.java tests/HardwarePixelSourceTest.java
+java -cp build/diagnostic-host:baseline-runtime.jar jp.tapmarker.HardwarePixelSourceTest
+python3 tests/DiagnosticFrameSourceTest.py"""
+    once(p,old,new)
+    shutil.copyfile(Path(__file__).resolve().parent/"tests/DiagnosticFrameSourceTest.py",
+                    project/"tests/DiagnosticFrameSourceTest.py")
+
     # Legacy encoder already carried a constructor signature tied to another
     # Journal source. Never falsely reuse that old synthetic class.
 
