@@ -1,0 +1,26 @@
+name: MarkerTap v1.135 local signer tooling preparation
+on:
+  push:
+    branches: ["markertap/hardening-v1.135"]
+    paths: [".github/workflows/markertap-signer-tool.yml"]
+permissions:
+  contents: read
+jobs:
+  export-tool:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install pinned Android 35 build tools
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"'
+      - name: Record isolated apksigner tool checksum
+        run: |
+          set -eu
+          test -s "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar"
+          sha256sum "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar"
+          unzip -t "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: markertap-local-apksigner-v35
+          path: ${{ env.ANDROID_HOME }}/build-tools/35.0.0/lib/apksigner.jar
+          if-no-files-found: error
+          retention-days: 1
