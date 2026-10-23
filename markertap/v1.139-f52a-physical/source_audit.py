@@ -17,4 +17,23 @@ assert 'pilot.phaseSampleTakenAt' in bridge
 assert 'frameAt<=0||now<frameAt||now-frameAt>=FRESH_MS' in flow
 assert 'distinct<2||now-firstAt<PERSIST_MS' in flow
 assert 'if(++attempts>3)' in flow
-print("v1.139 physical source audit: 9 F-52A routing and safety assertions passed")
+# Physical failures must produce an image-bearing ZIP whenever Android permits.
+# The real-display screenshot is an on-demand AccessibilityService capture;
+# virtual display image handling must remain unchanged.
+errors=(java/"ProgressErrors.java").read_text(encoding="utf-8")
+capture=(java/"PhysicalDiagnosticCapture.java").read_text(encoding="utf-8")
+service_xml=(project/"res/xml/service.xml").read_text(encoding="utf-8")
+assert 'PhysicalDiagnosticCapture.save(s,journal,event.app,run,archive,frozenBody,now)' in errors
+assert 'if(capture!=null)' in errors and 'image(capture,"error")' in errors
+assert 'android:canTakeScreenshot="true"' in service_xml
+assert 's.takeScreenshot(Display.DEFAULT_DISPLAY,s.getMainExecutor()' in capture
+assert 'app.equals(s.pilot.packageNow())' in capture
+assert 'new ArrayBlockingQueue<Runnable>(2)' in capture
+assert 'new AtomicBoolean()' in capture and 'TIMEOUT_MS=4500' in capture
+assert 'BitmapPixels.of(software)' in capture
+assert '"physical-error"' in capture
+assert 'journal.frame(app,0,run' in capture
+assert 'journal.incident(app,0,run,archive' in capture
+assert 'buffer.close()' in capture
+assert '"\\n実画面の画像取得：' in capture
+print("v1.139 physical source audit: 9 recovery + 13 physical ZIP safety assertions passed")
