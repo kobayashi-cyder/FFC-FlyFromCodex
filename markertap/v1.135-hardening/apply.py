@@ -58,6 +58,19 @@ def apply(project):
          'input=request.source.copy(workspace);signal=input!=null;',
          'input=request.source.copy(workspace);signal=input!=null;if(!signal)failure=new IllegalStateException("capture source provided no frame");')
 
+    # The v1.130 binary foundation omitted the newer watchdog and diagnostic
+    # Java sources. Promote only their checked-in canonical implementation to
+    # the reconstructed project so the actual merged DEX carries the fix.
+    import shutil
+    canonical = Path(__file__).resolve().parents[1]/"code/TapMarker/src/jp/tapmarker"
+    for name in ("ProgressWatchdog.java", "ProgressErrors.java", "DiagnosticJournal.java"):
+        dst = java/name
+        if not dst.exists():
+            source = canonical/name
+            if not source.is_file():
+                raise RuntimeError("Missing canonical source: "+str(source))
+            shutil.copyfile(source, dst)
+
     # Distinguish display loss from stale frames and slow analysis.
     p = java / "ProgressWatchdog.java"
     once(p, 'boolean running=true,terminal,home,expectFrames=true,expectInput;',
