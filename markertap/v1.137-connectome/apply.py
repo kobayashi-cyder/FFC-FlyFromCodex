@@ -28,6 +28,10 @@ def apply(project):
  once(p,
   "active=false;token++;virtualMode=false;parallelVirtual=false;}",
   "virtualConnectome.reset();active=false;token++;virtualMode=false;parallelVirtual=false;}")
+ # Bound virtual automation to two independent lanes before activation.
+ once(p,
+  'if(ready.isEmpty()){s.pilot.virtualWindows.startFailed("自律する仮想画面がありません");return;}',
+  'if(ready.isEmpty()){s.pilot.virtualWindows.startFailed("自律する仮想画面がありません");return;}if(ready.size()>ConnectomeMultiplexer.MAX_LANES){s.pilot.virtualWindows.startFailed("共有制御は仮想2画面までです");return;}')
  once(p,
   "slots=ready.toArray(new Slot[0]);virtualMode=true;parallelVirtual=s.pilot.virtualWindows.remote!=null;active=true;",
   "slots=ready.toArray(new Slot[0]);String[] connectomeKeys=new String[slots.length];for(int i=0;i<slots.length;i++)connectomeKeys[i]=slots[i].pkg;virtualConnectome.start(connectomeKeys);virtualMode=true;parallelVirtual=s.pilot.virtualWindows.remote!=null;active=true;")
@@ -42,8 +46,8 @@ def apply(project):
   }
   long period=PerformancePolicy.scanInterval(s.performance.profile(),slot.processingMs,slots.length,s.performance.cores);""")
  once(p,
-  "applySamples(slot,sampledRegions,new Rect(0,0,width,height),t);};",
-  "virtualConnectome.published(slot.pkg,capturedAt);applySamples(slot,sampledRegions,new Rect(0,0,width,height),t);};")
+  "applySamples(slot,sampledRegions,new Rect(0,0,width,height),t);});",
+  "virtualConnectome.published(slot.pkg,capturedAt);applySamples(slot,sampledRegions,new Rect(0,0,width,height),t);});")
  # Existing physical adapter, tap dispatch and 1500ms validation are untouched.
  with (project/"run-tests.sh").open("a",encoding="utf-8") as f:
   f.write('\njava -cp "build/runtime:build/api:build/tests:baseline-runtime.jar:$TEST_LIBS:$JAR:$LIBS" jp.tapmarker.ConnectomeMultiplexerTest\n')
