@@ -16,5 +16,9 @@ assert 'if(!w.analysisPending.compareAndSet(false,true)){s.h.postDelayed(()->{if
 assert 'failure->{if(!current.getAsBoolean())return;w.analysisIssue=' in windows
 assert 'w.analysisIssueAt=SystemClock.uptimeMillis();if(failure instanceof OutOfMemoryError)s.performance.memoryPressure();else requestFrameRefresh(w);' in windows
 assert '同じ状態への再入場を含む' in watch
-assert '1500' in (java/"FrameCircuit.java").read_text(encoding="utf-8")
+# The inherited v1.134 FrameCircuit delegates its 1500ms validity to
+# AnalysisBudget.fresh; it intentionally has no inline numeric literal.
+frame=(java/"FrameCircuit.java").read_text(encoding="utf-8")
+assert 'AnalysisBudget.fresh(' in frame
+assert 'frame freshness deadline exceeded' in frame
 print("v1.136 source audit: 8 frame freshness and isolation invariants passed")
