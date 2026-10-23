@@ -55,7 +55,7 @@ def apply(project):
  once(java/"ProgressErrors.java",
   'final String frozenBody=body;VirtualWindows.Window capture=s.pilot.virtualWindows.window(event.app);if(capture!=null)image(capture,"error");journal.incident(event.app,display,run,archive,frozenBody,now);\n  s.h.postDelayed(()->{if(journal.current(event.app,display,run))journal.incident(event.app,display,run,archive,frozenBody,now);},1000);',
   '''final String frozenBody=body;VirtualWindows.Window capture=s.pilot.virtualWindows.window(event.app);
-  if(capture!=null){
+  if(capture!=null&&s.pilot.splitPilot.active&&s.pilot.splitPilot.virtualMode){
    image(capture,"error");
    journal.incident(event.app,display,run,archive,frozenBody,now);
    s.h.postDelayed(()->{if(journal.current(event.app,display,run))journal.incident(event.app,display,run,archive,frozenBody,now);},1000);
