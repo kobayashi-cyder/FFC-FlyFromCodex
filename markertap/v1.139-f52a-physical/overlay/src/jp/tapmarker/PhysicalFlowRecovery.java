@@ -8,7 +8,16 @@ package jp.tapmarker;
 final class PhysicalFlowRecovery {
  enum Decision { KEEP_OBSERVING, RECLASSIFY, STOP_WITH_DIAGNOSTIC }
  static final String GAME="com.kurashiru.fue.usagi";
+ static final String FARM_GAME="com.kurashiru.nouen.usagi";
  static final String MAIN="usagi-default-main", VERIFY="usagi-default-verify";
+ static boolean supportsGame(String pkg) {
+  return GAME.equals(pkg)||FARM_GAME.equals(pkg);
+ }
+ private static boolean isMainOrVerify(String state) {
+  return MAIN.equals(state)||VERIFY.equals(state)
+      ||"farm-default-main".equals(state)
+      ||"farm-default-verify".equals(state);
+ }
  static final long FRESH_MS=1200, PERSIST_MS=1600, EPISODE_MS=90000;
  private long firstAt=-1, priorFrame=-1, episodeAt=-1;
  private int distinct, attempts;
@@ -21,7 +30,7 @@ final class PhysicalFlowRecovery {
   if(!foreground||state==null||now<0){
    resetCandidate();return Decision.KEEP_OBSERVING;
   }
-  if(!MAIN.equals(state)&&!VERIFY.equals(state)||actionPending||returning){
+  if(!isMainOrVerify(state)||actionPending||returning){
    resetCandidate();return Decision.KEEP_OBSERVING;
   }
   // Do not advance, classify, or tap on stale/absent screenshots.
