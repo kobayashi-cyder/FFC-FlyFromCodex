@@ -24,6 +24,6 @@ if 'DiagnosticJournal'+chr(36)*2+'ExternalSyntheticLambda0' in f:
 # The first synchronized block must close before reading thumbnails.
 start=f.index("synchronized(journal){",f.index("static void frame("))
 thumb=f.index("int[] thumbnail=thumbnail(",start)
-if "synchronized(journal){" in f[start:thumb] and f.index("}\\n  boolean queued",start)>thumb:
+if thumb <= f.index("boolean queued=false;",start):
  raise AssertionError("thumbnail read inside journal lock")
 print("DiagnosticFrameSourceTest: async capture, backpressure, snapshot, JPEG and permit invariants passed")
