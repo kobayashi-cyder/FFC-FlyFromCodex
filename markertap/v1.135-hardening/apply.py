@@ -21,6 +21,15 @@ def apply(project):
     # The recovery circuit belongs to the actual display, not the short-lived
     # SplitPilot.Slot. A manual stop/restart must NOT mint another rebuild.
     p = java / "VirtualWindows.java"
+    # When resource retirement is busy, still acquire and close the next
+    # ImageReader image. Returning before acquireLatestImage risks backlogging
+    # buffers until no more callbacks or fresh frames arrive.
+    once(p,
+         'if(reader!=w.reader||w.closed||task!=generation||pendingFrameRetirements.get()>=8)return;',
+         'if(reader!=w.reader||w.closed||task!=generation)return;')
+    once(p,
+         'image=reader.acquireLatestImage();if(image==null||reader!=w.reader||w.closed||task!=generation)return;',
+         'image=reader.acquireLatestImage();if(image==null||reader!=w.reader||w.closed||task!=generation)return;if(pendingFrameRetirements.get()>=8)return;')
     once(p, "final RestoreReceipt restoreReceipt=new RestoreReceipt();",
          "final RestoreReceipt restoreReceipt=new RestoreReceipt();"
          "final DisplayRecovery recoveryGuard=new DisplayRecovery();")
