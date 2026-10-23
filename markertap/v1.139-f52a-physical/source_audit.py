@@ -17,6 +17,9 @@ assert 'pilot.phaseSampleTakenAt' in bridge
 assert 'frameAt<=0||now<frameAt||now-frameAt>=FRESH_MS' in flow
 assert 'distinct<2||now-firstAt<PERSIST_MS' in flow
 assert 'if(++attempts>3)' in flow
+assert 'com.kurashiru.nouen.usagi' in flow
+assert 'farm-default-verify' in flow
+assert 'PhysicalFlowRecovery.supportsGame(pilot.target)' in (here/'apply.py').read_text(encoding="utf-8")
 # Physical failures must produce an image-bearing ZIP whenever Android permits.
 # The real-display screenshot is an on-demand AccessibilityService capture;
 # virtual display image handling must remain unchanged.
