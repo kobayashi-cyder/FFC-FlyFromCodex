@@ -75,6 +75,11 @@ def apply(project):
          'if(w!=null)b.append("\\n復帰要求と確認：").append(w.restoreReceipt.report());',
          'if(w!=null)b.append("\\n復帰要求と確認：").append(w.restoreReceipt.report()).append("\\n画像解析の最終失敗：").append(w.analysisIssue.isEmpty()?"記録なし":w.analysisIssue).append(" / ").append(age(w.analysisIssueAt,now)).append("ms前");')
 
+    # A display being deliberately rebuilt has no frame until its new
+    # ImageReader starts. This is not the same as an unexpected frame stall.
+    once(p, 'live.add(sample.key);ProgressWatchdog.Event event=watchdog.observe(sample,now);',
+         'if(w!=null&&w.rebuilding)sample.expectFrames=false;live.add(sample.key);ProgressWatchdog.Event event=watchdog.observe(sample,now);')
+
     # Archive the previous display's bounded frames, retaining their original
     # JSON metadata (source display id). Do not use these as live observations.
     p = java / "DiagnosticJournal.java"
