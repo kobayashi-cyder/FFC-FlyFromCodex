@@ -1,0 +1,45 @@
+name: MarkerTap v1.138 physical ad Intent handoff validation
+on:
+  push:
+    branches: ["markertap/ad-intent-return-v1.138"]
+    paths:
+      - "markertap/v1.138-ad-intent/**"
+      - ".github/workflows/markertap-v1138-ad-intent.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Test external ad handoff decisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ad-intent-test"
+          javac -d "$RUNNER_TEMP/ad-intent-test" markertap/v1.138-ad-intent/overlay/src/jp/tapmarker/ExternalAdHandoff.java markertap/v1.138-ad-intent/tests/ExternalAdHandoffTest.java
+          java -cp "$RUNNER_TEMP/ad-intent-test" jp.tapmarker.ExternalAdHandoffTest
+      - name: Prepare Android SDK and verified JADX
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          curl --fail --location --retry 3 https://github.com/skylot/jadx/releases/download/v1.5.3/jadx-1.5.3.zip -o "$RUNNER_TEMP/jadx.zip"
+          echo "8280f3799c0273fe797a2bcd90258c943e451fd195f13d05400de5e6451d15ec  $RUNNER_TEMP/jadx.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/jadx.zip" -d "$RUNNER_TEMP/jadx"
+      - name: Restore, compile, regressions and DEX audit
+        run: python3 markertap/v1.138-ad-intent/build_ci.py --sdk "$ANDROID_HOME" --jadx "$RUNNER_TEMP/jadx/lib/jadx-1.5.3-all.jar"
+      - name: Save validation evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarkerTap-v1.138-ad-intent-evidence
+          path: ad-intent-build-results/
+          if-no-files-found: warn
+          retention-days: 30
