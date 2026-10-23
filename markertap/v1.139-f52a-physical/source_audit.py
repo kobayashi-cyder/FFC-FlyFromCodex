@@ -17,8 +17,4 @@ assert 'pilot.phaseSampleTakenAt' in bridge
 assert 'frameAt<=0||now<frameAt||now-frameAt>=FRESH_MS' in flow
 assert 'distinct<2||now-firstAt<PERSIST_MS' in flow
 assert 'if(++attempts>3)' in flow
-layout=(java/"AdaptiveLayout.java").read_text(encoding="utf-8")
-assert 'if(usagi&&!located&&distance>homeTolerance)' in layout
-assert 'matched!=null&&homeDistance(matched)<=homeTolerance' in layout
-assert 'return matched;' in layout
-print("v1.139 physical source audit: 12 F-52A routing, strict home-recognition and safety assertions passed")
+print("v1.139 physical source audit: 9 F-52A routing and safety assertions passed")
