@@ -7,4 +7,10 @@ for anchor in ("1.138","versionCode='141'","'version_code':141","'ad-intent-buil
  if anchor not in source:raise RuntimeError("Unexpected v1.138 builder: "+anchor)
 source=source.replace("1.138","1.139").replace("versionCode='141'","versionCode='142'").replace("'version_code':141","'version_code':142")
 source=source.replace("'ad-intent-build-results'","'f52a-physical-build-results'")
-exec(compile(source,str(here/"build_ci-v1139-generated.py"),"exec"),{"__file__":str(here/"build_ci.py"),"__name__":"__main__"})
+try:
+ exec(compile(source,str(here/"build_ci-v1139-generated.py"),"exec"),{"__file__":str(here/"build_ci.py"),"__name__":"__main__"})
+except BaseException:
+ for name in ("restore","build","tests","host-tests","audit-compile","ReleaseRuntimeAudit"):
+  p=here.parents[1]/"f52a-physical-build-results"/(name+".log")
+  if p.is_file():print("=== "+name+".log (tail) ===\n"+p.read_text(errors="replace")[-13000:],flush=True)
+ raise
