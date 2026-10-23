@@ -100,6 +100,30 @@ def apply(project):
          'lanes.put(app,lane);if(lanes.size()>6)',
          'if(lanes.containsKey(app)){Lane previous=lanes.get(app);long now=SystemClock.uptimeMillis();for(DiagnosticArchive.Frame saved:previous.frames)if(saved.at>0&&now>=saved.at&&now-saved.at<=60000)lane.frames.addLast(saved);while(lane.frames.size()>DiagnosticArchive.MAX_FRAMES)lane.frames.removeFirst();}lanes.put(app,lane);if(lanes.size()>6)')
 
+    # The restored binary FramePixels predates thumbnail(Pixels,...) from
+    # the canonical journal. Use a local API-neutral thumbnail sampler instead
+    # of assuming that a newer binary API exists.
+    p = java / "DiagnosticJournal.java"
+    once(p,
+         "FramePixels.thumbnail(pixels,width,height,size[0],size[1])",
+         "thumbnailPixels(pixels,width,height,size[0],size[1])")
+    once(p, " final Context context;final Handler main=new Handler(Looper.getMainLooper());",
+         """ final Context context;final Handler main=new Handler(Looper.getMainLooper());
+ static int[] thumbnailPixels(RegionSampler.Pixels src,int width,int height,int tw,int th){
+  if(src==null||width<=0||height<=0||tw<=0||th<=0||((long)tw)*th>Integer.MAX_VALUE)
+   throw new IllegalArgumentException("invalid thumbnail geometry");
+  int[] dest=new int[tw*th];
+  for(int y=0;y<th;y++){
+   int sy=Math.min(height-1,(int)((y+0.5)*height/th));
+   for(int x=0;x<tw;x++){
+    int sx=Math.min(width-1,(int)((x+0.5)*width/tw));
+    dest[y*tw+x]=src.get(sx,sy);
+   }
+  }
+  return dest;
+ }
+""")
+
     # Fail closed: source API/runtime may vary. Every source anchor must be
     # confirmed, no broad blind replacements or rewritten detector thresholds.
     t = project / "run-tests.sh"
