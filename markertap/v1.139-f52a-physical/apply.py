@@ -14,6 +14,7 @@ def apply(project):
  here=Path(__file__).resolve().parent
  java=project/"src/jp/tapmarker"
  shutil.copyfile(here/"overlay/src/jp/tapmarker/PhysicalFlowRecovery.java",java/"PhysicalFlowRecovery.java")
+ shutil.copyfile(here/"overlay/src/jp/tapmarker/PhysicalDiagnosticCapture.java",java/"PhysicalDiagnosticCapture.java")
  shutil.copyfile(here/"tests/PhysicalFlowRecoveryTest.java",project/"tests/PhysicalFlowRecoveryTest.java")
  bridge=java/"ExternalAdHandoffBridge.java"
  once(bridge,
@@ -48,6 +49,18 @@ def apply(project):
     }
    }else run.physical.reset();
    return false;
+  }''')
+ # Real-display incident ZIPs must await a bounded screenshot callback.
+ # Virtual displays keep their established frame/incident flow unchanged.
+ once(java/"ProgressErrors.java",
+  'final String frozenBody=body;VirtualWindows.Window capture=s.pilot.virtualWindows.window(event.app);if(capture!=null)image(capture,"error");journal.incident(event.app,display,run,archive,frozenBody,now);\\n  s.h.postDelayed(()->{if(journal.current(event.app,display,run))journal.incident(event.app,display,run,archive,frozenBody,now);},1000);',
+  '''final String frozenBody=body;VirtualWindows.Window capture=s.pilot.virtualWindows.window(event.app);
+  if(capture!=null){
+   image(capture,"error");
+   journal.incident(event.app,display,run,archive,frozenBody,now);
+   s.h.postDelayed(()->{if(journal.current(event.app,display,run))journal.incident(event.app,display,run,archive,frozenBody,now);},1000);
+  }else{
+   PhysicalDiagnosticCapture.save(s,journal,event.app,run,archive,frozenBody,now);
   }''')
  once(project/"tools/package_apk.py",
   'def manifest_version(data, code=141, version="1.138"):',
