@@ -1,3 +1,1 @@
-# FFC — FlyFromCodex
-
-FFC development repository. Android APK builds are isolated on dedicated build branches before any merge to main.
+# MarkerTap v1.137 (signed)\n\nOriginal signer SHA-256: 7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1\nAPK SHA-256: 8c86b438567f2392ace975b369911e6603b41a180d235740c8332c762f340711\nAPK: https://raw.githubusercontent.com/kobayashi-cyder/FFC-FlyFromCodex/apk-v1.137/MarkerTap-v1.137-signed.apk\nv1.137 host tests passed; Pixel 10 device stability unverified.\n
