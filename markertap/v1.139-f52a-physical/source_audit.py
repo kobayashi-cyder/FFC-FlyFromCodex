@@ -22,7 +22,7 @@ assert 'if(++attempts>3)' in flow
 # virtual display image handling must remain unchanged.
 errors=(java/"ProgressErrors.java").read_text(encoding="utf-8")
 capture=(java/"PhysicalDiagnosticCapture.java").read_text(encoding="utf-8")
-service_xml=(project/"res/xml/service.xml").read_text(encoding="utf-8")
+service_xml=(here.parents[1]/"markertap/code/TapMarker/res/xml/service.xml").read_text(encoding="utf-8")
 assert 'PhysicalDiagnosticCapture.save(s,journal,event.app,run,archive,frozenBody,now)' in errors
 assert 'if(capture!=null)' in errors and 'image(capture,"error")' in errors
 assert 'android:canTakeScreenshot="true"' in service_xml
