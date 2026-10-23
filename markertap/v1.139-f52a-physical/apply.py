@@ -53,7 +53,7 @@ def apply(project):
  # This is evidence-gated; other devices are unaffected unless this actual
  # current-frame layout matches. Avoid the expensive broad search when possible.
  once(java/"AdaptiveLayout.java",
-  "float[] locateHome(RegionSampler.Pixels pixels,long now){\\n  float[] current=homeSample(transform,pixels);float distance=homeDistance(current);",
+  "float[] locateHome(RegionSampler.Pixels pixels,long now){\n  float[] current=homeSample(transform,pixels);float distance=homeDistance(current);",
   """float[] locateHome(RegionSampler.Pixels pixels,long now){
   float[] current=homeSample(transform,pixels);float distance=homeDistance(current);
   if(usagi&&!located&&distance>homeTolerance){
