@@ -33,7 +33,7 @@ def apply(project):
  # request a new frame and leave the previous invalid result unpublished.
  once(window,
   'failure->{if(current.getAsBoolean()){w.analysisIssue="解析失敗："+(failure==null?"reason-unavailable":brief(failure));w.analysisIssueAt=SystemClock.uptimeMillis();}if(failure instanceof OutOfMemoryError)s.performance.memoryPressure();failed.run();}',
-  'failure->{if(!current.getAsBoolean())return;w.analysisIssue="解析失敗："+(failure==null?"reason-unavailable":brief(failure));w.analysisIssueAt=SystemClock.uptimeMillis();requestFrameRefresh(w);if(failure instanceof OutOfMemoryError)s.performance.memoryPressure();failed.run();}')
+  'failure->{if(!current.getAsBoolean())return;w.analysisIssue="解析失敗："+(failure==null?"reason-unavailable":brief(failure));w.analysisIssueAt=SystemClock.uptimeMillis();if(failure instanceof OutOfMemoryError)s.performance.memoryPressure();else requestFrameRefresh(w);failed.run();}')
 
  # A monitor's state age can span same-state re-entry. Say "unverified
  # progress" instead of incorrectly claiming one continuous phase entry.
