@@ -16,12 +16,16 @@ Fixes:
   Use a persistent virtual diagnostic key across display-id changes.
 - Classify a null capture source explicitly rather than delivering a null
   exception to the retry pathway.
+- Drain and close ImageReader frames under retirement backpressure instead of
+  returning before acquireLatestImage. Keep deliberate rebuilds out of false
+  stale-frame watchdog alarms.
 - Record asynchronous analysis failures and their timestamp in the incident
   report (without extending frame freshness or reducing thresholds).
 - Retain up to eight previously captured frame records for <=60s across a
   display-id/run change; their original display metadata is retained.
 - Add three regression suites for missing frames, missing displays and
-  reuse of the display-owned recovery budget.
+  reuse of the display-owned recovery budget; the restore step also audits
+  11 structural source invariants before compilation.
 
 Build: `python3 markertap/v1.135-hardening/build_ci.py --sdk "$ANDROID_HOME" --jadx "$JADX_ALL_JAR"`.
 
