@@ -7,7 +7,12 @@ def once(path,before,after):
  path=Path(path)
  source=path.read_text(encoding="utf-8")
  count=source.count(before)
- if count!=1:raise RuntimeError(f"{path}: verified anchor count {count}, expected 1: {before[:140]}")
+ if count!=1:
+  hints=[]
+  for hint in ("final TapService s;","void resetRun()","slots=ready.toArray","long period=PerformancePolicy.scanInterval","applySamples(slot,sampledRegions"):
+   pos=source.find(hint)
+   if pos>=0:hints.append(hint+" >>> "+source[max(0,pos-160):pos+450])
+  raise RuntimeError(f"{path}: verified anchor count {count}, expected 1: {before[:140]} / candidate context: {hints}")
  path.write_text(source.replace(before,after),encoding="utf-8")
 
 def apply(project):
@@ -18,8 +23,8 @@ def apply(project):
  shutil.copyfile(here/"tests/ConnectomeMultiplexerTest.java",project/"tests/ConnectomeMultiplexerTest.java")
  p=java/"SplitPilot.java"
  once(p,
-  "final TapService s;volatile boolean active;boolean virtualMode,parallelVirtual;volatile int token,index;long lastShot;Slot[] slots;",
-  "final TapService s;final ConnectomeMultiplexer virtualConnectome=new ConnectomeMultiplexer();volatile boolean active;boolean virtualMode,parallelVirtual;volatile int token,index;long lastShot;Slot[] slots;")
+  "final TapService s;",
+  "final TapService s;final ConnectomeMultiplexer virtualConnectome=new ConnectomeMultiplexer();")
  once(p,
   "active=false;token++;virtualMode=false;parallelVirtual=false;}",
   "virtualConnectome.reset();active=false;token++;virtualMode=false;parallelVirtual=false;}")
