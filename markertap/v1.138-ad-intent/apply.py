@@ -11,7 +11,8 @@ def once(path,before,after):
 def apply(project):
  project=Path(project);here=Path(__file__).resolve().parent
  java=project/"src/jp/tapmarker"
- shutil.copyfile(here/"overlay/src/jp/tapmarker/ExternalAdHandoff.java",java/"ExternalAdHandoff.java")\n shutil.copyfile(here/"overlay/src/jp/tapmarker/ExternalAdHandoffBridge.java",java/"ExternalAdHandoffBridge.java")
+ shutil.copyfile(here/"overlay/src/jp/tapmarker/ExternalAdHandoff.java",java/"ExternalAdHandoff.java")
+ shutil.copyfile(here/"overlay/src/jp/tapmarker/ExternalAdHandoffBridge.java",java/"ExternalAdHandoffBridge.java")
  shutil.copyfile(here/"tests/ExternalAdHandoffTest.java",project/"tests/ExternalAdHandoffTest.java")
  p=project/"tools/PatchRuntime.java"
  # The real APK preserves AutoPilot from the original compiled DEX.
