@@ -24,7 +24,7 @@ errors=(java/"ProgressErrors.java").read_text(encoding="utf-8")
 capture=(java/"PhysicalDiagnosticCapture.java").read_text(encoding="utf-8")
 service_xml=(here.parents[1]/"markertap/code/TapMarker/res/xml/service.xml").read_text(encoding="utf-8")
 assert 'PhysicalDiagnosticCapture.save(s,journal,event.app,run,archive,frozenBody,now)' in errors
-assert 'if(capture!=null)' in errors and 'image(capture,"error")' in errors
+assert 'if(capture!=null&&s.pilot.splitPilot.active&&s.pilot.splitPilot.virtualMode)' in errors and 'image(capture,"error")' in errors
 assert 'android:canTakeScreenshot="true"' in service_xml
 assert 's.takeScreenshot(Display.DEFAULT_DISPLAY,s.getMainExecutor()' in capture
 assert 'app.equals(s.pilot.packageNow())' in capture
