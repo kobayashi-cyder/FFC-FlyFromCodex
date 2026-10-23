@@ -62,7 +62,16 @@ final class PhysicalDiagnosticCapture {
        "失敗（Android screenshot error="+errorCode+"）");
      }
      @Override public void onSuccess(AccessibilityService.ScreenshotResult shot){
-      final HardwareBuffer buffer=shot.getHardwareBuffer();
+      final HardwareBuffer buffer;
+      try{buffer=shot.getHardwareBuffer();}
+      catch(RuntimeException failure){
+       complete(s,journal,app,run,archive,report,detectedAt,done,timeout,
+        "失敗（画面バッファ参照："+failure.getClass().getSimpleName()+"）");return;
+      }
+      if(buffer==null){
+       complete(s,journal,app,run,archive,report,detectedAt,done,timeout,
+        "失敗（画面バッファが空）");return;
+      }
       if(done.get()||s.pilot==null||!app.equals(s.pilot.packageNow())){
        buffer.close();
        complete(s,journal,app,run,archive,report,detectedAt,done,timeout,
