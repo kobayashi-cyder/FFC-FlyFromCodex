@@ -49,6 +49,22 @@ def apply(project):
    }else run.physical.reset();
    return false;
   }''')
+ # Fast, strict recognition of the F-52A layout captured in existing 6680.mp4.
+ # This is evidence-gated; other devices are unaffected unless this actual
+ # current-frame layout matches. Avoid the expensive broad search when possible.
+ once(java/"AdaptiveLayout.java",
+  "float[] locateHome(RegionSampler.Pixels pixels,long now){\\n  float[] current=homeSample(transform,pixels);float distance=homeDistance(current);",
+  """float[] locateHome(RegionSampler.Pixels pixels,long now){
+  float[] current=homeSample(transform,pixels);float distance=homeDistance(current);
+  if(usagi&&!located&&distance>homeTolerance){
+   float[] candidate=UsagiHomeEvidence.F52A_LAYOUT;
+   float[] matched=homeSample(candidate,pixels);
+   if(matched!=null&&homeDistance(matched)<=homeTolerance){
+    transform=candidate.clone();located=true;local.clear();pairLayouts.clear();searched.clear();
+    status="F-52A配列の固定見出しとボタンを新しい画像で確認";
+    return matched;
+   }
+  }""")
  once(project/"tools/package_apk.py",
   'def manifest_version(data, code=141, version="1.138"):',
   'def manifest_version(data, code=142, version="1.139"):')
