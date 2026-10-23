@@ -8,3 +8,4 @@ project=Path(sys.argv[1]).resolve()
 subprocess.run([sys.executable,str(here.parent/"v1.134-autonomy"/"restore_project.py"),str(project)],check=True)
 from apply import apply
 apply(project)
+subprocess.run([sys.executable,str(here/"source_audit.py"),str(project)],check=True)
