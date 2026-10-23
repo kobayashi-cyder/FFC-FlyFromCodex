@@ -148,6 +148,10 @@ def apply(project):
     once(p,
          '  int fields=0;for(Field f:type("DiagnosticJournal$ExternalSyntheticLambda0").getFields())fields++;\n  for(Method m:type("DiagnosticJournal$ExternalSyntheticLambda0").getMethods())if(m.getName().equals("run")&&calls(m,"Ljp/tapmarker/DiagnosticJournal;","lambda$1$jp-tapmarker-DiagnosticJournal"))encoder=true;\n  if(!readback||!source||!encoder||fields<12)throw new AssertionError("readback binding or preserved real diagnostic encoder missing");',
          '  boolean queued=false;for(Method m:type("DiagnosticFrameCapture").getMethods()){if(m.getName().equals("frame")&&calls(m,"Ljava/util/concurrent/ThreadPoolExecutor;","execute"))queued=true;if(m.getName().equals("encode")&&calls(m,"Landroid/graphics/Bitmap;","compress"))encoder=true;}\n  if(!readback||!source||!encoder||!queued)throw new AssertionError("readback binding or async diagnostic encoder missing");')
+    p=project/"tools/IntegrationAudit.java"
+    legacy_call='binding("DiagnosticFrameCapture","DiagnosticJournal'+chr(36)*2+'ExternalSyntheticLambda0","<init>");'
+    once(p,legacy_call,'binding("DiagnosticFrameCapture","DiagnosticFrameCapture","encode");')
+
     # Legacy encoder already carried a constructor signature tied to another
     # Journal source. Never falsely reuse that old synthetic class.
 
