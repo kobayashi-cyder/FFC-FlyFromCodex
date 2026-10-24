@@ -1,0 +1,42 @@
+name: MarkerTap v1.140 return progress and physical diagnostic CI
+on:
+  push:
+    branches: ["markertap/recovery-progress-v1.140"]
+    paths:
+      - "markertap/v1.140-recovery-progress/**"
+      - ".github/workflows/markertap-v1140-recovery-progress.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Check cancellation, window changes, fresh frames, and finite deadlines
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/return-gate-tests"
+          javac -d "$RUNNER_TEMP/return-gate-tests" markertap/v1.140-recovery-progress/overlay/src/jp/tapmarker/ReturnProgressGate.java markertap/v1.140-recovery-progress/tests/ReturnProgressGateTest.java
+          java -cp "$RUNNER_TEMP/return-gate-tests" jp.tapmarker.ReturnProgressGateTest
+      - name: Android build environment
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          curl --fail --location --retry 3 https://github.com/skylot/jadx/releases/download/v1.5.3/jadx-1.5.3.zip -o "$RUNNER_TEMP/jadx.zip"
+          echo "8280f3799c0273fe797a2bcd90258c943e451fd195f13d05400de5e6451d15ec  $RUNNER_TEMP/jadx.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/jadx.zip" -d "$RUNNER_TEMP/jadx"
+      - name: Rebuild and audit packaged AutoPilot return preflight
+        run: python3 markertap/v1.140-recovery-progress/build_ci.py --sdk "$ANDROID_HOME" --jadx "$RUNNER_TEMP/jadx/lib/jadx-1.5.3-all.jar"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarkerTap-v1.140-return-progress-unsigned-evidence
+          path: recovery-progress-build-results/
+          if-no-files-found: warn
+          retention-days: 30
