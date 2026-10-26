@@ -1,0 +1,36 @@
+name: MarkerTap v1.141 visible-window and reward regression CI
+on:
+  push:
+    branches: ["markertap/reward-window-v1.141"]
+    paths:
+      - "markertap/v1.141-reward-window/**"
+      - ".github/workflows/markertap-v1141-reward-window.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Android build environment
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          curl --fail --location --retry 3 https://github.com/skylot/jadx/releases/download/v1.5.3/jadx-1.5.3.zip -o "$RUNNER_TEMP/jadx.zip"
+          echo "8280f3799c0273fe797a2bcd90258c943e451fd195f13d05400de5e6451d15ec  $RUNNER_TEMP/jadx.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/jadx.zip" -d "$RUNNER_TEMP/jadx"
+      - name: Rebuild, regress and inspect shipping callback
+        run: python3 markertap/v1.141-reward-window/build_ci.py --sdk "$ANDROID_HOME" --jadx "$RUNNER_TEMP/jadx/lib/jadx-1.5.3-all.jar"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarkerTap-v1.141-reward-window-unsigned-evidence
+          path: reward-window-build-results/
+          if-no-files-found: warn
+          retention-days: 30

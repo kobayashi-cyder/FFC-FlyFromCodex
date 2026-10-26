@@ -1,0 +1,38 @@
+{
+  "status": "signed_host_verified",
+  "version_name": "1.141",
+  "version_code": 144,
+  "package": "jp.tapmarker.lite",
+  "source_commit": null,
+  "apk": "MarkerTap-v1.141-signed.apk",
+  "apk_sha256": "3b35740dcdbeb76615eec7218a861a5b679299c181070587c898a549cf68321f",
+  "apk_size_bytes": 5102363,
+  "signature_verified": true,
+  "signing_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "core_tests": "passed",
+  "host_anr_tests": "passed",
+  "apk_audits": "passed",
+  "new_regression_checks": "inherited core/host/replay tests, 25 return checks, visible-window/capture-clock/reward regressions",
+  "incident_replay": "8 exact result digests matched",
+  "previous_v1133_rejected": true,
+  "device_tested": false,
+  "daily_completion_verified": false,
+  "three_day_unattended_run_verified": false,
+  "source_base_commit": "5ed7ae752666325c1121e0140a6114da61a5b7fb",
+  "source_branch": "markertap/reward-window-v1.141",
+  "additional_behavior_checks": {
+    "visible_window": 22,
+    "physical_capture_watchdog": 97,
+    "farm_reward_incident": 83,
+    "total": 202
+  },
+  "packaged_reward_window_checks": 16,
+  "packaged_return_progress_checks": 12,
+  "signature_schemes_verified": [
+    "v2",
+    "v3"
+  ],
+  "previous_signing_certificate_match": true,
+  "actual_pixel10_or_f52a_execution": false,
+  "reference_provenance": "reference-provenance.json"
+}
