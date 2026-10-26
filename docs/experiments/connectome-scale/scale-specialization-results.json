@@ -1,0 +1,1679 @@
+{
+  "scope": "Two sequential tasks: sin(3x), x\u00b2. Same scalar parameter budget per architecture. Known task router; tanh units. 81 train inputs, 103 heldout interpolation inputs. LR=0.4/width and initial output weight scale=0.2/sqrt(width) differ from previous experiment to control instability; compare within this sweep. Fixed epochs, not equal FLOPs. Not BANC/APK or biological scaling.",
+  "summary": [
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "shared_mean_mse": 0.09359445701959643,
+      "specialized_mean_mse": 0.08719597166037735,
+      "specialized_wins": 17,
+      "seeds": 20
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "shared_mean_mse": 0.05130620303258802,
+      "specialized_mean_mse": 0.015177393178706932,
+      "specialized_wins": 20,
+      "seeds": 20
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "shared_mean_mse": 0.09642618081839369,
+      "specialized_mean_mse": 0.09316299830923208,
+      "specialized_wins": 16,
+      "seeds": 20
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "shared_mean_mse": 0.051409560108507356,
+      "specialized_mean_mse": 0.03397185302512829,
+      "specialized_wins": 19,
+      "seeds": 20
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "shared_mean_mse": 0.0986321759566153,
+      "specialized_mean_mse": 0.09700587963667684,
+      "specialized_wins": 15,
+      "seeds": 20
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "shared_mean_mse": 0.060535191159982335,
+      "specialized_mean_mse": 0.05233861545619045,
+      "specialized_wins": 19,
+      "seeds": 20
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "shared_mean_mse": 0.09847977298978736,
+      "specialized_mean_mse": 0.09805405648548825,
+      "specialized_wins": 11,
+      "seeds": 20
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "shared_mean_mse": 0.060424395683875066,
+      "specialized_mean_mse": 0.059449728348107925,
+      "specialized_wins": 14,
+      "seeds": 20
+    }
+  ],
+  "results": [
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 0,
+      "shared_mse": 0.09997321425506003,
+      "specialized_mse": 0.08794345430447836,
+      "shared_A_before": 0.1139304755380911,
+      "shared_A_after": 0.11425934314144832
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 1,
+      "shared_mse": 0.11296497195967628,
+      "specialized_mse": 0.11285403654844339,
+      "shared_A_before": 0.13961464632033754,
+      "shared_A_after": 0.13968106326923346
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 2,
+      "shared_mse": 0.0924746247165048,
+      "specialized_mse": 0.0841157630030199,
+      "shared_A_before": 0.11088839672828071,
+      "shared_A_after": 0.11271996385520551
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 3,
+      "shared_mse": 0.07784022610769356,
+      "specialized_mse": 0.06479445885796306,
+      "shared_A_before": 0.07811400361420902,
+      "shared_A_after": 0.0792845593768972
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 4,
+      "shared_mse": 0.0915728160010604,
+      "specialized_mse": 0.08495016442225353,
+      "shared_A_before": 0.10976046876770605,
+      "shared_A_after": 0.11022210170637622
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 5,
+      "shared_mse": 0.10233520802145951,
+      "specialized_mse": 0.09625369398585507,
+      "shared_A_before": 0.12731972292644547,
+      "shared_A_after": 0.12788048334557106
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 6,
+      "shared_mse": 0.08648651073980626,
+      "specialized_mse": 0.0810869386482235,
+      "shared_A_before": 0.10641340147561733,
+      "shared_A_after": 0.10724737316241198
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 7,
+      "shared_mse": 0.09842922095828327,
+      "specialized_mse": 0.11168187687511125,
+      "shared_A_before": 0.12298358982478826,
+      "shared_A_after": 0.12421494715665092
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 8,
+      "shared_mse": 0.08966669109512379,
+      "specialized_mse": 0.08827804819672375,
+      "shared_A_before": 0.11452172973783337,
+      "shared_A_after": 0.11858690945043326
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 9,
+      "shared_mse": 0.08017496344778877,
+      "specialized_mse": 0.07985822760849741,
+      "shared_A_before": 0.09974551917869762,
+      "shared_A_after": 0.10139372104396009
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 10,
+      "shared_mse": 0.10635252814751014,
+      "specialized_mse": 0.11431724939289407,
+      "shared_A_before": 0.1275517468879635,
+      "shared_A_after": 0.1280466497314615
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 11,
+      "shared_mse": 0.1029666111624787,
+      "specialized_mse": 0.09421278303704811,
+      "shared_A_before": 0.12572676560453655,
+      "shared_A_after": 0.1260198106966336
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 12,
+      "shared_mse": 0.09965100316429609,
+      "specialized_mse": 0.09372741445481066,
+      "shared_A_before": 0.12360096506582628,
+      "shared_A_after": 0.1240396509061556
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 13,
+      "shared_mse": 0.08027148760815238,
+      "specialized_mse": 0.06135045996152226,
+      "shared_A_before": 0.09431257012212782,
+      "shared_A_after": 0.09682838617987201
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 14,
+      "shared_mse": 0.06927842053194347,
+      "specialized_mse": 0.05678528237596567,
+      "shared_A_before": 0.08027789498336366,
+      "shared_A_after": 0.08416453213594621
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 15,
+      "shared_mse": 0.09738568989431656,
+      "specialized_mse": 0.09837195374411566,
+      "shared_A_before": 0.12046090534105443,
+      "shared_A_after": 0.1209396103049542
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 16,
+      "shared_mse": 0.10219931133075426,
+      "specialized_mse": 0.09545817663195252,
+      "shared_A_before": 0.12164237824808583,
+      "shared_A_after": 0.12187667847601794
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 17,
+      "shared_mse": 0.08743645617915644,
+      "specialized_mse": 0.06657015767584218,
+      "shared_A_before": 0.10403143647996216,
+      "shared_A_after": 0.10452997621502007
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 18,
+      "shared_mse": 0.08725004955677859,
+      "specialized_mse": 0.07942650461610617,
+      "shared_A_before": 0.09207443463757727,
+      "shared_A_after": 0.0934320373904651
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 400,
+      "seed": 19,
+      "shared_mse": 0.10717913551408534,
+      "specialized_mse": 0.09188278886672033,
+      "shared_A_before": 0.12762016317252875,
+      "shared_A_after": 0.12731595691831255
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 0,
+      "shared_mse": 0.05213625420311922,
+      "specialized_mse": 0.009266013596961529,
+      "shared_A_before": 0.031044361782370966,
+      "shared_A_after": 0.06298516895835649
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 1,
+      "shared_mse": 0.0715401341115781,
+      "specialized_mse": 0.041208595727809064,
+      "shared_A_before": 0.08920102508655207,
+      "shared_A_after": 0.12595001757215082
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 2,
+      "shared_mse": 0.04414190477434722,
+      "specialized_mse": 0.00856435051849764,
+      "shared_A_before": 0.02757920135051418,
+      "shared_A_after": 0.0719268805683725
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 3,
+      "shared_mse": 0.020694273411277185,
+      "specialized_mse": 0.008369035387145804,
+      "shared_A_before": 0.015253135525379814,
+      "shared_A_after": 0.03292338148839406
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 4,
+      "shared_mse": 0.03238054644695024,
+      "specialized_mse": 0.011866879322608135,
+      "shared_A_before": 0.03965034890921916,
+      "shared_A_after": 0.05806598908061172
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 5,
+      "shared_mse": 0.07717421361295655,
+      "specialized_mse": 0.012127851929732397,
+      "shared_A_before": 0.06281889249585584,
+      "shared_A_after": 0.14601260025766505
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 6,
+      "shared_mse": 0.022502156450248972,
+      "specialized_mse": 0.008801691744894568,
+      "shared_A_before": 0.02808777047790438,
+      "shared_A_after": 0.03875683526979031
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 7,
+      "shared_mse": 0.05094628445949964,
+      "specialized_mse": 0.04081098204823033,
+      "shared_A_before": 0.05189329527367271,
+      "shared_A_after": 0.09142909671408597
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 8,
+      "shared_mse": 0.07680166625583935,
+      "specialized_mse": 0.0087744990529233,
+      "shared_A_before": 0.03792267779869991,
+      "shared_A_after": 0.14647731173897502
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 9,
+      "shared_mse": 0.02787989663137145,
+      "specialized_mse": 0.007754442865707595,
+      "shared_A_before": 0.023551929339953065,
+      "shared_A_after": 0.04849376077367277
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 10,
+      "shared_mse": 0.07051469951898019,
+      "specialized_mse": 0.05315663757691785,
+      "shared_A_before": 0.04292918226266139,
+      "shared_A_after": 0.09479706197721044
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 11,
+      "shared_mse": 0.05206915596902795,
+      "specialized_mse": 0.014529007298222443,
+      "shared_A_before": 0.059323452378290974,
+      "shared_A_after": 0.0938254586275733
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 12,
+      "shared_mse": 0.03637372613251508,
+      "specialized_mse": 0.011928527104424037,
+      "shared_A_before": 0.04724305694231169,
+      "shared_A_after": 0.061489260358618625
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 13,
+      "shared_mse": 0.017487492545736755,
+      "specialized_mse": 0.00841063848716854,
+      "shared_A_before": 0.023300720963134156,
+      "shared_A_after": 0.028856442501900996
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 14,
+      "shared_mse": 0.03428960032094158,
+      "specialized_mse": 0.006650528684244364,
+      "shared_A_before": 0.013471480477714478,
+      "shared_A_after": 0.058623180248624895
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 15,
+      "shared_mse": 0.05450191861637747,
+      "specialized_mse": 0.01382644044693094,
+      "shared_A_before": 0.04733812106571732,
+      "shared_A_after": 0.10120669501742476
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 16,
+      "shared_mse": 0.04710096175925564,
+      "specialized_mse": 0.011267981899461583,
+      "shared_A_before": 0.04922032299673456,
+      "shared_A_after": 0.07399113956134881
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 17,
+      "shared_mse": 0.035811340459630206,
+      "specialized_mse": 0.009618023371357661,
+      "shared_A_before": 0.02579920138204827,
+      "shared_A_after": 0.06484425234150082
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 18,
+      "shared_mse": 0.05672270417576796,
+      "specialized_mse": 0.007748045510480334,
+      "shared_A_before": 0.017825800842231943,
+      "shared_A_after": 0.08578053698986204
+    },
+    {
+      "expert_width": 16,
+      "parameters": 98,
+      "steps_per_task": 1600,
+      "seed": 19,
+      "shared_mse": 0.1450551307963396,
+      "specialized_mse": 0.008867691000420622,
+      "shared_A_before": 0.045031198376333126,
+      "shared_A_after": 0.27707692512335275
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 0,
+      "shared_mse": 0.098986124152706,
+      "specialized_mse": 0.10033996915212601,
+      "shared_A_before": 0.12053937278664222,
+      "shared_A_after": 0.1208048209059259
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 1,
+      "shared_mse": 0.09790745867992301,
+      "specialized_mse": 0.09118162885680227,
+      "shared_A_before": 0.11043470303056985,
+      "shared_A_after": 0.11054542118248903
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 2,
+      "shared_mse": 0.09724642973094769,
+      "specialized_mse": 0.09185640091521577,
+      "shared_A_before": 0.1182722397194125,
+      "shared_A_after": 0.11891934274144877
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 3,
+      "shared_mse": 0.08171652182872496,
+      "specialized_mse": 0.07757266856977696,
+      "shared_A_before": 0.09187768154912376,
+      "shared_A_after": 0.09237853266673157
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 4,
+      "shared_mse": 0.0955060171179869,
+      "specialized_mse": 0.09031789078517469,
+      "shared_A_before": 0.11412016400167067,
+      "shared_A_after": 0.11420805979389571
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 5,
+      "shared_mse": 0.10341029936295026,
+      "specialized_mse": 0.10233388563666848,
+      "shared_A_before": 0.12493266179714027,
+      "shared_A_after": 0.12497135852980233
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 6,
+      "shared_mse": 0.09401606762428422,
+      "specialized_mse": 0.08952042703339584,
+      "shared_A_before": 0.11219029942183298,
+      "shared_A_after": 0.11240186514479909
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 7,
+      "shared_mse": 0.09979853945632253,
+      "specialized_mse": 0.09446492363995693,
+      "shared_A_before": 0.12123669427371005,
+      "shared_A_after": 0.12158860472422058
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 8,
+      "shared_mse": 0.09040203408757574,
+      "specialized_mse": 0.09018676321014671,
+      "shared_A_before": 0.11335900986229638,
+      "shared_A_after": 0.11354529984355523
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 9,
+      "shared_mse": 0.09514584456916819,
+      "specialized_mse": 0.09146535245599774,
+      "shared_A_before": 0.10689058830229839,
+      "shared_A_after": 0.10706281055333489
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 10,
+      "shared_mse": 0.1068372064259151,
+      "specialized_mse": 0.1041728784150856,
+      "shared_A_before": 0.12912692086600874,
+      "shared_A_after": 0.1292173162686735
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 11,
+      "shared_mse": 0.10409661337528556,
+      "specialized_mse": 0.10319209911874849,
+      "shared_A_before": 0.12988497439970392,
+      "shared_A_after": 0.1300187504054745
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 12,
+      "shared_mse": 0.10263205994099292,
+      "specialized_mse": 0.10465120692832561,
+      "shared_A_before": 0.12733661213882475,
+      "shared_A_after": 0.12750189801064268
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 13,
+      "shared_mse": 0.09316151431619027,
+      "specialized_mse": 0.0807449631054834,
+      "shared_A_before": 0.10856427523833828,
+      "shared_A_after": 0.10879420299047603
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 14,
+      "shared_mse": 0.08815826773067659,
+      "specialized_mse": 0.07510214230502146,
+      "shared_A_before": 0.09458814996014858,
+      "shared_A_after": 0.09486388342552288
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 15,
+      "shared_mse": 0.09699821176548147,
+      "specialized_mse": 0.09465431354304767,
+      "shared_A_before": 0.12079036536803003,
+      "shared_A_after": 0.1210857457099884
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 16,
+      "shared_mse": 0.10003712771841886,
+      "specialized_mse": 0.1029144813128641,
+      "shared_A_before": 0.12052914794780394,
+      "shared_A_after": 0.12074286222738233
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 17,
+      "shared_mse": 0.08311213041993853,
+      "specialized_mse": 0.08320405502000183,
+      "shared_A_before": 0.1025679813504702,
+      "shared_A_after": 0.10293210062989094
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 18,
+      "shared_mse": 0.09473453749458022,
+      "specialized_mse": 0.09258775192205655,
+      "shared_A_before": 0.10953502631404434,
+      "shared_A_after": 0.10978027677893268
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 400,
+      "seed": 19,
+      "shared_mse": 0.10462061056980462,
+      "specialized_mse": 0.10279616425874563,
+      "shared_A_before": 0.12999280695120183,
+      "shared_A_after": 0.13005520390153685
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 0,
+      "shared_mse": 0.05432221704256714,
+      "specialized_mse": 0.04005170739518144,
+      "shared_A_before": 0.0729407807662484,
+      "shared_A_after": 0.07892593308840497
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 1,
+      "shared_mse": 0.05519919689504936,
+      "specialized_mse": 0.024218807641741828,
+      "shared_A_before": 0.05486908831157219,
+      "shared_A_after": 0.05784129889786926
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 2,
+      "shared_mse": 0.052138389045528644,
+      "specialized_mse": 0.028849442682863914,
+      "shared_A_before": 0.06566586506859393,
+      "shared_A_after": 0.07743553494393156
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 3,
+      "shared_mse": 0.03130892942173852,
+      "specialized_mse": 0.015637549324307595,
+      "shared_A_before": 0.031181197010266115,
+      "shared_A_after": 0.04030387303486651
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 4,
+      "shared_mse": 0.047712016470831155,
+      "specialized_mse": 0.0320075082624325,
+      "shared_A_before": 0.06638873364384006,
+      "shared_A_after": 0.0690667826032894
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 5,
+      "shared_mse": 0.0676358603283963,
+      "specialized_mse": 0.05626075677789747,
+      "shared_A_before": 0.08711870049565383,
+      "shared_A_after": 0.089396636563415
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 6,
+      "shared_mse": 0.045896546764116676,
+      "specialized_mse": 0.02635985599698681,
+      "shared_A_before": 0.062114828545504194,
+      "shared_A_after": 0.06630021378836887
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 7,
+      "shared_mse": 0.05963013148768397,
+      "specialized_mse": 0.03066456586699276,
+      "shared_A_before": 0.07470792901981789,
+      "shared_A_after": 0.08316334619001887
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 8,
+      "shared_mse": 0.03963621481083781,
+      "specialized_mse": 0.028497502652028703,
+      "shared_A_before": 0.06058796362924992,
+      "shared_A_after": 0.06426834194141792
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 9,
+      "shared_mse": 0.054689644989330204,
+      "specialized_mse": 0.026542364349587698,
+      "shared_A_before": 0.05138590879458016,
+      "shared_A_after": 0.06408551071798839
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 10,
+      "shared_mse": 0.06913648197476906,
+      "specialized_mse": 0.044882600502346395,
+      "shared_A_before": 0.09201618954023977,
+      "shared_A_after": 0.09603636269883489
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 11,
+      "shared_mse": 0.06239353852266569,
+      "specialized_mse": 0.05106740461379376,
+      "shared_A_before": 0.09252227125258551,
+      "shared_A_after": 0.09580431696950592
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 12,
+      "shared_mse": 0.06069891274823113,
+      "specialized_mse": 0.0483839762710995,
+      "shared_A_before": 0.0870016726128847,
+      "shared_A_after": 0.092041260975257
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 13,
+      "shared_mse": 0.04105194017334759,
+      "specialized_mse": 0.01960298709857133,
+      "shared_A_before": 0.05017782893712526,
+      "shared_A_after": 0.05229346721845366
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 14,
+      "shared_mse": 0.036229609811608506,
+      "specialized_mse": 0.014013823979147702,
+      "shared_A_before": 0.03170143824913697,
+      "shared_A_after": 0.036557910544218135
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 15,
+      "shared_mse": 0.051963446513742934,
+      "specialized_mse": 0.03278149248876405,
+      "shared_A_before": 0.07462642029820844,
+      "shared_A_after": 0.08238205176633875
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 16,
+      "shared_mse": 0.06052340718132454,
+      "specialized_mse": 0.04850417137792473,
+      "shared_A_before": 0.07928174977354566,
+      "shared_A_after": 0.08651589149737886
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 17,
+      "shared_mse": 0.03379845078107099,
+      "specialized_mse": 0.022628777968830827,
+      "shared_A_before": 0.04954842932427771,
+      "shared_A_after": 0.05560159014897163
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 18,
+      "shared_mse": 0.042624617581493995,
+      "specialized_mse": 0.044037185072476594,
+      "shared_A_before": 0.05073982486059976,
+      "shared_A_after": 0.056048970628892324
+    },
+    {
+      "expert_width": 32,
+      "parameters": 194,
+      "steps_per_task": 1600,
+      "seed": 19,
+      "shared_mse": 0.061601649625812854,
+      "specialized_mse": 0.04444458017959035,
+      "shared_A_before": 0.09086601538876911,
+      "shared_A_after": 0.0920308868822385
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 0,
+      "shared_mse": 0.10240177947859103,
+      "specialized_mse": 0.10428640729262346,
+      "shared_A_before": 0.1237795299982772,
+      "shared_A_after": 0.1238170196058038
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 1,
+      "shared_mse": 0.10293020210175095,
+      "specialized_mse": 0.09747998770280977,
+      "shared_A_before": 0.12237979145932286,
+      "shared_A_after": 0.1224710774332535
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 2,
+      "shared_mse": 0.09675028824240525,
+      "specialized_mse": 0.0946830091045364,
+      "shared_A_before": 0.11800868928588874,
+      "shared_A_after": 0.11815105583563523
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 3,
+      "shared_mse": 0.08761065999428443,
+      "specialized_mse": 0.0829201201993337,
+      "shared_A_before": 0.09542685202601166,
+      "shared_A_after": 0.09548477904743438
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 4,
+      "shared_mse": 0.09820883781661072,
+      "specialized_mse": 0.09658305196354208,
+      "shared_A_before": 0.11332175735656319,
+      "shared_A_after": 0.11333733958213456
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 5,
+      "shared_mse": 0.10394506119568762,
+      "specialized_mse": 0.10265591490587991,
+      "shared_A_before": 0.12735460510240298,
+      "shared_A_after": 0.12745077807181784
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 6,
+      "shared_mse": 0.10392873526570254,
+      "specialized_mse": 0.09680727402742503,
+      "shared_A_before": 0.12229989720990823,
+      "shared_A_after": 0.1223077681731837
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 7,
+      "shared_mse": 0.10322416497893386,
+      "specialized_mse": 0.1029630672970763,
+      "shared_A_before": 0.12120347251803101,
+      "shared_A_after": 0.12122146911310076
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 8,
+      "shared_mse": 0.09424550679917804,
+      "specialized_mse": 0.09159681831392454,
+      "shared_A_before": 0.11181023103958475,
+      "shared_A_after": 0.11184128052352131
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 9,
+      "shared_mse": 0.09714998088562385,
+      "specialized_mse": 0.09211713013336002,
+      "shared_A_before": 0.11842565248932067,
+      "shared_A_after": 0.1184700295803865
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 10,
+      "shared_mse": 0.10506310790888479,
+      "specialized_mse": 0.10465269626363433,
+      "shared_A_before": 0.13014089498846632,
+      "shared_A_after": 0.130190032739654
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 11,
+      "shared_mse": 0.10509895625695881,
+      "specialized_mse": 0.10658332066165666,
+      "shared_A_before": 0.12532412136218515,
+      "shared_A_after": 0.12532389945300673
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 12,
+      "shared_mse": 0.1036868426724128,
+      "specialized_mse": 0.10149471659916783,
+      "shared_A_before": 0.1254546892136737,
+      "shared_A_after": 0.12548273833521262
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 13,
+      "shared_mse": 0.0941033193050656,
+      "specialized_mse": 0.09398418633221699,
+      "shared_A_before": 0.11120792612829668,
+      "shared_A_after": 0.11129131483625289
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 14,
+      "shared_mse": 0.0941980111013701,
+      "specialized_mse": 0.09126565369343514,
+      "shared_A_before": 0.10905318369394848,
+      "shared_A_after": 0.10911814289076113
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 15,
+      "shared_mse": 0.09953818821443422,
+      "specialized_mse": 0.09964188406706193,
+      "shared_A_before": 0.11872588320316917,
+      "shared_A_after": 0.11874296820604455
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 16,
+      "shared_mse": 0.0964440379541994,
+      "specialized_mse": 0.09684793412928357,
+      "shared_A_before": 0.11292915943758478,
+      "shared_A_after": 0.11298267588674478
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 17,
+      "shared_mse": 0.09439841576691865,
+      "specialized_mse": 0.09048623889433875,
+      "shared_A_before": 0.10651092010361256,
+      "shared_A_after": 0.10652756450309098
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 18,
+      "shared_mse": 0.09392760390280548,
+      "specialized_mse": 0.08883087881182425,
+      "shared_A_before": 0.10735430430279616,
+      "shared_A_after": 0.10735887036212236
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 400,
+      "seed": 19,
+      "shared_mse": 0.09578981929048808,
+      "specialized_mse": 0.10423730234040621,
+      "shared_A_before": 0.10859506713147658,
+      "shared_A_after": 0.10865625381555503
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 0,
+      "shared_mse": 0.06818808205522645,
+      "specialized_mse": 0.06741132119690812,
+      "shared_A_before": 0.09290188162268732,
+      "shared_A_after": 0.09405807284366516
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 1,
+      "shared_mse": 0.07119243647557484,
+      "specialized_mse": 0.051472504733491825,
+      "shared_A_before": 0.08662057207384666,
+      "shared_A_after": 0.09051126123486357
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 2,
+      "shared_mse": 0.05850452748525016,
+      "specialized_mse": 0.048357002198446374,
+      "shared_A_before": 0.079704283295952,
+      "shared_A_after": 0.0829553548007587
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 3,
+      "shared_mse": 0.04213209590473642,
+      "specialized_mse": 0.026761464743404757,
+      "shared_A_before": 0.04297056730908711,
+      "shared_A_after": 0.04445049316964431
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 4,
+      "shared_mse": 0.05809852984731711,
+      "specialized_mse": 0.05200514728160224,
+      "shared_A_before": 0.07482194414159994,
+      "shared_A_after": 0.07531244219344958
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 5,
+      "shared_mse": 0.07090043577711999,
+      "specialized_mse": 0.06031788639847124,
+      "shared_A_before": 0.09892259404307603,
+      "shared_A_after": 0.10136413606320024
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 6,
+      "shared_mse": 0.07095460967972124,
+      "specialized_mse": 0.05255717636560292,
+      "shared_A_before": 0.08860411694214235,
+      "shared_A_after": 0.08876436362004227
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 7,
+      "shared_mse": 0.07089407551447773,
+      "specialized_mse": 0.06998918648640615,
+      "shared_A_before": 0.08850176148554965,
+      "shared_A_after": 0.08915153682996861
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 8,
+      "shared_mse": 0.05097759550779639,
+      "specialized_mse": 0.04084199161007607,
+      "shared_A_before": 0.06596169793854953,
+      "shared_A_after": 0.06663553590655243
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 9,
+      "shared_mse": 0.05474503199921366,
+      "specialized_mse": 0.041120548445944934,
+      "shared_A_before": 0.07703412131583103,
+      "shared_A_after": 0.07827960231062485
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 10,
+      "shared_mse": 0.0721897157847011,
+      "specialized_mse": 0.0687893823048857,
+      "shared_A_before": 0.10322256772160654,
+      "shared_A_after": 0.10434980867470228
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 11,
+      "shared_mse": 0.07620344340925166,
+      "specialized_mse": 0.07228554007426494,
+      "shared_A_before": 0.09795961200288522,
+      "shared_A_after": 0.09839720906303517
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 12,
+      "shared_mse": 0.06940494708567177,
+      "specialized_mse": 0.06366939854114503,
+      "shared_A_before": 0.09593304665263624,
+      "shared_A_after": 0.09699813110148407
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 13,
+      "shared_mse": 0.049498594901128054,
+      "specialized_mse": 0.04438540817764568,
+      "shared_A_before": 0.06508712726092719,
+      "shared_A_after": 0.06693522208597588
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 14,
+      "shared_mse": 0.0495859067773989,
+      "specialized_mse": 0.036989057478993115,
+      "shared_A_before": 0.06087789479722457,
+      "shared_A_after": 0.0633990403512179
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 15,
+      "shared_mse": 0.06057327990836234,
+      "specialized_mse": 0.05728048316343756,
+      "shared_A_before": 0.08322490326434438,
+      "shared_A_after": 0.08412358839829011
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 16,
+      "shared_mse": 0.058800020921095646,
+      "specialized_mse": 0.050809407791798655,
+      "shared_A_before": 0.07551234626468808,
+      "shared_A_after": 0.07714406605159703
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 17,
+      "shared_mse": 0.05297978570980319,
+      "specialized_mse": 0.0410458872385977,
+      "shared_A_before": 0.05672180338046764,
+      "shared_A_after": 0.05769132439201853
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 18,
+      "shared_mse": 0.05058747012943004,
+      "specialized_mse": 0.03701284955118417,
+      "shared_A_before": 0.05856516496458707,
+      "shared_A_after": 0.058760108266754374
+    },
+    {
+      "expert_width": 64,
+      "parameters": 386,
+      "steps_per_task": 1600,
+      "seed": 19,
+      "shared_mse": 0.05429323832637016,
+      "specialized_mse": 0.0636706653415021,
+      "shared_A_before": 0.059920540874553965,
+      "shared_A_after": 0.06234320068804334
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 0,
+      "shared_mse": 0.10080402311185557,
+      "specialized_mse": 0.10419623512763287,
+      "shared_A_before": 0.12058452801538119,
+      "shared_A_after": 0.12059129207621545
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 1,
+      "shared_mse": 0.10109715888597984,
+      "specialized_mse": 0.0981522356410022,
+      "shared_A_before": 0.11283912537072667,
+      "shared_A_after": 0.11285575499201835
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 2,
+      "shared_mse": 0.10183384766241829,
+      "specialized_mse": 0.09538545954254912,
+      "shared_A_before": 0.12391372825418669,
+      "shared_A_after": 0.12393541266846447
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 3,
+      "shared_mse": 0.09310156998583345,
+      "specialized_mse": 0.08820689093685949,
+      "shared_A_before": 0.10273712365358749,
+      "shared_A_after": 0.10274830837186967
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 4,
+      "shared_mse": 0.09701232227291993,
+      "specialized_mse": 0.09978867270368565,
+      "shared_A_before": 0.10904741653683131,
+      "shared_A_after": 0.10905187818835169
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 5,
+      "shared_mse": 0.10232148026472429,
+      "specialized_mse": 0.10574899266761177,
+      "shared_A_before": 0.11696370336209878,
+      "shared_A_after": 0.11696581804482625
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 6,
+      "shared_mse": 0.09545029525195972,
+      "specialized_mse": 0.09767571391905275,
+      "shared_A_before": 0.11049358280336688,
+      "shared_A_after": 0.11050803892317426
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 7,
+      "shared_mse": 0.10540361861392639,
+      "specialized_mse": 0.0987490405987554,
+      "shared_A_before": 0.1262495649714049,
+      "shared_A_after": 0.1262628123253909
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 8,
+      "shared_mse": 0.09515360727120023,
+      "specialized_mse": 0.09270168784073142,
+      "shared_A_before": 0.1110775895864387,
+      "shared_A_after": 0.11108830664070389
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 9,
+      "shared_mse": 0.09655241398045383,
+      "specialized_mse": 0.09492937713224939,
+      "shared_A_before": 0.11235660001597382,
+      "shared_A_after": 0.1123728587730872
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 10,
+      "shared_mse": 0.09849728097053746,
+      "specialized_mse": 0.10421318236962016,
+      "shared_A_before": 0.11350226649233384,
+      "shared_A_after": 0.11350278812696296
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 11,
+      "shared_mse": 0.10547516697789094,
+      "specialized_mse": 0.1059064247495156,
+      "shared_A_before": 0.12473224221188452,
+      "shared_A_after": 0.12473924753650882
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 12,
+      "shared_mse": 0.10153823820025545,
+      "specialized_mse": 0.10113176536752055,
+      "shared_A_before": 0.11963504110598053,
+      "shared_A_after": 0.11964200779375185
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 13,
+      "shared_mse": 0.09097010797151502,
+      "specialized_mse": 0.09560389385068935,
+      "shared_A_before": 0.10269484604407067,
+      "shared_A_after": 0.10270201225804122
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 14,
+      "shared_mse": 0.10153383166963557,
+      "specialized_mse": 0.09781513472444447,
+      "shared_A_before": 0.11911250490979719,
+      "shared_A_after": 0.11912031359736523
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 15,
+      "shared_mse": 0.10093928963252446,
+      "specialized_mse": 0.09883499542731972,
+      "shared_A_before": 0.12081385094143661,
+      "shared_A_after": 0.12082331944977838
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 16,
+      "shared_mse": 0.09917173137245572,
+      "specialized_mse": 0.09565579304219951,
+      "shared_A_before": 0.11364695645891716,
+      "shared_A_after": 0.11365009174778612
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 17,
+      "shared_mse": 0.09420025220051287,
+      "specialized_mse": 0.09492071312236575,
+      "shared_A_before": 0.10757311783938334,
+      "shared_A_after": 0.10758831408720829
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 18,
+      "shared_mse": 0.08977146346873799,
+      "specialized_mse": 0.09341852472472931,
+      "shared_A_before": 0.10772929804067237,
+      "shared_A_after": 0.10776263482884242
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 400,
+      "seed": 19,
+      "shared_mse": 0.09876776003041013,
+      "specialized_mse": 0.09804639622123079,
+      "shared_A_before": 0.11712538250478799,
+      "shared_A_after": 0.11714531707412328
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 0,
+      "shared_mse": 0.06673388560441952,
+      "specialized_mse": 0.06665326186362684,
+      "shared_A_before": 0.09018360979107018,
+      "shared_A_after": 0.09054154007497163
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 1,
+      "shared_mse": 0.06742771364885433,
+      "specialized_mse": 0.06102168222645958,
+      "shared_A_before": 0.07325230101151825,
+      "shared_A_after": 0.07374583734018256
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 2,
+      "shared_mse": 0.06369763926741312,
+      "specialized_mse": 0.055645635438174544,
+      "shared_A_before": 0.089827563409399,
+      "shared_A_after": 0.09040003206531201
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 3,
+      "shared_mse": 0.05221927351570142,
+      "specialized_mse": 0.04150995312405853,
+      "shared_A_before": 0.054973325420702004,
+      "shared_A_after": 0.055300559231110255
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 4,
+      "shared_mse": 0.05724100425855619,
+      "specialized_mse": 0.0641536327600973,
+      "shared_A_before": 0.06616510143632373,
+      "shared_A_after": 0.06640235063585097
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 5,
+      "shared_mse": 0.06752922675030522,
+      "specialized_mse": 0.07512465521546265,
+      "shared_A_before": 0.08281269871329884,
+      "shared_A_after": 0.0829980473323755
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 6,
+      "shared_mse": 0.05592723298709343,
+      "specialized_mse": 0.05892864714038036,
+      "shared_A_before": 0.06789641445406798,
+      "shared_A_after": 0.06823848866003465
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 7,
+      "shared_mse": 0.07449139978684757,
+      "specialized_mse": 0.06374525138564893,
+      "shared_A_before": 0.0971038633675241,
+      "shared_A_after": 0.09738731960314619
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 8,
+      "shared_mse": 0.053358879652423113,
+      "specialized_mse": 0.05213249553311569,
+      "shared_A_before": 0.0690249550552189,
+      "shared_A_after": 0.0693306197617056
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 9,
+      "shared_mse": 0.05699352426115281,
+      "specialized_mse": 0.055287877613336964,
+      "shared_A_before": 0.06977433383979592,
+      "shared_A_after": 0.07017853188832042
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 10,
+      "shared_mse": 0.05753204536100995,
+      "specialized_mse": 0.07334120682472837,
+      "shared_A_before": 0.0679935882366386,
+      "shared_A_after": 0.06810450757824513
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 11,
+      "shared_mse": 0.07246410605400108,
+      "specialized_mse": 0.07603704154225463,
+      "shared_A_before": 0.09459110649290432,
+      "shared_A_after": 0.09495292362872904
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 12,
+      "shared_mse": 0.06482881605966544,
+      "specialized_mse": 0.06473330161812194,
+      "shared_A_before": 0.08379833071648908,
+      "shared_A_after": 0.08405470213751806
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 13,
+      "shared_mse": 0.047500220974157514,
+      "specialized_mse": 0.052526902933015325,
+      "shared_A_before": 0.05394999775673921,
+      "shared_A_after": 0.054246727443720166
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 14,
+      "shared_mse": 0.063216737497163,
+      "specialized_mse": 0.056363975038621894,
+      "shared_A_before": 0.07885304935161352,
+      "shared_A_after": 0.07908263492649702
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 15,
+      "shared_mse": 0.064914432798503,
+      "specialized_mse": 0.06086535624009448,
+      "shared_A_before": 0.08834521274174767,
+      "shared_A_after": 0.08851585885065942
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 16,
+      "shared_mse": 0.060041056815925004,
+      "specialized_mse": 0.05424731697563068,
+      "shared_A_before": 0.07641235509899137,
+      "shared_A_after": 0.07663673409131558
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 17,
+      "shared_mse": 0.0532201192049562,
+      "specialized_mse": 0.05040218432935387,
+      "shared_A_before": 0.06628536632447014,
+      "shared_A_after": 0.06672638291864078
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 18,
+      "shared_mse": 0.04852701104440557,
+      "specialized_mse": 0.04849756255605477,
+      "shared_A_before": 0.06363587720939379,
+      "shared_A_after": 0.06435861544801975
+    },
+    {
+      "expert_width": 128,
+      "parameters": 770,
+      "steps_per_task": 1600,
+      "seed": 19,
+      "shared_mse": 0.06062358813494771,
+      "specialized_mse": 0.057776626603921084,
+      "shared_A_before": 0.08091109934819507,
+      "shared_A_after": 0.08148324215245646
+    }
+  ]
+}

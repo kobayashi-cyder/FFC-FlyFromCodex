@@ -1,0 +1,71 @@
+{
+  "scope": "Synthetic sparse spatial graph; 24 near + 2 random candidate edges per node; random signed weights; 32 tanh activity ticks. Not learned BANC weights, biological generation, accuracy, watts, growth continuity, pruning or APK. 16 reachability queries per scale only. Bytes are persistent core-array sum, not peak process RAM. Independent seeds per size.",
+  "results": [
+    {
+      "nodes": 1024,
+      "unique_directed_edges": 26583,
+      "density": 0.02537630590175953,
+      "generation_seconds": 0.0042530430073384196,
+      "32_activity_ticks_seconds": 0.0011031730100512505,
+      "core_circuit_positions_and_state_bytes": 237244,
+      "random_pairs": 16,
+      "reachable_pairs": 16,
+      "mean_absolute_final_activity": 0.016591110131752178
+    },
+    {
+      "nodes": 4096,
+      "unique_directed_edges": 106452,
+      "density": 0.006346583104395604,
+      "generation_seconds": 0.010290758014889434,
+      "32_activity_ticks_seconds": 0.003366256016306579,
+      "core_circuit_positions_and_state_bytes": 949924,
+      "random_pairs": 16,
+      "reachable_pairs": 16,
+      "mean_absolute_final_activity": 0.01369046100320356
+    },
+    {
+      "nodes": 16384,
+      "unique_directed_edges": 425930,
+      "density": 0.0015868097480047916,
+      "generation_seconds": 0.0430306360067334,
+      "32_activity_ticks_seconds": 0.01465207600267604,
+      "core_circuit_positions_and_state_bytes": 3800660,
+      "random_pairs": 16,
+      "reachable_pairs": 16,
+      "mean_absolute_final_activity": 0.014932255509511497
+    },
+    {
+      "nodes": 65536,
+      "unique_directed_edges": 1703901,
+      "density": 0.0003967264201172322,
+      "generation_seconds": 0.16940879100002348,
+      "32_activity_ticks_seconds": 0.06283308001002297,
+      "core_circuit_positions_and_state_bytes": 15204076,
+      "random_pairs": 16,
+      "reachable_pairs": 16,
+      "mean_absolute_final_activity": 0.01460238496224741
+    },
+    {
+      "nodes": 153962,
+      "unique_directed_edges": 4002956,
+      "density": 0.00016887157315090032,
+      "generation_seconds": 0.4291437469946686,
+      "32_activity_ticks_seconds": 0.21987751897540875,
+      "core_circuit_positions_and_state_bytes": 35718740,
+      "random_pairs": 16,
+      "reachable_pairs": 16,
+      "mean_absolute_final_activity": 0.014782366751723891
+    },
+    {
+      "nodes": 1000000,
+      "unique_directed_edges": 25999950,
+      "density": 2.5999975999976e-05,
+      "generation_seconds": 4.090863518009428,
+      "32_activity_ticks_seconds": 2.2226993149961345,
+      "core_circuit_positions_and_state_bytes": 231999604,
+      "random_pairs": 16,
+      "reachable_pairs": 16,
+      "mean_absolute_final_activity": 0.014804724507571924
+    }
+  ]
+}
