@@ -12,16 +12,68 @@ v1.140（PR21 / `5ed7ae752666325c1121e0140a6114da61a5b7fb`）を継承。version
 
 ## 検証
 
-追加の可視範囲22件、取得監視97件、実画像由来の報酬・状態遷移83件（合計202件）。既存core/host試験、8件の障害再生、旧版の負例、APK内の新しい呼び出し16項目と従来の復帰処理12項目を検証する。署名時は既存の公開証明書SHA-256との一致を必須とする。
+ローカルで署名済みAPKをビルドし、以下を通過しました。詳細は [validation-local.json](validation-local.json) に記録しています。
+
+| 検証 | 結果 |
+| --- | --- |
+| 可視ウインドウ範囲 | 22項目合格 |
+| 実画面の取得監視 | 97項目合格 |
+| 実画像由来の報酬判定・状態遷移 | 83項目合格 |
+| 新規の動作検証合計 | 202項目合格 |
+| 既存core / host試験 | 合格 |
+| 障害再生 | 8件の結果ダイジェスト一致 |
+| APK内の新しい呼び出し | 16項目合格 |
+| 既存の復帰処理 | 12項目合格 |
+| 同一証明書・署名v2/v3・版番号・整列 | 確認済み |
+
+コード改修コミット `cfc86e2651290e0b7df8a4c78951c3f631a704a4` の[GitHub Actions実行 #40414483942](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/40414483942)も成功しています。CIは鍵を使わない未署名ビルド、ローカル検証は従来鍵で署名したAPKに対する結果です。
 
 Pixel 10 / F-52Aでの実機入力、実際の報酬加算、長時間無人運転は未検証。
 
+## APKと署名
+
+| 項目 | 値 |
+| --- | --- |
+| 署名済みAPK | `MarkerTap-v1.141-signed.apk` |
+| 取得先 | この改修依頼の会話添付 |
+| ファイルサイズ | 5,102,363 bytes |
+| パッケージ | `jp.tapmarker.lite` |
+| versionName / versionCode | `1.141` / `144` |
+| 署名方式 | APK Signature Scheme v2 / v3 |
+| 改修ソース | `cfc86e2651290e0b7df8a4c78951c3f631a704a4` |
+| 作業ブランチ | `markertap/reward-window-v1.141` |
+| PR | [#22（ドラフト・未マージ）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/22) |
+
+APKのSHA-256：
+
+```text
+3b35740dcdbeb76615eec7218a861a5b679299c181070587c898a549cf68321f
+```
+
+従来版と一致した署名証明書SHA-256：
+
+```text
+7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1
+```
+
+Actions成果物の `MarkerTap-v1.141-reward-window-unsigned-evidence` は未署名APKと検証記録です。署名済み更新版の取得には、会話添付の上記ファイルを使ってください。公開済みの過去版は[Releases](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases)で確認できます。
+
+## 更新手順
+
+1. 旧版で「全停止」を押します。
+2. 会話添付の `MarkerTap-v1.141-signed.apk` を開き、既存アプリへの更新としてインストールします。
+3. アプリ情報で版を確認し、ユーザー補助の状態を確認します。
+4. 対象ゲームを開いて自律を開始します。今回の診断は実画面モードです。
+
+署名・パッケージ・版番号は更新用として検証済みですが、端末上でのインストールと動作は未検証です。設定を保持するため、更新失敗時に旧版をアンインストールせず、表示されたエラーを記録してください。
+
 ## 再構築
 
-リポジトリのルートで実行する。
+Java 17（`java` / `javac`）、Python 3、Bash、Android API 35 / Build Tools 35.0.0、JADX 1.5.3を用意します。リポジトリの `markertap/reward-window-v1.141` をチェックアウトし、ルートで実行してください。復元先は新しい空のディレクトリを指定します。
 
 ```bash
 python3 markertap/v1.141-reward-window/restore_project.py /tmp/markertap-v1141-source
+TAPMARKER_KEYSTORE=/private/path/to/lite-development.jks \
 python3 markertap/v1.141-reward-window/build_ci.py \
   --sdk /path/to/android-sdk \
   --jadx /path/to/jadx-1.5.3-all.jar \
@@ -31,3 +83,7 @@ python3 markertap/v1.141-reward-window/build_ci.py \
 署名には従来のJKSを `TAPMARKER_KEYSTORE` で指定する。未指定時の成果物は `unsigned` として明確に区別される。秘密鍵はソースに含めない。
 
 見本の再生成は `tools/PrepareRewardReference.java` を既存runtime APIとともにコンパイルし、元の診断JPEGとこのモジュールのパスを引数に実行する。テスト用保存物は見出しとボタン周辺の2本の画像領域に限定し、残高・操作パネル・広告バナーは含めない。
+
+`build_ci.py` は独立した一時ディレクトリに再度ソースを復元し、ビルド・回帰・APK内部検査・署名検証を実行します。署名時は指定した出力先へ `MarkerTap-v1.141-signed.apk`、`validation.json`、`SHA256SUMS.txt` とログを保存します。ネットワーク接続が必要な依存物取得も含みます。
+
+次に確認する実機項目と診断の共有内容は [WORK_NEXT.md](../WORK_NEXT.md) にまとめています。
