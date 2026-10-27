@@ -20,15 +20,20 @@ Status: implementation branch; build and device validation are not yet confirmed
 
 The restore profile intentionally fails closed when an expected source patch anchor changes. This is preferable to silently producing a mislabeled APK.
 
+## Autonomy scope
+
+MarkerTap12 is intended to become a bounded state-machine controller, not merely a coordinate repeater. The first target is Kurashiru mini-game 「農園うさぎ」, with manual marker mode retained as fallback. The controller must classify only known states, select state-allowed actions, verify the post-tap frame, and pause safely on unknown/stale frames or repeated no-progress. Do not invent game coordinates or claim unknown-screen learning. See [AUTONOMY_CONTRACT.md](AUTONOMY_CONTRACT.md) for the explicit states, diagnostics, and acceptance gates.
+
 ## Release gates
 
 - [ ] Source restore and MarkerTap12 audit pass in CI.
 - [ ] Host regression tests and Android build pass.
 - [ ] APK package name, version, alignment, and signature are inspected.
 - [ ] APK installs alongside the existing MarkerTap app on F-52A.
-- [ ] Manual marker taps actually reach the target app.
-- [ ] Volume-button stop/resume works and cannot leave tapping stuck on.
+- [ ] Manual marker taps actually reach the target app and produce diagnostics.
+- [ ] The state-machine controller passes recorded-fixture tests, including unknown/stale-frame safe stop.
+- [ ] At least one Farm Rabbit state transition is verified on F-52A from frame recognition through dispatched tap to a changed frame.
 - [ ] Recovery after popup/ad transitions is verified.
 - [ ] Diagnostic ZIP confirms the actual input event path.
 
-A CI build does not prove real game taps work. Do not call this a release until F-52A device tests pass.
+Volume-button stop/resume is not an independent release gate for this iteration. A reachable emergency stop/cancel path and bounded automatic behavior remain required. A CI build does not prove real game taps or autonomy; do not call this a release until the source/build checks pass and F-52A input behavior is verified.
