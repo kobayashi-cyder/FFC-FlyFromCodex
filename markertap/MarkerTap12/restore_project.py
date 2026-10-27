@@ -47,7 +47,7 @@ def apply_profile(project):
         text = manifest.read_text(encoding="utf-8")
         text = text.replace('package="jp.tapmarker.lite"', 'package="jp.tapmarker12.lite"')
         text = re.sub(r'android:versionCode="\d+"', 'android:versionCode="1200"', text, count=1)
-        text = re.sub(r'android:versionName="[^"]+"', 'android:versionName="12.0.0"', text, count=1)
+        text = re.sub(r'android:versionName="[^"]+"', 'android:versionName="12.00"', text, count=1)
         manifest.write_text(text, encoding="utf-8")
 
     for path in project.rglob("*"):
@@ -58,14 +58,14 @@ def apply_profile(project):
         except (UnicodeDecodeError, OSError):
             continue
         updated = data.replace("jp.tapmarker.lite", "jp.tapmarker12.lite")
-        updated = re.sub(r'(def manifest_version\(data, code=)\d+(, version=")[^"]+("\):)', r'\g<1>1200\g<2>12.0.0\g<3>', updated)
+        updated = re.sub(r'(def manifest_version\(data, code=)\d+(, version=")[^"]+("\):)', r'\g<1>1200\g<2>12.00\g<3>', updated)
         updated = re.sub(r'versionCode\s*=?\s*\d+', 'versionCode1200', updated)
         updated = re.sub(r"(['\"]version_code['\"]\s*:\s*)\d+", r'\g<1>1200', updated)
         updated = re.sub(r'android:versionCode="\d+"', 'android:versionCode="1200"', updated)
-        updated = re.sub(r'android:versionName="[^"]+"', 'android:versionName="12.0.0"', updated)
-        updated = updated.replace('versionName="1.143"', 'versionName="12.0.0"').replace('versionName="1.144"', 'versionName="12.0.0"')
-        updated = updated.replace('return "v1.143"', 'return "v12.0.0"').replace('return "v1.144"', 'return "v12.0.0"')
-        updated = updated.replace("MarkerTap-v1.143", "MarkerTap12-v12.0.0").replace("MarkerTap-v1.144", "MarkerTap12-v12.0.0")
+        updated = re.sub(r'android:versionName="[^"]+"', 'android:versionName="12.00"', updated)
+        updated = updated.replace('versionName="1.143"', 'versionName="12.00"').replace('versionName="1.144"', 'versionName="12.00"')
+        updated = updated.replace('return "v1.143"', 'return "v12.00"').replace('return "v1.144"', 'return "v12.00"')
+        updated = updated.replace("MarkerTap-v1.143", "MarkerTap12-v12.00").replace("MarkerTap-v1.144", "MarkerTap12-v12.00")
         if updated != data:
             path.write_text(updated, encoding="utf-8")
 
