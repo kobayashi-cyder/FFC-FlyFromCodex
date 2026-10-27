@@ -12,7 +12,7 @@ v1.140（PR21 / `5ed7ae752666325c1121e0140a6114da61a5b7fb`）を継承。version
 
 ## 検証
 
-ローカルで署名済みAPKをビルドし、以下を通過しました。詳細は [validation-local.json](validation-local.json) に記録しています。
+ローカル検証記録では署名済みAPKのビルドと検査が報告されています。詳細は [validation-local.json](validation-local.json) に記録しています。ただし、**署名済みAPK本体を会話添付またはGitHubのダウンロード可能な配布物として現在取得できることは確認できていません**。検証記録とAPK本体の入手可能性を混同しないでください。
 
 | 検証 | 結果 |
 | --- | --- |
@@ -24,7 +24,7 @@ v1.140（PR21 / `5ed7ae752666325c1121e0140a6114da61a5b7fb`）を継承。version
 | 障害再生 | 8件の結果ダイジェスト一致 |
 | APK内の新しい呼び出し | 16項目合格 |
 | 既存の復帰処理 | 12項目合格 |
-| 同一証明書・署名v2/v3・版番号・整列 | 確認済み |
+| 同一証明書・署名v2/v3・版番号・整列 | 検証記録上は確認済み |
 
 コード改修コミット `cfc86e2651290e0b7df8a4c78951c3f631a704a4` の[GitHub Actions実行 #40414483942](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/40414483942)も成功しています。CIは鍵を使わない未署名ビルド、ローカル検証は従来鍵で署名したAPKに対する結果です。
 
@@ -34,38 +34,38 @@ Pixel 10 / F-52Aでの実機入力、実際の報酬加算、長時間無人運�
 
 | 項目 | 値 |
 | --- | --- |
-| 署名済みAPK | `MarkerTap-v1.141-signed.apk` |
-| 取得先 | この改修依頼の会話添付 |
-| ファイルサイズ | 5,102,363 bytes |
+| 署名済みAPK | `MarkerTap-v1.141-signed.apk`（検証記録上のファイル名） |
+| 取得先 | **現時点で確認できる公開ダウンロード先なし** |
+| ファイルサイズ | 検証記録上 5,102,363 bytes |
 | パッケージ | `jp.tapmarker.lite` |
 | versionName / versionCode | `1.141` / `144` |
-| 署名方式 | APK Signature Scheme v2 / v3 |
+| 署名方式 | 検証記録上 APK Signature Scheme v2 / v3 |
 | 改修ソース | `cfc86e2651290e0b7df8a4c78951c3f631a704a4` |
 | 作業ブランチ | `markertap/reward-window-v1.141` |
 | PR | [#22（ドラフト・未マージ）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/22) |
 
-APKのSHA-256：
+APKのSHA-256（検証記録値）：
 
 ```text
 3b35740dcdbeb76615eec7218a861a5b679299c181070587c898a549cf68321f
 ```
 
-従来版と一致した署名証明書SHA-256：
+従来版と一致した署名証明書SHA-256（検証記録値）：
 
 ```text
 7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1
 ```
 
-Actions成果物の `MarkerTap-v1.141-reward-window-unsigned-evidence` は未署名APKと検証記録です。署名済み更新版の取得には、会話添付の上記ファイルを使ってください。公開済みの過去版は[Releases](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases)で確認できます。
+Actions成果物の `MarkerTap-v1.141-reward-window-unsigned-evidence` は未署名APKと検証記録です。これは署名済みAPKの代わりにインストールする配布物ではありません。公開済みの過去版は[Releases](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases)で確認できます。最新版を配布するには、従来の非公開JKSを保護された環境で指定して再生成し、APKのハッシュを照合したうえでRelease資産として公開してください。秘密鍵やパスワードはリポジトリや会話へアップロードしないでください。
 
 ## 更新手順
 
 1. 旧版で「全停止」を押します。
-2. 会話添付の `MarkerTap-v1.141-signed.apk` を開き、既存アプリへの更新としてインストールします。
+2. **署名済みAPKのRelease資産が公開され、そのSHA-256が上記検証記録値と一致した後に限り**、APKを開いて既存アプリへの更新としてインストールします。
 3. アプリ情報で版を確認し、ユーザー補助の状態を確認します。
 4. 対象ゲームを開いて自律を開始します。今回の診断は実画面モードです。
 
-署名・パッケージ・版番号は更新用として検証済みですが、端末上でのインストールと動作は未検証です。設定を保持するため、更新失敗時に旧版をアンインストールせず、表示されたエラーを記録してください。
+署名・パッケージ・版番号は検証記録上で更新用として確認済みですが、端末上でのインストールと動作は未検証です。設定を保持するため、更新失敗時に旧版をアンインストールせず、表示されたエラーを記録してください。
 
 ## 再構築
 
