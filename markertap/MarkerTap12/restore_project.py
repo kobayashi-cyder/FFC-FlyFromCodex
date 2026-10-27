@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""Restore the reviewed MarkerTap source, then apply the independent MarkerTap12 profile."""
+from pathlib import Path
+import re, subprocess, sys
+
+HERE = Path(__file__).resolve().parent
+REPO_MARKERTAP = HERE.parent
+
+def once(path, before, after):
+    data = path.read_text(encoding="utf-8")
+    if data.count(before) != 1:
+        raise RuntimeError(f"{path}: expected exactly one patch anchor: {before[:100]!r}")
+    path.write_text(data.replace(before, after), encoding="utf-8")
+
+def add_gesture_diagnostics(project):
+    tap = project / "src/jp/tapmarker/TapService.java"
+    once(tap,
+         'long inputTargetVersion;String inputHold="未開始",lastInputError="";long inputRequests,inputCompleted,inputCancelled,inputRejected,inputTimedOut;',
+         'long inputTargetVersion;String inputHold="未開始",lastInputError="";long inputRequests,inputCompleted,inputCancelled,inputRejected,inputTimedOut;long inputEventSequence;String lastInputEvent="未送信";')
+    once(tap,
+         '+"\\n直近の入力エラー："+(lastInputError.isEmpty()?"なし":lastInputError)+"\\n本体認識画像："+',
+         '+"\\n直近の入力エラー："+(lastInputError.isEmpty()?"なし":lastInputError)+"\\n直近の入力イベント："+lastInputEvent+"\\n本体認識画像："+')
+    once(tap,
+         '  inputRequests++;inputHold="送信中";if(progressErrors!=null)progressErrors.action(target,"ジェスチャー",0,Float.NaN,Float.NaN);',
+         '  final long eventAt=SystemClock.uptimeMillis(),eventId=++inputEventSequence;String eventPhase=pilot==null?"":pilot.phases.engine.current;long eventFrameAt=pilot==null?0:pilot.phaseSampleTakenAt;final long eventRun=pilot==null?-1:(pilot.splitPilot.active?pilot.splitPilot.token:pilot.token);if(pilot!=null&&pilot.splitPilot.active&&pilot.splitPilot.slots!=null)for(SplitPilot.Slot slot:pilot.splitPilot.slots)if(slot.pkg.equals(target)){eventPhase=slot.phases.engine.current;eventFrameAt=slot.observedAt;break;}final long eventFrameAge=eventFrameAt<=0?-1:Math.max(0,eventAt-eventFrameAt);final String eventBase="id="+eventId+" target="+target+" phase="+eventPhase+" run="+eventRun+" frameAgeMs="+eventFrameAge+" strokes="+gesture.getStrokeCount();lastInputEvent=eventBase+" stage=request";inputRequests++;inputHold="送信中";if(progressErrors!=null)progressErrors.action(target,"ジェスチャー",0,Float.NaN,Float.NaN);')
+    once(tap,
+         'if(outcome==GestureDispatchGuard.COMPLETED){inputSuccessAt=SystemClock.uptimeMillis();inputCompleted++;inputHold="送信完了";if(callback!=null)callback.onCompleted(gesture);}',
+         'if(outcome==GestureDispatchGuard.COMPLETED){inputSuccessAt=SystemClock.uptimeMillis();inputCompleted++;inputHold="送信完了";if(eventId==inputEventSequence)lastInputEvent=eventBase+" stage=completed elapsedMs="+Math.max(0,SystemClock.uptimeMillis()-eventAt);if(callback!=null)callback.onCompleted(gesture);}')
+    once(tap,
+         'else{inputFailureAt=SystemClock.uptimeMillis();inputCancelled++;if(outcome==GestureDispatchGuard.TIMED_OUT)inputTimedOut++;inputHold=outcome==GestureDispatchGuard.TIMED_OUT?"入力完了の通知待ちを終了・再確認":"Androidによる入力中断";lastInputError=inputHold;if(callback!=null)callback.onCancelled(gesture);}',
+         'else{inputFailureAt=SystemClock.uptimeMillis();inputCancelled++;if(outcome==GestureDispatchGuard.TIMED_OUT)inputTimedOut++;inputHold=outcome==GestureDispatchGuard.TIMED_OUT?"入力完了の通知待ちを終了・再確認":"Androidによる入力中断";lastInputError=inputHold;if(eventId==inputEventSequence)lastInputEvent=eventBase+" stage="+(outcome==GestureDispatchGuard.TIMED_OUT?"timeout":"cancelled")+" elapsedMs="+Math.max(0,SystemClock.uptimeMillis()-eventAt)+" detail="+inputHold;if(callback!=null)callback.onCancelled(gesture);}')
+    once(tap,
+         '});if(!accepted){inputFailureAt=SystemClock.uptimeMillis();inputRejected++;inputHold="Androidが入力を拒否・他の入力処理中";lastInputError=inputHold;}return accepted;',
+         '});if(!accepted){inputFailureAt=SystemClock.uptimeMillis();inputRejected++;inputHold="Androidが入力を拒否・他の入力処理中";lastInputError=inputHold;lastInputEvent=eventBase+" stage=rejected elapsedMs="+Math.max(0,SystemClock.uptimeMillis()-eventAt);}else if(eventId==inputEventSequence)lastInputEvent=eventBase+" stage=queued accepted=true";return accepted;')
+    once(tap,
+         'catch(RuntimeException failure){inputFailureAt=SystemClock.uptimeMillis();inputRejected++;inputHold="入力エラー："+VirtualWindows.brief(failure);lastInputError=inputHold;return false;}',
+         'catch(RuntimeException failure){inputFailureAt=SystemClock.uptimeMillis();inputRejected++;inputHold="入力エラー："+VirtualWindows.brief(failure);lastInputError=inputHold;lastInputEvent=eventBase+" stage=exception elapsedMs="+Math.max(0,SystemClock.uptimeMillis()-eventAt)+" detail="+VirtualWindows.brief(failure);return false;}')
+    progress = project / "src/jp/tapmarker/ProgressErrors.java"
+    once(progress,
+         'if(w==null)b.append("\\n入力状況：").append(s.inputHold).append("\\n直近の入力エラー：").append(s.lastInputError);',
+         'if(w==null)b.append("\\n入力イベント診断：").append(s.inputReport());')
+
+def apply_profile(project):
+    # AndroidManifest.xml is generated by tools/package_apk.py at build time.
+    manifest = project / "AndroidManifest.xml"
+    if manifest.exists():
+        text = manifest.read_text(encoding="utf-8")
+        text = text.replace('package="jp.tapmarker.lite"', 'package="io.tapmarker.lite"')
+        text = re.sub(r'android:versionCode="\d+"', 'android:versionCode="1200"', text, count=1)
+        text = re.sub(r'android:versionName="[^"]+"', 'android:versionName="12.00"', text, count=1)
+        manifest.write_text(text, encoding="utf-8")
+
+    for path in project.rglob("*"):
+        if not path.is_file():
+            continue
+        try:
+            data = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        updated = data.replace("jp.tapmarker.lite", "io.tapmarker.lite")
+        updated = re.sub(r'(def manifest_version\(data, code=)\d+(, version=")[^"]+("\):)', r'\g<1>1200\g<2>12.00\g<3>', updated)
+        updated = re.sub(r'versionCode\s*=?\s*\d+', 'versionCode1200', updated)
+        updated = re.sub(r"(['\"]version_code['\"]\s*:\s*)\d+", r'\g<1>1200', updated)
+        updated = re.sub(r'android:versionCode="\d+"', 'android:versionCode="1200"', updated)
+        updated = re.sub(r'android:versionName="[^"]+"', 'android:versionName="12.00"', updated)
+        updated = updated.replace('versionName="1.143"', 'versionName="12.00"').replace('versionName="1.144"', 'versionName="12.00"')
+        updated = updated.replace('return "v1.143"', 'return "v12.00"').replace('return "v1.144"', 'return "v12.00"')
+        updated = updated.replace("MarkerTap-v1.143", "MarkerTap12-v12.00").replace("MarkerTap-v1.144", "MarkerTap12-v12.00")
+        if updated != data:
+            path.write_text(updated, encoding="utf-8")
+
+    # Patch the package ID in the parsed binary XML string pool. The replacement
+    # is equal-length, so all string offsets and chunk sizes remain valid.
+    packager = project / "tools/package_apk.py"
+    before = '                strings.append(bytes(data[at:at+length]).decode(encoding))\n                locations.append((at,length,encoding))'
+    after = ('                value = bytes(data[at:at+length]).decode(encoding)\n'
+             '                if value == "jp.tapmarker.lite":\n'
+             '                    replacement = "io.tapmarker.lite".encode(encoding)\n'
+             '                    if len(replacement) != length:\n'
+             '                        raise ValueError("replacement package ID must retain its encoded length")\n'
+             '                    data[at:at+length] = replacement\n'
+             '                    value = "io.tapmarker.lite"\n'
+             '                strings.append(value)\n'
+             '                locations.append((at,length,encoding))')
+    once(packager, before, after)
+    host_tests = project / "run-host-tests.sh"
+    once(host_tests, "'1.143'.encode('utf-16le')", "'12.00'.encode('utf-16le')")
+    once(host_tests, "ManifestVersionTest: v1.143/versionCode1200 rewrite passed", "ManifestVersionTest: v12.00/versionCode1200 rewrite passed")
+
+    # Manifest generation inputs may live outside package_apk.py.
+    found_package = []
+    for item in project.rglob("*"):
+        if not item.is_file():
+            continue
+        try:
+            body = item.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        if "io.tapmarker.lite" in body:
+            found_package.append(str(item.relative_to(project)))
+    if not found_package:
+        raise RuntimeError("MarkerTap12 package ID not found in restored text sources")
+    print("MarkerTap12 package source: " + ", ".join(found_package[:12]))
+    print("MarkerTap12 package/version profile patched; Android SDK metadata will be checked from the built APK")
+
+def main():
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: restore_project.py DESTINATION")
+    project = Path(sys.argv[1]).resolve()
+    source = REPO_MARKERTAP / "v1.143-kaitaku-actions" / "restore_project.py"
+    subprocess.run([sys.executable, str(source), str(project)], check=True)
+    add_gesture_diagnostics(project)
+    apply_profile(project)
+
+if __name__ == "__main__":
+    main()
