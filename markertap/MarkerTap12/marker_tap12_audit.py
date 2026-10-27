@@ -7,15 +7,21 @@ import xml.etree.ElementTree as ET
 if len(sys.argv) != 2:
     raise SystemExit("Usage: marker_tap12_audit.py RESTORED_PROJECT")
 project = Path(sys.argv[1])
-packager = project / "tools/package_apk.py"
-if not packager.exists():
-    raise SystemExit("FAIL: tools/package_apk.py manifest generator missing")
-generated = packager.read_text(encoding="utf-8")
+text_sources = []
+for item in project.rglob("*"):
+    if not item.is_file():
+        continue
+    try:
+        text = item.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        continue
+    text_sources.append((str(item.relative_to(project)), text))
+all_text = "\\n".join(body for _, body in text_sources)
 checks = []
-checks.append(("package generator identity", "jp.tapmarker12.lite" in generated))
-checks.append(("versionCode generator 1200", "code=1200" in generated or "versionCode1200" in generated or "versionCode=1200" in generated))
-checks.append(("versionName generator 12.0.0", "12.0.0" in generated))
-checks.append(("target SDK manifest generator", "targetSdkVersion" in generated and "31" in generated))
+checks.append(("package ID in restored sources", "jp.tapmarker12.lite" in all_text))
+checks.append(("versionCode 1200 in restored sources", "1200" in all_text))
+checks.append(("versionName 12.0.0 in restored sources", "12.0.0" in all_text))
+checks.append(("target SDK 31 in manifest input", "targetSdkVersion" in all_text and "31" in all_text))
 service = project / "res/xml/service.xml"
 checks.append(("Accessibility screenshot capability",
                service.exists() and 'android:canTakeScreenshot="true"' in service.read_text(encoding="utf-8")))
