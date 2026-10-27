@@ -18,6 +18,6 @@ for component in ('jp.tapmarker.MainActivity','jp.tapmarker.TapService'):
 for token in ('inputEventSequence','lastInputEvent','stage=request','stage=queued accepted=true','stage=rejected','stage=exception','stage=completed'):
     assert token in tap, "gesture trace missing: "+token
 assert 'eventId==inputEventSequence' in tap, "late callbacks can overwrite newer event trace"
-assert '入力イベント診断：').replace('','') if False else True
+assert '入力イベント診断：' in progress, 'input trace heading missing from incident report'
 assert 's.inputReport()' in progress, "physical incident report does not include input trace"
 print("Android12SourceAudit: targetSdk=31, exported components, screenshot capability and gesture event trace verified")
