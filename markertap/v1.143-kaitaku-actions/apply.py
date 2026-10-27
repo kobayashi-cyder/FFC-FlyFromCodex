@@ -23,6 +23,9 @@ def apply(project):
  service=project/'res/xml/service.xml'
  if 'android:canTakeScreenshot="true"' not in service.read_text():
   raise RuntimeError('Accessibility screenshot capability missing')
+ for folder,dest in [('overlay/src/jp/tapmarker','src/jp/tapmarker'),('tests','tests'),('assets','assets'),('tools','tools')]:
+  for src in (here/folder).glob('*'):
+   if src.is_file():shutil.copyfile(src,project/dest/src.name)
  # Tie each real gesture request to a bounded, local diagnostic trace.
  tap=project/'src/jp/tapmarker/TapService.java'
  once(tap,'long inputTargetVersion;String inputHold="未開始",lastInputError="";long inputRequests,inputCompleted,inputCancelled,inputRejected,inputTimedOut;',
@@ -42,9 +45,6 @@ def apply(project):
  const progress=project/'src/jp/tapmarker/ProgressErrors.java'
  once(progress,'if(w==null)b.append("\\n入力状況：").append(s.inputHold).append("\\n直近の入力エラー：").append(s.lastInputError);',
       'if(w==null)b.append("\\n入力イベント診断：").append(s.inputReport());')
- for folder,dest in [('overlay/src/jp/tapmarker','src/jp/tapmarker'),('tests','tests'),('assets','assets'),('tools','tools')]:
-  for src in (here/folder).glob('*'):
-   if src.is_file():shutil.copyfile(src,project/dest/src.name)
  once(project/'tools/package_apk.py','def manifest_version(data, code=145, version="1.142"):','def manifest_version(data, code=147, version="1.144"):')
  once(project/'tools/PatchRuntime.java','if(text.equals("v1.123"))return "v1.142";','if(text.equals("v1.123"))return "v1.144";')
  for name in ['build.sh','run-host-tests.sh']:
