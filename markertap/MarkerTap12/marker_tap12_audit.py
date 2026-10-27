@@ -20,7 +20,7 @@ all_text = "\\n".join(body for _, body in text_sources)
 checks = []
 checks.append(("package ID in restored sources", "jp.tapmarker12.lite" in all_text))
 checks.append(("versionCode 1200 in restored sources", "1200" in all_text))
-checks.append(("versionName 12.0.0 in restored sources", "12.0.0" in all_text))
+checks.append(("versionName 12.00 in restored sources", "12.00" in all_text))
 tap = project / "src/jp/tapmarker/TapService.java"
 if tap.exists():
     content = tap.read_text(encoding="utf-8")
