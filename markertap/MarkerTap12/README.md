@@ -5,7 +5,7 @@ Status: implementation branch; build and device validation are not yet confirmed
 ## Product profile
 
 - Target device: FCNT arrows F-52A / Android 12
-- target SDK follows the inherited runtime profile (API 35); compile/build tools remain API 35
+- target SDK is inherited from the reviewed base runtime; compile/build tools remain API 35
 - Independent application ID: `jp.tapmarker12.lite`
 - versionName: `12.00`; versionCode: `1200`
 - Existing MarkerTap (`jp.tapmarker.lite`) remains unchanged and should be able to coexist.
