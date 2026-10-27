@@ -1,51 +1,25 @@
-# MarkerTap v1.143 — 開拓うさぎの追加操作・署名済み配布
+# MarkerTap v1.144 — Android 12 / F-52A compatibility candidate
 
-[**署名済みAPKをダウンロード**](../../markertap/releases/MarkerTap-v1.143-signed.apk?raw=true) · [検証記録](validation-local.json) · [SHA-256](../../markertap/releases/SHA256SUMS-v1.143.txt)
+This candidate is based on the reviewed v1.143 source branch and changes the target SDK from 35 to 31 (Android 12), while retaining the API 35 compile/build toolchain. The source restore step verifies the target SDK, explicit exported declarations for components with intent filters, and the accessibility screenshot capability before building.
 
-パッケージは `jp.tapmarker.lite`、versionNameは `1.143`、versionCodeは `146`。v1.141を基に、v1.142の開拓うさぎ対応と今回の追加操作を統合した更新版です。
+## Scope
+- Package: `jp.tapmarker.lite`
+- versionName: `1.144`; versionCode: `147`
+- minSdkVersion remains 24.
+- targetSdkVersion: 31 (Android 12 compatibility profile).
+- Existing tap/state machine logic is retained from v1.143, including fresh-frame gating and safe stop/reclassification behavior.
 
-## 追加した処理
-
-| 操作 | 処理と確認条件 |
-| --- | --- |
-| 通常の開拓 | 左右の独立した画面見本を確認して連打。CM・ポップアップで保留し、主画面を再確認して再開 |
-| 左のタップ効率 | 録画の見出しとコイン価格表示または「CMを見る」を照合。押下後に応答を待ち、15秒の再試行間隔を確保 |
-| 右のオートタップ | 同じ確認方法で独立して処理。左右の強化を交互に確認し、左の処理だけが続かないように制御 |
-| タップ2倍・オート2倍 | 録画のボタン表示を照合。左右を交互に確認し、押下後はCM・ゲームの表示を再判定 |
-| ミッション報酬 | 録画のミッション入口を確認して開く。一覧では見出しと「ゲット」を確認して受取り、報酬を閉じて残る報酬を再確認。「プレイ」または「戻る」の後も主画面を再確認 |
-| タップミニゲーム | 対象アプリがユーザー補助へ公開するゲーム名と操作名を取得できる場合に、開始→表示中の操作面を連打→結果から復帰。名前のない画面の座標は生成しない |
-| 既存設定の更新 | 未編集のv1.142標準設定を退避して新しい標準設定に更新。利用者の編集設定、ウインドウ相対設定、読込エラーは上書きしない |
-
-ミッション一覧・報酬の画像判定は、増えうさぎの既存見本のうち共通の日本語表示を照合します。開拓うさぎ固有の一覧画面を新たに録画して検証したものではありません。ユーザー補助の名称取得は最大2本の背景処理へ限定し、古いセッション・配置の結果を破棄します。
-
-## 更新方法
-
-1. 旧版で「全停止」を押す。
-2. 上の署名済みAPKをダウンロードして上書きインストールする。
-3. 開拓うさぎを前面にして「自動開始」を押す。
-4. 既定設定では開拓、左のタップ効率、右のオート強化、ミッションの順に画面確認を行う。操作パネルが対象ボタンを覆う場合は移動する。
-
-以前と同じ署名証明書を使用します。証明書SHA-256は `7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1`。署名鍵・鍵バックアップはリポジトリに含めません。
-
-## 検証範囲
-
-元の録画17場面と追加操作の13場面の切り出し、標準設定移行、画像の欠落・広告画面での誤操作防止、ミッション受取ループ、名称を使うミニゲームの状態遷移をホスト試験で確認します。既存のcore/host回帰試験、障害再生8件、APK内部の接続検査、版番号・同一証明書・v2/v3署名・16KB整列検査も行います。実行結果は上の検証記録に保存します。
-
-**実機入力、開拓うさぎの実際の報酬加算、名称を取得できないミニゲーム、未知のCM、他端末、デイリーミッション全完了、長時間無人運転は未検証です。** 受取りボタンへの入力完了を残高反映やデイリー完了として記録しません。
-
-画面解像度・DPIは変更しません。従来の1500ms画像鮮度制限、実行トークン、入力先ウインドウ、手動全停止の検証は維持します。
-
-## 再構築
-
-Java 17、Python 3、Android API 35 / Build Tools 35.0.0、JADX 1.5.3を使用します。
+## Build and verification
+Use Java 17, Python 3, Android API 35 / Build Tools 35.0.0, and JADX 1.5.3.
 
 ```bash
-python3 markertap/v1.143-kaitaku-actions/restore_project.py /tmp/markertap-v1143-source
-TAPMARKER_KEYSTORE=/private/path/original.jks \
+python3 markertap/v1.143-kaitaku-actions/restore_project.py /tmp/markertap-v1144-source
 python3 markertap/v1.143-kaitaku-actions/build_ci.py \
   --sdk /path/to/android-sdk \
   --jadx /path/to/jadx-1.5.3-all.jar \
   --output /path/to/results
 ```
 
-鍵を指定しないCIは未署名の検証APKを作成します。配布用はページ先頭の署名済みAPKです。参照画像の出所と未検証範囲は [reference-provenance.json](reference-provenance.json) に記録しています。
+A build and host tests do not prove that F-52A taps work in the live game. The device acceptance test must confirm: Android 12 installation, accessibility activation, screenshot freshness, actual gesture delivery, volume-button stop/resume, and recovery after an ad or popup.
+
+**Important signing constraint:** the original release signing key is not in the repository. A CI-signed/unsigned candidate is not a drop-in update to the existing signed v1.143 APK unless it uses the same original certificate. Do not uninstall the current app merely to test a differently signed candidate unless its data/settings can be safely recovered. This branch does not claim a signed distributable APK or successful F-52A device test until those are independently verified.
