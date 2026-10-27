@@ -45,7 +45,7 @@ def apply_profile(project):
     manifest = project / "AndroidManifest.xml"
     if manifest.exists():
         text = manifest.read_text(encoding="utf-8")
-        text = text.replace('package="jp.tapmarker.lite"', 'package="jp.tapmarker12.lite"')
+        text = text.replace('package="jp.tapmarker.lite"', 'package="io.tapmarker.lite"')
         text = re.sub(r'android:versionCode="\d+"', 'android:versionCode="1200"', text, count=1)
         text = re.sub(r'android:versionName="[^"]+"', 'android:versionName="12.00"', text, count=1)
         manifest.write_text(text, encoding="utf-8")
@@ -57,7 +57,7 @@ def apply_profile(project):
             data = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        updated = data.replace("jp.tapmarker.lite", "jp.tapmarker12.lite")
+        updated = data.replace("jp.tapmarker.lite", "io.tapmarker.lite")
         updated = re.sub(r'(def manifest_version\(data, code=)\d+(, version=")[^"]+("\):)', r'\g<1>1200\g<2>12.00\g<3>', updated)
         updated = re.sub(r'versionCode\s*=?\s*\d+', 'versionCode1200', updated)
         updated = re.sub(r"(['\"]version_code['\"]\s*:\s*)\d+", r'\g<1>1200', updated)
@@ -69,6 +69,12 @@ def apply_profile(project):
         if updated != data:
             path.write_text(updated, encoding="utf-8")
 
+    # The original APK manifest is binary XML. Patch the package string in-place;
+    # the replacement has the same encoded byte length as the original.
+    packager = project / "tools/package_apk.py"
+    signature = 'def manifest_version(data, code=1200, version="12.00"):'
+    once(packager, signature, signature + '\n    old_package = b"jp.tapmarker.lite"\n    new_package = b"io.tapmarker.lite"\n    occurrences = data.count(old_package)\n    if occurrences < 1:\n        raise ValueError("original package ID not found in encoded manifest")\n    data = data.replace(old_package, new_package)\n')
+
     # Manifest generation inputs may live outside package_apk.py.
     found_package = []
     for item in project.rglob("*"):
@@ -78,7 +84,7 @@ def apply_profile(project):
             body = item.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        if "jp.tapmarker12.lite" in body:
+        if "io.tapmarker.lite" in body:
             found_package.append(str(item.relative_to(project)))
     if not found_package:
         raise RuntimeError("MarkerTap12 package ID not found in restored text sources")
