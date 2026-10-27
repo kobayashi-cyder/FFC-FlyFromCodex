@@ -5,7 +5,7 @@ Status: implementation branch; build and device validation are not yet confirmed
 ## Product profile
 
 - Target device: FCNT arrows F-52A / Android 12
-- targetSdkVersion: 31; compile/build tools remain API 35
+- target SDK follows the inherited runtime profile (API 35); compile/build tools remain API 35
 - Independent application ID: `jp.tapmarker12.lite`
 - versionName: `12.0.0`; versionCode: `1200`
 - Existing MarkerTap (`jp.tapmarker.lite`) remains unchanged and should be able to coexist.
@@ -14,7 +14,7 @@ Status: implementation branch; build and device validation are not yet confirmed
 ## Implementation in this branch
 
 - `restore_project.py` restores the reviewed v1.143 source into a clean destination, applies a dedicated package/version/target-SDK profile, and adds per-gesture diagnostic traces.
-- `marker_tap12_audit.py` checks the application ID, Android 12 target SDK, version, exported declarations, screenshot capability, and diagnostic hooks.
+- `marker_tap12_audit.py` checks the restored package/version inputs and diagnostic hooks; the built APK metadata, Android manifest, alignment, and signing are checked in the build pipeline.
 - `build_ci.py` adapts the existing host regression/build pipeline to the MarkerTap12 identity.
 - `.github/workflows/markertap12-android12.yml` runs the source audit and build pipeline and uploads validation artifacts.
 
