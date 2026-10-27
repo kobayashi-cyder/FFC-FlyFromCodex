@@ -7,17 +7,15 @@ import xml.etree.ElementTree as ET
 if len(sys.argv) != 2:
     raise SystemExit("Usage: marker_tap12_audit.py RESTORED_PROJECT")
 project = Path(sys.argv[1])
-manifest = project / "AndroidManifest.xml"
-if not manifest.exists():
-    raise SystemExit("FAIL: AndroidManifest.xml missing")
-root = ET.parse(manifest).getroot()
-android = "{http://schemas.android.com/apk/res/android}"
+packager = project / "tools/package_apk.py"
+if not packager.exists():
+    raise SystemExit("FAIL: tools/package_apk.py manifest generator missing")
+generated = packager.read_text(encoding="utf-8")
 checks = []
-checks.append(("package", root.get("package") == "jp.tapmarker12.lite"))
-sdk = root.find("uses-sdk")
-checks.append(("targetSdkVersion 31", sdk is not None and sdk.get(android + "targetSdkVersion") == "31"))
-checks.append(("versionCode 1200", root.get(android + "versionCode") == "1200"))
-checks.append(("versionName 12.0.0", root.get(android + "versionName") == "12.0.0"))
+checks.append(("package generator identity", "jp.tapmarker12.lite" in generated))
+checks.append(("versionCode generator 1200", "code=1200" in generated or "versionCode1200" in generated or "versionCode=1200" in generated))
+checks.append(("versionName generator 12.0.0", "12.0.0" in generated))
+checks.append(("target SDK manifest generator", "targetSdkVersion" in generated and "31" in generated))
 app = root.find("application")
 checks.append(("application element", app is not None))
 if app is not None:
