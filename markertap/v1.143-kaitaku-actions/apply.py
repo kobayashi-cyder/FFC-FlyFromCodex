@@ -23,6 +23,25 @@ def apply(project):
  service=project/'res/xml/service.xml'
  if 'android:canTakeScreenshot="true"' not in service.read_text():
   raise RuntimeError('Accessibility screenshot capability missing')
+ # Tie each real gesture request to a bounded, local diagnostic trace.
+ tap=project/'src/jp/tapmarker/TapService.java'
+ once(tap,'long inputTargetVersion;String inputHold="未開始",lastInputError="";long inputRequests,inputCompleted,inputCancelled,inputRejected,inputTimedOut;',
+      'long inputTargetVersion;String inputHold="未開始",lastInputError="";long inputRequests,inputCompleted,inputCancelled,inputRejected,inputTimedOut;long inputEventSequence;String lastInputEvent="未送信";')
+ once(tap,'+"\\n直近の入力エラー："+(lastInputError.isEmpty()?"なし":lastInputError)+"\\n本体認識画像："+',
+      '+"\\n直近の入力エラー："+(lastInputError.isEmpty()?"なし":lastInputError)+"\\n直近の入力イベント："+lastInputEvent+"\\n本体認識画像："+')
+ once(tap,'  inputRequests++;inputHold="送信中";if(progressErrors!=null)progressErrors.action(target,"ジェスチャー",0,Float.NaN,Float.NaN);',
+      '  final long eventAt=SystemClock.uptimeMillis(),eventId=++inputEventSequence;String eventPhase=pilot==null?"":pilot.phases.engine.current;long eventFrameAt=pilot==null?0:pilot.phaseSampleTakenAt;final long eventRun=pilot==null?-1:(pilot.splitPilot.active?pilot.splitPilot.token:pilot.token);if(pilot!=null&&pilot.splitPilot.active&&pilot.splitPilot.slots!=null)for(SplitPilot.Slot slot:pilot.splitPilot.slots)if(slot.pkg.equals(target)){eventPhase=slot.phases.engine.current;eventFrameAt=slot.observedAt;break;}final long eventFrameAge=eventFrameAt<=0?-1:Math.max(0,eventAt-eventFrameAt);final String eventBase="id="+eventId+" target="+target+" phase="+eventPhase+" run="+eventRun+" frameAgeMs="+eventFrameAge+" strokes="+gesture.getStrokeCount();lastInputEvent=eventBase+" stage=request";inputRequests++;inputHold="送信中";if(progressErrors!=null)progressErrors.action(target,"ジェスチャー",0,Float.NaN,Float.NaN);')
+ once(tap,'if(outcome==GestureDispatchGuard.COMPLETED){inputSuccessAt=SystemClock.uptimeMillis();inputCompleted++;inputHold="送信完了";if(callback!=null)callback.onCompleted(gesture);}',
+      'if(outcome==GestureDispatchGuard.COMPLETED){inputSuccessAt=SystemClock.uptimeMillis();inputCompleted++;inputHold="送信完了";lastInputEvent=eventBase+" stage=completed elapsedMs="+Math.max(0,SystemClock.uptimeMillis()-eventAt);if(callback!=null)callback.onCompleted(gesture);}')
+ once(tap,'else{inputFailureAt=SystemClock.uptimeMillis();inputCancelled++;if(outcome==GestureDispatchGuard.TIMED_OUT)inputTimedOut++;inputHold=outcome==GestureDispatchGuard.TIMED_OUT?"入力完了の通知待ちを終了・再確認":"Androidによる入力中断";lastInputError=inputHold;if(callback!=null)callback.onCancelled(gesture);}',
+      'else{inputFailureAt=SystemClock.uptimeMillis();inputCancelled++;if(outcome==GestureDispatchGuard.TIMED_OUT)inputTimedOut++;inputHold=outcome==GestureDispatchGuard.TIMED_OUT?"入力完了の通知待ちを終了・再確認":"Androidによる入力中断";lastInputError=inputHold;lastInputEvent=eventBase+" stage="+(outcome==GestureDispatchGuard.TIMED_OUT?"timeout":"cancelled")+" elapsedMs="+Math.max(0,SystemClock.uptimeMillis()-eventAt)+" detail="+inputHold;if(callback!=null)callback.onCancelled(gesture);}')
+ once(tap,'});if(!accepted){inputFailureAt=SystemClock.uptimeMillis();inputRejected++;inputHold="Androidが入力を拒否・他の入力処理中";lastInputError=inputHold;}return accepted;',
+      '});if(!accepted){inputFailureAt=SystemClock.uptimeMillis();inputRejected++;inputHold="Androidが入力を拒否・他の入力処理中";lastInputError=inputHold;lastInputEvent=eventBase+" stage=rejected elapsedMs="+Math.max(0,SystemClock.uptimeMillis()-eventAt);}else lastInputEvent=eventBase+" stage=queued accepted=true";return accepted;')
+ once(tap,'catch(RuntimeException failure){inputFailureAt=SystemClock.uptimeMillis();inputRejected++;inputHold="入力エラー："+VirtualWindows.brief(failure);lastInputError=inputHold;return false;}',
+      'catch(RuntimeException failure){inputFailureAt=SystemClock.uptimeMillis();inputRejected++;inputHold="入力エラー："+VirtualWindows.brief(failure);lastInputError=inputHold;lastInputEvent=eventBase+" stage=exception elapsedMs="+Math.max(0,SystemClock.uptimeMillis()-eventAt)+" detail="+VirtualWindows.brief(failure);return false;}')
+ const progress=project/'src/jp/tapmarker/ProgressErrors.java'
+ once(progress,'if(w==null)b.append("\\n入力状況：").append(s.inputHold).append("\\n直近の入力エラー：").append(s.lastInputError);',
+      'if(w==null)b.append("\\n入力イベント診断：").append(s.inputReport());')
  for folder,dest in [('overlay/src/jp/tapmarker','src/jp/tapmarker'),('tests','tests'),('assets','assets'),('tools','tools')]:
   for src in (here/folder).glob('*'):
    if src.is_file():shutil.copyfile(src,project/dest/src.name)
