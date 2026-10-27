@@ -25,7 +25,7 @@ tap = project / "src/jp/tapmarker/TapService.java"
 if tap.exists():
     content = tap.read_text(encoding="utf-8")
     for marker in ("inputEventSequence", "lastInputEvent", "stage=queued", "stage=completed",
-                   "stage=rejected", "stage=cancelled", "stage=timeout", "stage=exception"):
+                   "stage=rejected", "cancelled", "timeout", "stage=exception"):
         checks.append(("gesture diagnostic " + marker, marker in content))
 else:
     checks.append(("TapService source exists", False))
