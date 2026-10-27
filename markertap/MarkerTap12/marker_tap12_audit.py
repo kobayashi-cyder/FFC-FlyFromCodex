@@ -18,7 +18,7 @@ for item in project.rglob("*"):
     text_sources.append((str(item.relative_to(project)), text))
 all_text = "\\n".join(body for _, body in text_sources)
 checks = []
-checks.append(("package ID in restored sources", "jp.tapmarker12.lite" in all_text))
+checks.append(("package ID in restored sources", "io.tapmarker.lite" in all_text))
 checks.append(("versionCode 1200 in restored sources", "1200" in all_text))
 checks.append(("versionName 12.00 in restored sources", "12.00" in all_text))
 tap = project / "src/jp/tapmarker/TapService.java"
