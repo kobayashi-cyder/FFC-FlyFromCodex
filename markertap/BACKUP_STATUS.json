@@ -7,11 +7,48 @@
   "native_resolution_fix": "built_and_host_tested",
   "source_parts": 4,
   "code_mirror_files": 794,
-  "current_version_name": "1.123",
+  "current_version_name": "1.141",
   "device_tested": false,
-  "apk": "releases/MarkerTap-v1.123-preview-connectome.apk",
-  "apk_sha256": "456ebe7993d52d79d6304f55d9e5a3a60788b7b4f94827952808d527f743088c",
-  "source_overlay_commit": "e52b47c93af2fd6ed91e114896d52b4c9b7b82c8",
+  "apk": "MarkerTap-v1.141-signed.apk",
+  "apk_sha256": "3b35740dcdbeb76615eec7218a861a5b679299c181070587c898a549cf68321f",
+  "source_overlay_commit": "cfc86e2651290e0b7df8a4c78951c3f631a704a4",
   "region_capture_fix": "built_and_host_tested_sparse_native_points",
-  "latest_validation_run": "https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/39495111580"
+  "latest_validation_run": "https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/40414483942",
+  "previous_snapshot": {
+    "current_version_name": "1.123",
+    "apk": "releases/MarkerTap-v1.123-preview-connectome.apk",
+    "apk_sha256": "456ebe7993d52d79d6304f55d9e5a3a60788b7b4f94827952808d527f743088c",
+    "source_overlay_commit": "e52b47c93af2fd6ed91e114896d52b4c9b7b82c8",
+    "latest_validation_run": "https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/39495111580"
+  },
+  "current_version_code": 144,
+  "package": "jp.tapmarker.lite",
+  "apk_size_bytes": 5102363,
+  "apk_delivery": "conversation_attachment",
+  "source_branch": "markertap/reward-window-v1.141",
+  "pull_request": "https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/22",
+  "local_validation": "v1.141-reward-window/validation-local.json",
+  "latest_validation_commit": "cfc86e2651290e0b7df8a4c78951c3f631a704a4",
+  "latest_validation_signing": "unsigned_ci",
+  "local_signature_verified": true,
+  "signature_schemes_verified": [
+    "v2",
+    "v3"
+  ],
+  "signing_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "additional_behavior_checks": {
+    "visible_window": 22,
+    "physical_capture_watchdog": 97,
+    "farm_reward_incident": 83,
+    "total": 202
+  },
+  "daily_completion_verified": false,
+  "three_day_unattended_run_verified": false,
+  "field_notes": {
+    "version_name": "Base backup archive version; preserved at 1.117",
+    "current_version_name": "Current integrated candidate; restore with v1.141-reward-window/restore_project.py",
+    "apk": "Filename of conversation-delivered signed APK, not a path under releases/",
+    "code_mirror": "Historical code reference; dedicated version overlays are required"
+  },
+  "documentation_updated_on": "2026-10-27"
 }

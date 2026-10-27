@@ -1,0 +1,19 @@
+{
+  "source_incident_zip": "incident-1793051362161-c0fa64d7-19.zip",
+  "source_zip_sha256": "65307aaba85e3fc1bfec410602a5ad7f61c2cebd60e6ce3caaba7f590c79f555",
+  "source_jpeg_sha256": "585251efeebba122d2bd09b68ce0ed67af12fd484f1bd8586e9ce22d6a39f30b",
+  "source_frame_size": [
+    540,
+    1212
+  ],
+  "source_native_size": [
+    1080,
+    2424
+  ],
+  "retained_test_content": "two heading/button strips only; balance, overlay and banner excluded",
+  "mask_variants": 3,
+  "mask_values": "512 cells per paired reference, each 0..9 ink samples; RGB channels reconstructed equally",
+  "original_close_distance_limit": 0.008,
+  "original_start_distance_limit": 0.016,
+  "root_cause_bounds_values_available": false
+}
