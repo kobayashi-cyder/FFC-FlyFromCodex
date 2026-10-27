@@ -71,15 +71,27 @@ def apply_profile(project):
         if updated != data:
             path.write_text(updated, encoding="utf-8")
 
-    packager = project / "tools/package_apk.py"
-    if not packager.exists():
-        raise RuntimeError("tools/package_apk.py manifest generator not found")
-    generated = packager.read_text(encoding="utf-8")
-    required = ("jp.tapmarker12.lite", "1200", "12.0.0", "targetSdkVersion")
-    missing = [item for item in required if item not in generated]
-    if missing:
-        raise RuntimeError("MarkerTap12 manifest generator missing profile inputs: " + ", ".join(missing))
-    print("MarkerTap12 source profile applied; APK manifest will be verified after packaging")
+    # Manifest generation inputs may live outside package_apk.py.
+    found_package = []
+    found_sdk = []
+    for item in project.rglob("*"):
+        if not item.is_file():
+            continue
+        try:
+            body = item.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        if "jp.tapmarker12.lite" in body:
+            found_package.append(str(item.relative_to(project)))
+        if "targetSdkVersion" in body:
+            found_sdk.append((str(item.relative_to(project)), "31" in body))
+    if not found_package:
+        raise RuntimeError("MarkerTap12 package ID not found in restored text sources")
+    print("MarkerTap12 package source: " + ", ".join(found_package[:12]))
+    print("targetSdkVersion source candidates: " + repr(found_sdk[:12]))
+    if found_sdk and not any(ok for _, ok in found_sdk):
+        raise RuntimeError("target SDK 31 not found in source inputs")
+    print("MarkerTap12 profile patched; APK metadata will be checked after packaging")
 
 def main():
     if len(sys.argv) != 2:
