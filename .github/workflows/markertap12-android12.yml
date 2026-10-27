@@ -55,6 +55,11 @@ jobs:
         run: |
           python3 markertap/MarkerTap12/restore_project.py "$RUNNER_TEMP/markertap12-source"
           python3 markertap/MarkerTap12/marker_tap12_audit.py "$RUNNER_TEMP/markertap12-source"
+      - name: Preserve exact build inputs for diagnosis
+        if: always()
+        run: |
+          cp "$RUNNER_TEMP/markertap12-source/run-host-tests.sh" "$RUNNER_TEMP/results/run-host-tests-source.txt"
+          cp "$RUNNER_TEMP/markertap12-source/tools/package_apk.py" "$RUNNER_TEMP/results/package-apk-source.txt"
       - name: Build and run inherited regression gates
         run: |
           python3 markertap/MarkerTap12/build_ci.py \
