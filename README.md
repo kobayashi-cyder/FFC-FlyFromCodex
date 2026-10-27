@@ -4,13 +4,12 @@ FFC development repository. Android APK builds are isolated on dedicated build b
 
 ## MarkerTap 最新配布：v1.143（署名済み）
 
-[**署名済みAPKをダウンロード**](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/raw/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/releases/MarkerTap-v1.143-signed.apk)
+[**署名済みAPKをダウンロード**](https://raw.githubusercontent.com/kobayashi-cyder/FFC-FlyFromCodex/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/releases/MarkerTap-v1.143-signed.apk)
 
 - [更新内容・インストール手順](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/v1.143-kaitaku-actions/README.md)
 - [署名・ビルド・回帰テストの検証記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/v1.143-kaitaku-actions/validation-local.json)
 - [APKのSHA-256](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/releases/SHA256SUMS-v1.143.txt)
-- [最新版のソース](
-https://github.com/kobayashi-cyder/FFC-FlyFromCodex/tree/markertap/kaitaku-actions-v1.143/markertap) · [開発の再開手順](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/WORK_NEXT.md)
+- [最新版のソース](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/tree/markertap/kaitaku-actions-v1.143/markertap) · [開発の再開手順](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/WORK_NEXT.md)
 
 開拓うさぎの通常連打・CM復帰に、タップ効率、オートタップ強化、左右の追加ボタン、ミッション報酬の確認ループ、名称を取得できるタップミニゲームの処理を追加しました。
 
