@@ -17,6 +17,9 @@ on:
   pull_request:
     branches: ["markertap/kaitaku-actions-v1.143"]
   workflow_dispatch:
+concurrency:
+  group: markertap12-${{ github.event_name }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
