@@ -15,6 +15,7 @@ Use Java 17, Python 3, Android API 35 / Build Tools 35.0.0, and JADX 1.5.3.
 
 ```bash
 python3 markertap/v1.143-kaitaku-actions/restore_project.py /tmp/markertap-v1144-source
+python3 markertap/v1.143-kaitaku-actions/android12_source_audit.py /tmp/markertap-v1144-source
 python3 markertap/v1.143-kaitaku-actions/build_ci.py \
   --sdk /path/to/android-sdk \
   --jadx /path/to/jadx-1.5.3-all.jar \
