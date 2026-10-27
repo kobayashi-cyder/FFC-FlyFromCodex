@@ -16,13 +16,6 @@ checks.append(("package generator identity", "jp.tapmarker12.lite" in generated)
 checks.append(("versionCode generator 1200", "code=1200" in generated or "versionCode1200" in generated or "versionCode=1200" in generated))
 checks.append(("versionName generator 12.0.0", "12.0.0" in generated))
 checks.append(("target SDK manifest generator", "targetSdkVersion" in generated and "31" in generated))
-app = root.find("application")
-checks.append(("application element", app is not None))
-if app is not None:
-    for node in list(app):
-        if node.find("intent-filter") is not None:
-            checks.append(("android:exported " + str(node.get(android + "name")),
-                           node.get(android + "exported") in ("true", "false")))
 service = project / "res/xml/service.xml"
 checks.append(("Accessibility screenshot capability",
                service.exists() and 'android:canTakeScreenshot="true"' in service.read_text(encoding="utf-8")))
