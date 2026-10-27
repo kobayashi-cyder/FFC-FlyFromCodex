@@ -46,6 +46,7 @@ jobs:
         run: |
           python3 markertap/v1.143-kaitaku-actions/restore_project.py "$RUNNER_TEMP/markertap-v1144-source"
           grep -q 'android:targetSdkVersion="31"' "$RUNNER_TEMP/markertap-v1144-source/AndroidManifest.xml"
+          python3 markertap/v1.143-kaitaku-actions/android12_source_audit.py "$RUNNER_TEMP/markertap-v1144-source"
           python3 markertap/v1.143-kaitaku-actions/build_ci.py \
             --sdk "$ANDROID_HOME" \
             --jadx "$JADX_JAR" \
