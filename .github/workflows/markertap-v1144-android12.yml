@@ -37,13 +37,12 @@ jobs:
           curl --fail --location --retry 3 \
             https://github.com/skylot/jadx/releases/download/v1.5.3/jadx-1.5.3.zip \
             --output "$RUNNER_TEMP/jadx.zip"
+          echo "8280f3799c0273fe797a2bcd90258c943e451fd195f13d05400de5e6451d15ec  $RUNNER_TEMP/jadx.zip" | sha256sum --check
           unzip -q "$RUNNER_TEMP/jadx.zip" -d "$RUNNER_TEMP/jadx"
           JADX="$(find "$RUNNER_TEMP/jadx" -name 'jadx-1.5.3-all.jar' -print -quit)"
           test -n "$JADX"
           echo "JADX_JAR=$JADX" >> "$GITHUB_ENV"
       - name: Restore source, build candidate, and run regression audits
-        env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
         run: |
           python3 markertap/v1.143-kaitaku-actions/restore_project.py "$RUNNER_TEMP/markertap-v1144-source"
           grep -q 'android:targetSdkVersion="31"' "$RUNNER_TEMP/markertap-v1144-source/AndroidManifest.xml"
