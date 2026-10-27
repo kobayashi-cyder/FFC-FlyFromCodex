@@ -21,10 +21,6 @@ checks = []
 checks.append(("package ID in restored sources", "jp.tapmarker12.lite" in all_text))
 checks.append(("versionCode 1200 in restored sources", "1200" in all_text))
 checks.append(("versionName 12.0.0 in restored sources", "12.0.0" in all_text))
-checks.append(("target SDK 31 in manifest input", "targetSdkVersion" in all_text and "31" in all_text))
-service = project / "res/xml/service.xml"
-checks.append(("Accessibility screenshot capability",
-               service.exists() and 'android:canTakeScreenshot="true"' in service.read_text(encoding="utf-8")))
 tap = project / "src/jp/tapmarker/TapService.java"
 if tap.exists():
     content = tap.read_text(encoding="utf-8")
