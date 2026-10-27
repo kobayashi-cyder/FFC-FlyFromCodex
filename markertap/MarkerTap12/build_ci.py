@@ -7,17 +7,17 @@ source_path = here.parent / "v1.134-autonomy" / "build_ci.py"
 source = source_path.read_text(encoding="utf-8")
 # Change output filenames before the generic version replacement.
 replacements = [
-    ("'MarkerTap-v1.134-integrated.apk'", "'MarkerTap12-v12.0.0-integrated.apk'"),
-    ("'MarkerTap-v1.134-unsigned.apk'", "'MarkerTap12-v12.0.0-unsigned.apk'"),
-    ("'MarkerTap-v1.134-signed.apk'", "'MarkerTap12-v12.0.0-signed.apk'"),
-    ("1.134", "12.0.0"),
+    ("'MarkerTap-v1.134-integrated.apk'", "'MarkerTap12-v12.00-integrated.apk'"),
+    ("'MarkerTap-v1.134-unsigned.apk'", "'MarkerTap12-v12.00-unsigned.apk'"),
+    ("'MarkerTap-v1.134-signed.apk'", "'MarkerTap12-v12.00-signed.apk'"),
+    ("1.134", "12.00"),
     ("versionCode='137'", "versionCode='1200'"),
     ("'version_code':137", "'version_code':1200"),
     ("'autonomy-build-results'", "'MarkerTap12-build-results'"),
     ("str(HERE/'restore_project.py')", "str(ROOT/'markertap'/'MarkerTap12'/'restore_project.py')"),
     ("name='jp.tapmarker.lite'", "name='jp.tapmarker12.lite'"),
     ("'package':'jp.tapmarker.lite'", "'package':'jp.tapmarker12.lite'"),
-    ("for text in [\"name='jp.tapmarker12.lite'\",\"versionCode='1200'\",\"versionName='12.0.0'\"]:", "for text in [\"name='jp.tapmarker12.lite'\",\"versionCode='1200'\",\"versionName='12.0.0'\",\"targetSdkVersion:'35'\"]:"),
+    ("for text in [\"name='jp.tapmarker12.lite'\",\"versionCode='1200'\",\"versionName='12.00'\"]:", "for text in [\"name='jp.tapmarker12.lite'\",\"versionCode='1200'\",\"versionName='12.00'\",\"targetSdkVersion:'35'\"]:"),
 ]
 for old, new in replacements:
     if old not in source:
