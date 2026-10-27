@@ -13,6 +13,8 @@ on:
       - "markertap/v1.130-crashfix/**"
       - "markertap/v1.132-stability/**"
       - "markertap/v1.133-stability/**"
+  pull_request:
+    branches: ["markertap/kaitaku-actions-v1.143"]
   workflow_dispatch:
 permissions:
   contents: read
