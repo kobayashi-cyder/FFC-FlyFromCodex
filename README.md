@@ -1,18 +1,16 @@
 # FFC — FlyFromCodex
 
-FFC development repository. Android APK builds are isolated on dedicated build branches before merge to main.
+FFC development repository. MarkerTap builds and source history are kept on dedicated development branches.
 
-## MarkerTap
+## MarkerTap 最新配布：v1.143（署名済み）
 
-現在のMarkerTap更新候補は **v1.141 / versionCode 144** です（2026-10-27）。
+[**署名済みAPKをダウンロード**](markertap/releases/MarkerTap-v1.143-signed.apk?raw=true)
 
-- [利用・復元・ビルドの入口](markertap/README.md)
-- [v1.141の変更・更新手順・署名情報](markertap/v1.141-reward-window/README.md)
-- [再開時の状態と次の確認事項](markertap/WORK_NEXT.md)
-- [ローカル署名版の検証記録](markertap/v1.141-reward-window/validation-local.json)
-- [PR #22](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/22) / [コード改修時のCI成功記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/40414483942)
+- [更新内容とインストール方法](markertap/v1.143-kaitaku-actions/README.md)
+- [署名・ビルド・回帰テストの検証記録](markertap/v1.143-kaitaku-actions/validation-local.json)
+- [APKのSHA-256](markertap/releases/SHA256SUMS-v1.143.txt)
+- [開発の再開手順](markertap/WORK_NEXT.md) · [再構築スクリプト](markertap/v1.143-kaitaku-actions/build_ci.py)
 
-作業ブランチは `markertap/reward-window-v1.141`、PR #22はドラフト・未マージです。
-署名済みAPKは改修依頼の会話添付 `MarkerTap-v1.141-signed.apk` で配布しました。GitHub Actionsの成果物は未署名の検証用です。
+開拓うさぎの通常連打・CM復帰に、タップ効率、オートタップ強化、左右の追加ボタン、ミッション報酬の確認ループ、名称を取得できるタップミニゲームの処理を追加しました。パッケージは `jp.tapmarker.lite`、versionCodeは `146`。従来と同じ証明書で署名し、上書き更新できます。署名鍵は含みません。
 
-Pixel 10 / F-52Aでの実機入力、報酬加算、長時間の無人運転は未検証です。
+実機入力と実際の報酬加算は未検証です。ミッション一覧の画像は既存の共通見本を照合し、名称を取得できないミニゲームには未対応です。CIで生成する検証APKは未署名なので、配布には上の署名済みAPKを使用してください。

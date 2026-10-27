@@ -1,3 +1,11 @@
+# 現行配布：MarkerTap v1.143（署名済み）
+
+[署名済みAPK](../../releases/MarkerTap-v1.143-signed.apk?raw=true) · [導入手順・変更内容](../../v1.143-kaitaku-actions/README.md) · [検証結果](../../v1.143-kaitaku-actions/validation-local.json)
+
+このディレクトリは過去のソースミラーです。現行版は `markertap/v1.143-kaitaku-actions/restore_project.py` で復元します。実機入力・報酬加算は未検証です。
+
+---
+
 # MarkerTap：コード参照用ミラー
 
 現在の更新候補は **v1.141 / versionCode 144** です（2026-10-27）。

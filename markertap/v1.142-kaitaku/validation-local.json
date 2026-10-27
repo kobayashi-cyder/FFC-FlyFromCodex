@@ -1,0 +1,21 @@
+{
+  "status": "signed_host_verified",
+  "version_name": "1.142",
+  "version_code": 145,
+  "package": "jp.tapmarker.lite",
+  "source_commit": null,
+  "apk": "MarkerTap-v1.142-signed.apk",
+  "apk_sha256": "36b9c69960d58f799b1217d54acbf2292c8ca9d21ae436a008a58f54f810660a",
+  "apk_size_bytes": 5163875,
+  "signature_verified": true,
+  "signing_certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "core_tests": "passed",
+  "host_anr_tests": "passed",
+  "apk_audits": "passed",
+  "new_regression_checks": "44 Kaitaku control/state/coordinate checks; inherited core/host and previous recovery regressions",
+  "incident_replay": "8 exact result digests matched",
+  "previous_v1133_rejected": true,
+  "device_tested": false,
+  "daily_completion_verified": false,
+  "three_day_unattended_run_verified": false
+}

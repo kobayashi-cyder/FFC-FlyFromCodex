@@ -1,0 +1,7 @@
+V1133SourceTest: independent circuits and sparse preview verified
+InputTargetRecoveryTest: 24 checks passed; exact report and independent bounded recovery, Android launch not exercised
+OwnerDeathCleanupTest: 9 checks passed
+HardwarePixelSourceTest: 15 checks passed, 2000 reads share one exact readback
+DiagnosticFrameSourceTest: async capture, backpressure, snapshot, JPEG and permit invariants passed
+ManifestVersionTest: v1.143/versionCode146 rewrite passed
+Host tests passed. Android SDK build and device tests are separate.

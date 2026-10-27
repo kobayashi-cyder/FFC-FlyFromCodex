@@ -1,0 +1,58 @@
+AutonomySupervisorTest: 21 passed
+PointPixelsTest: 400000 exact pixel checks passed; 8-tile eviction limit retained
+CancelledLeaseTest: cancelled after 5119 reads; no stale publication; both retained inputs released once; zero full-frame allocations
+IntegratedRuntimeTest: independent timeout cancelled lane 0; lanes 1-3 completed; 4 resources released exactly once; maximum 1 active lease; 0 full-frame allocations
+CustomConnectomeTest: own 1056-node/1248-edge graph loaded; 96 finite outputs; 100-image isolation; graph ablation affects output; legacy format rejected
+CustomMemoryTest: legacy 104- and 96-value embeddings replaced from raw image; demonstrated action, markers and curve preserved; invalid raw rejected; Android preferences untested
+ActionConnectomeTest: own 16-node/24-edge graph; 4 symmetric routes; outcome credit isolated; 16 legacy gains ignored; disconnected graph cannot select
+BancAutonomyTest: 80 checks passed; deterministic runtime fixtures, Android input untested
+BancKnowHowTest: 23 checks passed; cross-game policy/timing transfer with local grounding, Android input untested
+FrameCircuitTest: 31 checks passed; new graph execution, result-only publication, cancellation, stale images, exceptions and concurrent leases; no Android execution
+FrameSampleCacheTest: 754 checks passed; identical evidence and bounded per-frame storage
+TilePixelsTest: 6032 checks passed; bulk source reads=1 versus 230400 point accesses
+FramePixelsTest: 801 checks passed; ImageReader device formats not tested
+VisualLocatorTest: 11 checks passed / 472ms; synthetic distant, scaled, ambiguous and missing controls
+DisplayRecoveryTest: 19 checks; bounded rebuild, late callbacks, per-display isolation and verified-home release; Android display creation untested
+ManualInterventionTest: 8 checks; per-display hold, release, settling, stale completions and cancellation; preview forwarding requires device validation
+ContinuousRecoveryTest: 31 checks passed; failed/held input, observed mission transition, independent budgets and explicit stop
+Incident replay: all 8 exact result digests match.
+BoundedProbeCacheTest: 58 passed
+AnrTraceExcerptTest: 5 passed
+ResidualFenceTest: 16 passed
+WirelessReconnectStabilityTest: 20 checks passed
+FrameRetirementTest: 6 checks passed
+OwnerDeathCleanupTest: 9 checks passed
+PreviewConnectomeTest: 15 checks passed
+FrameDeadlineTest: 16 passed
+SupervisorFreshnessTest: 13 passed
+CaptureLeaseCompletionTest: 9 passed
+FrameFailureReasonTest: passed
+RecoveryGuardReuseTest: passed
+DisplayMissingTest: passed
+VirtualFreshnessGateTest: passed
+ConnectomeMultiplexerTest: 13 invariants passed
+ExternalAdHandoffTest: 22 invariants passed
+PhysicalFlowRecoveryTest: 29 assertions passed
+ReturnProgressGateTest: 25 regression checks passed
+VisibleWindowGeometryTest: 22 checks passed
+PhysicalCaptureWatchdogTest: 97 checks passed
+FarmRewardIncidentTest: 83 checks passed; device input and balance credit remain untested
+frame=0 home=false continue=false
+frame=162 home=false continue=false
+frame=132 home=false continue=false
+frame=164 home=false continue=false
+frame=166 home=false continue=false
+frame=72 home=true continue=false
+frame=168 home=false continue=false
+frame=170 home=false continue=false
+frame=108 home=false continue=false
+frame=174 home=false continue=false
+frame=175 home=false continue=true
+frame=48 home=false continue=false
+frame=144 home=true continue=false
+frame=176 home=true continue=false
+frame=120 home=true continue=false
+frame=60 home=false continue=false
+frame=156 home=false continue=false
+KaitakuIncidentTest: 50 checks passed; physical input and reward accounting unverified
+KaitakuActionsTest: 82 checks passed; physical reward credit and unlabeled mini-games unverified

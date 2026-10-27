@@ -1,3 +1,15 @@
+# MarkerTap 最新配布：v1.143（署名済み）
+
+[**署名済みAPKをダウンロード**](releases/MarkerTap-v1.143-signed.apk?raw=true) · [更新内容・導入手順](v1.143-kaitaku-actions/README.md) · [検証結果](v1.143-kaitaku-actions/validation-local.json) · [SHA-256](releases/SHA256SUMS-v1.143.txt)
+
+従来の署名証明書を維持した更新APKです。全停止後に上書きインストールしてください。タップ効率・オート強化・追加ボタン・ミッション受取ループと、名称を取得できるミニゲームの操作を追加しています。実機入力・実報酬加算は未検証です。以下は以前の版の記録です。
+
+---
+
+# 現在の更新候補：v1.142
+
+[開拓うさぎ対応の仕様・更新・再構築](v1.142-kaitaku/README.md)と[再開手順](WORK_NEXT.md)を先に確認してください。以下は過去のバックアップ記録です。
+
 # MarkerTap
 
 現在の更新候補は **v1.141 / versionCode 144**、パッケージは `jp.tapmarker.lite` です。

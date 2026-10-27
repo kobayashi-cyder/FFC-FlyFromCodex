@@ -1,0 +1,145 @@
+{
+  "recording": "6835.mp4",
+  "recording_sha256": "d02ea58e7f338a5cba7fbfae81876366c3ef7d03d3b4a5ffd28202c6da8baea5",
+  "training_controls": {
+    "action-mission": [
+      176,
+      [
+        0.34,
+        0.083,
+        0.5,
+        0.116
+      ]
+    ],
+    "action-eff-title": [
+      144,
+      [
+        0.163,
+        0.823,
+        0.302,
+        0.84
+      ]
+    ],
+    "action-eff-title-dim": [
+      120,
+      [
+        0.163,
+        0.823,
+        0.302,
+        0.84
+      ]
+    ],
+    "action-eff-title-bright": [
+      176,
+      [
+        0.163,
+        0.823,
+        0.302,
+        0.84
+      ]
+    ],
+    "action-eff-cost": [
+      144,
+      [
+        0.15,
+        0.845,
+        0.185,
+        0.857
+      ]
+    ],
+    "action-eff-ad": [
+      120,
+      [
+        0.145,
+        0.843,
+        0.303,
+        0.859
+      ]
+    ],
+    "action-eff-ad-bright": [
+      176,
+      [
+        0.145,
+        0.843,
+        0.303,
+        0.859
+      ]
+    ],
+    "action-auto-title": [
+      144,
+      [
+        0.702,
+        0.823,
+        0.86,
+        0.84
+      ]
+    ],
+    "action-auto-title-dim": [
+      120,
+      [
+        0.702,
+        0.823,
+        0.86,
+        0.84
+      ]
+    ],
+    "action-auto-title-bright": [
+      176,
+      [
+        0.702,
+        0.823,
+        0.86,
+        0.84
+      ]
+    ],
+    "action-auto-cost": [
+      144,
+      [
+        0.71,
+        0.845,
+        0.745,
+        0.857
+      ]
+    ],
+    "action-auto-ad": [
+      120,
+      [
+        0.706,
+        0.843,
+        0.864,
+        0.859
+      ]
+    ],
+    "action-auto-ad-bright": [
+      176,
+      [
+        0.706,
+        0.843,
+        0.864,
+        0.859
+      ]
+    ],
+    "action-tap-boost": [
+      144,
+      [
+        0.05,
+        0.759,
+        0.23,
+        0.778
+      ]
+    ],
+    "action-auto-boost": [
+      144,
+      [
+        0.77,
+        0.759,
+        0.95,
+        0.778
+      ]
+    ]
+  },
+  "mission_and_reward_reference": "Unmodified shared Japanese labels from v1.123 assets; paired title/control required; not an observed Kaitaku mission-page recording.",
+  "mini_game_reference": "Exact accessible title + labeled live control only; no recorded visual template.",
+  "fixtures": "13 frames, control strips only; balance, panel, banners, full frames and signing material excluded.",
+  "limits": "Physical taps, actual reward credit and unlabeled mini-games unverified."
+}

@@ -1,0 +1,57 @@
+{
+  "recording": "6835.mp4",
+  "recording_sha256": "d02ea58e7f338a5cba7fbfae81876366c3ef7d03d3b4a5ffd28202c6da8baea5",
+  "incident": "incident-1793087303710-4ed890c4-20.zip",
+  "incident_sha256": "e3ad1cf3e503135bb29ace246bdbaadfe0f6d276e9dcb84e4d34c25a8cef24bd",
+  "training_seconds": {
+    "home": 144,
+    "continue": 175
+  },
+  "crop_rectangles_normalized": {
+    "home-left": [
+      0.285,
+      0.7,
+      0.385,
+      0.79
+    ],
+    "home-right": [
+      0.615,
+      0.7,
+      0.715,
+      0.79
+    ],
+    "continue-title": [
+      0.17,
+      0.603,
+      0.83,
+      0.627
+    ],
+    "continue-button": [
+      0.28,
+      0.736,
+      0.45,
+      0.757
+    ]
+  },
+  "test_frames_seconds": [
+    0,
+    48,
+    60,
+    72,
+    108,
+    120,
+    132,
+    144,
+    156,
+    162,
+    164,
+    166,
+    168,
+    170,
+    174,
+    175,
+    176
+  ],
+  "preserved_content": "Only control strips and sampled vectors. No balance, panel, full-screen frame or signing material.",
+  "limits": "One Pixel 10 recording. Device input, rewards and other devices unverified."
+}

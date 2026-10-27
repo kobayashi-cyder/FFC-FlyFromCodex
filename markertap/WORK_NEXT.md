@@ -1,3 +1,18 @@
+# 再開時の状態 — MarkerTap v1.143
+
+更新日：2026-10-27（JST）。作業ブランチは `markertap/kaitaku-actions-v1.143`。基底はv1.141の `87d5f414600fa0427b8d4da8dd0cb84b5fdfd7aa`、その上にv1.142とv1.143の変更を順に適用します。
+
+- [配布APK](releases/MarkerTap-v1.143-signed.apk?raw=true)、`jp.tapmarker.lite` / versionName `1.143` / versionCode `146`
+- [最新版README](v1.143-kaitaku-actions/README.md)、[検証結果](v1.143-kaitaku-actions/validation-local.json)
+- 復元は `v1.143-kaitaku-actions/restore_project.py`、検証ビルドは `v1.143-kaitaku-actions/build_ci.py`。古いcode/だけから再開しない。
+- タップ効率・オート強化・追加ボタンとミッション受取ループを追加。ミニゲームは対象アプリが公開する名称を取得できる場合に限定。
+- 実機で、旧版からの上書き更新、標準設定の移行、CM後の復帰、左右の強化、実際のミッション一覧と報酬加算を確認する。名称を取得できないミニゲームは録画・画像見本の追加が必要。
+- 実機入力、報酬加算、日次全完了、長時間運転は未検証。ホスト試験の成功と区別する。
+
+以下はv1.142以前の引継ぎ記録です。
+
+---
+
 # 再開時の状態
 
 更新日：2026-10-27（JST）
@@ -6,20 +21,26 @@
 
 | 項目 | 状態 |
 | --- | --- |
-| 更新候補 | MarkerTap v1.141 / versionCode 144 |
+| 更新候補 | MarkerTap v1.142 / versionCode 145 |
 | パッケージ | `jp.tapmarker.lite` |
-| 作業ブランチ | `markertap/reward-window-v1.141` |
-| コード改修コミット | `cfc86e2651290e0b7df8a4c78951c3f631a704a4` |
-| レビュー | [PR #22](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/22)、ドラフト・未マージ |
-| 復元 | `v1.141-reward-window/restore_project.py` |
-| ビルド・回帰・APK検査 | `v1.141-reward-window/build_ci.py` |
-| 署名済みAPK | 会話添付の `MarkerTap-v1.141-signed.apk` |
-| 検証記録 | [validation-local.json](v1.141-reward-window/validation-local.json) |
-| CI | [コード改修コミットの成功記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/40414483942)、未署名成果物 |
+| 作業ブランチ | `markertap/kaitaku-v1.142` |
+| 基底コミット | `87d5f414600fa0427b8d4da8dd0cb84b5fdfd7aa`（v1.141） |
+| 基底のレビュー | [PR #22](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/22)、ドラフト・未マージ |
+| 復元 | `v1.142-kaitaku/restore_project.py` |
+| ビルド・回帰・APK検査 | `v1.142-kaitaku/build_ci.py` |
+| 署名済みAPK | 会話添付の `MarkerTap-v1.142-signed.apk` |
+| 検証記録 | [validation-local.json](v1.142-kaitaku/validation-local.json) |
+| 基底v1.141のCI | [コード改修コミットの成功記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/40414483942)、未署名成果物 |
 
-開始時に [v1.141 README](v1.141-reward-window/README.md) を読みます。`code/TapMarker` の旧版表示や旧ガイドだけで再開せず、専用の復元スクリプトで基礎アーカイブと各版の変更を統合してください。
+開始時に [v1.142 README](v1.142-kaitaku/README.md) を読みます。`code/TapMarker` の旧版表示や旧ガイドだけで再開せず、専用の復元スクリプトで基礎アーカイブと各版の変更を統合してください。
 
-## 確認できていること
+## v1.142の追加と次の実機確認
+
+開拓うさぎの独立した状態・パッケージ別設定・左右のボタン判定・「このままはじめる」の確認を追加しました。録画の17場面、44項目の新規テストと既存の回帰テスト、APK内部15箇所の接続を確認します。実機入力、報酬加算、未知のポップアップ、長時間運転は未検証です。
+
+旧版で全停止し、署名済みv1.142へ更新して、開拓うさぎの実画面で自動開始してください。農園・増えうさぎの開始も個別に確認します。
+
+## v1.141以前に確認できていること
 
 - 添付診断画像の報酬画面を従来の見本で認識できないことを再現しました。見出しと「閉じる」の独立2領域を追加し、可視範囲内にある時だけ候補にします。
 - 一部が画面外に延びるウインドウ範囲を可視部分へ交差させます。反転・空・交差なしの範囲は拒否します。実際の失敗時の範囲値と、報酬判定不一致との因果順序は未確定です。
