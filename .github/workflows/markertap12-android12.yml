@@ -1,0 +1,65 @@
+name: MarkerTap12 Android 12 validation
+on:
+  push:
+    branches: ["markertap/MarkerTap12-android12"]
+    paths:
+      - ".github/workflows/markertap12-android12.yml"
+      - "markertap/MarkerTap12/**"
+      - "markertap/v1.143-kaitaku-actions/**"
+      - "markertap/v1.142-kaitaku/**"
+      - "markertap/v1.141-reward-window/**"
+      - "markertap/v1.140-recovery-progress/**"
+      - "markertap/v1.139-f52a-physical/**"
+      - "markertap/v1.134-autonomy/**"
+      - "markertap/v1.130-crashfix/**"
+      - "markertap/v1.132-stability/**"
+      - "markertap/v1.133-stability/**"
+  pull_request:
+    branches: ["markertap/kaitaku-actions-v1.143"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK components
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Download pinned JADX 1.5.3 toolchain
+        run: |
+          mkdir -p "$RUNNER_TEMP/jadx" "$RUNNER_TEMP/results"
+          curl --fail --location --retry 3 \
+            https://github.com/skylot/jadx/releases/download/v1.5.3/jadx-1.5.3.zip \
+            --output "$RUNNER_TEMP/jadx.zip"
+          echo "8280f3799c0273fe797a2bcd90258c943e451fd195f13d05400de5e6451d15ec  $RUNNER_TEMP/jadx.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/jadx.zip" -d "$RUNNER_TEMP/jadx"
+          JADX="$(find "$RUNNER_TEMP/jadx" -name 'jadx-1.5.3-all.jar' -print -quit)"
+          test -n "$JADX"
+          echo "JADX_JAR=$JADX" >> "$GITHUB_ENV"
+      - name: Restore and audit independent MarkerTap12 source
+        run: |
+          python3 markertap/MarkerTap12/restore_project.py "$RUNNER_TEMP/markertap12-source"
+          python3 markertap/MarkerTap12/marker_tap12_audit.py "$RUNNER_TEMP/markertap12-source"
+      - name: Build and run inherited regression gates
+        run: |
+          python3 markertap/MarkerTap12/build_ci.py \
+            --sdk "$ANDROID_HOME" \
+            --jadx "$JADX_JAR" \
+            --output "$RUNNER_TEMP/results"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: markertap12-android12-validation
+          path: |
+            ${{ runner.temp }}/results/**
+          if-no-files-found: warn
+          retention-days: 14
