@@ -83,6 +83,9 @@ def apply_profile(project):
              '                strings.append(value)\n'
              '                locations.append((at,length,encoding))')
     once(packager, before, after)
+    host_tests = project / "run-host-tests.sh"
+    once(host_tests, "'1.143'.encode('utf-16le')", "'12.00'.encode('utf-16le')")
+    once(host_tests, "ManifestVersionTest: v1.143/versionCode1200 rewrite passed", "ManifestVersionTest: v12.00/versionCode1200 rewrite passed")
 
     # Manifest generation inputs may live outside package_apk.py.
     found_package = []
