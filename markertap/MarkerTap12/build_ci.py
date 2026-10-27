@@ -15,8 +15,8 @@ replacements = [
     ("'version_code':137", "'version_code':1200"),
     ("'autonomy-build-results'", "'MarkerTap12-build-results'"),
     ("str(HERE/'restore_project.py')", "str(ROOT/'markertap'/'MarkerTap12'/'restore_project.py')"),
-    ("name='jp.tapmarker.lite'", "name='jp.tapmarker12.lite'"),
-    ("'package':'jp.tapmarker.lite'", "'package':'jp.tapmarker12.lite'"),
+    ("name='jp.tapmarker.lite'", "name='io.tapmarker.lite'"),
+    ("'package':'jp.tapmarker.lite'", "'package':'io.tapmarker.lite'"),
 ]
 for old, new in replacements:
     if old not in source:
