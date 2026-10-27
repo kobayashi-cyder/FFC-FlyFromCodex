@@ -46,7 +46,6 @@ def apply_profile(project):
     if manifest.exists():
         text = manifest.read_text(encoding="utf-8")
         text = text.replace('package="jp.tapmarker.lite"', 'package="jp.tapmarker12.lite"')
-        text = text.replace('android:targetSdkVersion="35"', 'android:targetSdkVersion="31"')
         text = re.sub(r'android:versionCode="\d+"', 'android:versionCode="1200"', text, count=1)
         text = re.sub(r'android:versionName="[^"]+"', 'android:versionName="12.0.0"', text, count=1)
         manifest.write_text(text, encoding="utf-8")
@@ -59,7 +58,6 @@ def apply_profile(project):
         except (UnicodeDecodeError, OSError):
             continue
         updated = data.replace("jp.tapmarker.lite", "jp.tapmarker12.lite")
-        updated = updated.replace('android:targetSdkVersion="35"', 'android:targetSdkVersion="31"')
         updated = re.sub(r'(def manifest_version\(data, code=)\d+(, version=")[^"]+("\):)', r'\g<1>1200\g<2>12.0.0\g<3>', updated)
         updated = re.sub(r'versionCode\s*=?\s*\d+', 'versionCode1200', updated)
         updated = re.sub(r"(['\"]version_code['\"]\s*:\s*)\d+", r'\g<1>1200', updated)
@@ -73,7 +71,6 @@ def apply_profile(project):
 
     # Manifest generation inputs may live outside package_apk.py.
     found_package = []
-    found_sdk = []
     for item in project.rglob("*"):
         if not item.is_file():
             continue
@@ -83,15 +80,10 @@ def apply_profile(project):
             continue
         if "jp.tapmarker12.lite" in body:
             found_package.append(str(item.relative_to(project)))
-        if "targetSdkVersion" in body:
-            found_sdk.append((str(item.relative_to(project)), "31" in body))
     if not found_package:
         raise RuntimeError("MarkerTap12 package ID not found in restored text sources")
     print("MarkerTap12 package source: " + ", ".join(found_package[:12]))
-    print("targetSdkVersion source candidates: " + repr(found_sdk[:12]))
-    if found_sdk and not any(ok for _, ok in found_sdk):
-        raise RuntimeError("target SDK 31 not found in source inputs")
-    print("MarkerTap12 profile patched; APK metadata will be checked after packaging")
+    print("MarkerTap12 package/version profile patched; Android SDK metadata will be checked from the built APK")
 
 def main():
     if len(sys.argv) != 2:
