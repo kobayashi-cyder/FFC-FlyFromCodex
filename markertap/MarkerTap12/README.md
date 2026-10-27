@@ -7,7 +7,7 @@ Status: implementation branch; build and device validation are not yet confirmed
 - Target device: FCNT arrows F-52A / Android 12
 - target SDK follows the inherited runtime profile (API 35); compile/build tools remain API 35
 - Independent application ID: `jp.tapmarker12.lite`
-- versionName: `12.0.0`; versionCode: `1200`
+- versionName: `12.00`; versionCode: `1200`
 - Existing MarkerTap (`jp.tapmarker.lite`) remains unchanged and should be able to coexist.
 - The original v1.143 signing key is not in this repository; this line does not claim to update the installed MarkerTap app.
 
