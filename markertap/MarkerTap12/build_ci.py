@@ -17,6 +17,7 @@ replacements = [
     ("str(HERE/'restore_project.py')", "str(ROOT/'markertap'/'MarkerTap12'/'restore_project.py')"),
     ("name='jp.tapmarker.lite'", "name='jp.tapmarker12.lite'"),
     ("'package':'jp.tapmarker.lite'", "'package':'jp.tapmarker12.lite'"),
+    ("for text in [\"name='jp.tapmarker12.lite'\",\"versionCode='1200'\",\"versionName='12.0.0'\"]:", "for text in [\"name='jp.tapmarker12.lite'\",\"versionCode='1200'\",\"versionName='12.0.0'\",\"targetSdkVersion:'35'\"]:"),
 ]
 for old, new in replacements:
     if old not in source:
