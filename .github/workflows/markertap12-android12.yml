@@ -45,6 +45,9 @@ jobs:
           JADX="$(find "$RUNNER_TEMP/jadx" -name 'jadx-1.5.3-all.jar' -print -quit)"
           test -n "$JADX"
           echo "JADX_JAR=$JADX" >> "$GITHUB_ENV"
+      - name: Check MarkerTap12 Python build scripts
+        run: |
+          python3 -m py_compile markertap/MarkerTap12/restore_project.py markertap/MarkerTap12/marker_tap12_audit.py markertap/MarkerTap12/build_ci.py
       - name: Restore and audit independent MarkerTap12 source
         run: |
           python3 markertap/MarkerTap12/restore_project.py "$RUNNER_TEMP/markertap12-source"
