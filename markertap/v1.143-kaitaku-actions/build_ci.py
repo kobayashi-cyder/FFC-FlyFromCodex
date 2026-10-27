@@ -7,7 +7,7 @@ here=Path(__file__).resolve().parent
 out=Path(known.output).resolve() if known.output else here.parents[1]/'kaitaku-build-results'
 source=(here.parent/'v1.134-autonomy/build_ci.py').read_text()
 replacements={
- '1.134':'1.143',"versionCode='137'":"versionCode='146'","'version_code':137":"'version_code':146",
+ '1.134':'1.144',"versionCode='137'":"versionCode='147'","'version_code':137":"'version_code':147",
  "'autonomy-build-results'":"'kaitaku-build-results'",
  "'new_regression_checks':38":"'new_regression_checks':'Kaitaku recorded action strips, mission claim loop, named mini-game, factory migration; inherited regression and eight replay digests'",
  "'tools/AutonomyDeadlineAudit.java']":"'tools/AutonomyDeadlineAudit.java','tools/ReturnProgressAudit.java','tools/RewardWindowAudit.java','tools/KaitakuAudit.java','tools/KaitakuActionsAudit.java']",
