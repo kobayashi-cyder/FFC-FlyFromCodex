@@ -61,6 +61,32 @@ jobs:
             --sdk "$ANDROID_HOME" \
             --jadx "$JADX_JAR" \
             --output "$RUNNER_TEMP/results"
+      - name: Sign a standalone installable test APK
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          UNSIGNED="$RUNNER_TEMP/results/MarkerTap12-v12.00-unsigned.apk"
+          SIGNED="$RUNNER_TEMP/results/MarkerTap12-v12.00-signed.apk"
+          test -s "$UNSIGNED"
+          KEYSTORE="$RUNNER_TEMP/markertap12-ci.jks"
+          PASS="$(python3 -c 'import secrets; print(secrets.token_hex(24))')"
+          keytool -genkeypair -noprompt -keystore "$KEYSTORE" -storetype JKS \
+            -alias markertap12-ci -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=MarkerTap12 temporary CI signing" \
+            -storepass "$PASS" -keypass "$PASS"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign \
+            --ks "$KEYSTORE" --ks-type JKS --ks-key-alias markertap12-ci \
+            --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
+            --out "$SIGNED" "$UNSIGNED"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$SIGNED" \
+            > "$RUNNER_TEMP/results/signature-verification.txt"
+          sha256sum "$SIGNED" > "$RUNNER_TEMP/results/MarkerTap12-v12.00-signed.sha256"
+          printf '%s\n' \
+            'This APK is signed with a temporary CI key so it can be installed for testing.' \
+            'The key is not retained; before installing a later build, uninstall this test APK first.' \
+            'This does not certify real-device tapping or game autonomy.' \
+            > "$RUNNER_TEMP/results/SIGNING-NOTE.txt"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
