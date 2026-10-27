@@ -6,13 +6,6 @@ import re, subprocess, sys
 HERE = Path(__file__).resolve().parent
 REPO_MARKERTAP = HERE.parent
 
-def replace_once(path, old, new):
-    data = path.read_text(encoding="utf-8")
-    count = data.count(old)
-    if count != 1:
-        raise RuntimeError(f"{path}: expected one occurrence of {old!r}, got {count}")
-    path.write_text(data.replace(old, new), encoding="utf-8")
-
 def apply_profile(project):
     manifest = project / "AndroidManifest.xml"
     if not manifest.exists():
@@ -26,8 +19,8 @@ def apply_profile(project):
         raise RuntimeError("MarkerTap12 manifest profile did not apply cleanly")
     manifest.write_text(text, encoding="utf-8")
 
-    # Keep package identity consistent in generated-resource references, diagnostics,
-    # and build metadata. Only UTF-8 text files are modified; binary assets are untouched.
+    # Keep package identity and release metadata consistent throughout the generated project.
+    # Only UTF-8 text files are changed; binary assets are untouched.
     for path in project.rglob("*"):
         if not path.is_file() or path == manifest:
             continue
@@ -36,17 +29,15 @@ def apply_profile(project):
         except (UnicodeDecodeError, OSError):
             continue
         updated = data.replace("jp.tapmarker.lite", "jp.tapmarker12.lite")
-        updated = updated.replace('versionName="1.143"', 'versionName="12.0.0"')
-        updated = updated.replace('versionName="1.144"', 'versionName="12.0.0"')
-        updated = updated.replace('versionCode146', 'versionCode1200').replace('versionCode147', 'versionCode1200')
-        updated = updated.replace('code=146, version="1.143"', 'code=1200, version="12.0.0"')
-        updated = updated.replace('code=147, version="1.144"', 'code=1200, version="12.0.0"')
-        updated = updated.replace("'version_code':146", "'version_code':1200").replace("'version_code':147", "'version_code':1200")
+        updated = re.sub(r'(def manifest_version\(data, code=)\d+(, version=")[^"]+("\):)', r'\g<1>1200\g<2>12.0.0\g<3>', updated)
+        updated = re.sub(r'versionCode\s*=?\s*\d+', 'versionCode1200', updated)
+        updated = re.sub(r"(['\"]version_code['\"]\s*:\s*)\d+", r'\g<1>1200', updated)
+        updated = updated.replace('versionName="1.143"', 'versionName="12.0.0"').replace('versionName="1.144"', 'versionName="12.0.0"')
+        updated = updated.replace('return "v1.143"', 'return "v12.0.0"').replace('return "v1.144"', 'return "v12.0.0"')
         updated = updated.replace("MarkerTap-v1.143", "MarkerTap12-v12.0.0").replace("MarkerTap-v1.144", "MarkerTap12-v12.0.0")
         if updated != data:
             path.write_text(updated, encoding="utf-8")
 
-    # Final invariants: no build is allowed to proceed with the legacy app ID or SDK 35.
     manifest_text = manifest.read_text(encoding="utf-8")
     if 'package="jp.tapmarker.lite"' in manifest_text or 'android:targetSdkVersion="35"' in manifest_text:
         raise RuntimeError("Legacy application identity or target SDK remains in manifest")
