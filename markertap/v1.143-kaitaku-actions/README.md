@@ -8,6 +8,7 @@ This candidate is based on the reviewed v1.143 source branch and changes the tar
 - minSdkVersion remains 24.
 - targetSdkVersion: 31 (Android 12 compatibility profile).
 - Existing tap/state machine logic is retained from v1.143, including fresh-frame gating and safe stop/reclassification behavior.
+- Each physical gesture request now records a bounded event trace: event ID, target package, phase, run token, image age, stroke count, and queued/completed/rejected/cancelled/timeout/exception outcome. The latest trace is included in physical incident diagnostics; delayed callbacks cannot overwrite a newer event trace.
 
 ## Build and verification
 Use Java 17, Python 3, Android API 35 / Build Tools 35.0.0, and JADX 1.5.3.
