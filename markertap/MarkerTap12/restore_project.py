@@ -69,11 +69,20 @@ def apply_profile(project):
         if updated != data:
             path.write_text(updated, encoding="utf-8")
 
-    # The original APK manifest is binary XML. Patch the package string in-place;
-    # the replacement has the same encoded byte length as the original.
+    # Patch the package ID in the parsed binary XML string pool. The replacement
+    # is equal-length, so all string offsets and chunk sizes remain valid.
     packager = project / "tools/package_apk.py"
-    signature = 'def manifest_version(data, code=1200, version="12.00"):'
-    once(packager, signature, signature + '\n    old_package = b"jp.tapmarker.lite"\n    new_package = b"io.tapmarker.lite"\n    occurrences = data.count(old_package)\n    if occurrences < 1:\n        raise ValueError("original package ID not found in encoded manifest")\n    data = data.replace(old_package, new_package)\n')
+    before = '                strings.append(bytes(data[at:at+length]).decode(encoding))\n                locations.append((at,length,encoding))'
+    after = ('                value = bytes(data[at:at+length]).decode(encoding)\n'
+             '                if value == "jp.tapmarker.lite":\n'
+             '                    replacement = "io.tapmarker.lite".encode(encoding)\n'
+             '                    if len(replacement) != length:\n'
+             '                        raise ValueError("replacement package ID must retain its encoded length")\n'
+             '                    data[at:at+length] = replacement\n'
+             '                    value = "io.tapmarker.lite"\n'
+             '                strings.append(value)\n'
+             '                locations.append((at,length,encoding))')
+    once(packager, before, after)
 
     # Manifest generation inputs may live outside package_apk.py.
     found_package = []
