@@ -1,0 +1,42 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'jp.three_domain.chatvoice'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'jp.three_domain.chatvoice'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+    }
+
+    def ksPath = System.getenv('CHAT_VOICE_KEYSTORE_FILE')
+    def ksPass = System.getenv('CHAT_VOICE_STORE_PASSWORD')
+    def alias = System.getenv('CHAT_VOICE_KEY_ALIAS')
+    def keyPass = System.getenv('CHAT_VOICE_KEY_PASSWORD')
+    if (ksPath && ksPass && alias && keyPass) {
+        signingConfigs {
+            release {
+                storeFile file(ksPath)
+                storePassword ksPass
+                keyAlias alias
+                keyPassword keyPass
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ksPath && ksPass && alias && keyPass) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
