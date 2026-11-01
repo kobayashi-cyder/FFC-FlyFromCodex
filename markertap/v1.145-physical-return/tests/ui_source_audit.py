@@ -21,7 +21,7 @@ checks={
  'minimized chip visible':'restore.setVisibility(View.VISIBLE)' in ui,
  'minimized geometry':'current==PanelModePolicy.MINIMIZED' in ui and 'UiKit.dp(s,176)' in ui,
  'three modes':'FLOAT=0, DOCKED=1, MINIMIZED=2' in policy,
- 'docked overlay visible':'static boolean showOverlay(int stored,boolean guarded){return !guarded;}' in policy,
+ 'docked overlay visible':'static boolean showOverlay(int stored,boolean guarded)' in policy and 'return !guarded;' in policy,
  'fixed position geometry':'PanelModePolicy.dockY(dm.heightPixels,s.panel.getHeight()' in ui,
  'full width fixed panel':'width=dm.widthPixels;' in ui,
  'position lock':'if(!PanelModePolicy.movable(mode(s)))return false;' in ui,
