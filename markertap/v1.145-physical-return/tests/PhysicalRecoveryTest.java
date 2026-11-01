@@ -11,7 +11,7 @@ final class PhysicalRecoveryTest {
   AutoPilot p=new AutoPilot();charged(p,3,1,85000);cycle(p,100000);long epoch=p.phases.engine.epoch;
   ProgressWatchdog watchdog=new ProgressWatchdog();
   for(long now=100350;now<115000;now+=350){cycle(p,now);check(p.phases.engine.epoch==epoch,"same-state reentry during settlement");check(p.s.sent==0,"launch before shared cooldown");check(PhysicalRecoveryBridge.observe(watchdog,sample(p,15789),now)==null,"false FRAME_STALE during external wait");}
-  check(PhysicalRecoveryBridge.append("report",p.target).contains("foreground=com.example.external"),"missing foreground diagnostics");
+  check(PhysicalRecoveryBridge.append("report",p.target,p.phases).contains("foreground=com.example.external"),"missing foreground diagnostics");
   cycle(p,115050);check(p.s.sent==1,"bounded external restart must not require unavailable game image");check(p.adExit.recovery.physicalRestarts()==2,"original restart counter not shared");check((p.s.last.flags&Intent.FLAG_ACTIVITY_CLEAR_TASK)!=0,"restart flag absent");
   cycle(p,145049);check(p.active&&p.s.sent==1,"last restart must settle");cycle(p,145050);check(!p.active&&p.s.progressErrors.fatals==1&&p.s.progressErrors.code.equals("FOREGROUND_RETURN_FAILED"),"exhaustion must stop with correct reason");
 
@@ -38,13 +38,22 @@ final class PhysicalRecoveryTest {
   p=new AutoPilot();p.s.guarded=true;cycle(p,700000);cycle(p,702000);check(p.s.sent==0&&p.adExit.recovery.physicalReturns()==0,"guard bypass");p.s.guarded=false;p.s.dialog=true;cycle(p,703000);check(p.s.sent==0,"dialog bypass");p.s.dialog=false;cycle(p,704000);check(p.s.sent==1,"recovery failed after guard cleared");
 
   // Failed launch is charged once and rate limited, rather than retried every poll.
-  p=new AutoPilot();p.s.launchFails=true;cycle(p,800000);cycle(p,802000);cycle(p,802350);check(p.s.sent==1&&p.adExit.recovery.physicalReturns()==1,"failed launch budget not charged");check(PhysicalRecoveryBridge.append("",p.target).contains("起動例外"),"launch failure not recorded");
+  p=new AutoPilot();p.s.launchFails=true;cycle(p,800000);cycle(p,802000);cycle(p,802350);check(p.s.sent==1&&p.adExit.recovery.physicalReturns()==1,"failed launch budget not charged");check(PhysicalRecoveryBridge.append("",p.target,p.phases).contains("起動例外"),"launch failure not recorded");
 
   // Missing launch intent also has backoff and an absolute deadline.
   p=new AutoPilot();p.s.pm.missing=true;cycle(p,900000);cycle(p,902000);check(p.s.sent==0,"missing Intent dispatched");cycle(p,990000);check(!p.active,"missing launch target waits forever");
 
   // Other games, custom profiles and virtual sessions retain their original entrypoint.
   for(int mode=0;mode<3;mode++){p=new AutoPilot();if(mode==0)p.target="com.kurashiru.nouen.usagi";if(mode==1)p.phases.customized=true;if(mode==2)p.splitPilot.active=true;cycle(p,1100000);check(p.delegations==1&&p.s.sent==0,"unrelated runner intercepted");}
+
+  // A diagnostic report must use the exact run, not an arbitrary older same-app instance.
+  AutoPilot older=new AutoPilot();cycle(older,1000000);
+  AutoPilot latest=new AutoPilot();cycle(latest,1000500);latest.s.launchFails=true;
+  cycle(latest,1002500);
+  String own=PhysicalRecoveryBridge.append("report",latest.target,latest.phases);
+  check(own.contains("起動例外"),"report selected a different active session");
+  check(!PhysicalRecoveryBridge.append("report",latest.target,older.phases).contains("起動例外"),
+   "diagnostics are leaking across runs for the same app");
 
   // Duplicate/stale home observations cannot reset an episode; two fresh distinct ones can.
   PhysicalReturnEpisode g=new PhysicalReturnEpisode();g.begin(1200000);check(!g.home(true,1200100,1,1200100),"one frame cleared episode");check(!g.home(true,1200100,1,1200500),"duplicate cleared episode");check(!g.home(true,1200500,2,1200500),"changed window cleared episode");check(g.home(true,1200900,2,1200900)&&g.started<0,"fresh same-window pair failed");
@@ -58,7 +67,7 @@ final class PhysicalRecoveryTest {
   // Foreground return alone must not count as autonomy: missing home evidence expires.
   p=new AutoPilot();cycle(p,1700000);p.foreground=p.target;cycle(p,1701000);
   check(p.active,"returned foreground should first be given a home-reacquisition window");
-  String details=PhysicalRecoveryBridge.append("report",p.target);
+  String details=PhysicalRecoveryBridge.append("report",p.target,p.phases);
   check(details.contains("開拓うさぎ入力判定：phase=kaitaku-default-verify")&&
         details.contains("sampleAgeMs=-1")&&details.contains("windowValid=true"),
         "physical no-tap gate is absent from the failure report");
