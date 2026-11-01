@@ -12,6 +12,15 @@ checks={
  'service initial mode':'initializePanel(TapService s)' in ui and 'sync(s);' in ui,
  'float restore action':'showPanel(TapService s)' in ui,
  'fixed docking action':'dockPanel(TapService s)' in ui,
+ 'minimize action':'minimizePanel(TapService s)' in ui,
+ 'restore action':'restorePanel(TapService s)' in ui,
+ 'restore button in SAME window':'s.panel.addView(restore);' in ui and 'restore.setTag(MINI_TAG);' in ui,
+ 'mode retention':'LAST_EXPANDED' in ui and 'putInt(LAST_EXPANDED,PanelModePolicy.expanded(prior))' in ui,
+ 'restore previous expanded mode':'PanelModePolicy.restoredMode(previous)' in ui,
+ 'minimize hides children not window':'applyChildren(s,current);' in ui and 'child.setVisibility(View.GONE)' in ui,
+ 'minimized chip visible':'restore.setVisibility(View.VISIBLE)' in ui,
+ 'minimized geometry':'current==PanelModePolicy.MINIMIZED' in ui and 'UiKit.dp(s,176)' in ui,
+ 'three modes':'FLOAT=0, DOCKED=1, MINIMIZED=2' in policy,
  'docked overlay visible':'static boolean showOverlay(int stored,boolean guarded){return !guarded;}' in policy,
  'fixed position geometry':'PanelModePolicy.dockY(dm.heightPixels,s.panel.getHeight()' in ui,
  'full width fixed panel':'width=dm.widthPixels;' in ui,
@@ -30,13 +39,15 @@ checks={
  'shipping panel class allowed':'ROOT+"PanelModeController"' in patch,
  'APK version 1.146':"replacement='1.146'.encode(enc)" in build,
  'APK code 149':"struct.pack_into('<I',data,at+16,149)" in build,
- 'both modes':'FLOAT=0, DOCKED=1' in policy,
+
  '48dp touch':'dp(c,48)' in ui,
  'non-color mode label':'modeLabel(mode(a))' in ui,
  'screen lock guard':'s.isScreenGuarded()' in ui,
 }
 dock=re.search(r'static void dockPanel\(TapService s\)\s*\{([^{}]*)\}',ui,re.S)
 checks['docking never stops automation']=bool(dock) and not re.search(r'\b(stop|stopAll|stopMarkers|cancel)\s*\(',dock.group(1))
+mini=re.search(r'static void minimizePanel\(TapService s\)\s*\{([^{}]*)\}',ui,re.S)
+checks['minimization never stops automation']=bool(mini) and not re.search(r'\b(stop|stopAll|stopMarkers|cancel)\s*\(',mini.group(1))
 checks['nonhide UI']=not any(token in ui for token in ['hidePanel(', 'フロートを隠す', '通常画面のみ（フロート非表示）'])
 for label,ok in checks.items():
  if not ok:raise AssertionError(label)
