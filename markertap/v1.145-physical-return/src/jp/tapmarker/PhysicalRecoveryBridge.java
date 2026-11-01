@@ -38,7 +38,15 @@ final class PhysicalRecoveryBridge {
    }
    boolean home=p.phaseWindowVersion==p.s.inputTargetVersion&&p.snapshotWindowCurrent(p.phaseWindowScope,p.phaseWindowVersion)&&
     p.phases.engine.current.equals("kaitaku-default-main")&&KaitakuPreset.home(p.phaseSamples);
-   if(r.episode.home(home,p.phaseSampleTakenAt,p.phaseWindowVersion,now))r.reported=false;
+   if(r.episode.home(home,p.phaseSampleTakenAt,p.phaseWindowVersion,now)){
+    r.reported=false;r.returnedAt=0; // The verified main screen ends reacquisition grace.
+   }
+   // A foreground package is not the same as a verified, tappable game screen.
+   // The old path only enforced the episode deadline while the package was external.
+   if(r.returnedAt>0&&r.episode.expired(now)){
+    fail(p,r,now,"HOME_REACQUIRE_FAILED","対象ゲームは前面に戻りましたが、主画面を確認できません");
+    return true;
+   }
    return ExternalAdHandoffBridge.defer(p,expected);
   }
   if(!r.external){
@@ -71,9 +79,12 @@ final class PhysicalRecoveryBridge {
   p.schedulePhase(expected,350);return true;
  }
  private static void fail(AutoPilot p,Run r,long now){
+  fail(p,r,now,"FOREGROUND_RETURN_FAILED","対象ゲームの前面復帰を確認できません");
+ }
+ private static void fail(AutoPilot p,Run r,long now,String code,String reason){
   if(!r.reported&&p.s.progressErrors!=null){
-   r.reported=true;p.s.progressErrors.fatal(p.target,p.phases.engine,"FOREGROUND_RETURN_FAILED",
-    "対象ゲームの前面復帰を確認できません / "+r.episode.duration(now)+"ms / foreground="+r.foreground+" / "+r.result);
+   r.reported=true;p.s.progressErrors.fatal(p.target,p.phases.engine,code,
+    reason+" / "+r.episode.duration(now)+"ms / foreground="+r.foreground+" / "+r.result);
   }
   p.stopSingle(true);
  }
@@ -101,8 +112,16 @@ final class PhysicalRecoveryBridge {
   for(Map.Entry<AutoPilot,Run> e:runs.entrySet()){
    AutoPilot p=e.getKey();Run r=e.getValue();
    if(!supports(p,r.token)||!app.equals(r.app)||p.phases.engine!=r.engine)continue;
+   long now=SystemClock.uptimeMillis();
+   long frameAge=p.phaseSampleTakenAt>0&&p.phaseSampleTakenAt<=now?now-p.phaseSampleTakenAt:-1;
+   boolean windowValid=p.phaseWindowVersion==p.s.inputTargetVersion&&
+    p.snapshotWindowCurrent(p.phaseWindowScope,p.phaseWindowVersion);
+   boolean home=p.phaseSamples!=null&&KaitakuPreset.home(p.phaseSamples);
    return body+"\n前面復帰診断：foreground="+r.foreground+" / 撮影保留="+r.external+
-    " / 復帰未確認="+r.episode.duration(SystemClock.uptimeMillis())+"ms / "+r.result;
+    " / 復帰未確認="+r.episode.duration(now)+"ms / "+r.result+
+    "\n開拓うさぎ入力判定：phase="+p.phases.engine.current+" / home="+home+
+    " / sampleAgeMs="+frameAge+" / windowValid="+windowValid+
+    " / actionPending="+p.actionPending+" / returning="+p.returning;
   }
   return body;
  }
