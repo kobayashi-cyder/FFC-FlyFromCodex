@@ -44,8 +44,8 @@ checks={
  'original service hook':'"onServiceConnected"' in patch,
  'original UI bootstrap hook':'"homeBeforePanelMode"' in patch,
  'shipping panel class allowed':'ROOT+"PanelModeController"' in patch,
- 'APK version 1.147':"replacement='1.147'.encode(enc)" in build,
- 'APK code 150':"struct.pack_into('<I',data,at+16,150)" in build,
+ 'APK version 1.148':"replacement='1.148'.encode(enc)" in build,
+ 'APK code 151':"struct.pack_into('<I',data,at+16,151)" in build,
 
  '48dp touch':'dp(c,48)' in ui,
  'non-color mode label':'modeLabel(mode(a))' in ui,
