@@ -65,10 +65,10 @@ public final class PatchPhysicalReturn {
     details++;ms.add(method(m,"detailsBeforePhysicalReturn",m.getImplementation()));
     List<String> params=new ArrayList<>();for(CharSequence p:m.getParameterTypes())params.add(p.toString());
     MethodReference old=new ImmutableMethodReference(c.getType(),"detailsBeforePhysicalReturn",params,m.getReturnType());
-    MethodReference append=new ImmutableMethodReference(BRIDGE,"append",Arrays.asList("Ljava/lang/String;","Ljava/lang/String;"),"Ljava/lang/String;");
+    MethodReference append=new ImmutableMethodReference(BRIDGE,"append",Arrays.asList("Ljava/lang/String;","Ljava/lang/String;",ROOT+"AppPhases;"),"Ljava/lang/String;");
     ms.add(method(m,m.getName(),new ImmutableMethodImplementation(12,Arrays.asList(
      new ImmutableInstruction3rc(Opcode.INVOKE_VIRTUAL_RANGE,1,11,old),new ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT,0),
-     new ImmutableInstruction35c(Opcode.INVOKE_STATIC,2,0,2,0,0,0,append),new ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT,0),new ImmutableInstruction11x(Opcode.RETURN_OBJECT,0)
+     new ImmutableInstruction35c(Opcode.INVOKE_STATIC,3,0,2,3,0,0,append),new ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT,0),new ImmutableInstruction11x(Opcode.RETURN_OBJECT,0)
     ),Collections.emptyList(),Collections.emptyList())));
    }else ms.add(m);
   }
