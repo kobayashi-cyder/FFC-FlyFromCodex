@@ -118,7 +118,7 @@ public final class PatchPhysicalReturn {
   public Rewriter<Instruction> getInstructionRewriter(Rewriters r){
    final Rewriter<Instruction> parent=super.getInstructionRewriter(r);
    return i->{Instruction x=parent.rewrite(i);if(x instanceof ReferenceInstruction){Reference ref=((ReferenceInstruction)x).getReference();if(ref instanceof StringReference&&((StringReference)ref).getString().equals("v1.144")){
-    StringReference s=new ImmutableStringReference("v1.145");if(x instanceof Instruction21c)return new ImmutableInstruction21c(x.getOpcode(),((Instruction21c)x).getRegisterA(),s);if(x instanceof Instruction31c)return new ImmutableInstruction31c(x.getOpcode(),((Instruction31c)x).getRegisterA(),s);
+    StringReference s=new ImmutableStringReference("v1.146");if(x instanceof Instruction21c)return new ImmutableInstruction21c(x.getOpcode(),((Instruction21c)x).getRegisterA(),s);if(x instanceof Instruction31c)return new ImmutableInstruction31c(x.getOpcode(),((Instruction31c)x).getRegisterA(),s);
    }}return x;};
   }
  }).getDexFileRewriter().rewrite(d);}
