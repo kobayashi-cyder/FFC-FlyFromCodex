@@ -37,10 +37,10 @@ def manifest(data):
      at=pos+16+start+i*step;_,name,raw=struct.unpack_from('<3I',data,at)
      if strings[name]=='versionCode':
       assert struct.unpack_from('<I',data,at+16)[0]==147
-      struct.pack_into('<I',data,at+16,148);changes.add('code')
+      struct.pack_into('<I',data,at+16,149);changes.add('code')
      elif strings[name]=='versionName':
       idx=struct.unpack_from('<I',data,at+16)[0];assert strings[idx]=='1.144'
-      where,n,enc=locations[idx];replacement='1.145'.encode(enc);assert len(replacement)==n
+      where,n,enc=locations[idx];replacement='1.146'.encode(enc);assert len(replacement)==n
       data[where:where+n]=replacement;changes.add('name')
   pos+=size
  assert changes=={'code','name'}
@@ -78,8 +78,8 @@ def build(base,sdk,jadx):
    if name not in ('classes.dex','AndroidManifest.xml') and not signature(name):
     assert old.read(name)==new.read(name),name;kept+=1
   assert set(new.namelist())=={n for n in old.namelist() if not signature(n)}
- (evidence/'resource-preservation.json').write_text(json.dumps({'unchanged_entries':kept,'manifest_edits':['versionCode:147->148','versionName:1.144->1.145'],'target_sdk':35,'base_sha256':BASE_SHA},indent=2))
- output=ROOT/'output';output.mkdir(exist_ok=True);apk=output/'MarkerTap-v1.145-integrated-unsigned.apk'
+ (evidence/'resource-preservation.json').write_text(json.dumps({'unchanged_entries':kept,'manifest_edits':['versionCode:147->149','versionName:1.144->1.146'],'target_sdk':35,'base_sha256':BASE_SHA},indent=2))
+ output=ROOT/'output';output.mkdir(exist_ok=True);apk=output/'MarkerTap-v1.146-integrated-unsigned.apk'
  run([bt/'zipalign','-P','16','-f','4',b/'unaligned.apk',apk],evidence/'alignment-build.log')
  run([bt/'zipalign','-c','-P','16','4',apk],evidence/'alignment-check.log')
  run([bt/'aapt2','dump','badging',apk],evidence/'badging.log')
