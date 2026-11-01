@@ -1,0 +1,51 @@
+name: MarkerTap v1.146 private local build kit
+
+on:
+  push:
+    branches:
+      - markertap/panel-mode-v1.146
+    paths:
+      - .github/workflows/markertap-v1146-offline-build-kit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare pinned compiler dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          mkdir -p offline-kit/sdk/platforms/android-35
+          mkdir -p offline-kit/sdk/build-tools/35.0.0
+          mkdir -p offline-kit/jadx/lib
+          mkdir -p offline-kit/source
+          cp "$ANDROID_HOME/platforms/android-35/android.jar" offline-kit/sdk/platforms/android-35/android.jar
+          cp -a "$ANDROID_HOME/build-tools/35.0.0/." offline-kit/sdk/build-tools/35.0.0/
+          curl -fL --retry 3 https://github.com/skylot/jadx/releases/download/v1.5.3/jadx-1.5.3.zip -o "$RUNNER_TEMP/jadx.zip"
+          echo "8280f3799c0273fe797a2bcd90258c943e451fd195f13d05400de5e6451d15ec  $RUNNER_TEMP/jadx.zip" | sha256sum -c
+          unzip -p "$RUNNER_TEMP/jadx.zip" lib/jadx-1.5.3-all.jar > offline-kit/jadx/lib/jadx-1.5.3-all.jar
+          cp -a markertap/v1.145-physical-return/. offline-kit/source/
+          rm -rf offline-kit/source/build offline-kit/source/output offline-kit/source/tooling
+          cat > offline-kit/build-receipt.txt <<'RECEIPT'
+          This artifact is a temporary LOCAL build toolset.
+          It does not contain the user's APK or keystore.
+          Original signing key stays solely in the user's local isolated workspace.
+          RECEIPT
+          du -sh offline-kit
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1146-offline-kit
+          path: offline-kit/
+          retention-days: 1
+          compression-level: 6

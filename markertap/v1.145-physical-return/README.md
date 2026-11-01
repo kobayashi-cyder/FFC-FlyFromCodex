@@ -1,3 +1,51 @@
+# MarkerTap v1.146 UI・表示モード改修（開発候補）
+
+**現在の状態：2026-11-02、元の署名鍵でv1.146署名済みAPKを生成し、パッケージ/版番号/旧証明書一致/署名v2・v3/16KiB整列まで検証済み。端末でのインストールや自律動作は未確認。** 既存v1.145の検証記録・SHA-256は新しいv1.146に適用できません。
+
+## デジタル庁デザインシステムを参考にしたUI改善
+
+参考：デジタル庁デザインシステムβ版の[ボタン・概要](https://design.digital.go.jp/dads/components/button/)、[アクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)（2026-11-02参照）。
+
+- フロートの「画面下部に固定」「フロートに戻す」を操作行に設置。通常画面からも同じ切替が可能。**非表示ではなく、同じ操作パネルを画面下部に固定表示**する。さらに「最小化」は同一パネルを小さな「MarkerTapに戻す」ボタン1個へ縮め、いつでも直前の表示方法へ復帰できる。
+- 変更は `panelUi.displayMode` に保存し、最小化直前の方式は `panelUi.lastExpandedMode` へ保存。固定時は画面下部の横幅いっぱいに配置し、角丸・影を外す。ドラッグは無効。フロートに戻した時は以前のドラッグ位置を復元する。ロック中は安全のため一時非表示になり、解除時に選択した表示方法へ戻る。
+- **表示と自律処理を分離。** フロート⇄固定を切り替えても `stopAll`・`stopMarkers`・`pilot.stop` を呼ばない。全停止は独立して使う。通常画面の「操作パネル」ボタンでもフロートへ戻せる。
+- ボタンのタップ領域48dp、文字による状態表示、青い主操作・アウトラインの副操作、説明文、診断項目の可読性を改善。既存のフロートと通常画面の大部分は互換性を維持。
+- 通常画面に「自律操作の診断」を追加。対象、稼働表示、状態、画像経過、入力保留理由を示す。「実行中」と「ゲーム側の進捗確認」を混同しない。
+- 固定モードでもパネルは画面上で操作できる。ゲームの表示を妨げる場合は「最小化」で右下の「MarkerTapに戻す」だけを残す。復元時は直前のフロートまたは固定へ戻る。
+
+## 実装・検査
+
+統合版1.144（固定SHA-256）を基底とするDEXパッチに `TapService.onServiceConnected`、`TapService.showPanel`、`TapService.refresh`、`MainActivity.home` の接続を追加。`PanelModeController` と `PanelModePolicy` を梱包し、既存データ/署名秘密鍵は変更しない。ビルド上の予定値は `versionName=1.146` / `versionCode=149`。
+
+GitHub Actions：[v1.146ホスト検証の成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41355059709)。物理復帰171項目、表示モード13項目、UIソース接続19項目が成功。**DEX統合ビルド、APK署名、端末のユーザー補助サービス、実ゲームでの入力・UI復帰操作はテストしていない。** APKの新しいハッシュ値も未発行。
+
+## オリジナル証明書による署名（2026-11-02 完了・ローカル成果物）
+
+ユーザーの保存ライブラリから **v1.144統合版の正本APK**（SHA-256 `f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970`）と **MarkerTap-lite-signing-backup(1).zip** を確認し、ユーザー所有の鍵を隔離した作業領域内でのみ復元しました。正本からv1.146 APKを実際に構築し、旧証明書SHA-256 `7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1` を使って署名。**APK Signature Scheme v2/v3を両方検証し、16KiB zipalign、ZIP CRC、versionName 1.146 / versionCode 149 を確認しました。** 署名用の作業用鍵コピーは検証完了後に消去し、GitHubへコミットしていません。
+
+実際に署名できたAPKのSHA-256は `234712319aec900a0e188df7a822e66e6cf2ae74493046909ed2741314f2f3f6`、サイズ5,647,203 bytes。ホスト検証は実画面復帰171項目、表示モード30項目、ソース接続監査37項目に合格。ソース基準コミット `279da83b7dc75d6f68b0c181dcf1079ac7c108c2`。**署名済みAPKはChatGPT会話内の成果物として提供済みですが、GitHub ReleasesやREADMEから直接ダウンロードできる形では未公開です。** 実機へのインストール・Pixel 10での動作・開拓うさぎの報酬回収は未検証。
+
+元の署名鍵で同じ成果物を再構築する場合のコマンドは次のとおりです。ここに鍵やパスワードをコミットしないでください。
+
+```bash
+export MARKERTAP_STORE_PASSWORD='<local secret>'
+# MARKERTAP_KEY_PASSWORD is required only if the key uses a different password
+python3 sign-release.py \\
+  --unsigned output/MarkerTap-v1.146-integrated-unsigned.apk \\
+  --keystore /private/path/lite-development.jks \\
+  --sdk tooling/sdk \\
+  --out output/MarkerTap-v1.146-integrated-signed.apk
+unset MARKERTAP_STORE_PASSWORD MARKERTAP_KEY_PASSWORD
+```
+
+署名結果の受入条件は従来証明書SHA-256 `7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1` の一致、APK v2/v3、16KiB zipalign、パッケージ `jp.tapmarker.lite`、versionCode149。条件を満たさないAPKは破棄し、配布しない設計です。
+
+## 既知のリスクと実機受入条件
+
+実機では、フロート表示→画面下部固定→最小化→直前の固定バーへ復元→フロート復帰、通常画面からの自律開始・全停止、Androidサービス再起動・画面ロック解除・縦横変化、開拓うさぎの広告復帰とゲーム進行、ミッション受取、報酬加算を確認すること。更新失敗や旧署名との不一致を避けるため、元の非公開署名鍵で署名し、以前の証明書との一致が確認できるまで配布しない。
+
+---
+
 # MarkerTap v1.145 統合版：実画面の前面復帰待ち
 
 開拓うさぎが外部画面にいる間、広告復帰状態への再入場と復帰要求の作り直しが続き、30秒の再起動待ちの途中で15秒の `FRAME_STALE` が報告される経路を修正します。

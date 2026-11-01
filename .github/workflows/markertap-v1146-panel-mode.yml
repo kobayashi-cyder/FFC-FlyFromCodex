@@ -1,0 +1,36 @@
+name: MarkerTap 1.146 panel modes and physical recovery tests
+
+on:
+  push:
+    branches:
+      - markertap/panel-mode-v1.146
+    paths:
+      - 'markertap/v1.145-physical-return/**'
+      - '.github/workflows/markertap-v1146-panel-mode.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify physical recovery and persistent mode policy
+        working-directory: markertap/v1.145-physical-return
+        run: python3 run-tests.py
+      - name: Check secure signing command syntax without accessing keys
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          python3 -m py_compile sign-release.py build.py setup-toolchain.py
+          python3 sign-release.py --help > /dev/null
+      - name: Publish limitations
+        run: |
+          echo 'Pure Java and source audit only. This does not compile a shipping APK.'
+          echo 'The pinned v1.144 baseline APK and original keystore remain external.'
