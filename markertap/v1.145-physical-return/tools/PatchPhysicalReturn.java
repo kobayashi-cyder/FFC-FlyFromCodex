@@ -93,6 +93,17 @@ public final class PatchPhysicalReturn {
  static ClassDef patch(ClassDef c){
   if(c.getType().equals(ROOT+"RecoveryEscalation;"))return getters(c);
   if(c.getType().equals(ROOT+"TapService;")||c.getType().equals(ROOT+"MainActivity;"))return panelPatch(c);
+  if(c.getType().equals(ROOT+"KaitakuUiEvidence;")){
+   List<Method> ms=new ArrayList<>();int[] calls={0};
+   for(Method m:c.getMethods()){
+    if(m.getName().equals("sample")&&desc(m).equals("("+ROOT+"PhaseEngine;Ljava/util/Map;IILjp/tapmarker/ContentViewport;J)V"))
+     ms.add(redirect(m,ROOT+"KaitakuNamedControls;","apply",ROOT+"KaitakuVideoNamedControls;","apply",
+       Arrays.asList(ROOT+"PhaseEngine;","Ljava/lang/String;","Ljava/util/List;","Ljava/util/Map;","I","I"),"V",calls));
+    else ms.add(m);
+   }
+   if(calls[0]!=1)throw new IllegalStateException("Kaitaku named UI hook changed: "+calls[0]);
+   return withMethods(c,ms);
+  }
   if(!c.getType().equals(ROOT+"AutoPilot;")&&!c.getType().equals(ROOT+"ProgressErrors;"))return c;
   List<Method> ms=new ArrayList<>();int[] count={0};int details=0;
   for(Method m:c.getMethods()){
@@ -118,7 +129,7 @@ public final class PatchPhysicalReturn {
   public Rewriter<Instruction> getInstructionRewriter(Rewriters r){
    final Rewriter<Instruction> parent=super.getInstructionRewriter(r);
    return i->{Instruction x=parent.rewrite(i);if(x instanceof ReferenceInstruction){Reference ref=((ReferenceInstruction)x).getReference();if(ref instanceof StringReference&&((StringReference)ref).getString().equals("v1.144")){
-    StringReference s=new ImmutableStringReference("v1.147");if(x instanceof Instruction21c)return new ImmutableInstruction21c(x.getOpcode(),((Instruction21c)x).getRegisterA(),s);if(x instanceof Instruction31c)return new ImmutableInstruction31c(x.getOpcode(),((Instruction31c)x).getRegisterA(),s);
+    StringReference s=new ImmutableStringReference("v1.148");if(x instanceof Instruction21c)return new ImmutableInstruction21c(x.getOpcode(),((Instruction21c)x).getRegisterA(),s);if(x instanceof Instruction31c)return new ImmutableInstruction31c(x.getOpcode(),((Instruction31c)x).getRegisterA(),s);
    }}return x;};
   }
  }).getDexFileRewriter().rewrite(d);}
@@ -160,7 +171,7 @@ public final class PatchPhysicalReturn {
  static void merge(String base,String patch,String output)throws Exception{
   List<ClassDef> classes=new ArrayList<>();Set<String> names=new HashSet<>();
   for(ClassDef c:load(base).getClasses()){classes.add(patch(c));names.add(c.getType());}
-  for(ClassDef c:load(patch).getClasses()){if(!c.getType().startsWith(ROOT+"PhysicalRecoveryBridge")&&!c.getType().startsWith(ROOT+"PhysicalReturnEpisode")&&!c.getType().startsWith(ROOT+"PanelModeController")&&!c.getType().startsWith(ROOT+"PanelModePolicy"))throw new IllegalStateException("unexpected overlay class: "+c.getType());if(!names.add(c.getType()))throw new IllegalStateException("duplicate class: "+c.getType());classes.add(c);}
+  for(ClassDef c:load(patch).getClasses()){if(!c.getType().startsWith(ROOT+"PhysicalRecoveryBridge")&&!c.getType().startsWith(ROOT+"PhysicalReturnEpisode")&&!c.getType().startsWith(ROOT+"PanelModeController")&&!c.getType().startsWith(ROOT+"PanelModePolicy")&&!c.getType().startsWith(ROOT+"KaitakuVideoModalPolicy")&&!c.getType().startsWith(ROOT+"KaitakuVideoNamedControls"))throw new IllegalStateException("unexpected overlay class: "+c.getType());if(!names.add(c.getType()))throw new IllegalStateException("duplicate class: "+c.getType());classes.add(c);}
   DexFileFactory.writeDexFile(output,version(new ImmutableDexFile(API,classes)));System.out.println("Merged "+classes.size()+" classes");
  }
  static void audit(String base,String result)throws Exception{
@@ -172,8 +183,8 @@ public final class PatchPhysicalReturn {
    if(!Arrays.equals(canonical(expected),canonical(actual)))throw new IllegalStateException("unexpected modification: "+c.getType());
    if(Arrays.equals(canonical(c),canonical(actual)))preserved++;else changed.add(c.getType());
   }
-  if(!changed.containsAll(Arrays.asList(ROOT+"AutoPilot;",ROOT+"ProgressErrors;",ROOT+"RecoveryEscalation;",ROOT+"TapService;",ROOT+"MainActivity;")))throw new IllegalStateException("hooks not integrated");
-  for(String n:after.keySet())if(!n.startsWith(ROOT+"PhysicalRecoveryBridge")&&!n.startsWith(ROOT+"PhysicalReturnEpisode")&&!n.startsWith(ROOT+"PanelModeController")&&!n.startsWith(ROOT+"PanelModePolicy"))throw new IllegalStateException("unexpected added type "+n);
+  if(!changed.containsAll(Arrays.asList(ROOT+"AutoPilot;",ROOT+"ProgressErrors;",ROOT+"RecoveryEscalation;",ROOT+"TapService;",ROOT+"MainActivity;",ROOT+"KaitakuUiEvidence;")))throw new IllegalStateException("hooks not integrated");
+  for(String n:after.keySet())if(!n.startsWith(ROOT+"PhysicalRecoveryBridge")&&!n.startsWith(ROOT+"PhysicalReturnEpisode")&&!n.startsWith(ROOT+"PanelModeController")&&!n.startsWith(ROOT+"PanelModePolicy")&&!n.startsWith(ROOT+"KaitakuVideoModalPolicy")&&!n.startsWith(ROOT+"KaitakuVideoNamedControls"))throw new IllegalStateException("unexpected added type "+n);
   if(after.size()<3)throw new IllegalStateException("new runtime absent");
   System.out.println("Original classes byte-for-byte equivalent after canonical DEX serialization: "+preserved+"; reviewed changes: "+changed+"; added: "+after.keySet());
  }
