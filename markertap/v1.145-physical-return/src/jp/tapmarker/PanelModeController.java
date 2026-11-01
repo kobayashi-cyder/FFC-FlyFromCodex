@@ -100,6 +100,17 @@ final class PanelModeController {
  }
 
  static void augmentHome(MainActivity a){
+  // The old Activity source has a hard-coded build label; use the installed APK.
+  try{
+   android.content.pm.PackageInfo installed=a.getPackageManager().getPackageInfo(a.getPackageName(),0);
+   if(a.root!=null&&a.root.getChildCount()>0&&a.root.getChildAt(0) instanceof LinearLayout){
+    LinearLayout header=(LinearLayout)a.root.getChildAt(0);
+    if(header.getChildCount()>1&&header.getChildAt(1) instanceof TextView)
+     ((TextView)header.getChildAt(1)).setText("v"+installed.versionName);
+   }
+  }catch(RuntimeException|android.content.pm.PackageManager.NameNotFoundException ignored){
+   // A missing package query must never block the app's primary controls.
+  }
   LinearLayout box=UiKit.card(a,a.content,"表示方法","通常画面とフロート表示を切り替えます。表示方法の変更では自動操作は停止しません。");
   a.content.removeView(box);
   a.content.addView(box,Math.min(1,a.content.getChildCount()));
@@ -122,12 +133,15 @@ final class PanelModeController {
   long now=SystemClock.uptimeMillis();
   long age=p.phaseSampleTakenAt>0&&p.phaseSampleTakenAt<=now?now-p.phaseSampleTakenAt:-1;
   String ageLabel=age<0?"未取得":age+"ms前";
+  String frameLabel=age<0?"画像未取得":age>=1500?"認識画像が古い・再取得待ち":"認識画像あり（進捗未確認）";
   String target=p.target==null||p.target.isEmpty()?s.currentApp:p.target;
   TextView detail=UiKit.text(a,"対象："+s.appLabel(target)
     +"\n稼働："+(p.automationRunning()?"実行中":"停止中")
     +"\n状態："+phase
     +"\n認識画像："+ageLabel
-    +"\n入力："+s.inputHold,14,INK,false);
+    +"\n画像判定："+frameLabel
+    +"\n入力："+s.inputHold
+    +"\n送信要求："+s.inputRequests+" / 完了："+s.inputCompleted+" / 拒否："+s.inputRejected+" / 中断："+s.inputCancelled,14,INK,false);
   detail.setPadding(0,UiKit.dp(a,6),0,UiKit.dp(a,8));diagnosis.addView(detail);
   UiKit.full(a,diagnosis,button(a,"進行エラーを確認",false,()->ProgressErrors.showLatest(a)));
  }
