@@ -19,6 +19,25 @@
 
 GitHub Actions：[v1.146ホスト検証の成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41355059709)。物理復帰171項目、表示モード13項目、UIソース接続19項目が成功。**DEX統合ビルド、APK署名、端末のユーザー補助サービス、実ゲームでの入力・UI復帰操作はテストしていない。** APKの新しいハッシュ値も未発行。
 
+## オリジナル証明書による署名（実行待ち）
+
+署名用の `sign-release.py` は追加済みですが、**未署名v1.146 APKと元の非公開署名鍵が現在の実行環境に存在しないため、署名処理は実行できていません。** 元のv1.144正本APKは以前の一時作業領域に存在した記録のみで、今の環境では取得できません。正本は必ずSHA-256 `f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970` と一致させます。
+
+鍵を安全な端末・CIの秘密領域に復元した場合のみ、正本から `build.py` で未署名APKを生成し、次のように署名を検証します。ここに鍵やパスワードをコミットしないでください。
+
+```bash
+export MARKERTAP_STORE_PASSWORD='<local secret>'
+# MARKERTAP_KEY_PASSWORD is required only if the key uses a different password
+python3 sign-release.py \\
+  --unsigned output/MarkerTap-v1.146-integrated-unsigned.apk \\
+  --keystore /private/path/lite-development.jks \\
+  --sdk tooling/sdk \\
+  --out output/MarkerTap-v1.146-integrated-signed.apk
+unset MARKERTAP_STORE_PASSWORD MARKERTAP_KEY_PASSWORD
+```
+
+署名結果の受入条件は従来証明書SHA-256 `7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1` の一致、APK v2/v3、16KiB zipalign、パッケージ `jp.tapmarker.lite`、versionCode149。条件を満たさないAPKは破棄し、配布しない設計です。
+
 ## 既知のリスクと実機受入条件
 
 実機では、フロート表示→画面下部固定→最小化→直前の固定バーへ復元→フロート復帰、通常画面からの自律開始・全停止、Androidサービス再起動・画面ロック解除・縦横変化、開拓うさぎの広告復帰とゲーム進行、ミッション受取、報酬加算を確認すること。更新失敗や旧署名との不一致を避けるため、元の非公開署名鍵で署名し、以前の証明書との一致が確認できるまで配布しない。
