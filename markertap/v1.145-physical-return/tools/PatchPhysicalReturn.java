@@ -17,7 +17,7 @@ import com.android.tools.smali.dexlib2.writer.pool.DexPool;
 
 /** Pinned 1.144 integrated APK overlay. Unrelated classes and resources are preserved. */
 public final class PatchPhysicalReturn {
- static final String ROOT="Ljp/tapmarker/",BRIDGE=ROOT+"PhysicalRecoveryBridge;";
+ static final String ROOT="Ljp/tapmarker/",BRIDGE=ROOT+"PhysicalRecoveryBridge;",PANEL=ROOT+"PanelModeController;";
  static final com.android.tools.smali.dexlib2.Opcodes API=com.android.tools.smali.dexlib2.Opcodes.forApi(24);
  static DexFile load(String p)throws Exception{return DexFileFactory.loadDexFile(new File(p),API);}
  static String desc(MethodReference m){StringBuilder b=new StringBuilder("(");for(CharSequence p:m.getParameterTypes())b.append(p);return b.append(')').append(m.getReturnType()).toString();}
@@ -52,8 +52,47 @@ public final class PatchPhysicalReturn {
   }
   return method(m,m.getName(),new ImmutableMethodImplementation(original.getRegisterCount(),ins,original.getTryBlocks(),original.getDebugItems()));
  }
+ static Method wrapper(Method m,String originalName,String bridgeName,String bridgeOwner){
+  String owner=m.getDefiningClass();
+  if(!desc(m).equals("()V"))throw new IllegalStateException("UI hook has changed: "+owner+"."+m.getName());
+  MethodReference destination=new ImmutableMethodReference(bridgeOwner,bridgeName,Arrays.asList(owner),"V");
+  return method(m,m.getName(),new ImmutableMethodImplementation(1,Arrays.asList(
+   new ImmutableInstruction35c(Opcode.INVOKE_STATIC,1,0,0,0,0,0,destination),
+   new ImmutableInstruction10x(Opcode.RETURN_VOID)),Collections.emptyList(),Collections.emptyList()));
+ }
+ static ClassDef panelPatch(ClassDef c){
+  List<Method> ms=new ArrayList<>();int[] count={0};int wrapped=0;
+  for(Method m:c.getMethods()){
+   if(c.getType().equals(ROOT+"TapService;")){
+    if(m.getName().equals("onServiceConnected")&&desc(m).equals("()V")){
+     ms.add(redirect(m,ROOT+"TapService;","showPanel",PANEL,"initializePanel",Arrays.asList(ROOT+"TapService;"),"V",count));
+    }else if((m.getName().equals("showPanel")||m.getName().equals("refresh"))&&desc(m).equals("()V")){
+     String old=m.getName();
+     ms.add(method(m,old+"BeforePanelMode",m.getImplementation()));
+     ms.add(wrapper(m,old+"BeforePanelMode",old,PANEL));wrapped++;
+    }else ms.add(m);
+   }else if(c.getType().equals(ROOT+"MainActivity;")){
+    if(m.getName().equals("home")&&desc(m).equals("()V")){
+     ms.add(method(m,"homeBeforePanelMode",m.getImplementation()));
+     ms.add(method(m,"home",new ImmutableMethodImplementation(1,Arrays.asList(
+      new ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL,1,0,0,0,0,0,
+       new ImmutableMethodReference(c.getType(),"homeBeforePanelMode",Collections.emptyList(),"V")),
+      new ImmutableInstruction35c(Opcode.INVOKE_STATIC,1,0,0,0,0,0,
+       new ImmutableMethodReference(PANEL,"augmentHome",Arrays.asList(c.getType()),"V")),
+      new ImmutableInstruction10x(Opcode.RETURN_VOID)
+     ),Collections.emptyList(),Collections.emptyList())));wrapped++;
+    }else ms.add(m);
+   }
+  }
+  if(c.getType().equals(ROOT+"TapService;")&&(count[0]!=1||wrapped!=2))
+   throw new IllegalStateException("TapService UI hooks changed: "+count[0]+" / "+wrapped);
+  if(c.getType().equals(ROOT+"MainActivity;")&&wrapped!=1)
+   throw new IllegalStateException("MainActivity home UI hook changed: "+wrapped);
+  return withMethods(c,ms);
+ }
  static ClassDef patch(ClassDef c){
   if(c.getType().equals(ROOT+"RecoveryEscalation;"))return getters(c);
+  if(c.getType().equals(ROOT+"TapService;")||c.getType().equals(ROOT+"MainActivity;"))return panelPatch(c);
   if(!c.getType().equals(ROOT+"AutoPilot;")&&!c.getType().equals(ROOT+"ProgressErrors;"))return c;
   List<Method> ms=new ArrayList<>();int[] count={0};int details=0;
   for(Method m:c.getMethods()){
@@ -104,6 +143,14 @@ public final class PatchPhysicalReturn {
       v.visitMaxs(2,locals);
      }v.visitEnd();
     }
+    // Compilation-only signatures for original UI methods renamed by the shipping DEX patch.
+    String[] extras=c.getType().equals(ROOT+"TapService;")
+      ?new String[]{"showPanelBeforePanelMode","refreshBeforePanelMode"}
+      :c.getType().equals(ROOT+"MainActivity;")?new String[]{"homeBeforePanelMode"}:new String[0];
+    for(String name:extras){
+      MethodVisitor v=w.visitMethod(0,name,"()V",null,null);
+      v.visitCode();v.visitInsn(org.objectweb.asm.Opcodes.RETURN);v.visitMaxs(0,1);v.visitEnd();
+    }
     w.visitEnd();out.putNextEntry(new JarEntry(n+".class"));out.write(w.toByteArray());out.closeEntry();
    }
   }
@@ -113,7 +160,7 @@ public final class PatchPhysicalReturn {
  static void merge(String base,String patch,String output)throws Exception{
   List<ClassDef> classes=new ArrayList<>();Set<String> names=new HashSet<>();
   for(ClassDef c:load(base).getClasses()){classes.add(patch(c));names.add(c.getType());}
-  for(ClassDef c:load(patch).getClasses()){if(!c.getType().startsWith(ROOT+"PhysicalRecoveryBridge")&&!c.getType().startsWith(ROOT+"PhysicalReturnEpisode"))throw new IllegalStateException("unexpected overlay class: "+c.getType());if(!names.add(c.getType()))throw new IllegalStateException("duplicate class: "+c.getType());classes.add(c);}
+  for(ClassDef c:load(patch).getClasses()){if(!c.getType().startsWith(ROOT+"PhysicalRecoveryBridge")&&!c.getType().startsWith(ROOT+"PhysicalReturnEpisode")&&!c.getType().startsWith(ROOT+"PanelModeController")&&!c.getType().startsWith(ROOT+"PanelModePolicy"))throw new IllegalStateException("unexpected overlay class: "+c.getType());if(!names.add(c.getType()))throw new IllegalStateException("duplicate class: "+c.getType());classes.add(c);}
   DexFileFactory.writeDexFile(output,version(new ImmutableDexFile(API,classes)));System.out.println("Merged "+classes.size()+" classes");
  }
  static void audit(String base,String result)throws Exception{
@@ -125,8 +172,8 @@ public final class PatchPhysicalReturn {
    if(!Arrays.equals(canonical(expected),canonical(actual)))throw new IllegalStateException("unexpected modification: "+c.getType());
    if(Arrays.equals(canonical(c),canonical(actual)))preserved++;else changed.add(c.getType());
   }
-  if(!changed.containsAll(Arrays.asList(ROOT+"AutoPilot;",ROOT+"ProgressErrors;",ROOT+"RecoveryEscalation;")))throw new IllegalStateException("hooks not integrated");
-  for(String n:after.keySet())if(!n.startsWith(ROOT+"PhysicalRecoveryBridge")&&!n.startsWith(ROOT+"PhysicalReturnEpisode"))throw new IllegalStateException("unexpected added type "+n);
+  if(!changed.containsAll(Arrays.asList(ROOT+"AutoPilot;",ROOT+"ProgressErrors;",ROOT+"RecoveryEscalation;",ROOT+"TapService;",ROOT+"MainActivity;")))throw new IllegalStateException("hooks not integrated");
+  for(String n:after.keySet())if(!n.startsWith(ROOT+"PhysicalRecoveryBridge")&&!n.startsWith(ROOT+"PhysicalReturnEpisode")&&!n.startsWith(ROOT+"PanelModeController")&&!n.startsWith(ROOT+"PanelModePolicy"))throw new IllegalStateException("unexpected added type "+n);
   if(after.size()<3)throw new IllegalStateException("new runtime absent");
   System.out.println("Original classes byte-for-byte equivalent after canonical DEX serialization: "+preserved+"; reviewed changes: "+changed+"; added: "+after.keySet());
  }
