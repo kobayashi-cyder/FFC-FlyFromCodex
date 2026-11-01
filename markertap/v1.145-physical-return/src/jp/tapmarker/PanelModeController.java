@@ -5,6 +5,8 @@ import android.util.DisplayMetrics;
 import android.view.WindowManager;
 import android.view.MotionEvent;
 import java.util.WeakHashMap;
+import java.util.HashMap;
+import java.util.Map;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
@@ -20,14 +22,16 @@ import android.widget.TextView;
  * readable labels, large touch targets and non-color-only status feedback.
  */
 final class PanelModeController {
- static final String PREF="panelUi", KEY="displayMode", TAG="markertap.ui.panelmode", STATUS_TAG="markertap.ui.panelmode.status";
+ static final String PREF="panelUi", KEY="displayMode", TAG="markertap.ui.panelmode", STATUS_TAG="markertap.ui.panelmode.status", MINI_TAG="markertap.ui.panelmode.restore";
+ private static final String LAST_EXPANDED="lastExpandedMode";
  private static final WeakHashMap<View,Boolean> listeners=new WeakHashMap<>();
  private static final WeakHashMap<View,Integer> styles=new WeakHashMap<>();
+ private static final WeakHashMap<View,Map<View,Integer>> hiddenChildren=new WeakHashMap<>();
  static final int BLUE=0xff005BAC, INK=0xff1A2633, SUB=0xff415365, BORDER=0xffB9C8D7;
  static int mode(Context c){return PanelModePolicy.normalize(c.getSharedPreferences(PREF,0).getInt(KEY,0));}
  static void persist(Context c,int next){c.getSharedPreferences(PREF,0).edit().putInt(KEY,PanelModePolicy.normalize(next)).apply();}
 
- /** Service connection initializes the existing panel. Both modes keep it visible. */
+ /** Service connection initializes the panel in its saved presentation mode. */
  static void initializePanel(TapService s){
   s.showPanelBeforePanelMode();
   attach(s);
@@ -41,21 +45,33 @@ final class PanelModeController {
   switchMode(s,PanelModePolicy.FLOAT);
  }
 
- /** Dock at the bottom of the screen; panel is visible and no longer draggable. */
+ /** Dock at the bottom of the screen; panel remains visible and non-draggable. */
  static void dockPanel(TapService s){switchMode(s,PanelModePolicy.DOCKED);}
+
+ /** Leave a single restore button; the running automation is not stopped. */
+ static void minimizePanel(TapService s){switchMode(s,PanelModePolicy.MINIMIZED);}
+
+ /** Restore the presentation that was active immediately before minimizing. */
+ static void restorePanel(TapService s){
+  int previous=s.getSharedPreferences(PREF,0).getInt(LAST_EXPANDED,PanelModePolicy.FLOAT);
+  switchMode(s,PanelModePolicy.restoredMode(previous));
+ }
 
  private static void switchMode(TapService s,int next){
   if(s.panel==null){
    persist(s,next);
    s.showPanelBeforePanelMode();
   }
-  if(mode(s)==PanelModePolicy.FLOAT&&next==PanelModePolicy.DOCKED&&s.panel!=null){
+  int prior=mode(s);
+  if(prior==PanelModePolicy.FLOAT&&next!=PanelModePolicy.FLOAT&&s.panel!=null){
    WindowManager.LayoutParams p=(WindowManager.LayoutParams)s.panel.getLayoutParams();
    s.getSharedPreferences(PREF,0).edit().putInt("x",p.x).putInt("y",p.y).apply();
   }
+  if(next==PanelModePolicy.MINIMIZED&&prior!=PanelModePolicy.MINIMIZED)
+   s.getSharedPreferences(PREF,0).edit().putInt(LAST_EXPANDED,PanelModePolicy.expanded(prior)).apply();
+  if(next==PanelModePolicy.DOCKED||next==PanelModePolicy.MINIMIZED)s.compactPanel(true);
   persist(s,next);
   attach(s);
-  if(next==PanelModePolicy.DOCKED)s.compactPanel(true);
   sync(s);
  }
 
@@ -75,7 +91,33 @@ final class PanelModeController {
   }
   TextView label=s.panel.findViewWithTag(STATUS_TAG);
   if(label!=null)label.setText(PanelModePolicy.modeLabel(current));
+  applyChildren(s,current);
   applyPosition(s);
+ }
+
+ /** A minimized panel is still the SAME window, reduced to one accessible button. */
+ private static void applyChildren(TapService s,int current){
+  View restore=s.panel.findViewWithTag(MINI_TAG);
+  if(restore==null)return;
+  if(PanelModePolicy.minimized(current)){
+   if(!hiddenChildren.containsKey(s.panel)){
+    Map<View,Integer> saved=new HashMap<>();
+    for(int i=0;i<s.panel.getChildCount();i++){
+     View child=s.panel.getChildAt(i);
+     if(child!=restore){
+      saved.put(child,child.getVisibility());
+      child.setVisibility(View.GONE);
+     }
+    }
+    hiddenChildren.put(s.panel,saved);
+   }
+   restore.setVisibility(View.VISIBLE);
+  }else{
+   Map<View,Integer> saved=hiddenChildren.remove(s.panel);
+   if(saved!=null)for(Map.Entry<View,Integer> state:saved.entrySet())
+    state.getKey().setVisibility(state.getValue());
+   restore.setVisibility(View.GONE);
+  }
  }
 
  private static void applyPosition(TapService s){
@@ -89,6 +131,10 @@ final class PanelModeController {
    width=dm.widthPixels;
    x=0;
    y=PanelModePolicy.dockY(dm.heightPixels,s.panel.getHeight(),UiKit.dp(s,28));
+  }else if(current==PanelModePolicy.MINIMIZED){
+   width=Math.min(dm.widthPixels,UiKit.dp(s,176));
+   x=Math.max(0,dm.widthPixels-width-UiKit.dp(s,8));
+   y=PanelModePolicy.dockY(dm.heightPixels,s.panel.getHeight(),UiKit.dp(s,48));
   }else{
    width=Math.min(UiKit.dp(s,320),Math.max(UiKit.dp(s,180),dm.widthPixels-UiKit.dp(s,16)));
    x=PanelModePolicy.clamp(s.getSharedPreferences(PREF,0).getInt("x",UiKit.dp(s,8)),0,dm.widthPixels-width);
@@ -126,7 +172,7 @@ final class PanelModeController {
    return type==MotionEvent.ACTION_CANCEL;
   });
   s.panel.addOnLayoutChangeListener((v,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
-   if(mode(s)==PanelModePolicy.DOCKED&&s.panel!=null)applyPosition(s);
+   if((mode(s)==PanelModePolicy.DOCKED||mode(s)==PanelModePolicy.MINIMIZED)&&s.panel!=null)applyPosition(s);
   });
   listeners.put(s.panel,Boolean.TRUE);
  }
@@ -162,14 +208,21 @@ final class PanelModeController {
   LinearLayout actions=UiKit.row(s,row);
   UiKit.cell(s,actions,button(s,"画面下部に固定",false,()->dockPanel(s)));
   UiKit.cell(s,actions,button(s,"フロートに戻す",false,()->showPanel(s)));
+  UiKit.full(s,row,button(s,"最小化",false,()->minimizePanel(s)));
   s.panel.addView(row,Math.min(3,s.panel.getChildCount()));
+  LinearLayout restore=UiKit.column(s);
+  restore.setTag(MINI_TAG);
+  restore.setVisibility(View.GONE);
+  UiKit.full(s,restore,button(s,"MarkerTapに戻す",true,()->restorePanel(s)));
+  s.panel.addView(restore);
  }
 
  static void select(MainActivity a,int next){
   TapService s=TapService.instance;
   if(s!=null){
    if(PanelModePolicy.normalize(next)==PanelModePolicy.FLOAT)showPanel(s);
-   else dockPanel(s);
+   else if(PanelModePolicy.normalize(next)==PanelModePolicy.DOCKED)dockPanel(s);
+   else minimizePanel(s);
   }else persist(a,next);
   a.showPage(0);
  }
@@ -186,7 +239,7 @@ final class PanelModeController {
   }catch(RuntimeException|android.content.pm.PackageManager.NameNotFoundException ignored){
    // A missing package query must never block the app's primary controls.
   }
-  LinearLayout box=UiKit.card(a,a.content,"表示方法","画面下部への固定と、ドラッグで移動できるフロート表示を切り替えます。切り替え中も自動操作は継続します。");
+  LinearLayout box=UiKit.card(a,a.content,"表示方法","移動可能なフロート、画面下部固定、最小化から選べます。最小化中も「MarkerTapに戻す」ボタンを残し、自動操作は止めません。");
   a.content.removeView(box);
   a.content.addView(box,Math.min(1,a.content.getChildCount()));
   TextView state=UiKit.text(a,PanelModePolicy.modeLabel(mode(a)),16,INK,true);
@@ -195,6 +248,7 @@ final class PanelModeController {
   LinearLayout actions=UiKit.row(a,box);
   UiKit.cell(a,actions,button(a,"画面下部に固定",false,()->select(a,PanelModePolicy.DOCKED)));
   UiKit.cell(a,actions,button(a,"フロートに戻す",true,()->select(a,PanelModePolicy.FLOAT)));
+  UiKit.full(a,box,button(a,"最小化",false,()->select(a,PanelModePolicy.MINIMIZED)));
 
   // Normal Activity diagnostics also work while the docked toolbar is visible.
   TapService s=TapService.instance;
