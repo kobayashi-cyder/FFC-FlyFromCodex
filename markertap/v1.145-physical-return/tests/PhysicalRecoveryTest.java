@@ -55,6 +55,24 @@ final class PhysicalRecoveryTest {
 
   // A replaced run must not inherit a previous run's capture suppression.
   p=new AutoPilot();cycle(p,1600000);p.token++;ProgressWatchdog.Sample replacement=sample(p,16000);e=PhysicalRecoveryBridge.observe(new ProgressWatchdog(),replacement,1616000);check(e!=null&&e.code.equals("FRAME_STALE"),"old run suppressed new run watchdog");
-  System.out.println("Physical foreground recovery: 12 scenario groups passed; "+checks+" assertions");
+  // Foreground return alone must not count as autonomy: missing home evidence expires.
+  p=new AutoPilot();cycle(p,1700000);p.foreground=p.target;cycle(p,1701000);
+  check(p.active,"returned foreground should first be given a home-reacquisition window");
+  String details=PhysicalRecoveryBridge.append("report",p.target);
+  check(details.contains("開拓うさぎ入力判定：phase=kaitaku-default-verify")&&
+        details.contains("sampleAgeMs=-1")&&details.contains("windowValid=true"),
+        "physical no-tap gate is absent from the failure report");
+  cycle(p,1789999);check(p.active,"home reacquisition expired prematurely");
+  cycle(p,1790000);check(!p.active&&p.s.progressErrors.code.equals("HOME_REACQUIRE_FAILED"),
+   "foreground without verified home must terminate with a distinct error");
+
+  // Two separate fresh home frames cancel that deadline without inventing tap success.
+  p=new AutoPilot();cycle(p,1900000);p.foreground=p.target;cycle(p,1900100);
+  p.phases.engine.current="kaitaku-default-main";p.phaseSamples.put("home",new float[]{1});
+  p.phaseSampleTakenAt=1900200;cycle(p,1900200);
+  p.phaseSampleTakenAt=1900600;cycle(p,1900600);
+  cycle(p,1991000);check(p.active&&p.s.progressErrors.fatals==0,
+   "fresh main-screen confirmation must end the unresolved episode");
+  System.out.println("Physical foreground recovery: 14 scenario groups passed; "+checks+" assertions");
  }
 }
