@@ -1,0 +1,9 @@
+{
+  "unchanged_entries": 34,
+  "manifest_edits": [
+    "versionCode:147->148",
+    "versionName:1.144->1.145"
+  ],
+  "target_sdk": 35,
+  "base_sha256": "f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970"
+}
