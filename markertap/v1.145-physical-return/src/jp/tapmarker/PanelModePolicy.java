@@ -10,7 +10,11 @@ final class PanelModePolicy {
   // In minimized mode a single restore control remains visible.
   return !guarded;
  }
- static boolean movable(int stored){return normalize(stored)==FLOAT;}
+ static boolean movable(int stored){return normalize(stored)!=DOCKED;}
+ static boolean gestureMoved(float dx,float dy,int touchSlop){
+  int threshold=Math.max(1,touchSlop);
+  return (double)dx*dx+(double)dy*dy>(double)threshold*threshold;
+ }
  static boolean minimized(int stored){return normalize(stored)==MINIMIZED;}
  static int expanded(int stored){
   return normalize(stored)==DOCKED?DOCKED:FLOAT;
@@ -27,7 +31,7 @@ final class PanelModePolicy {
  static String modeLabel(int stored){
   switch(normalize(stored)){
    case DOCKED:return "画面下部に固定中（ドラッグ不可）";
-   case MINIMIZED:return "最小化中（戻すで復元）";
+   case MINIMIZED:return "最小化中（ドラッグで移動／タップで復元）";
    default:return "フロート表示中（ドラッグで移動）";
   }
  }

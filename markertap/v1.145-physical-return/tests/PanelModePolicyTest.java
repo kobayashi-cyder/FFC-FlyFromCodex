@@ -17,7 +17,12 @@ public final class PanelModePolicyTest {
   check(!PanelModePolicy.showOverlay(PanelModePolicy.MINIMIZED,true),"screen lock hides restore control");
   check(PanelModePolicy.movable(PanelModePolicy.FLOAT),"float is draggable");
   check(!PanelModePolicy.movable(PanelModePolicy.DOCKED),"fixed panel is not draggable");
-  check(!PanelModePolicy.movable(PanelModePolicy.MINIMIZED),"restore chip cannot be dragged");
+  check(PanelModePolicy.movable(PanelModePolicy.MINIMIZED),"minimized restore chip is draggable");
+  check(!PanelModePolicy.gestureMoved(3,4,6),"small movement is a tap");
+  check(!PanelModePolicy.gestureMoved(3,4,5),"slop boundary remains tap");
+  check(PanelModePolicy.gestureMoved(6,4,5),"movement beyond slop is a drag");
+  check(PanelModePolicy.gestureMoved(-6,-4,5),"negative-direction drag");
+  check(!PanelModePolicy.gestureMoved(0,0,0),"zero movement never drags");
   check(PanelModePolicy.modeLabel(PanelModePolicy.DOCKED).contains("固定"),"fixed label");
   check(PanelModePolicy.modeLabel(PanelModePolicy.MINIMIZED).contains("最小化"),"minimized label");
   check(PanelModePolicy.minimized(PanelModePolicy.MINIMIZED),"minimize recognized");
