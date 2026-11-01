@@ -25,6 +25,11 @@ jobs:
       - name: Verify physical recovery and persistent mode policy
         working-directory: markertap/v1.145-physical-return
         run: python3 run-tests.py
+      - name: Check secure signing command syntax without accessing keys
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          python3 -m py_compile sign-release.py build.py setup-toolchain.py
+          python3 sign-release.py --help > /dev/null
       - name: Publish limitations
         run: |
           echo 'Pure Java and source audit only. This does not compile a shipping APK.'
