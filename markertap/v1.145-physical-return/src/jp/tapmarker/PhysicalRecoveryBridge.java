@@ -108,10 +108,10 @@ final class PhysicalRecoveryBridge {
   }
   return watchdog.observe(sample,now);
  }
- static synchronized String append(String body,String app){
+ static synchronized String append(String body,String app,AppPhases phases){
   for(Map.Entry<AutoPilot,Run> e:runs.entrySet()){
    AutoPilot p=e.getKey();Run r=e.getValue();
-   if(!supports(p,r.token)||!app.equals(r.app)||p.phases.engine!=r.engine)continue;
+   if(!supports(p,r.token)||!app.equals(r.app)||p.phases!=phases||p.phases.engine!=r.engine)continue;
    long now=SystemClock.uptimeMillis();
    long frameAge=p.phaseSampleTakenAt>0&&p.phaseSampleTakenAt<=now?now-p.phaseSampleTakenAt:-1;
    boolean windowValid=p.phaseWindowVersion==p.s.inputTargetVersion&&
