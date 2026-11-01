@@ -17,3 +17,18 @@ subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(out)]+[str(
 for name in ['PhysicalRecoveryTest','PanelModePolicyTest']:
  subprocess.run(['java','-cp',str(out),'jp.tapmarker.'+name],check=True)
 subprocess.run(['python3',str(root/'tests/ui_source_audit.py')],check=True)
+
+# Video-derived decisions are pure Java; compile the integration shim against test-only named-control stubs.
+video=root/'build/video-tests'
+video.mkdir(parents=True,exist_ok=True)
+video_sources=[
+ root/'src/jp/tapmarker/KaitakuVideoModalPolicy.java',
+ root/'src/jp/tapmarker/KaitakuVideoNamedControls.java',
+ root/'tests/KaitakuVideoModalPolicyTest.java',
+ root/'tests/video/VideoActionHostStubs.java',
+ root/'tests/video/KaitakuVideoNamedControlsTest.java',
+]
+subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(video)]+[str(p) for p in video_sources],check=True)
+for cls in ['KaitakuVideoModalPolicyTest','KaitakuVideoNamedControlsTest']:
+ subprocess.run(['java','-cp',str(video),'jp.tapmarker.'+cls],check=True)
+subprocess.run(['python3',str(root/'tests/video_source_audit.py')],check=True)
