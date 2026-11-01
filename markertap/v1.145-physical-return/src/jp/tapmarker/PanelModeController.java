@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.DisplayMetrics;
 import android.view.WindowManager;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import java.util.WeakHashMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +24,7 @@ import android.widget.TextView;
  */
 final class PanelModeController {
  static final String PREF="panelUi", KEY="displayMode", TAG="markertap.ui.panelmode", STATUS_TAG="markertap.ui.panelmode.status", MINI_TAG="markertap.ui.panelmode.restore";
- private static final String LAST_EXPANDED="lastExpandedMode";
+ private static final String LAST_EXPANDED="lastExpandedMode", MINI_X="minimizedX", MINI_Y="minimizedY";
  private static final WeakHashMap<View,Boolean> listeners=new WeakHashMap<>();
  private static final WeakHashMap<View,Integer> styles=new WeakHashMap<>();
  private static final WeakHashMap<View,Map<View,Integer>> hiddenChildren=new WeakHashMap<>();
@@ -133,8 +134,14 @@ final class PanelModeController {
    y=PanelModePolicy.dockY(dm.heightPixels,s.panel.getHeight(),UiKit.dp(s,28));
   }else if(current==PanelModePolicy.MINIMIZED){
    width=Math.min(dm.widthPixels,UiKit.dp(s,176));
-   x=Math.max(0,dm.widthPixels-width-UiKit.dp(s,8));
-   y=PanelModePolicy.dockY(dm.heightPixels,s.panel.getHeight(),UiKit.dp(s,48));
+   int height=Math.max(s.panel.getHeight(),UiKit.dp(s,48));
+   // A minimized control is a MOVABLE floating button, not a bottom dock.
+   // Its coordinates are independent from the expanded floating panel.
+   x=PanelModePolicy.clamp(s.getSharedPreferences(PREF,0).getInt(MINI_X,
+     Math.max(0,dm.widthPixels-width-UiKit.dp(s,8))),0,dm.widthPixels-width);
+   y=PanelModePolicy.clamp(s.getSharedPreferences(PREF,0).getInt(MINI_Y,
+     PanelModePolicy.dockY(dm.heightPixels,height,UiKit.dp(s,48))),
+     0,dm.heightPixels-height);
   }else{
    width=Math.min(UiKit.dp(s,320),Math.max(UiKit.dp(s,180),dm.widthPixels-UiKit.dp(s,16)));
    x=PanelModePolicy.clamp(s.getSharedPreferences(PREF,0).getInt("x",UiKit.dp(s,8)),0,dm.widthPixels-width);
@@ -177,6 +184,51 @@ final class PanelModeController {
   listeners.put(s.panel,Boolean.TRUE);
  }
 
+ /** Touch slop separates a tap (restore) from dragging the minimized floating button.
+  * Separate minimized coordinates preserve the expanded floating panel's location.
+  */
+ private static void installMinimizedDrag(TapService s,Button restoreButton){
+  final float[] down=new float[4];
+  final boolean[] moving={false};
+  final int slop=ViewConfiguration.get(s).getScaledTouchSlop();
+  restoreButton.setOnTouchListener((v,event)->{
+   if(!PanelModePolicy.minimized(mode(s))||s.panel==null||s.wm==null)return false;
+   WindowManager.LayoutParams p=(WindowManager.LayoutParams)s.panel.getLayoutParams();
+   int type=event.getActionMasked();
+   if(type==MotionEvent.ACTION_DOWN){
+    down[0]=event.getRawX();down[1]=event.getRawY();
+    down[2]=p.x;down[3]=p.y;
+    moving[0]=false;
+    return true;
+   }
+   if(type==MotionEvent.ACTION_MOVE){
+    float dx=event.getRawX()-down[0],dy=event.getRawY()-down[1];
+    if(!moving[0]&&!PanelModePolicy.gestureMoved(dx,dy,slop))return true;
+    moving[0]=true;
+    DisplayMetrics dm=new DisplayMetrics();s.wm.getDefaultDisplay().getRealMetrics(dm);
+    p.x=PanelModePolicy.clamp(Math.round(down[2]+dx),0,dm.widthPixels-s.panel.getWidth());
+    p.y=PanelModePolicy.clamp(Math.round(down[3]+dy),0,dm.heightPixels-Math.max(s.panel.getHeight(),UiKit.dp(s,48)));
+    try{s.wm.updateViewLayout(s.panel,p);}catch(IllegalArgumentException ignored){return true;}
+    return true;
+   }
+   if(type==MotionEvent.ACTION_UP){
+    if(moving[0]){
+     s.getSharedPreferences(PREF,0).edit().putInt(MINI_X,p.x).putInt(MINI_Y,p.y).apply();
+    }else{
+     v.performClick();
+    }
+    moving[0]=false;
+    return true;
+   }
+   if(type==MotionEvent.ACTION_CANCEL){
+    if(moving[0])s.getSharedPreferences(PREF,0).edit().putInt(MINI_X,p.x).putInt(MINI_Y,p.y).apply();
+    moving[0]=false;
+    return true;
+   }
+   return false;
+  });
+ }
+
  static void refresh(TapService s){
   s.refreshBeforePanelMode();
   sync(s);
@@ -213,7 +265,9 @@ final class PanelModeController {
   LinearLayout restore=UiKit.column(s);
   restore.setTag(MINI_TAG);
   restore.setVisibility(View.GONE);
-  UiKit.full(s,restore,button(s,"MarkerTapに戻す",true,()->restorePanel(s)));
+  Button restoreButton=button(s,"MarkerTapに戻す",true,()->restorePanel(s));
+  UiKit.full(s,restore,restoreButton);
+  installMinimizedDrag(s,restoreButton);
   s.panel.addView(restore);
  }
 
@@ -239,7 +293,7 @@ final class PanelModeController {
   }catch(RuntimeException|android.content.pm.PackageManager.NameNotFoundException ignored){
    // A missing package query must never block the app's primary controls.
   }
-  LinearLayout box=UiKit.card(a,a.content,"表示方法","移動可能なフロート、画面下部固定、最小化から選べます。最小化中も「MarkerTapに戻す」ボタンを残し、自動操作は止めません。");
+  LinearLayout box=UiKit.card(a,a.content,"表示方法","移動可能なフロート、画面下部固定、最小化から選べます。最小化ボタンもドラッグで移動でき、タップで直前の表示に戻ります。自動操作は止めません。");
   a.content.removeView(box);
   a.content.addView(box,Math.min(1,a.content.getChildCount()));
   TextView state=UiKit.text(a,PanelModePolicy.modeLabel(mode(a)),16,INK,true);
