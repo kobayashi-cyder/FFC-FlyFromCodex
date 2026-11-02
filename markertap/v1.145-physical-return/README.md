@@ -12,6 +12,18 @@
 - **仮想画面（最大2画面）:** 出荷用DEXの`SplitPilot.nextVirtual`で呼ぶ解析間隔を、`VirtualFastWait.scanInterval`に置換。標準プロファイルでは1画面の最低220→110ms、2画面の最低220→120msを目標とし、**前回解析時間が長ければ自動的に間隔を広げる**。低メモリ軽量プロファイルは元の間隔のまま。仮想画面数は古い4画面設定でも2画面に制限。これは解析のポーリング間隔であり実測タップ/フレームレートではない。
 - **従来の安全条件:** 仮想ディスプレイID、操作対象アプリ、画像鮮度、入力レーン、画面保護、表示復帰の判定を変更しない。端末画面の自律処理と仮想2画面の処理は分離。
 
+## 署名APK生成のための検証済みパイプライン
+
+- [GitHub Actions: DEX編成ツールの事前検査と署名済みRelease](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/markertap-v1150-integrated-release.yml)
+- [Android 35・JADXを取得してDEXパッチャをコンパイルした成功記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41545774987)
+- [1コマンドのビルド・署名オーケストレーター](release-local.py)
+
+このワークフローの**preflight**は成功（Javaホスト回帰／Android 35・JADX取得／DEXパッチャコンパイル）。しかし**publish**はGitHub側のリリース許可フラグ未設定のため**skip**され、署名済みv1.150 APKは作成されていません。
+
+リポジトリのSecretsに `MARKERTAP_V1144_BASE_URL`（オリジナルv1.144の限定アクセスURL）、`MARKERTAP_SIGNING_JKS_BASE64`（元証明書の秘密JKS）、`MARKERTAP_STORE_PASSWORD`（元のストアパスワード）、必要な場合のみ`MARKERTAP_KEY_PASSWORD`を設定し、Variable `MARKERTAP_V1150_PUBLISH=true`を設定したときにのみ、署名付きRelease作成を試みます。**これらをコミット、Issue、PR、README、workflow_dispatchの平文入力へ記入しないでください。**
+
+ローカル実行も `python3 release-local.py --baseline /private/v1.144.apk --keystore /private/original.jks --sdk tooling/sdk --jadx tooling/jadx/lib/jadx-1.5.3-all.jar` で一括検証できます。オリジナルAPK SHA、元証明書、APK v2/v3、ZIPと16KiB整列が一致しなければ配布しません。
+
 ## ビルド・配布の状態
 
 基底は既存の**統合版 v1.144**（SHA-256 `f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970`）に固定。予定値はパッケージ `jp.tapmarker.lite`、`versionName=1.150`、`versionCode=153`。新規JavaクラスをDEXに含め、既存の`KaitakuUiEvidence`と`SplitPilot`の**それぞれ1か所**だけをフックするよう整合性監査を追加。ビルド時に一致しなければ停止する。
