@@ -15,6 +15,7 @@ public final class KaitakuActionPacerTest {
     check(KaitakuActionPacer.allow(engine,"coin-chance",button,12600),"third retry at 1500ms");
     check(!KaitakuActionPacer.allow(engine,"coin-chance",button,14000),"bounded backoff");
     check(KaitakuActionPacer.allow(engine,"coin-chance",button,15100),"retry after bounded wait");
+    check(!KaitakuActionPacer.allow(engine,"coin-chance",button,60000),"persistent modal retry budget exhausted");
     check(KaitakuActionPacer.allow(other,"coin-chance",button,10001),"independent engine not blocked");
     check(KaitakuActionPacer.allow(engine,"tap-boost",button,15150),"different modal immediate");
     check(KaitakuActionPacer.allow(engine,"tap-boost",button,5),"clock reset immediate");
