@@ -1,10 +1,11 @@
-name: MarkerTap v1.148 Kaitaku video modal regression
+name: MarkerTap v1.150 Kaitaku video modal and duplicate-tap regression
 
 on:
   push:
     branches:
       - markertap/kaitaku-video-modal-v1.148
       - markertap/dialog-resume-v1.149
+      - markertap/no-redundant-taps-v1.150
     paths:
       - 'markertap/v1.145-physical-return/**'
       - '.github/workflows/markertap-v1148-video-modal.yml'
