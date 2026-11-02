@@ -4,8 +4,9 @@ import java.text.Normalizer;
 import java.util.List;
 
 /**
- * Video-derived, opt-out-only popup policy. Never authorizes a rewarded ad.
- * It requires an exact visible action AND a matching dialog-specific sentence.
+ * Strict, opt-out-only continuation for two known Kaitaku modal screens.
+ * A modal title can HOLD ordinary play, but cannot authorize a tap without
+ * an actual named control and a finite, safe rectangle.
  */
 final class KaitakuVideoModalPolicy {
   enum Result { NONE, HOLD, DISMISS }
@@ -22,7 +23,7 @@ final class KaitakuVideoModalPolicy {
   }
   private static final Decision NONE=new Decision(Result.NONE,"",null);
   static String normalize(String s) {
-    return s==null?"":Normalizer.normalize(s,Normalizer.Form.NFKC).replaceAll("[\\s\\u3000]+","");
+    return s==null?"":Normalizer.normalize(s,Normalizer.Form.NFKC).replaceAll("[\\s\\u3000]+","").replace("このまま始める","このままはじめる");
   }
   static boolean inViewport(float[] b) {
     return b!=null&&b.length==4&&Float.isFinite(b[0])&&Float.isFinite(b[1])&&
@@ -36,12 +37,13 @@ final class KaitakuVideoModalPolicy {
   }
   static Decision decide(String page, List<Hit> hits) {
     String text=normalize(page);
-    // A mission row says "タップ2倍を3回使用する"; it is NOT the boost modal.
-    if(text.contains("デイリーミッション"))return NONE;
-    if(text.contains("コインアップチャンス")&&text.contains("ステージクリア時のコイン")) {
+    // Underlying mission text may remain in the accessibility tree while the popup is open.
+    // The unique coin title plus the bounded, named opt-out is sufficient; its body may be missing.
+    if(text.contains("コインアップチャンス")) {
       float[] b=find(hits,"このままはじめる");
       return new Decision(b==null?Result.HOLD:Result.DISMISS,"coin-chance",b);
     }
+    // A mission row alone cannot satisfy the independent explanatory sentence.
     if(text.contains("タップ2倍")&&text.contains("1タップで進む量が2倍")) {
       float[] b=find(hits,"キャンセル");
       return new Decision(b==null?Result.HOLD:Result.DISMISS,"tap-boost",b);
