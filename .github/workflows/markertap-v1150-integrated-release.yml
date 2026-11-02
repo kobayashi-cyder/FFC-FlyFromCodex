@@ -1,0 +1,121 @@
+name: MarkerTap v1.150 DEX preflight and opt-in signed Release
+
+on:
+  push:
+    branches:
+      - markertap/no-redundant-taps-v1.150
+    paths:
+      - 'markertap/v1.145-physical-return/**'
+      - '.github/workflows/markertap-v1150-integrated-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: markertap-v1150-signed-release
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Run host regression (source, UI, virtual 2-window policy)
+        working-directory: markertap/v1.145-physical-return
+        run: python3 run-tests.py
+      - name: Install SHA-pinned Android 35 and JADX tools
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Compile shipping DEX patcher and signing entry point
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 -m py_compile build.py sign-release.py release-local.py setup-toolchain.py
+          mkdir -p /tmp/markertap-v1150-patcher
+          javac --release 8 -encoding UTF-8 \
+            -cp tooling/jadx/lib/jadx-1.5.3-all.jar \
+            -d /tmp/markertap-v1150-patcher tools/PatchPhysicalReturn.java
+          echo 'DEX patcher compiles. APK integration requires the exact v1.144 binary.'
+
+  publish:
+    needs: preflight
+    # Publishing remains disabled until the user's private URL and original
+    # signing key are configured. Never upload an unsigned or mismatched APK.
+    if: ${{ vars.MARKERTAP_V1150_PUBLISH == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install SHA-pinned toolchain
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Fetch EXACT baseline and prepare private signer
+        shell: bash
+        env:
+          MARKERTAP_V1144_BASE_URL: ${{ secrets.MARKERTAP_V1144_BASE_URL }}
+          MARKERTAP_SIGNING_JKS_BASE64: ${{ secrets.MARKERTAP_SIGNING_JKS_BASE64 }}
+          MARKERTAP_STORE_PASSWORD: ${{ secrets.MARKERTAP_STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$MARKERTAP_V1144_BASE_URL"
+          test -n "$MARKERTAP_SIGNING_JKS_BASE64"
+          test -n "$MARKERTAP_STORE_PASSWORD"
+          umask 077
+          mkdir -p "$RUNNER_TEMP/markertap-private"
+          curl --fail --location --retry 3 --silent --show-error \
+            "$MARKERTAP_V1144_BASE_URL" -o "$RUNNER_TEMP/markertap-private/baseline.apk"
+          echo 'f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970  '"$RUNNER_TEMP"'/markertap-private/baseline.apk' | sha256sum --check
+          printf '%s' "$MARKERTAP_SIGNING_JKS_BASE64" | base64 --decode > "$RUNNER_TEMP/markertap-private/original.jks"
+      - name: Build, sign and verify the update certificate
+        working-directory: markertap/v1.145-physical-return
+        env:
+          MARKERTAP_STORE_PASSWORD: ${{ secrets.MARKERTAP_STORE_PASSWORD }}
+          MARKERTAP_KEY_PASSWORD: ${{ secrets.MARKERTAP_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          python3 release-local.py \
+            --baseline "$RUNNER_TEMP/markertap-private/baseline.apk" \
+            --keystore "$RUNNER_TEMP/markertap-private/original.jks" \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+      - name: Publish only signed/verified prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test ! -z "$GH_TOKEN"
+          if gh release view markertap-v1.150 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'STOP: v1.150 release tag already exists; manual integrity review required.'
+            exit 1
+          fi
+          gh release create markertap-v1.150 \
+            markertap/v1.145-physical-return/output/MarkerTap-v1.150-integrated-signed.apk \
+            markertap/v1.145-physical-return/output/SHA256SUMS-v1.150.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title 'MarkerTap v1.150 signed integrated APK — device validation pending' \
+            --notes 'Signed with the original update certificate and host validated. Pixel 10/Android 17, virtual 2 displays and in-game reward results have NOT been device tested.' \
+            --prerelease --latest=false
+      - name: Verify public APK download bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/markertap-public
+          gh release download markertap-v1.150 --repo "$GITHUB_REPOSITORY" \
+            --pattern 'MarkerTap-v1.150-integrated-signed.apk' --dir /tmp/markertap-public
+          cmp /tmp/markertap-public/MarkerTap-v1.150-integrated-signed.apk \
+            markertap/v1.145-physical-return/output/MarkerTap-v1.150-integrated-signed.apk
+          echo 'Verified uploaded APK bytes match locally signed file.'
+      - name: Remove private signer files from runner
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/markertap-private"
