@@ -2,6 +2,7 @@ package jp.tapmarker;
 
 import java.text.Normalizer;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Strict, opt-out-only continuation for two known Kaitaku modal screens.
@@ -21,9 +22,10 @@ final class KaitakuVideoModalPolicy {
     final float[] bounds;
     Decision(Result r, String k, float[] b) { result=r; kind=k; bounds=b==null?null:b.clone(); }
   }
+  private static final Pattern WHITESPACE=Pattern.compile("[\\\\s\\\\u3000]+");
   private static final Decision NONE=new Decision(Result.NONE,"",null);
   static String normalize(String s) {
-    return s==null?"":Normalizer.normalize(s,Normalizer.Form.NFKC).replaceAll("[\\s\\u3000]+","").replace("このまま始める","このままはじめる");
+    return s==null?"":WHITESPACE.matcher(Normalizer.normalize(s,Normalizer.Form.NFKC)).replaceAll("").replace("このまま始める","このままはじめる");
   }
   static boolean inViewport(float[] b) {
     return b!=null&&b.length==4&&Float.isFinite(b[0])&&Float.isFinite(b[1])&&
