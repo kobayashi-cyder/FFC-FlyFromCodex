@@ -1,0 +1,1 @@
+{"columns":{"sku":"商品番号","name":"商品名","price":"価格","category":"分類"},"required":["sku","name","price"],"numeric_nonnegative":["price"],"dedupe_by":["sku"],"nfkc":false}
