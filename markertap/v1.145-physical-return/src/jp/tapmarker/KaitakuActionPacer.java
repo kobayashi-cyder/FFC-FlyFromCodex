@@ -11,7 +11,7 @@ import java.util.WeakHashMap;
  * other's actions. A changed target, missing modal, or reset clock starts fresh.
  */
 final class KaitakuActionPacer {
-  private static final long[] RETRY_MS={750L,1600L,3000L,4500L};
+  private static final long[] RETRY_MS={350L,750L,1500L,2500L};
   private static final WeakHashMap<Object,Entry> entries=new WeakHashMap<>();
   private static final class Entry {
     final String target;
