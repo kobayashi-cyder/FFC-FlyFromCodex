@@ -1,6 +1,18 @@
+# MarkerTap v1.150 — 署名済み統合APK完成（2026-11-03）
+
+**ローカルの完全DEX統合ビルドと元の署名証明書による署名に成功。** パッケージ `jp.tapmarker.lite` / versionName `1.150` / versionCode `153`、5,647,203 bytes。APK SHA-256 `58e6cd830350473dad218352b3e23f4efcb214b2624e1122823ceb1093345067`。
+
+**証明書一致** `7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1` / **v2・v3署名確認** / **16KiB zipalign成功** / **ZIP CRC正常** / **元DEXの保全監査合格** / ホスト試験合格。
+
+[署名済みAPKの検証JSON](v1.150-signed-validation.json) / [SHA256SUMS](v1.150-SHA256SUMS.txt) / [GitHub Actionsのツール環境検証](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41545774987)
+
+**配布状況：** APK本体はChatGPT会話内で提供済み。**GitHub ReleaseへのAPK本体のアップロードは未完了**のため、このREADMEのリンクから直接APKファイルを取得できるとは表示しません。Pixel 10 / Android 17の実機操作・仮想2画面の自律・広告の実測は未検証です。
+
+---
+
 # MarkerTap v1.150 — 高速な自律動作・広告回避・仮想2画面の待機短縮（開発候補）
 
-**2026-11-03：ソース・ホスト回帰テストはGitHubに登録。v1.150の署名済みAPKと実機試験は未完了。**
+**2026-11-03 旧時点の記録：** ソース・ホスト回帰テストをGitHubに登録。その後、上記のとおり署名済みAPKのローカルビルドは完了しました。
 [このブランチの実装](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/tree/markertap/no-redundant-taps-v1.150/markertap/v1.145-physical-return)
 ／[CI実行一覧](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/markertap-v1148-video-modal.yml)
 
@@ -18,7 +30,7 @@
 - [Android 35・JADXを取得してDEXパッチャをコンパイルした成功記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41545774987)
 - [1コマンドのビルド・署名オーケストレーター](release-local.py)
 
-このワークフローの**preflight**は成功（Javaホスト回帰／Android 35・JADX取得／DEXパッチャコンパイル）。しかし**publish**はGitHub側のリリース許可フラグ未設定のため**skip**され、署名済みv1.150 APKは作成されていません。
+このワークフローの**preflight**は成功（Javaホスト回帰／Android 35・JADX取得／DEXパッチャコンパイル）。しかし**publish**はGitHub側のリリース許可フラグ未設定のため**skip**されました。署名済みv1.150 APKは別途ローカルで生成済みですが、GitHub Releaseにはまだ掲載していません。
 
 リポジトリのSecretsに `MARKERTAP_V1144_BASE_URL`（オリジナルv1.144の限定アクセスURL）、`MARKERTAP_SIGNING_JKS_BASE64`（元証明書の秘密JKS）、`MARKERTAP_STORE_PASSWORD`（元のストアパスワード）、必要な場合のみ`MARKERTAP_KEY_PASSWORD`を設定し、Variable `MARKERTAP_V1150_PUBLISH=true`を設定したときにのみ、署名付きRelease作成を試みます。**これらをコミット、Issue、PR、README、workflow_dispatchの平文入力へ記入しないでください。**
 
@@ -30,7 +42,7 @@
 
 `python3 run-tests.py` がJavaホスト試験・ソース監査を実行。**このテストだけでは、上記フックのAPK内統合や実機の自律成功は確定しない。**
 `python3 build.py --baseline ... --sdk ... --jadx ...` と `sign-release.py` の再構築・元証明書照合・v2/v3検証は別途必要。
-**現時点ではv1.150署名済みAPKのGitHub Releaseを作成していないため、READMEからのv1.150 APK直接ダウンロードはできない。** 不存在のReleaseリンクを表示しない。旧v1.149の開発APKはv1.150の変更を含まない。
+**v1.150の署名済みAPKはローカル生成済みですが、GitHub Releaseにまだアップロードしていないため、このREADMEからのAPK直接ダウンロードはできません。** 不存在のReleaseリンクを表示しない。旧v1.149の開発APKはv1.150の変更を含まない。
 
 ## 実機での未検証事項
 
