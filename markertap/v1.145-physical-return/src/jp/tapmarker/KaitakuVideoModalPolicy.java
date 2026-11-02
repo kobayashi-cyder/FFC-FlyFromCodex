@@ -22,7 +22,7 @@ final class KaitakuVideoModalPolicy {
     final float[] bounds;
     Decision(Result r, String k, float[] b) { result=r; kind=k; bounds=b==null?null:b.clone(); }
   }
-  private static final Pattern WHITESPACE=Pattern.compile("[\\\\s\\\\u3000]+");
+  private static final Pattern WHITESPACE=Pattern.compile("[\\s\\u3000]+");
   private static final Decision NONE=new Decision(Result.NONE,"",null);
   static String normalize(String s) {
     return s==null?"":WHITESPACE.matcher(Normalizer.normalize(s,Normalizer.Form.NFKC)).replaceAll("").replace("このまま始める","このままはじめる");
