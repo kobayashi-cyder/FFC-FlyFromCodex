@@ -1,5 +1,14 @@
 # FFC — FlyFromCodex
 
+## MarkerTap v1.150 — 署名済みAPK直接ダウンロード（2026-11-03）
+
+**[▶ MarkerTap v1.150 署名済み統合APKをダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.150/MarkerTap-v1.150-integrated-signed.apk)**  
+[GitHub Release v1.150](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.150) / [SHA-256チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.150/SHA256SUMS-v1.150.txt) / [公開・ダウンロード照合成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41548356954)
+
+パッケージ `jp.tapmarker.lite`、versionName **1.150** / versionCode **153**、5,647,203 bytes。APK SHA-256 `58e6cd830350473dad218352b3e23f4efcb214b2624e1122823ceb1093345067`。旧版と同じ署名証明書・APK v2/v3・16KiB整列・ZIP CRC・DEX変更監査・ホスト回帰テストを確認。GitHub Releaseから**ログイン不要で実際に取得し、元の署名済みAPKとバイト一致**を確認。
+
+**注意：** Pixel 10 / Android 17での実機自律・仮想2画面の完全動作、広告削減率、実際のゲーム報酬は未検証。現状は署名済み**プレリリース**であり、自律の保証ではありません。
+
 ## MarkerTap v1.150 — 高速自律・CM選択回避・仮想2画面改修（2026-11-03）
 
 **[v1.150 改修コード・検証PR #32](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/32)**  
@@ -9,7 +18,7 @@
 
 開拓うさぎの重複閉じる候補を350/750/1500/2500msに調整し、画面が変化したら即時次操作候補へ。強制CMは消去せず、ユーザー補助で確認できた「このままはじめる」「キャンセル」を優先。通常画面の余計な解析を減らし、仮想画面（最大2）の画像走査間隔を最大負荷に応じて短縮するDEXフックを追加。
 
-**状況を区別してください：** この改修はGitHubにソースとして存在し、ホスト回帰およびAndroid35/JADXによるDEXパッチャのコンパイル検証は成功していますが、署名Releaseジョブは必要な秘密設定が未完了でスキップされたため、**v1.150署名済みAPKはまだ生成・公開・実機検証していません。** したがって上のリンクは「改修コードを開く」ためのものです。**v1.150 APKのダウンロードリンクではありません。** 既存のv1.137署名済みReleaseやv1.149チャット内APKにもv1.150改修は含まれていません。
+**更新情報：** 当初の秘密設定待ちを解消するため、ローカルで元の署名鍵による統合ビルドを実施し、公開用バイナリをGitHub Actionsで再構成してReleaseを公開しました。**実機検証のみ未完了です。** したがって上のリンクは「改修コードを開く」ためのものです。**APK本体はこちら：** [v1.150署名済みAPK](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.150/MarkerTap-v1.150-integrated-signed.apk)。 既存のv1.137署名済みReleaseやv1.149チャット内APKにもv1.150改修は含まれていません。
 
 
 ## MarkerTap：開拓うさぎの「このままはじめる」修正（2026-11-02）
