@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Sign the vetted integrated v1.149 APK with the SAME private key as installed MarkerTap.
+"""Sign the vetted integrated v1.150 APK with the SAME private key as installed MarkerTap.
 
 This tool never downloads, displays, stores, commits or publishes the keystore.
-Input must be build.py's unsigned, aligned v1.149 APK. The private keystore
+Input must be build.py's unsigned, aligned v1.150 APK. The private keystore
 is an explicit local path and passwords are injected via environment variables.
 """
 import argparse
@@ -15,8 +15,8 @@ import sys
 import zipfile
 
 PACKAGE = "jp.tapmarker.lite"
-VERSION = "1.149"
-CODE = "152"
+VERSION = "1.150"
+CODE = "153"
 CERT_SHA256 = "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1"
 
 def sha256(path):
@@ -48,7 +48,7 @@ def main():
     args = parser.parse_args()
     unsigned, keystore = args.unsigned.resolve(), args.keystore.resolve()
     if not unsigned.is_file() or not keystore.is_file():
-        raise FileNotFoundError("Expected the unsigned v1.149 APK and original JKS keystore")
+        raise FileNotFoundError("Expected the unsigned v1.150 APK and original JKS keystore")
     if unsigned == args.out.resolve():
         raise ValueError("Output cannot overwrite the unsigned build input")
     password = os.environ.get("MARKERTAP_STORE_PASSWORD")

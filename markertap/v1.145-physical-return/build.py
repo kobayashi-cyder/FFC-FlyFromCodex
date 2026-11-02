@@ -37,10 +37,10 @@ def manifest(data):
      at=pos+16+start+i*step;_,name,raw=struct.unpack_from('<3I',data,at)
      if strings[name]=='versionCode':
       assert struct.unpack_from('<I',data,at+16)[0]==147
-      struct.pack_into('<I',data,at+16,152);changes.add('code')
+      struct.pack_into('<I',data,at+16,153);changes.add('code')
      elif strings[name]=='versionName':
       idx=struct.unpack_from('<I',data,at+16)[0];assert strings[idx]=='1.144'
-      where,n,enc=locations[idx];replacement='1.149'.encode(enc);assert len(replacement)==n
+      where,n,enc=locations[idx];replacement='1.150'.encode(enc);assert len(replacement)==n
       data[where:where+n]=replacement;changes.add('name')
   pos+=size
  assert changes=={'code','name'}
@@ -58,7 +58,7 @@ def build(base,sdk,jadx):
  patcher_src=(ROOT/'tools/PatchPhysicalReturn.java').read_text()
  assert 'new ImmutableStringReference("v1.148")' in patcher_src
  patched_java=b/'PatchPhysicalReturn.java'
- patched_java.write_text(patcher_src.replace('new ImmutableStringReference("v1.148")','new ImmutableStringReference("v1.149")'))
+ patched_java.write_text(patcher_src.replace('new ImmutableStringReference("v1.148")','new ImmutableStringReference("v1.150")'))
  run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','--release','8','-encoding','UTF-8','-cp',jadx,'-d',b/'helpers',patched_java],evidence/'compile-patcher.log')
  helper=['java','-Xmx768m','-cp',str(b/'helpers')+os.pathsep+str(jadx),'PatchPhysicalReturn']
  run(helper+['api',base,b/'baseline-api.jar'],evidence/'compile-api.log')
@@ -82,8 +82,8 @@ def build(base,sdk,jadx):
    if name not in ('classes.dex','AndroidManifest.xml') and not signature(name):
     assert old.read(name)==new.read(name),name;kept+=1
   assert set(new.namelist())=={n for n in old.namelist() if not signature(n)}
- (evidence/'resource-preservation.json').write_text(json.dumps({'unchanged_entries':kept,'manifest_edits':['versionCode:147->152','versionName:1.144->1.149'],'target_sdk':35,'base_sha256':BASE_SHA},indent=2))
- output=ROOT/'output';output.mkdir(exist_ok=True);apk=output/'MarkerTap-v1.149-integrated-unsigned.apk'
+ (evidence/'resource-preservation.json').write_text(json.dumps({'unchanged_entries':kept,'manifest_edits':['versionCode:147->153','versionName:1.144->1.150'],'target_sdk':35,'base_sha256':BASE_SHA},indent=2))
+ output=ROOT/'output';output.mkdir(exist_ok=True);apk=output/'MarkerTap-v1.150-integrated-unsigned.apk'
  run([bt/'zipalign','-P','16','-f','4',b/'unaligned.apk',apk],evidence/'alignment-build.log')
  run([bt/'zipalign','-c','-P','16','4',apk],evidence/'alignment-check.log')
  run([bt/'aapt2','dump','badging',apk],evidence/'badging.log')

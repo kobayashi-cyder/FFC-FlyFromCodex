@@ -24,6 +24,22 @@ public final class KaitakuVideoNamedControlsTest {
   check(d.containsKey("legacy")&&!d.containsKey("close"),"existing mission classifier not delegated");
   d=run("開拓する タップ2倍","タップ2倍",true);
   check(d.containsKey("legacy")&&d.get("home")[0]==1,"unrecognized screen changed");
-  System.out.println("KaitakuVideoNamedControls: 7 integration checks passed");
+  // Same engine and unchanged popup must never produce a close candidate on
+  // every fast scan. A different ordinary screen resets that suppression.
+  PhaseEngine engine=new PhaseEngine();
+  List<KaitakuNamedControls.Control> controls=Arrays.asList(
+    new KaitakuNamedControls.Control("このままはじめる",new float[]{.32f,.50f,.67f,.56f}));
+  Map<String,float[]> paced=new HashMap<>();
+  KaitakuVideoNamedControls.apply(engine,"コインアップチャンス",controls,paced,1080,2424);
+  check(paced.containsKey("close"),"first safe close must not wait");
+  paced.clear();
+  KaitakuVideoNamedControls.apply(engine,"コインアップチャンス",controls,paced,1080,2424);
+  check(!paced.containsKey("close")&&paced.get("home")[0]==0,"duplicate popup must be held");
+  paced.clear();
+  KaitakuVideoNamedControls.apply(engine,"通常画面 開拓する",controls,paced,1080,2424);
+  paced.clear();
+  KaitakuVideoNamedControls.apply(engine,"コインアップチャンス",controls,paced,1080,2424);
+  check(paced.containsKey("close"),"changed screen resets duplicate guard");
+  System.out.println("KaitakuVideoNamedControls: 10 integration checks passed");
  }
 }

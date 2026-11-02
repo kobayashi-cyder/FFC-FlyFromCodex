@@ -1,3 +1,57 @@
+# MarkerTap v1.150 — 署名済み統合APK完成（2026-11-03）
+
+**ローカルの完全DEX統合ビルドと元の署名証明書による署名に成功。** パッケージ `jp.tapmarker.lite` / versionName `1.150` / versionCode `153`、5,647,203 bytes。APK SHA-256 `58e6cd830350473dad218352b3e23f4efcb214b2624e1122823ceb1093345067`。
+
+**証明書一致** `7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1` / **v2・v3署名確認** / **16KiB zipalign成功** / **ZIP CRC正常** / **元DEXの保全監査合格** / ホスト試験合格。
+
+[署名済みAPKの検証JSON](v1.150-signed-validation.json) / [SHA256SUMS](v1.150-SHA256SUMS.txt) / [GitHub Actionsのツール環境検証](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41545774987)
+
+**[▶ GitHubからv1.150署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.150/MarkerTap-v1.150-integrated-signed.apk)** / [Releaseページ](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.150) / [公開ダウンロード照合成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41548356954)
+
+**配布状況：** GitHub ReleaseへのAPK実ファイル掲載・匿名HTTPダウンロード・ローカル署名済みAPKとのバイト一致まで検証済み。Pixel 10 / Android 17の実機操作・仮想2画面の自律・広告の実測は未検証です。
+
+---
+
+# MarkerTap v1.150 — 高速な自律動作・広告回避・仮想2画面の待機短縮（開発候補）
+
+**2026-11-03 旧時点の記録：** ソース・ホスト回帰テストをGitHubに登録。その後、上記のとおり署名済みAPKのローカルビルドは完了しました。
+[このブランチの実装](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/tree/markertap/no-redundant-taps-v1.150/markertap/v1.145-physical-return)
+／[CI実行一覧](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/markertap-v1148-video-modal.yml)
+
+## v1.150で改修した内容
+
+- **CM回避:** 開拓うさぎで「コインアップチャンス→このままはじめる」「タップ2倍→キャンセル」の**ユーザー補助ツリーに現れた安全なボタン領域だけ**を閉じる候補にする。報酬広告・CM視聴ボタンは勝手に選ばない。ゲームが強制的に出す広告を削除するものではない。
+- **待機時間:** 同一ボタンへの重複操作候補の最短間隔を750→350ms、次を1600→750ms、3000→1500ms、4500→2500msへ短縮。**画面変化や対象ボタンの変更時は直ちに次候補を許可**。同じ未変化の画面への候補は初回と再試行4回で打ち切り、次の変化・復帰確認に委ねる。新鮮な観測を省略して連打する仕組みではない。元の入力確認ガードは維持。
+- **解析の無駄削減:** 通常画面でモーダル文字が存在しない場合のコントロール一覧生成と本文正規化を回避。正規化用の正規表現を事前コンパイル。
+- **仮想画面（最大2画面）:** 出荷用DEXの`SplitPilot.nextVirtual`で呼ぶ解析間隔を、`VirtualFastWait.scanInterval`に置換。標準プロファイルでは1画面の最低220→110ms、2画面の最低220→120msを目標とし、**前回解析時間が長ければ自動的に間隔を広げる**。低メモリ軽量プロファイルは元の間隔のまま。仮想画面数は古い4画面設定でも2画面に制限。これは解析のポーリング間隔であり実測タップ/フレームレートではない。
+- **従来の安全条件:** 仮想ディスプレイID、操作対象アプリ、画像鮮度、入力レーン、画面保護、表示復帰の判定を変更しない。端末画面の自律処理と仮想2画面の処理は分離。
+
+## 署名APK生成のための検証済みパイプライン
+
+- [GitHub Actions: DEX編成ツールの事前検査と署名済みRelease](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/markertap-v1150-integrated-release.yml)
+- [Android 35・JADXを取得してDEXパッチャをコンパイルした成功記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41545774987)
+- [1コマンドのビルド・署名オーケストレーター](release-local.py)
+
+このワークフローの**preflight**は成功（Javaホスト回帰／Android 35・JADX取得／DEXパッチャコンパイル）。旧secret-gated publishジョブはスキップされたものの、ローカルで署名し、別の公開用ワークフローからGitHub Releaseへv1.150を掲載して匿名HTTP取得・ハッシュ一致まで確認しました。
+
+リポジトリのSecretsに `MARKERTAP_V1144_BASE_URL`（オリジナルv1.144の限定アクセスURL）、`MARKERTAP_SIGNING_JKS_BASE64`（元証明書の秘密JKS）、`MARKERTAP_STORE_PASSWORD`（元のストアパスワード）、必要な場合のみ`MARKERTAP_KEY_PASSWORD`を設定し、Variable `MARKERTAP_V1150_PUBLISH=true`を設定したときにのみ、署名付きRelease作成を試みます。**これらをコミット、Issue、PR、README、workflow_dispatchの平文入力へ記入しないでください。**
+
+ローカル実行も `python3 release-local.py --baseline /private/v1.144.apk --keystore /private/original.jks --sdk tooling/sdk --jadx tooling/jadx/lib/jadx-1.5.3-all.jar` で一括検証できます。オリジナルAPK SHA、元証明書、APK v2/v3、ZIPと16KiB整列が一致しなければ配布しません。
+
+## ビルド・配布の状態
+
+基底は既存の**統合版 v1.144**（SHA-256 `f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970`）に固定。予定値はパッケージ `jp.tapmarker.lite`、`versionName=1.150`、`versionCode=153`。新規JavaクラスをDEXに含め、既存の`KaitakuUiEvidence`と`SplitPilot`の**それぞれ1か所**だけをフックするよう整合性監査を追加。ビルド時に一致しなければ停止する。
+
+`python3 run-tests.py` がJavaホスト試験・ソース監査を実行。**このテストだけでは、上記フックのAPK内統合や実機の自律成功は確定しない。**
+`python3 build.py --baseline ... --sdk ... --jadx ...` と `sign-release.py` の再構築・元証明書照合・v2/v3検証は別途必要。
+**v1.150の署名済みAPKはGitHub Releaseに掲載済みです。** [直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.150/MarkerTap-v1.150-integrated-signed.apk)。 不存在のReleaseリンクを表示しない。旧v1.149の開発APKはv1.150の変更を含まない。
+
+## 実機での未検証事項
+
+Pixel 10/Android 17での1画面・仮想2画面の画面取得、入力レーンの混線、広告を見ないボタンの自律選択、入力後の画面変化・ミッション報酬確認、待機短縮の前後実測、長時間安定動作。強制広告をスキップする処理や外部ゲームの広告配信制御は行わない。
+
+---
+
 # MarkerTap v1.149：開拓うさぎ「このままはじめる」判定改修
 
 **2026-11-02 検証状況**：元の署名証明書を使用した **v1.149 開発用統合APK** をChatGPT会話内で生成し、ファイルライブラリ `MarkerTap-v1.149-integrated-signed.apk` に保存済み。SHA-256 `0e9d621a2243d967aef4117369edd94f74c848c41c41a4150096d33e1646b500`、5,640,586バイト、versionCode 152、証明書SHA-256 `7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1`。APK v2/v3署名・内容ダイジェスト・ZIP CRCを独立検証しました。詳細は [検証記録](v1.149-signed-validation.json)。
