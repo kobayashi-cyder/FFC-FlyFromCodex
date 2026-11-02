@@ -1,5 +1,15 @@
 # FFC — FlyFromCodex
 
+
+## MarkerTap：開拓うさぎの「このままはじめる」修正（2026-11-02）
+
+**[v1.149候補・改修PR #30（ソースと試験）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/30)**  
+[修正内容と未解決点](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/markertap/dialog-resume-v1.149/markertap/v1.145-physical-return/v1.149-dialog-resume.md)
+
+「タップ２倍／キャンセル」および「コインアップチャンス／このままはじめる」の取り逃がしを調査。背景のデイリーミッション文言による誤判定、説明文が取得できない場合のコインアップ分類、表記ゆれについてソース修正とホスト試験を追加。
+
+**v1.149は未配布です。** 現在公開可能なのはPRのソースと検査内容であり、v1.149の署名済みAPK本体はまだGitHub Releaseにありません。ボタン矩形がAndroidのユーザー補助へ公開されない場合は視覚認識処理が必要で、自律成功は未確認です。実ファイルの存在と署名・SHA-256の一致を検証するまでは、READMEにAPKダウンロードリンクを掲載しません。下記のv1.148 APKも今回の修正前の版です。
+
 MarkerTap、CIFAなどの開発リポジトリ。
 
 ## MarkerTap v1.148 — 開拓うさぎ動画対応（2026-11-02）
