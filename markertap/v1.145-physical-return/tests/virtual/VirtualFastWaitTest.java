@@ -14,6 +14,9 @@ public final class VirtualFastWaitTest {
    eq(VirtualFastWait.scanInterval(normal,1500,2,8),1200,"max cap");
    eq(VirtualFastWait.scanInterval(light,20,2,4),350,"low ram unchanged");
    eq(VirtualFastWait.scanInterval(normal,0,2,8),120,"nonnegative cost");
+   eq(VirtualFastWait.limit(1),2,"default 2-display limit");
+   eq(VirtualFastWait.limit(4),2,"legacy 4-display setting clamped");
+   eq(VirtualFastWait.limit(99),2,"invalid setting clamped");
    System.out.println("VirtualFastWait: "+checks+" checks passed");
  }
 }
