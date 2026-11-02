@@ -23,12 +23,14 @@ video=root/'build/video-tests'
 video.mkdir(parents=True,exist_ok=True)
 video_sources=[
  root/'src/jp/tapmarker/KaitakuVideoModalPolicy.java',
+ root/'src/jp/tapmarker/KaitakuActionPacer.java',
  root/'src/jp/tapmarker/KaitakuVideoNamedControls.java',
  root/'tests/KaitakuVideoModalPolicyTest.java',
+ root/'tests/KaitakuActionPacerTest.java',
  root/'tests/video/VideoActionHostStubs.java',
  root/'tests/video/KaitakuVideoNamedControlsTest.java',
 ]
 subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(video)]+[str(p) for p in video_sources],check=True)
-for cls in ['KaitakuVideoModalPolicyTest','KaitakuVideoNamedControlsTest']:
+for cls in ['KaitakuVideoModalPolicyTest','KaitakuActionPacerTest','KaitakuVideoNamedControlsTest']:
  subprocess.run(['java','-cp',str(video),'jp.tapmarker.'+cls],check=True)
 subprocess.run(['python3',str(root/'tests/video_source_audit.py')],check=True)
