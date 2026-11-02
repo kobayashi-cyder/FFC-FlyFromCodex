@@ -13,12 +13,16 @@ final class KaitakuVideoNamedControls {
       if(c!=null)hits.add(new KaitakuVideoModalPolicy.Hit(c.label,c.bounds));
     KaitakuVideoModalPolicy.Decision d=KaitakuVideoModalPolicy.decide(context,hits);
     if(d.result==KaitakuVideoModalPolicy.Result.NONE) {
+      // A genuinely changed screen must make the next opt-out immediately tappable.
+      KaitakuActionPacer.reset(e);
       KaitakuNamedControls.apply(e,context,controls,out,w,h);return;
     }
     // Freeze ordinary-home and mission actions while a modal is present.
     KaitakuNamedControls.clear(out);
-    if(d.result==KaitakuVideoModalPolicy.Result.DISMISS) {
-      // Existing close transition re-observes game before any further input.
+    if(d.result==KaitakuVideoModalPolicy.Result.DISMISS &&
+       KaitakuActionPacer.allow(e,d.kind,d.bounds,System.nanoTime()/1000000L)) {
+      // First opt-out is immediate; unchanged duplicates are backed off.
+      // Candidate pacing does not replace action-result/frame verification.
       KaitakuActionEvidence.put(out,"close",d.bounds);
     }
     // HOLD never fabricates coordinates or taps the rewarded-ad action.
