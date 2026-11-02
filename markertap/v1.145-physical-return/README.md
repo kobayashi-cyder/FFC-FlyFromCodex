@@ -6,7 +6,9 @@
 
 [署名済みAPKの検証JSON](v1.150-signed-validation.json) / [SHA256SUMS](v1.150-SHA256SUMS.txt) / [GitHub Actionsのツール環境検証](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41545774987)
 
-**配布状況：** APK本体はChatGPT会話内で提供済み。**GitHub ReleaseへのAPK本体のアップロードは未完了**のため、このREADMEのリンクから直接APKファイルを取得できるとは表示しません。Pixel 10 / Android 17の実機操作・仮想2画面の自律・広告の実測は未検証です。
+**[▶ GitHubからv1.150署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.150/MarkerTap-v1.150-integrated-signed.apk)** / [Releaseページ](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.150) / [公開ダウンロード照合成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41548356954)
+
+**配布状況：** GitHub ReleaseへのAPK実ファイル掲載・匿名HTTPダウンロード・ローカル署名済みAPKとのバイト一致まで検証済み。Pixel 10 / Android 17の実機操作・仮想2画面の自律・広告の実測は未検証です。
 
 ---
 
@@ -30,7 +32,7 @@
 - [Android 35・JADXを取得してDEXパッチャをコンパイルした成功記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41545774987)
 - [1コマンドのビルド・署名オーケストレーター](release-local.py)
 
-このワークフローの**preflight**は成功（Javaホスト回帰／Android 35・JADX取得／DEXパッチャコンパイル）。しかし**publish**はGitHub側のリリース許可フラグ未設定のため**skip**されました。署名済みv1.150 APKは別途ローカルで生成済みですが、GitHub Releaseにはまだ掲載していません。
+このワークフローの**preflight**は成功（Javaホスト回帰／Android 35・JADX取得／DEXパッチャコンパイル）。旧secret-gated publishジョブはスキップされたものの、ローカルで署名し、別の公開用ワークフローからGitHub Releaseへv1.150を掲載して匿名HTTP取得・ハッシュ一致まで確認しました。
 
 リポジトリのSecretsに `MARKERTAP_V1144_BASE_URL`（オリジナルv1.144の限定アクセスURL）、`MARKERTAP_SIGNING_JKS_BASE64`（元証明書の秘密JKS）、`MARKERTAP_STORE_PASSWORD`（元のストアパスワード）、必要な場合のみ`MARKERTAP_KEY_PASSWORD`を設定し、Variable `MARKERTAP_V1150_PUBLISH=true`を設定したときにのみ、署名付きRelease作成を試みます。**これらをコミット、Issue、PR、README、workflow_dispatchの平文入力へ記入しないでください。**
 
@@ -42,7 +44,7 @@
 
 `python3 run-tests.py` がJavaホスト試験・ソース監査を実行。**このテストだけでは、上記フックのAPK内統合や実機の自律成功は確定しない。**
 `python3 build.py --baseline ... --sdk ... --jadx ...` と `sign-release.py` の再構築・元証明書照合・v2/v3検証は別途必要。
-**v1.150の署名済みAPKはローカル生成済みですが、GitHub Releaseにまだアップロードしていないため、このREADMEからのAPK直接ダウンロードはできません。** 不存在のReleaseリンクを表示しない。旧v1.149の開発APKはv1.150の変更を含まない。
+**v1.150の署名済みAPKはGitHub Releaseに掲載済みです。** [直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.150/MarkerTap-v1.150-integrated-signed.apk)。 不存在のReleaseリンクを表示しない。旧v1.149の開発APKはv1.150の変更を含まない。
 
 ## 実機での未検証事項
 
