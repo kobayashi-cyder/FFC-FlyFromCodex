@@ -1,0 +1,26 @@
+{
+  "version": "1.149",
+  "version_code": 152,
+  "package": "jp.tapmarker.lite",
+  "apk_sha256": "0e9d621a2243d967aef4117369edd94f74c848c41c41a4150096d33e1646b500",
+  "apk_size_bytes": 5640586,
+  "base_apk_sha256": "dabef4145aa65a6ede9d7c8f31608a1a46548e225b62bab002d0a761776d1281",
+  "certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "signature_schemes": [
+    "v2",
+    "v3"
+  ],
+  "signature_algorithm_id": "0x0103",
+  "signature_verified_with_original_public_key": true,
+  "signing_digest_original_algorithm_reproduction": true,
+  "zip_crc_valid": true,
+  "unchanged_zip_entries": 34,
+  "distribution": {
+    "chatgpt_attachment": true,
+    "chatgpt_library": true,
+    "github_release": false
+  },
+  "ui_coverage": "Mission background override and missing coin chance description in bytecode only. The kanji variant source change remains unshipped; image-only detection is still unavailable.",
+  "device_test": "not performed",
+  "release_readiness": "development-candidate-only"
+}
