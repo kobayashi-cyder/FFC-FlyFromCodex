@@ -1,0 +1,20 @@
+{
+  "status": "signed_host_verified_not_device_tested",
+  "package": "jp.tapmarker.lite",
+  "version_name": "1.148",
+  "version_code": 151,
+  "baseline_sha256": "f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970",
+  "signed_apk_sha256": "dabef4145aa65a6ede9d7c8f31608a1a46548e225b62bab002d0a761776d1281",
+  "size_bytes": 5647203,
+  "certificate_sha256": "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1",
+  "v2_signed": true,
+  "v3_signed": true,
+  "zipalign_16k": true,
+  "zip_crc_valid": true,
+  "physical_recovery_assertions": 171,
+  "panel_test_assertions": 32,
+  "ui_source_audit_checks": 37,
+  "video_modal_policy_checks": 14,
+  "device_tested": false,
+  "github_release_asset_published": false
+}
