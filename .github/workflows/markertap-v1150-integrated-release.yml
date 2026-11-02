@@ -111,11 +111,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/markertap-public
-          gh release download markertap-v1.150 --repo "$GITHUB_REPOSITORY" \
-            --pattern 'MarkerTap-v1.150-integrated-signed.apk' --dir /tmp/markertap-public
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/markertap-v1.150/MarkerTap-v1.150-integrated-signed.apk"
+          # Deliberately omit authorization: the README link must work for anyone.
+          curl --fail --location --silent --show-error --retry 6 --retry-delay 2 \
+            "$url" -o /tmp/markertap-public/MarkerTap-v1.150-integrated-signed.apk
           cmp /tmp/markertap-public/MarkerTap-v1.150-integrated-signed.apk \
             markertap/v1.145-physical-return/output/MarkerTap-v1.150-integrated-signed.apk
-          echo 'Verified uploaded APK bytes match locally signed file.'
+          echo 'Verified public unauthenticated APK download has exact signed bytes.'
       - name: Remove private signer files from runner
         if: always()
         run: rm -rf "$RUNNER_TEMP/markertap-private"
