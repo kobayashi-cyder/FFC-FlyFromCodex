@@ -32,11 +32,14 @@ final class KaitakuActionPacer {
       entries.put(engine,new Entry(id,nowMs));
       return true; // first safe opt-out is never delayed
     }
+    // A persistent unchanged modal cannot justify endless tap candidates.
+    // Existing phase watchdog/recovery owns escalation after this small budget.
+    if(old.attempts>=RETRY_MS.length+1)return false;
     long delay=RETRY_MS[Math.min(old.attempts-1,RETRY_MS.length-1)];
     if(nowMs-old.lastCandidate<delay)return false;
     old.lastCandidate=nowMs;
-    if(old.attempts<RETRY_MS.length+1)old.attempts++;
-    return true; // bounded retry, never an infinite blind tap loop
+    old.attempts++;
+    return true; // finite budget; changed screen resets immediately
   }
   static synchronized void reset(Object engine) {
     if(engine!=null)entries.remove(engine);
