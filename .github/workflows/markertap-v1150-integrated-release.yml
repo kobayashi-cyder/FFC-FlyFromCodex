@@ -50,6 +50,23 @@ jobs:
           path: /tmp/markertap-v1150-patcher/
           if-no-files-found: error
           retention-days: 3
+      - name: Assemble no-secrets offline build kit
+        run: |
+          set -euo pipefail
+          cd markertap/v1.145-physical-return
+          tar --create --gzip --file /tmp/markertap-v1150-build-kit.tgz \
+            src tests tools build.py run-tests.py sign-release.py release-local.py setup-toolchain.py \
+            tooling/jadx/lib/jadx-1.5.3-all.jar \
+            tooling/platform/android-35/android.jar \
+            tooling/build-tools/android-15 \
+            tooling/sdk
+          ls -lh /tmp/markertap-v1150-build-kit.tgz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1150-offline-build-kit
+          path: /tmp/markertap-v1150-build-kit.tgz
+          if-no-files-found: error
+          retention-days: 3
 
   publish:
     needs: preflight
