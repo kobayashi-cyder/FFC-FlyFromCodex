@@ -14,12 +14,16 @@ public final class KaitakuVideoNamedControlsTest {
   check(d.get("close-bounds")[1]==.50f,"wrong target bounds");
   d=run("コインアップチャンス!! ステージクリア時のコインがアップ このままはじめる","このままはじめる",true);
   check(d.get("close")[0]==1&&d.get("home")[0]==0,"coin chance opt out");
+  d=run("コインアップチャンス!! CMを見て30ゲット このままはじめる","このままはじめる",true);
+  check(d.get("close")[0]==1&&d.get("home")[0]==0,"coin continuation without body");
+  d=run("デイリーミッション コインアップチャンス","このまま始める",true);
+  check(d.get("close")[0]==1&&d.get("home")[0]==0,"mission background must not mask modal");
   d=run("コインアップチャンス!! ステージクリア時のコインがアップ CMを見て30ゲット","CMを見て30ゲット",true);
   check(!d.containsKey("close")&&d.get("home")[0]==0&&!d.containsKey("main"),"unknown optout must hold");
   d=run("デイリーミッション タップ2倍を3回使用する プレイ","プレイ",true);
   check(d.containsKey("legacy")&&!d.containsKey("close"),"existing mission classifier not delegated");
   d=run("開拓する タップ2倍","タップ2倍",true);
   check(d.containsKey("legacy")&&d.get("home")[0]==1,"unrecognized screen changed");
-  System.out.println("KaitakuVideoNamedControls: 5 integration checks passed");
+  System.out.println("KaitakuVideoNamedControls: 7 integration checks passed");
  }
 }
