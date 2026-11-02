@@ -20,6 +20,8 @@ assert 'KaitakuActionPacer.reset' in bridge
 assert 'private static final long[] RETRY_MS' in (root/'src/jp/tapmarker/KaitakuActionPacer.java').read_text()
 assert 'ROOT+"SplitPilot;"' in patch
 assert 'ROOT+"VirtualFastWait;"' in patch
+assert 'c.getType().equals(ROOT+"VirtualLoadPolicy;")' in patch
+assert 'static int limit(int saved){return 2;}' in (root/'src/jp/tapmarker/VirtualFastWait.java').read_text()
 assert 'if(calls[0]!=1)' in patch
 assert 'return Math.min(1200,Math.max(goal,effectiveWork))' in (root/'src/jp/tapmarker/VirtualFastWait.java').read_text()
-print('Kaitaku video DEX hook and no-ad action source audit: 18 checks passed')
+print('Kaitaku video DEX hook and no-ad action source audit: 20 checks passed')
