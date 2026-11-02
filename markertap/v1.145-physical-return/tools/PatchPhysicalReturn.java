@@ -104,6 +104,21 @@ public final class PatchPhysicalReturn {
    if(calls[0]!=1)throw new IllegalStateException("Kaitaku named UI hook changed: "+calls[0]);
    return withMethods(c,ms);
   }
+  if(c.getType().equals(ROOT+"VirtualLoadPolicy;")){
+   List<Method> ms=new ArrayList<>();int wrapped=0;
+   for(Method m:c.getMethods()){
+    if(m.getName().equals("limit")&&desc(m).equals("(I)I")){
+     MethodReference to=new ImmutableMethodReference(ROOT+"VirtualFastWait;","limit",Arrays.asList("I"),"I");
+     ms.add(method(m,m.getName(),new ImmutableMethodImplementation(2,Arrays.asList(
+      new ImmutableInstruction35c(Opcode.INVOKE_STATIC,1,1,0,0,0,0,to),
+      new ImmutableInstruction11x(Opcode.MOVE_RESULT,0),
+      new ImmutableInstruction11x(Opcode.RETURN,0)
+     ),Collections.emptyList(),Collections.emptyList())));wrapped++;
+    }else ms.add(m);
+   }
+   if(wrapped!=1)throw new IllegalStateException("virtual display limit signature changed: "+wrapped);
+   return withMethods(c,ms);
+  }
   if(c.getType().equals(ROOT+"SplitPilot;")){
    List<Method> ms=new ArrayList<>();int[] calls={0};
    for(Method m:c.getMethods()){
@@ -194,7 +209,7 @@ public final class PatchPhysicalReturn {
    if(!Arrays.equals(canonical(expected),canonical(actual)))throw new IllegalStateException("unexpected modification: "+c.getType());
    if(Arrays.equals(canonical(c),canonical(actual)))preserved++;else changed.add(c.getType());
   }
-  if(!changed.containsAll(Arrays.asList(ROOT+"AutoPilot;",ROOT+"ProgressErrors;",ROOT+"RecoveryEscalation;",ROOT+"TapService;",ROOT+"MainActivity;",ROOT+"KaitakuUiEvidence;",ROOT+"SplitPilot;")))throw new IllegalStateException("hooks not integrated");
+  if(!changed.containsAll(Arrays.asList(ROOT+"AutoPilot;",ROOT+"ProgressErrors;",ROOT+"RecoveryEscalation;",ROOT+"TapService;",ROOT+"MainActivity;",ROOT+"KaitakuUiEvidence;",ROOT+"SplitPilot;",ROOT+"VirtualLoadPolicy;")))throw new IllegalStateException("hooks not integrated");
   for(String n:after.keySet())if(!n.startsWith(ROOT+"PhysicalRecoveryBridge")&&!n.startsWith(ROOT+"PhysicalReturnEpisode")&&!n.startsWith(ROOT+"PanelModeController")&&!n.startsWith(ROOT+"PanelModePolicy")&&!n.startsWith(ROOT+"KaitakuVideoModalPolicy")&&!n.startsWith(ROOT+"VirtualFastWait")&&!n.startsWith(ROOT+"KaitakuActionPacer")&&!n.startsWith(ROOT+"KaitakuVideoNamedControls"))throw new IllegalStateException("unexpected added type "+n);
   if(after.size()<3)throw new IllegalStateException("new runtime absent");
   System.out.println("Original classes byte-for-byte equivalent after canonical DEX serialization: "+preserved+"; reviewed changes: "+changed+"; added: "+after.keySet());
