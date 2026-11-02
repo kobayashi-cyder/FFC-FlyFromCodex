@@ -44,6 +44,12 @@ jobs:
             -cp tooling/jadx/lib/jadx-1.5.3-all.jar \
             -d /tmp/markertap-v1150-patcher tools/PatchPhysicalReturn.java
           echo 'DEX patcher compiles. APK integration requires the exact v1.144 binary.'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1150-compiled-patcher
+          path: /tmp/markertap-v1150-patcher/
+          if-no-files-found: error
+          retention-days: 3
 
   publish:
     needs: preflight
