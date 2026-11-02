@@ -4,11 +4,12 @@
 
 **[v1.150 改修コード・検証PR #32](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/32)**  
 [改修内容・待機時間・ビルド手順を開く](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/markertap/no-redundant-taps-v1.150/markertap/v1.145-physical-return/README.md)  
-[GitHub Actions ホストテスト](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/markertap-v1148-video-modal.yml)
+[GitHub Actions ホストテスト](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/markertap-v1148-video-modal.yml)  
+[Android 35 / DEXパッチャ・署名Releaseパイプライン](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/markertap-v1150-integrated-release.yml)
 
 開拓うさぎの重複閉じる候補を350/750/1500/2500msに調整し、画面が変化したら即時次操作候補へ。強制CMは消去せず、ユーザー補助で確認できた「このままはじめる」「キャンセル」を優先。通常画面の余計な解析を減らし、仮想画面（最大2）の画像走査間隔を最大負荷に応じて短縮するDEXフックを追加。
 
-**状況を区別してください：** この改修はGitHubにソースとして存在し、ホスト検証を受けていますが、**v1.150署名済みAPKはまだ生成・公開・実機検証していません。** したがって上のリンクは「改修コードを開く」ためのものです。**v1.150 APKのダウンロードリンクではありません。** 既存のv1.137署名済みReleaseやv1.149チャット内APKにもv1.150改修は含まれていません。
+**状況を区別してください：** この改修はGitHubにソースとして存在し、ホスト回帰およびAndroid35/JADXによるDEXパッチャのコンパイル検証は成功していますが、署名Releaseジョブは必要な秘密設定が未完了でスキップされたため、**v1.150署名済みAPKはまだ生成・公開・実機検証していません。** したがって上のリンクは「改修コードを開く」ためのものです。**v1.150 APKのダウンロードリンクではありません。** 既存のv1.137署名済みReleaseやv1.149チャット内APKにもv1.150改修は含まれていません。
 
 
 ## MarkerTap：開拓うさぎの「このままはじめる」修正（2026-11-02）
