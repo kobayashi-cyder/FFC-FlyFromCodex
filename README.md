@@ -1,20 +1,19 @@
 # FFC — FlyFromCodex
 
-FFC development repository. Android APK builds are isolated on dedicated build branches before any merge to main.
+MarkerTap、CIFAなどの開発リポジトリ。
 
-## MarkerTap 最新配布：v1.143（署名済み）
+## MarkerTap v1.148 — 開拓うさぎ動画対応（2026-11-02）
 
-[**署名済みAPKをダウンロード**](https://raw.githubusercontent.com/kobayashi-cyder/FFC-FlyFromCodex/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/releases/MarkerTap-v1.143-signed.apk)
+**[v1.148のソース・改修PR #29](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/29)**  
+**[v1.148ビルド・署名検証記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/markertap/kaitaku-video-modal-v1.148/markertap/v1.145-physical-return/v1.148-signed-validation.json)**  
+**[v1.148 APKのSHA-256](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/markertap/kaitaku-video-modal-v1.148/markertap/v1.145-physical-return/v1.148-SHA256SUMS.txt)**
 
-- [更新内容・インストール手順](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/v1.143-kaitaku-actions/README.md)
-- [署名・ビルド・回帰テストの検証記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/v1.143-kaitaku-actions/validation-local.json)
-- [APKのSHA-256](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/releases/SHA256SUMS-v1.143.txt)
-- [最新版のソース](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/tree/markertap/kaitaku-actions-v1.143/markertap) · [開発の再開手順](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/fff7eac5f903ce687767e19f70e6e215fc8fdf5b/markertap/WORK_NEXT.md)
+v1.148の**署名済み統合APK**はユーザー本人のChatGPT会話内の添付として作成・提供済みで、ChatGPTファイルライブラリにも `MarkerTap-v1.148-integrated-signed.apk` として保存済み。パッケージは `jp.tapmarker.lite`、versionCode 151、サイズ5,647,203 bytes。元の証明書と一致し、APK v2/v3署名、16KiB整列、ZIP整合性とホスト回帰を検証。**Android実機とゲームの完全自律は未検証。**
 
-開拓うさぎの通常連打・CM復帰に、タップ効率、オートタップ強化、左右の追加ボタン、ミッション報酬の確認ループ、名称を取得できるタップミニゲームの処理を追加しました。
+**配布上の制限:** このGitHubリポジトリにはv1.148のAPKバイナリ自体をまだアップロードできていません。ここに存在しないGitHub ReleaseのURLや、未署名のCI成果物をダウンロードリンクとして掲示しません。したがって **READMEからv1.148 APK本体を直接ダウンロードする要件は未完了**。上のリンクからはソース・検証結果を開けます。APK本体はChatGPT会話内で取得してください。GitHub Releasesへ実ファイルを公開しHTTPダウンロード/ハッシュ照合でき次第、正式な直接リンクへ切替対象とします。
 
-パッケージは `jp.tapmarker.lite`、versionNameは `1.143`、versionCodeは `146`。以前と同じ署名証明書による更新APKです。旧版で「全停止」後に上書きインストールしてください。署名鍵は含みません。
+## GitHubで現在ダウンロード可能な旧版
 
-v2/v3署名・証明書一致・版番号・16KB整列、追加操作82項目と既存の回帰テストを確認済みです。**実機入力・実際の報酬加算は未検証**です。ミッション一覧は既存の共通見本または名称で照合し、名称を取得できないミニゲームには未対応です。
+[MarkerTap v1.137 署名済みAPK（GitHub Release）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.137/MarkerTap-v1.137-signed.apk)（**v1.148ではありません**）。最新の開拓うさぎ・最小化フロート変更を含まないため、今回の更新目的では上記v1.148を使用してください。
 
-CIで作る検証APKは未署名です。配布用はページ先頭の署名済みAPKです。
+[過去のRelease一覧](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases)。
