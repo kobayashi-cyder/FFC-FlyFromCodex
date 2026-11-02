@@ -1,0 +1,24 @@
+name: MarkerTap signed v1.143 baseline artifact for reproducible delta
+on:
+  push:
+    branches:
+      - markertap/kaitaku-video-modal-v1.148
+    paths:
+      - .github/workflows/markertap-v1148-publish-baseline.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify old published signed binary
+        run: |
+          echo '59b45a87e742c578fb94930d103196e870ba4660e43a5fef2cade26e4f60868d  markertap/releases/MarkerTap-v1.143-signed.apk' | sha256sum -c
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1.143-existing-signed-baseline
+          path: markertap/releases/MarkerTap-v1.143-signed.apk
+          retention-days: 1
