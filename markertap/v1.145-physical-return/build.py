@@ -55,7 +55,11 @@ def build(base,sdk,jadx):
  b=ROOT/'build';b.mkdir(exist_ok=True)
  for n in ['helpers','classes','dex','evidence']:(b/n).mkdir(exist_ok=True)
  evidence=b/'evidence';android=sdk/'platforms/android-35/android.jar';bt=sdk/'build-tools/35.0.0'
- run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','--release','8','-encoding','UTF-8','-cp',jadx,'-d',b/'helpers',ROOT/'tools/PatchPhysicalReturn.java'],evidence/'compile-patcher.log')
+ patcher_src=(ROOT/'tools/PatchPhysicalReturn.java').read_text()
+ assert 'new ImmutableStringReference("v1.148")' in patcher_src
+ patched_java=b/'PatchPhysicalReturn.java'
+ patched_java.write_text(patcher_src.replace('new ImmutableStringReference("v1.148")','new ImmutableStringReference("v1.149")'))
+ run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','--release','8','-encoding','UTF-8','-cp',jadx,'-d',b/'helpers',patched_java],evidence/'compile-patcher.log')
  helper=['java','-Xmx768m','-cp',str(b/'helpers')+os.pathsep+str(jadx),'PatchPhysicalReturn']
  run(helper+['api',base,b/'baseline-api.jar'],evidence/'compile-api.log')
  sources=sorted((ROOT/'src').rglob('*.java'))
