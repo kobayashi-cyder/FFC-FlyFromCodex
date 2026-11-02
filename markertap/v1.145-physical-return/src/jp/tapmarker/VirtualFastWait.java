@@ -6,6 +6,8 @@ package jp.tapmarker;
  * Two displays remain the resource ceiling, not a reason to duplicate work.
  */
 final class VirtualFastWait {
+  /** User-requested two-display ceiling, independent of stale saved settings. */
+  static int limit(int saved){return 2;}
   static long scanInterval(PerformancePolicy.Profile profile,long lastCost,int windows,int cores) {
     long regular=PerformancePolicy.scanInterval(profile,lastCost,windows,cores);
     // Low-memory devices retain their proven profile; faster scanning is not
