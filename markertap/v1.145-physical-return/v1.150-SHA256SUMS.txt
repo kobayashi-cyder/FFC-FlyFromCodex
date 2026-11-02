@@ -1,0 +1,2 @@
+58e6cd830350473dad218352b3e23f4efcb214b2624e1122823ceb1093345067  MarkerTap-v1.150-integrated-signed.apk
+73f75f77ddc6f4ae2de007ee49c844293a593e5229112f64f483c381a81ad90b  MarkerTap-v1.150-signed-download.zip
