@@ -1,0 +1,64 @@
+name: MarkerTap v1.157 two-second universal ad recovery - source and host checks
+on:
+  push:
+    branches:
+      - markertap/v1.157-ad-home-intent-all-games
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Compile and exercise deterministic policy
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ad-policy
+          javac --release 8 -encoding UTF-8 -d /tmp/ad-policy \
+            markertap/code/TapMarker/src/jp/tapmarker/AdTwoSecondRecovery.java \
+            markertap/code/TapMarker/tests/AdTwoSecondRecoveryTest.java
+          java -cp /tmp/ad-policy jp.tapmarker.AdTwoSecondRecoveryTest
+      - name: Verify all game lanes and strict recovery order are wired in source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('markertap/code/TapMarker/src/jp/tapmarker')
+          load=lambda name:(root/name).read_text(encoding='utf-8')
+          a=load('AutoPilot.java')
+          s=load('SplitPilot.java')
+          v=load('VirtualWindows.java')
+          shell=load('VirtualShell.java')
+          proto=load('VirtualProtocol.java')
+          runtime=load('AdRecoveryRuntime.java')
+          policy=load('AdTwoSecondRecovery.java')
+          security=load('AdRecoveryShell.java')
+          assert 'AdRecoveryRuntime.physical(this,expected,phaseSamples,w,h)' in a
+          assert 'AdRecoveryRuntime.external(this,expected)' in a
+          assert 'AdRecoveryRuntime.virtual(this,slot,t,samples,rect)' in s
+          assert 'final AdTwoSecondRecovery adTwoSecond' in s
+          assert 'void recoverAd(Window w' in v
+          assert 'service.recoverAd(id,epoch)' in v
+          assert 'case VirtualProtocol.AD_RECOVER:' in shell
+          assert 'homeShownOnDisplay(id)' in shell
+          assert 'forceStopRegistered(entry.pkg,id)' in shell
+          assert 'launch(id,Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK)' in shell
+          assert 'case VirtualProtocol.FORCE_STOP_GAME:' in shell
+          assert 'FORCE_STOP_GAME=14,AD_RECOVER=15' in proto
+          assert 'forceStopKnownGame(String pkg)' in proto
+          assert 'recoverAd(int id,long epoch)' in proto
+          assert 'r.confirmedRemote(at,result)' in runtime
+          assert 'p.homeVisible()' in runtime
+          assert 'r.confirmedKill(now,stopped)' in runtime
+          assert 'r.confirmedIntent(SystemClock.uptimeMillis(),true)' in runtime
+          assert 'AD_MS=2000L' in policy
+          assert 'attempts>=2' in policy
+          assert 'com.kurashiru.kaitaku.usagi' in security
+          assert 'java.lang.Process' in shell
+          print('v1.157 source wiring: 22 checks passed (not a DEX or device test)')
+          PY
