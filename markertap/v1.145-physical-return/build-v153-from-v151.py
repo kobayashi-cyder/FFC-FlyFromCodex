@@ -182,7 +182,7 @@ def build(base, sdk, jadx):
     run([bt / "aapt2", "dump", "badging", unsigned],
         evidence / "badging.log")
     badging = (evidence / "badging.log").read_text(encoding="utf-8")
-    for value in ("name='jp.tapmarker.lite'", "versionCode='154'", "versionName='1.153'"):
+    for value in ("name='jp.tapmarker.lite'", "versionCode='156'", "versionName='1.153'"):
         if value not in badging:
             raise ValueError("wrong APK identity: " + value)
     with zipfile.ZipFile(unsigned) as zipout:
