@@ -1,0 +1,60 @@
+name: MarkerTap v1.156 manual-preview resume candidate
+
+on:
+  push:
+    branches:
+      - markertap/v1.156-manual-preview-timeout
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-unsigned:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Authenticate signed v1.155 baseline SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/base"
+          gh release download markertap-v1.155-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.155-integrated-signed.apk -D "$RUNNER_TEMP/base"
+          echo '574b6e0f8d733d6b6288a9c2754e26aef4d9b109b10db2c0bcc90a925741344e  '"$RUNNER_TEMP"'/base/MarkerTap-v1.155-integrated-signed.apk' | sha256sum -c -
+      - name: Install pinned build tools
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Unit-test 12-second manual-hold guard and existing automation
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/manual-policy"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/manual-policy" \
+            markertap/v1.145-physical-return/src/jp/tapmarker/ManualPreviewTimeoutPolicy.java \
+            markertap/code/TapMarker/tests/ManualPreviewTimeoutPolicyTest.java
+          java -cp "$RUNNER_TEMP/manual-policy" jp.tapmarker.ManualPreviewTimeoutPolicyTest
+          python3 markertap/v1.145-physical-return/run-tests.py
+      - name: Compile and audit exactly one original method wrapper
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 build-v156-from-v155.py \
+            --baseline "$RUNNER_TEMP/base/MarkerTap-v1.155-integrated-signed.apk" \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+          sha256sum output/MarkerTap-v1.156-integrated-unsigned.apk
+      - name: Retain unsigned audit proof only
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1156-UNSIGNED-manual-resume-audited
+          retention-days: 3
+          if-no-files-found: error
+          path: |
+            markertap/v1.145-physical-return/output/MarkerTap-v1.156-integrated-unsigned.apk
+            markertap/v1.145-physical-return/build/v156-manual-watchdog/evidence/*
