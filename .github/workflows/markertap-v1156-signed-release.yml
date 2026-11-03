@@ -1,0 +1,66 @@
+name: MarkerTap v1.156 original-certificate manual-preview recovery Release
+
+on:
+  push:
+    branches:
+      - markertap/v1.156-manual-preview-timeout
+    paths:
+      - '.github/workflows/markertap-v1156-signed-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: markertap-v1156-original-signer
+  cancel-in-progress: false
+
+jobs:
+  sign-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: markertap/v1.156-manual-preview-timeout
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: SHA-verify original-certificate signed v1.155 base APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/base"
+          gh release download markertap-v1.155-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.155-integrated-signed.apk -D "$RUNNER_TEMP/base"
+          echo "574b6e0f8d733d6b6288a9c2754e26aef4d9b109b10db2c0bcc90a925741344e  $RUNNER_TEMP/base/MarkerTap-v1.155-integrated-signed.apk" | sha256sum -c -
+      - name: Download pinned SDK and bytecode tools
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Test manual-hold guard and audit full v1.156 DEX overlay
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/policy"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/policy" \
+            src/jp/tapmarker/ManualPreviewTimeoutPolicy.java \
+            ../code/TapMarker/tests/ManualPreviewTimeoutPolicyTest.java
+          java -cp "$RUNNER_TEMP/policy" jp.tapmarker.ManualPreviewTimeoutPolicyTest
+          python3 run-tests.py
+          python3 build-v156-from-v155.py \
+            --baseline "$RUNNER_TEMP/base/MarkerTap-v1.155-integrated-signed.apk" \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+          echo 'd38e69927837ba3f6139d211cd1d848ca1b38745b48c7e556dfd0d86bc709b4a  output/MarkerTap-v1.156-integrated-unsigned.apk' | sha256sum -c -
+      - name: Sign with the ephemeral encrypted original key and verify the public release
+        working-directory: markertap/v1.145-physical-return
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -u one-shot-v156-release.py
+      - name: Report key-handling safeguards
+        if: always()
+        run: |
+          echo "Only an encrypted one-time key envelope is transferred."
+          echo "No unencrypted keystore, key password or private key is added to source."
