@@ -53,15 +53,10 @@ final class AdRecoveryRuntime {
        foreground.equals("jp.tapmarker.lite")||!AdExitPolicy.adState(p.phases.engine.current))return false;
     long first; synchronized(externalFirst){Long old=externalFirst.get(p);
       first=old==null||old>now?now:old;externalFirst.put(p,first);}
-    if(now-first<AdTwoSecondRecovery.AD_MS)return true; // hold other recovery until the 2s gate
     AdTwoSecondRecovery r=policy(p);
-    if(r.step()==AdTwoSecondRecovery.Step.OBSERVE){
-      // External screen can't provide a game frame. Start a separate two-
-      // observation clock based on current, stable foreground instead.
-      if(!r.observe(p.target,Math.max(1,first),now,true,false)){
-        r.observe(p.target,now,now,true,false);
-      }
-    }
+    // Fresh, stable foreground observations substitute for absent game frames.
+    r.observe(p.target,now,now,true,false);
+    if(now-first<AdTwoSecondRecovery.AD_MS)return true;
     if(r.step()==AdTwoSecondRecovery.Step.HOME)beginPhysical(p,token,r);
     return true;
   }
@@ -137,10 +132,8 @@ final class AdRecoveryRuntime {
     pilot.s.pilot.virtualWindows.recoverAd(w,()->pilot.valid(token)&&slot.adTwoSecond==r,
       result->{
         long at=SystemClock.uptimeMillis();
-        if((result&1)!=0)r.confirmedHome(at,true);
-        if((result&2)!=0)r.confirmedKill(at,true);
-        if((result&4)!=0)r.confirmedIntent(at,true);
-        if(result!=7)r.failed(at);
+        if(!r.confirmedRemote(at,result))
+          pilot.s.pilot.note("広告復帰保留 / HOME・task kill・Intentの証明不十分 ("+result+")");
         else{
           String verify=KaitakuPreset.APP.equals(slot.pkg)?KaitakuPreset.P+"verify":PresetRegistry.verify(slot.pkg);
           if(!verify.isEmpty()&&e.phases.containsKey(verify))e.enter(verify,at);else e.invalidateObservation();
