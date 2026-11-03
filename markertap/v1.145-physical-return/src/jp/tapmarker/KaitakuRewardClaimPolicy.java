@@ -61,7 +61,10 @@ final class KaitakuRewardClaimPolicy {
     if(claim!=null)return new Decision(Kind.CLAIM,claim);
     if(labeled(hits,"ゲット","GET","受け取る","報酬を受け取る","一括受取","一括で受け取る"))
       return new Decision(Kind.HOLD,null);
-    float[] back=find(hits,"戻る","ゲームへ戻る","閉じる");
+    // "Play" is a mission action, not a reward claim. Delegate to the
+    // established mission automaton instead of freezing on PAGE.
+    if(find(hits,"プレイ","ゲームへ戻る")!=null)return NONE;
+    float[] back=find(hits,"戻る","閉じる");
     return new Decision(back==null?Kind.PAGE:Kind.BACK,back);
   }
   static String target(float[] b){
