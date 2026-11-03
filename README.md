@@ -1,5 +1,16 @@
 # FFC — FlyFromCodex
 
+## MarkerTap v1.155 — 停止ループ抑制・署名済み安定化候補（2026-11-03）
+
+**[▶ MarkerTap v1.155 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.155-rc1/MarkerTap-v1.155-integrated-signed.apk)**  
+[GitHub Release v1.155-rc1](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.155-rc1) / [SHA-256チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.155-rc1/SHA256SUMS-v1.155.txt) / [署名・ダウンロード検証成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41618553703) / [停止ループ対策の改修PR #39](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/39)
+
+**v1.154で停止が繰り返されるというユーザー報告への緊急対処版です。** 元の署名済みv1.151 APKをベースに組み直し、v1.153から加えた高頻度の画面別復旧フック・自動画面再生成・個別隔離処理は、安全性が実機で確認できるまで**ロールバック**しました。内蔵ADBへの起動案内は残します。Wi-Fiがなくても、同一端末で認証済みの`127.0.0.1`ポートが利用可能なら接続を試みますが、オフラインの**自動**再接続は15分あたり2回までに制限します。Wi-Fiがある場合は従来のADB検出を優先します。
+
+パッケージ `jp.tapmarker.lite`、versionName **1.155** / versionCode **158**、APK SHA-256 `574b6e0f8d733d6b6288a9c2754e26aef4d9b109b10db2c0bcc90a925741344e`。以前のMarkerTapと同じ更新用証明書でv2/v3署名済み。DEX差分監査、ホストテスト、署名証明書、公開APKバイト一致を確認しました。通常は**v1.154をアンインストールせずに上書き更新**できます（Android側の状態・ポリシーに依存）。既存のデータは更新操作で維持されますが、念のためバックアップを推奨します。
+
+**重要：実機のクラッシュ解消は未確認です。** 端末の新しい診断ログをまだ受領していないため、原因の特定は完了していません。v1.152–v1.154の自動復旧能力の一部を削除したため、仮想画面の自動再生成頻度は抑えられます。Pixel 10 / Android 17の仮想2画面、自律動作、広告復帰、長時間安定は引き続き要実機検証。異常が再発する場合は再起動を繰り返さず、診断ZIPまたはAndroidのクラッシュログをご提供ください。
+
 ## MarkerTap v1.154 — Wi-FiなしのローカルADB再接続・署名済み検証版（2026-11-03）
 
 **[▶ MarkerTap v1.154 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.154-rc1/MarkerTap-v1.154-integrated-signed.apk)**  
