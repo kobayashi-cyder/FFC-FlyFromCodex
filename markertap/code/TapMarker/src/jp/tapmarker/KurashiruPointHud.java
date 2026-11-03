@@ -13,6 +13,7 @@ import java.util.Comparator;
  * aspect ratio uses the same layout. Unknown/unreadable displays return -1.
  */
 final class KurashiruPointHud {
+  interface Pixels {int get(int x,int y);}
   private static final int GRID_W=12,GRID_H=16;
   // The four glyphs seen in the user-provided HUD, followed by generic bold
   // digit alternatives. These represent digit silhouettes, not a screenshot.
@@ -39,7 +40,7 @@ final class KurashiruPointHud {
     }
     int end(){return y+h;}
   }
-  static long read(RegionSampler.Pixels pixels,int width,int height){
+  static long read(Pixels pixels,int width,int height){
     if(pixels==null||width<300||height<560)return -1;
     // Narrow text ROI excludes the round coin logo and the adjacent mission
     // button. It is deliberately conservative rather than screen-wide OCR.
@@ -48,7 +49,7 @@ final class KurashiruPointHud {
     if(x1-x0<60||y1-y0<12)return -1;
     return readBand(pixels,width,height,x0,y0,x1,y1);
   }
-  private static long readBand(RegionSampler.Pixels pixels,int width,int height,
+  private static long readBand(Pixels pixels,int width,int height,
                                int x0,int y0,int x1,int y1){
     final int w=x1-x0,h=y1-y0;
     byte[] black=new byte[w*h];
@@ -78,7 +79,7 @@ final class KurashiruPointHud {
       Shape p=shapes.get(i),t=shapes.get(i+1);
       int dh=first.h,db=first.end();
       if(p.y>=first.y+Math.max(2,dh/5)
-        &&p.end()>db+Math.max(2,dh/7)
+        &&p.end()>=db+Math.max(1,dh/7)
         &&p.h>=dh*.65&&p.h<=dh*1.30
         &&p.w>=dh*.40&&p.w<=dh*1.2
         &&t.x>=p.x+p.w&&t.x-(p.x+p.w)<=dh
