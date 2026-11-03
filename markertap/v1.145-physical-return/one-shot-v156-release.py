@@ -176,7 +176,7 @@ def publish_candidate(signed):
        "--repo", REPO, "--target", os.environ["GITHUB_SHA"],
        "--title", "MarkerTap v1.156 original-certificate signed candidate — device validation pending",
        "--notes",
-       "Stability rollback from v1.151. Experimental per-frame recovery removed; loopback automatic retries bounded. Original MarkerTap signing certificate and host/DEX audits verified. "
+       "SHA-pinned update from signed v1.155: a 12-second per-display manual-preview timeout monitor clears stale manual state after user touch, does not tap ads or restart displays, and retains bounded loopback ADB retries. Original MarkerTap signing certificate and host/DEX audits verified. "
        "Pixel 10/Android17, two virtual displays, collapsed/offline state, ads and "
        "reward collection are not yet device tested. Pre-release only: "
        "v1.150 remains the current stable version.",
