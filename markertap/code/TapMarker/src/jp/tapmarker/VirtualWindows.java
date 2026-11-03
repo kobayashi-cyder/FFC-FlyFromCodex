@@ -217,7 +217,7 @@ final class VirtualWindows {
    s.pilot.wireless.resumeMaintenance();if(!prepare())return;
    adbMode=false;remote=null;createViews(true);
   }
- void openAdb(){s.pilot.wireless.resumeMaintenance();if(!prepare())return;adbMode=true;IBinder binder=VirtualBridgeProvider.connected();if(binder==null){remote=null;s.pilot.note("端末内実行部が未接続 / 「端末だけで接続」から開始してください");return;}if(attach(binder))createViews(true);}
+ void openAdb(){s.pilot.wireless.resumeMaintenance();if(!prepare())return;adbMode=true;IBinder binder=VirtualBridgeProvider.connected();if(binder==null){remote=null;s.pilot.note("内蔵ADB実行部が未接続 / ペアリング済みなら接続を再開します");s.pilot.wireless.guide(true);return;}if(attach(binder))createViews(true);}
  void openPc(String[] packages){
   IBinder binder=VirtualBridgeProvider.connected();
   if(binder==null)throw new IllegalStateException("TapMakerのADB実行部が未接続です");
