@@ -54,3 +54,5 @@ jobs:
         run: |
           echo 'Private JKS is never committed or stored as an Actions artifact.'
           echo 'The runner temporary signer is deleted on exit.'
+
+# Rerun after correcting the one-shot signer branch identity.
