@@ -6,6 +6,8 @@
 
 [GitHub Release v1.157-rc1](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.157-rc1) / [SHA-256チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.157-rc1/SHA256SUMS-v1.157.txt) / [DEX統合・ホスト試験](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41728042799) / [署名・公開ファイル照合](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41728868632) / [改修PR #41](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/41)
 
+**追加検証（2026-11-04）：** [署名済みv1.157 APKをAndroid 15 / API35エミュレーターにインストールし、MainActivityの起動・プロセス生存・クラッシュログ検査が成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41730661486)。Android 17 / Pixel 10の実機およびCM回復と報酬加算の動作は未検証です。
+
 v1.156の署名済みAPKのSHA-256を固定して、物理画面・仮想画面・ADBシェル実行部の3か所へDEX差分を統合しました。対象の既知ミニゲームで広告の正の観測を2枚以上、2秒以上継続して確認した場合に、HOME操作と実表示の確認を行い、認証済みADB実行部から**当該ゲームのパッケージだけ**を停止し、登録された起動Intentで再開を試みます。HOMEを確認できない、ADBが利用できない、仮想画面にHOMEが存在しない場合は**強制停止せず保留**します。回復試行の回数・間隔制限もあります。
 
 パッケージ名 jp.tapmarker.lite、versionName **1.157**、versionCode **160**。署名済みAPK SHA-256：0108aadfa717c676dfe30b4f678a5c1526277e11b01ae16f85317d8b8dd50f7d。従来と同じ更新用証明書（SHA-256：7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1）でAPK v2/v3署名を検証し、公開ファイルも照合済み。通常はアンインストールせず上書き更新できます。
