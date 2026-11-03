@@ -17,6 +17,8 @@ subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(out)]+[str(
 for name in ['PhysicalRecoveryTest','PanelModePolicyTest']:
  subprocess.run(['java','-cp',str(out),'jp.tapmarker.'+name],check=True)
 subprocess.run(['python3',str(root/'tests/ui_source_audit.py')],check=True)
+# Never sign bytes that differ from the audited CI artifact.
+subprocess.run(['python3',str(root/'tests/test_release_integrity.py')],check=True)
 
 # Video-derived decisions are pure Java; compile the integration shim against test-only named-control stubs.
 video=root/'build/video-tests'
