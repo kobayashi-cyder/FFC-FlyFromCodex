@@ -20,7 +20,9 @@ keys=(src/"WirelessKeys.java").read_text(encoding="utf-8")
 for p in src.glob("*.java"):
     s=p.read_text(encoding="utf-8")
     assert "import rikka.shizuku" not in s, f"Shizuku dependency in {p.name}"
-    assert "Shizuku." not in s, f"External Shizuku class call in {p.name}"
+    # Historical comments may mention Shizuku: reject code calls, not prose.
+    code_lines=[line.split("//",1)[0] for line in s.splitlines()]
+    assert "Shizuku." not in "\\n".join(code_lines), f"External Shizuku class call in {p.name}"
 assert "ShizukuProvider" not in manifest
 assert "moe.shizuku" not in manifest
 assert "API_V23" not in manifest
