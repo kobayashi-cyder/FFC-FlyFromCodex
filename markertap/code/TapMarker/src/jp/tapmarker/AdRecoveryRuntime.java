@@ -49,8 +49,9 @@ final class AdRecoveryRuntime {
     long now=SystemClock.uptimeMillis();PhaseEngine e=p.phases.engine;
     AdTwoSecondRecovery r=policy(p);boolean home=gameHome(p.target,e,samples);
     if(r.step()==AdTwoSecondRecovery.Step.VERIFY){r.verifiedGame(now,home);return false;}
-    if(!r.observe(p.target,p.phaseSampleTakenAt,now,
-      advertisement(e,samples,width,height,p.target),home))return false;
+    boolean ad=advertisement(e,samples,width,height,p.target);
+    p.evaluation.observeAd(p.phaseSampleTakenAt,now,ad);
+    if(!r.observe(p.target,p.phaseSampleTakenAt,now,ad,home))return false;
     beginPhysical(p,token,r);return true;
   }
   /** External ad handoff has no screenshot from the registered game window.
@@ -80,7 +81,7 @@ final class AdRecoveryRuntime {
     return true;
   }
   private static void beginPhysical(AutoPilot p,int token,AdTwoSecondRecovery r){
-    p.actionPending=true;p.s.stopMarkers();p.phaseOwnedMarkers=false;
+    p.actionPending=true;p.evaluation.invalidatePending();p.pendingEvaluationReceipt="";p.s.stopMarkers();p.phaseOwnedMarkers=false;
     p.cancelRegisteredReturn();
     p.phases.record("CM継続2秒を確認 / HOME→ゲーム限定タスク停止→起動Intent");
     if(p.s.busy||p.s.guardDialog()||!p.s.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)){
@@ -144,7 +145,10 @@ final class AdRecoveryRuntime {
     AdTwoSecondRecovery r=slot.adTwoSecond;PhaseEngine e=slot.phases.engine;
     long now=SystemClock.uptimeMillis();boolean home=gameHome(slot.pkg,e,samples);
     if(r.step()==AdTwoSecondRecovery.Step.VERIFY){r.verifiedGame(now,home);return false;}
-    if(!r.observe(slot.pkg,slot.observedAt,now,advertisement(e,samples,rect.width(),rect.height(),slot.pkg),home))return false;
+    boolean ad=advertisement(e,samples,rect.width(),rect.height(),slot.pkg);
+    slot.evaluation.observeAd(slot.observedAt,now,ad);
+    if(!r.observe(slot.pkg,slot.observedAt,now,ad,home))return false;
+    slot.evaluation.invalidatePending();slot.pendingEvaluationReceipt="";
     pilot.pauseMain(slot);slot.home=false;
     VirtualWindows.Window w=pilot.s.pilot.virtualWindows.window(slot.pkg);
     if(w==null){r.failed(now);pilot.later(slot,token,500);return true;}
