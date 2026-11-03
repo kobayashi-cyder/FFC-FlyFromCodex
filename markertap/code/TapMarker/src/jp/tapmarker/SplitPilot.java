@@ -92,7 +92,7 @@ final class SplitPilot {
    long pointHud=-1;Map<String,float[]> samples=new HashMap<>();boolean ok=true;slot.sampleError="";
    try{if(valid(t)&&!window.closed){
      if(!slot.phases.customized&&!engine.windowRelative&&AdRecoveryShell.known(slot.pkg))
-       pointHud=KurashiruPointHud.read(framePixels,width,height);
+       pointHud=KurashiruPointHud.read(framePixels::get,width,height);
      if(slot.learned!=null)samples=slot.learned.sample(engine,frame.width,frame.height,framePixels,frame.capturedAt);else if(slot.layout!=null)samples=slot.layout.sampleRelative(regions,frame.width,frame.height,framePixels,frame.capturedAt);else for(PhaseEngine.Region r:regions)samples.put(r.id,RegionSampler.sample(frame.width,frame.height,r.bounds,framePixels));if(slot.layout!=null)slot.layout.forceHomeProbe=false;if(!namedControls.isEmpty())samples.putAll(namedControls);if(FarmPreset.APP.equals(slot.pkg)&&!slot.phases.customized)FarmAdErrorEvidence.sample(samples,frame.width,frame.height,framePixels);DailyCompletion.sample(engine,samples,frame.width,frame.height,framePixels,null);if(!GamePopupEvidence.fast(samples)){RecordedRepairSampling.sample(engine,samples,regions,frame.width,frame.height,framePixels,null);RecordedRepairSampling.adapt(engine,samples,frame.width,frame.height,framePixels,slot.repairLayout,frame.capturedAt);slot.banc.sample(engine,samples,frame.width,frame.height,framePixels,frame.capturedAt,null);}}}
    catch(Exception failure){slot.sampleError=VirtualWindows.brief(failure);ok=false;}catch(OutOfMemoryError pressure){slot.sampleError="OutOfMemoryError";s.performance.memoryPressure();ok=false;}
    final boolean sampled=ok;final long observedPt=pointHud;final Map<String,float[]> sampledRegions=samples;final long elapsed=SystemClock.uptimeMillis()-started;
@@ -136,7 +136,7 @@ final class SplitPilot {
    long physicalPt=-1;
    try{RegionSampler.Pixels pixels=BitmapPixels.of(image);
      if(!slot.phases.customized&&!e.windowRelative&&AdRecoveryShell.known(slot.pkg))
-       physicalPt=KurashiruPointHud.read(pixels,image.getWidth(),image.getHeight());
+       physicalPt=KurashiruPointHud.read(pixels::get,image.getWidth(),image.getHeight());
      if(slot.learned!=null)samples=slot.learned.sample(e,image.getWidth(),image.getHeight(),pixels,captured);else if(slot.layout!=null)samples=slot.layout.sampleRelative(regions,image.getWidth(),image.getHeight(),pixels,captured);else for(PhaseEngine.Region r:regions)samples.put(r.id,RegionSampler.sample(image.getWidth(),image.getHeight(),r.bounds,pixels));if(FarmPreset.APP.equals(slot.pkg)&&!slot.phases.customized)FarmAdErrorEvidence.sample(samples,image.getWidth(),image.getHeight(),pixels);DailyCompletion.sample(e,samples,image.getWidth(),image.getHeight(),pixels,null);RecordedRepairSampling.sample(e,samples,regions,image.getWidth(),image.getHeight(),pixels,null);RecordedRepairSampling.adapt(e,samples,image.getWidth(),image.getHeight(),pixels,slot.repairLayout,captured);slot.banc.sample(e,samples,image.getWidth(),image.getHeight(),pixels,captured,null);}
    catch(Exception failure){slot.sampleError=VirtualWindows.brief(failure);ok=false;}catch(OutOfMemoryError pressure){slot.sampleError="OutOfMemoryError";s.performance.memoryPressure();ok=false;}finally{image.recycle();}
    final Map<String,float[]> result=samples;final boolean sampled=ok;final long observedPhysicalPt=physicalPt;
