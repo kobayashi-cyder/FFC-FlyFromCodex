@@ -1,0 +1,53 @@
+name: MarkerTap v1.158 reward-gated evaluation connectome - JVM checks
+on:
+  push:
+    branches:
+      - markertap/v1.158-reward-gated-connectome
+  pull_request:
+    branches:
+      - markertap/v1.157-ad-home-intent-all-games
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reward-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            markertap/code/TapMarker/src/jp/tapmarker
+            markertap/code/TapMarker/tests/RewardEvaluationConnectomeTest.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Compile and verify reward-gated objective with Java 8 compatibility
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reward-eval
+          javac --release 8 -encoding UTF-8 -d /tmp/reward-eval \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java \
+            markertap/code/TapMarker/tests/RewardEvaluationConnectomeTest.java
+          java -cp /tmp/reward-eval jp.tapmarker.RewardEvaluationConnectomeTest
+      - name: Validate physical and virtual source wiring without claiming APK integration
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('markertap/code/TapMarker/src/jp/tapmarker')
+          a=(root/'AutoPilot.java').read_text()
+          s=(root/'SplitPilot.java').read_text()
+          r=(root/'AdRecoveryRuntime.java').read_text()
+          assert 'final RewardEvaluationConnectome evaluation' in a
+          assert 'final RewardEvaluationConnectome evaluation' in s
+          assert 'p.evaluation.observeAd' in r
+          assert 'slot.evaluation.observeAd' in r
+          assert 'evaluation.invalidatePending()' in r
+          assert 'slot.evaluation.invalidatePending()' in r
+          assert 'claimSent(id,"coin",at)' in a
+          assert 'claimSent(id,"coin",at)' in s
+          assert 'claimAcknowledged(pendingEvaluationReceipt' in a
+          assert 'claimAcknowledged(slot.pendingEvaluationReceipt' in s
+          print('Source integration: 10 checks passed; device / signed APK not validated')
+          PY
