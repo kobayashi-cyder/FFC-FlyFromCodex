@@ -63,7 +63,7 @@ final class VirtualFrameQueue {
  synchronized void clear(){waiting.clear();active.clear();running=null;retryAt.clear();nextAt=0;}
  synchronized void remove(int display,int generation){
   String key=generation+":"+display;
-  waiting.removeIf(r->r.key().equals(key));active.remove(key);retryAt.remove(key);
+  for(Iterator<Request> it=waiting.iterator();it.hasNext();)if(it.next().key().equals(key))it.remove();active.remove(key);retryAt.remove(key);
   running=active.isEmpty()?null:active.values().iterator().next();
  }
 }
