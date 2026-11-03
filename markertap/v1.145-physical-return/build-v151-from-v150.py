@@ -21,8 +21,13 @@ CODE = 154
 
 def run(cmd, logfile):
     logfile.parent.mkdir(parents=True, exist_ok=True)
-    with logfile.open("w", encoding="utf-8") as out:
-        subprocess.run([str(x) for x in cmd], stdout=out, stderr=subprocess.STDOUT, check=True)
+    try:
+        with logfile.open("w", encoding="utf-8") as out:
+            subprocess.run([str(x) for x in cmd], stdout=out, stderr=subprocess.STDOUT, check=True)
+    except subprocess.CalledProcessError:
+        print("FAILED integration step; final diagnostic lines:")
+        print(logfile.read_text(encoding="utf-8", errors="replace")[-6000:])
+        raise
 
 def manifest(data):
     """Rewrite only the typed manifest code and the existing same-length version string."""
