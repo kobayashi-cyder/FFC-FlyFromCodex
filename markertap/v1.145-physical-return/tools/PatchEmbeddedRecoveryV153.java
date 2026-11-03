@@ -1,15 +1,15 @@
 import java.io.File;
 import java.util.*;
-import org.jf.dexlib2.*;
-import org.jf.dexlib2.iface.*;
-import org.jf.dexlib2.iface.reference.*;
-import org.jf.dexlib2.iface.instruction.*;
-import org.jf.dexlib2.immutable.*;
-import org.jf.dexlib2.immutable.instruction.*;
-import org.jf.dexlib2.immutable.reference.*;
-import org.jf.dexlib2.rewriter.*;
-import org.jf.dexlib2.writer.pool.*;
-import org.jf.dexlib2.writer.io.MemoryDataStore;
+import com.android.tools.smali.dexlib2.*;
+import com.android.tools.smali.dexlib2.iface.*;
+import com.android.tools.smali.dexlib2.iface.reference.*;
+import com.android.tools.smali.dexlib2.iface.instruction.*;
+import com.android.tools.smali.dexlib2.immutable.*;
+import com.android.tools.smali.dexlib2.immutable.instruction.*;
+import com.android.tools.smali.dexlib2.immutable.reference.*;
+import com.android.tools.smali.dexlib2.rewriter.*;
+import com.android.tools.smali.dexlib2.writer.pool.*;
+import com.android.tools.smali.dexlib2.writer.io.MemoryDataStore;
 
 /**
  * SHA-pinned v1.151 -> v1.153 DEX integration.
