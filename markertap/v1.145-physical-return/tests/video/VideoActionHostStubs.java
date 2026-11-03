@@ -10,5 +10,5 @@ final class KaitakuNamedControls {
  static void apply(PhaseEngine e,String context,List<Control> controls,Map<String,float[]> out,int w,int h){out.put("legacy",new float[]{1});}
 }
 final class KaitakuActionEvidence {
- static void put(Map<String,float[]> out,String key,float[] bounds){out.put(key,new float[]{1});out.put(key+"-bounds",bounds.clone());}
+ static void put(Map<String,float[]> out,String key,float[] bounds){out.put(key,new float[]{1});if(bounds!=null)out.put(key+"-bounds",bounds.clone());}
 }

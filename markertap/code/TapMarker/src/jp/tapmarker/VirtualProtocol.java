@@ -3,10 +3,10 @@ import android.os.*;import android.view.Surface;
 /** Private RPC to the user-authorized Shizuku or ADB shell process. */
 final class VirtualProtocol {
  static final String DESCRIPTOR="jp.tapmarker.lite.VirtualShell";
- static final int CREATE=1,LAUNCH=2,TAP=3,BACK=4,RELEASE=5,PAUSE=6,ARM=7,SHUTDOWN=8,VERSION=9,RESTORE=10,GESTURE=11,RESTART_TASK=12,REGISTER_OWNER=13,DESTROY=16777115;
+ static final int CREATE=1,LAUNCH=2,TAP=3,BACK=4,RELEASE=5,PAUSE=6,ARM=7,SHUTDOWN=8,VERSION=9,RESTORE=10,GESTURE=11,RESTART_TASK=12,REGISTER_OWNER=13,FORCE_STOP_GAME=14,AD_RECOVER=15,DESTROY=16777115;
  // Revision 91 adds a bounded, display-local task restart after a positively
  // identified playable ad survives Back and the ordinary registered return.
- static final int IMPLEMENTATION=92;
+ static final int IMPLEMENTATION=93;
  final IBinder binder;
  VirtualProtocol(IBinder b){binder=b;}
  Parcel call(int code,Parcel data)throws RemoteException{Parcel reply=Parcel.obtain();try{if(!binder.transact(code,data,reply,0))throw new RemoteException("仮想画面サービスが応答しません");reply.readException();return reply;}catch(RuntimeException|RemoteException e){reply.recycle();throw e;}finally{data.recycle();}}
@@ -18,6 +18,17 @@ final class VirtualProtocol {
  boolean tap(int id,float x,float y,long duration,long epoch)throws RemoteException{Parcel d=request();d.writeInt(id);d.writeFloat(x);d.writeFloat(y);d.writeLong(duration);d.writeLong(epoch);Parcel r=call(TAP,d);try{return r.readInt()!=0;}finally{r.recycle();}}
  boolean gesture(int id,float[] points,long duration,long epoch)throws RemoteException{Parcel d=request();d.writeInt(id);d.writeFloatArray(points);d.writeLong(duration);d.writeLong(epoch);Parcel r=call(GESTURE,d);try{return r.readInt()!=0;}finally{r.recycle();}}
  boolean back(int id,long epoch)throws RemoteException{Parcel d=request();d.writeInt(id);d.writeLong(epoch);Parcel r=call(BACK,d);try{return r.readInt()!=0;}finally{r.recycle();}}
+
+ /** Requires the existing ADB-shell backend; never available to an ordinary app UID. */
+ boolean forceStopKnownGame(String pkg)throws RemoteException{
+  Parcel d=request();d.writeString(pkg);Parcel r=call(FORCE_STOP_GAME,d);
+  try{return r.readInt()!=0;}finally{r.recycle();}
+ }
+ /** Returns verified bit flags: 1=HOME shown, 2=target force-stopped, 4=launch Intent sent. */
+ int recoverAd(int id,long epoch)throws RemoteException{
+  Parcel d=request();d.writeInt(id);d.writeLong(epoch);Parcel r=call(AD_RECOVER,d);
+  try{return r.readInt();}finally{r.recycle();}
+ }
  void release(int id)throws RemoteException{Parcel d=request();d.writeInt(id);call(RELEASE,d).recycle();}
  void pause()throws RemoteException{call(PAUSE,request()).recycle();}
  long arm()throws RemoteException{Parcel r=call(ARM,request());try{return r.readLong();}finally{r.recycle();}}

@@ -1,0 +1,48 @@
+name: MarkerTap v1.157 signed APK Android 15 emulator install and launch smoke
+on:
+  push:
+    branches:
+      - markertap/v1.157-ad-home-intent-all-games
+    paths:
+      - '.github/workflows/markertap-v1157-emulator-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android35-startup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Obtain publicly signed APK and authenticate SHA-256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/apk"
+          gh release download markertap-v1.157-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.157-integrated-signed.apk -D "$RUNNER_TEMP/apk"
+          echo '0108aadfa717c676dfe30b4f678a5c1526277e11b01ae16f85317d8b8dd50f7d  '"$RUNNER_TEMP"'/apk/MarkerTap-v1.157-integrated-signed.apk' | sha256sum -c -
+      - name: Allow hardware acceleration for emulator
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test install and startup on Android 15 (not Android 17 device)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            set -eu
+            adb install -r "$RUNNER_TEMP/apk/MarkerTap-v1.157-integrated-signed.apk"
+            adb shell am start -W -n jp.tapmarker.lite/jp.tapmarker.MainActivity
+            sleep 6
+            adb shell pidof jp.tapmarker.lite
+            adb logcat -d -b crash > "$RUNNER_TEMP/markertap-emulator-crash.log"
+            ! grep -Eq "FATAL EXCEPTION.*jp.tapmarker|Process: jp.tapmarker.lite" "$RUNNER_TEMP/markertap-emulator-crash.log"
+            echo 'PASS Android 15 emulator APK install and MainActivity startup'

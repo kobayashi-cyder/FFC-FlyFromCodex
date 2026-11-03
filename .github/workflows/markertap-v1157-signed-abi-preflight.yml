@@ -1,0 +1,53 @@
+name: MarkerTap v1.157 inspect signed v1.156 DEX ABI (fail closed)
+on:
+  push:
+    branches:
+      - markertap/v1.157-ad-home-intent-all-games
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-signed-apk-abi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            markertap/v1.145-physical-return/tools/InspectAdV157Abi.java
+            markertap/v1.145-physical-return/setup-toolchain.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Obtain and authenticate released original-certificate signed APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/markertap-v156"
+          gh release download markertap-v1.156-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.156-integrated-signed.apk -D "$RUNNER_TEMP/markertap-v156"
+          echo "b4bf94683710c3810a5dd193263dc555977f77f1091a5d8dff45bbafc69da8e6  $RUNNER_TEMP/markertap-v156/MarkerTap-v1.156-integrated-signed.apk" | sha256sum -c -
+      - name: Prepare SHA-pinned dexlib2 toolchain
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Inspect actual DEX methods and stop on any ABI mismatch
+        run: |
+          set -euo pipefail
+          root=markertap/v1.145-physical-return
+          mkdir -p "$RUNNER_TEMP/v157-abi"
+          javac --release 8 -encoding UTF-8 \
+            -cp "$root/tooling/jadx/lib/jadx-1.5.3-all.jar" \
+            -d "$RUNNER_TEMP/v157-abi" "$root/tools/InspectAdV157Abi.java"
+          java -cp "$RUNNER_TEMP/v157-abi:$root/tooling/jadx/lib/jadx-1.5.3-all.jar" \
+            InspectAdV157Abi "$RUNNER_TEMP/markertap-v156/MarkerTap-v1.156-integrated-signed.apk" \
+            | tee "$RUNNER_TEMP/v157-abi/evidence.txt"
+      - name: Upload non-secret ABI evidence (no APK, no signing material)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v157-signed-baseline-abi-evidence
+          path: ${{ runner.temp }}/v157-abi/evidence.txt
+          if-no-files-found: ignore
+          retention-days: 7
