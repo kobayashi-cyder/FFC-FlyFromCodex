@@ -4,6 +4,7 @@ import com.android.tools.smali.dexlib2.*;
 import com.android.tools.smali.dexlib2.iface.*;
 import com.android.tools.smali.dexlib2.iface.reference.*;
 import com.android.tools.smali.dexlib2.iface.instruction.*;
+import com.android.tools.smali.dexlib2.iface.instruction.formats.*;
 import com.android.tools.smali.dexlib2.immutable.*;
 import com.android.tools.smali.dexlib2.immutable.instruction.*;
 import com.android.tools.smali.dexlib2.immutable.reference.*;
