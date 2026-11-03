@@ -43,3 +43,17 @@ subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(virtual),
  str(root/'tests/virtual/VirtualFastWaitTest.java')],check=True)
 subprocess.run(['java','-cp',str(virtual),'jp.tapmarker.VirtualFastWaitTest'],check=True)
 
+
+# Two virtual screenshots may be in flight, but with global Android spacing
+# and independent per-display completion, timeouts and generation guards.
+lane=root/'build/virtual-isolation-tests'
+lane.mkdir(parents=True,exist_ok=True)
+subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(lane),
+ str(root/'src/jp/tapmarker/VirtualFrameQueue.java'),
+ str(root/'tests/virtual/VirtualFrameQueueIsolationTest.java')],check=True)
+subprocess.run(['java','-cp',str(lane),'jp.tapmarker.VirtualFrameQueueIsolationTest'],check=True)
+subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(lane),
+ str(root/'tests/virtual/android/view/View.java'),
+ str(root/'src/jp/tapmarker/VirtualPreviewVisibilityBridge.java'),
+ str(root/'tests/virtual/VirtualPreviewVisibilityBridgeTest.java')],check=True)
+subprocess.run(['java','-cp',str(lane),'jp.tapmarker.VirtualPreviewVisibilityBridgeTest'],check=True)
