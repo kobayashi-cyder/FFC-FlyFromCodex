@@ -18,6 +18,9 @@ PACKAGE = "jp.tapmarker.lite"
 VERSION = "1.151"
 CODE = "154"
 CERT_SHA256 = "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1"
+# Byte-for-byte unsigned APK produced by the passing full-integration CI run.
+# Update only after a new audited build and matching independent SHA-256.
+EXPECTED_UNSIGNED_SHA256 = "54cfccffa8bd6b5149fb2da563088b1cd3dde85037f567a33182308619d8befe"
 
 def sha256(path):
     digest = hashlib.sha256()
@@ -25,6 +28,12 @@ def sha256(path):
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+def verify_unsigned_digest(path):
+    actual = sha256(path)
+    if actual != EXPECTED_UNSIGNED_SHA256:
+        raise ValueError("STOP: unsigned APK differs from audited v1.151 CI artifact")
+    return actual
 
 def run(*cmd, env=None):
     p = subprocess.run([str(x) for x in cmd], env=env, stdout=subprocess.PIPE,
@@ -49,6 +58,7 @@ def main():
     unsigned, keystore = args.unsigned.resolve(), args.keystore.resolve()
     if not unsigned.is_file() or not keystore.is_file():
         raise FileNotFoundError("Expected the unsigned v1.151 APK and original JKS keystore")
+    verify_unsigned_digest(unsigned)
     if unsigned == args.out.resolve():
         raise ValueError("Output cannot overwrite the unsigned build input")
     password = os.environ.get("MARKERTAP_STORE_PASSWORD")
