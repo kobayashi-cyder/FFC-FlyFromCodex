@@ -12,6 +12,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            markertap/code/TapMarker/src/jp/tapmarker
+            markertap/code/TapMarker/tests/AdTwoSecondRecoveryTest.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
