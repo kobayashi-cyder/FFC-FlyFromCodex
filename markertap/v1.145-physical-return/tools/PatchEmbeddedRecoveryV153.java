@@ -3,6 +3,7 @@ import java.util.*;
 import org.jf.dexlib2.*;
 import org.jf.dexlib2.iface.*;
 import org.jf.dexlib2.iface.reference.*;
+import org.jf.dexlib2.iface.instruction.*;
 import org.jf.dexlib2.immutable.*;
 import org.jf.dexlib2.immutable.instruction.*;
 import org.jf.dexlib2.immutable.reference.*;
@@ -155,7 +156,7 @@ public final class PatchEmbeddedRecoveryV153 {
  static byte[] canonical(ClassDef c)throws Exception {
   MemoryDataStore m=new MemoryDataStore();
   DexPool.writeTo(m,new ImmutableDexFile(API,Collections.singleton(c)));
-  return Arrays.copyOf(m.getData(),m.getSize());
+  return m.getData();
  }
  static void merge(String baseline,String over,String out)throws Exception {
   DexFile result=version(new ImmutableDexFile(API,expected(baseline,over)));
