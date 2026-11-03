@@ -1,0 +1,66 @@
+name: MarkerTap v1.154 signed original-certificate Release
+
+on:
+  push:
+    branches:
+      - markertap/v1.154-loopback-adb
+    paths:
+      - '.github/workflows/markertap-v1154-signed-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: markertap-v154-original-signer
+  cancel-in-progress: false
+
+jobs:
+  sign-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: markertap/v1.154-loopback-adb
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Fetch exact signed v1.153 baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/base"
+          gh release download markertap-v1.153-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.153-integrated-signed.apk -D "$RUNNER_TEMP/base"
+          echo "9a3fa3b4fea3e04bcff92531a8f908724edf33efab99710366cab9c793ff3824  $RUNNER_TEMP/base/MarkerTap-v1.153-integrated-signed.apk" | sha256sum -c -
+      - name: Prepare SHA-pinned Android SDK35 and jadx
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Run regression tests and audit exact unsigned v1.154 DEX
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/loopback"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/loopback" \
+            ../code/TapMarker/src/jp/tapmarker/LoopbackRoutePolicy.java \
+            ../code/TapMarker/tests/LoopbackRoutePolicyTest.java
+          java -cp "$RUNNER_TEMP/loopback" jp.tapmarker.LoopbackRoutePolicyTest
+          python3 run-tests.py
+          python3 build-v154-from-v153.py \
+            --baseline "$RUNNER_TEMP/base/MarkerTap-v1.153-integrated-signed.apk" \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+          echo '16e3cf27f04f4d18e2ebbb3a198b5cfa4b0665bebe4590a897fa9bebb37b9792  output/MarkerTap-v1.154-integrated-unsigned.apk' | sha256sum -c -
+      - name: Receive encrypted JKS, sign under original certificate, verify and publish prerelease
+        working-directory: markertap/v1.145-physical-return
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -u one-shot-v154-release.py
+      - name: Ensure private signer is never in repository artifacts
+        if: always()
+        run: |
+          echo "Original private JKS is not committed or uploaded."
+          echo "The release is published only after v2/v3 signature, certificate and public-download verification."

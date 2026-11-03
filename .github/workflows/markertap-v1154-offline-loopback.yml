@@ -1,0 +1,62 @@
+name: MarkerTap v1.154 offline loopback ADB DEX integration
+
+on:
+  push:
+    branches:
+      - markertap/v1.154-loopback-adb
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unsigned-loopback-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify original signed v1.153 baseline by SHA-256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/base"
+          gh release download markertap-v1.153-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.153-integrated-signed.apk -D "$RUNNER_TEMP/base"
+          echo '9a3fa3b4fea3e04bcff92531a8f908724edf33efab99710366cab9c793ff3824  '"$RUNNER_TEMP"'/base/MarkerTap-v1.153-integrated-signed.apk' | sha256sum -c -
+      - name: Install checksum-pinned SDK 35 and JADX
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Verify no fake permission grant, bounded endpoint policy
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/loopback"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/loopback" \
+            markertap/code/TapMarker/src/jp/tapmarker/LoopbackRoutePolicy.java \
+            markertap/code/TapMarker/tests/LoopbackRoutePolicyTest.java
+          java -cp "$RUNNER_TEMP/loopback" jp.tapmarker.LoopbackRoutePolicyTest
+          python3 markertap/v1.145-physical-return/run-tests.py
+          ! grep -R -E '(setprop service.adb.tcp.port|adb tcpip |setenforce 0)' \
+            markertap/v1.145-physical-return/src/jp/tapmarker/LoopbackAdbBridge.java
+      - name: Build full unsigned v1.154 and exact DEX bytecode audit
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 build-v154-from-v153.py \
+            --baseline "$RUNNER_TEMP/base/MarkerTap-v1.153-integrated-signed.apk" \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+          sha256sum output/MarkerTap-v1.154-integrated-unsigned.apk
+      - name: Retain unsigned evidence privately as a CI artifact (NOT an APK release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1154-UNSIGNED-bytecode-audited-not-installable
+          retention-days: 3
+          if-no-files-found: error
+          path: |
+            markertap/v1.145-physical-return/output/MarkerTap-v1.154-integrated-unsigned.apk
+            markertap/v1.145-physical-return/build/v154-loopback/evidence/*
