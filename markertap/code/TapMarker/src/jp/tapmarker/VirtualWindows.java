@@ -133,7 +133,7 @@ final class VirtualWindows {
  }
  /** Never pause the global pilot or close other windows for an isolated failure. */
  void performWindowRefresh(Window w,VirtualRefreshPolicy.Decision decision){
-  if(w.closed||!windows.contains(w))return;
+  if(w.closed||!windows.contains(w)||!w.stopReason.isEmpty())return;
   switch(decision.action){
    case WAIT_NETWORK:state(w,"ネットワーク回復待機（再起動しません）");return;
    case WAIT_DNS:state(w,"DNS回復待機（再起動しません）");return;
@@ -422,7 +422,7 @@ final class VirtualWindows {
   try{frameWork.execute(()->{try{w.frameCircuit.run(request);}finally{w.analysisPending.set(false);}});}catch(RejectedExecutionException stopped){w.analysisPending.set(false);if(current.getAsBoolean())failed.run();}
  }
  void trimFrameCircuit(){ArrayList<FrameCircuit> circuits=new ArrayList<>();for(Window w:windows){w.frameCircuit.requestTrim();circuits.add(w.frameCircuit);}try{frameWork.execute(()->{for(FrameCircuit circuit:circuits)circuit.trim();});}catch(RejectedExecutionException ignored){}}
- boolean check(Window w){if(s.isScreenGuarded()||w==null||w.id<=0||w.closed)return false;requestFrameRefresh(w);
+ boolean check(Window w){if(s.isScreenGuarded()||w==null||w.id<=0||w.closed||!w.stopReason.isEmpty())return false;requestFrameRefresh(w);
    long scanAt=SystemClock.uptimeMillis();
    VirtualRefreshPolicy.Decision refresh=w.refreshPolicy.observe(
      new VirtualRefreshPolicy.Observation(scanAt,Math.min(w.frameAt,scanAt),
