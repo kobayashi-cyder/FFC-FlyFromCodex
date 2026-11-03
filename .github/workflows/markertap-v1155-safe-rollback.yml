@@ -1,0 +1,64 @@
+name: MarkerTap v1.155 crash-loop stabilization signed-baseline integration
+
+on:
+  push:
+    branches:
+      - markertap/v1.155-crashloop-rollback
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-safe-rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Check original-certificate signed v1.151 baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/base"
+          gh release download markertap-v1.151-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.151-integrated-signed.apk -D "$RUNNER_TEMP/base"
+          echo "ae2db2972780e50966f26243ab5fd8f2f6d9106056eeda233a2d75a1f9535dab  $RUNNER_TEMP/base/MarkerTap-v1.151-integrated-signed.apk" | sha256sum -c -
+      - name: Setup SHA-pinned Android SDK and DEX tooling
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Exercise reconnect circuit-breaker and existing host regressions
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/policy"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/policy" \
+            markertap/code/TapMarker/src/jp/tapmarker/LoopbackRoutePolicy.java \
+            markertap/code/TapMarker/tests/LoopbackRoutePolicyTest.java \
+            markertap/v1.145-physical-return/src/jp/tapmarker/LoopbackRetryPolicy.java \
+            markertap/code/TapMarker/tests/LoopbackRetryPolicyTest.java
+          java -cp "$RUNNER_TEMP/policy" jp.tapmarker.LoopbackRoutePolicyTest
+          java -cp "$RUNNER_TEMP/policy" jp.tapmarker.LoopbackRetryPolicyTest
+          python3 markertap/v1.145-physical-return/run-tests.py
+          ! grep -q 'EmbeddedRecoveryBridge' markertap/v1.145-physical-return/tools/PatchCrashSafeV155.java
+      - name: Audit and assemble safe-mode v1.155 unsigned APK
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 build-v155-from-v151.py \
+            --baseline "$RUNNER_TEMP/base/MarkerTap-v1.151-integrated-signed.apk" \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+          sha256sum output/MarkerTap-v1.155-integrated-unsigned.apk
+      - name: Archive unsigned validation evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1155-UNSIGNED-hotfix-candidate
+          retention-days: 3
+          if-no-files-found: error
+          path: |
+            markertap/v1.145-physical-return/output/MarkerTap-v1.155-integrated-unsigned.apk
+            markertap/v1.145-physical-return/build/v155-crash-safe/evidence/*
