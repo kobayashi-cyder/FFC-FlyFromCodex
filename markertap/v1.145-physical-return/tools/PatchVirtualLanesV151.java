@@ -46,6 +46,26 @@ public final class PatchVirtualLanesV151 {
    if(!found)throw new IllegalStateException("method ABI break: "+baseline.getType()+"."+m.getName()+desc(m));
   }
  }
+ static ClassDef queueOverlay(ClassDef baseline,ClassDef overlay){
+  if(overlay==null)throw new IllegalStateException("missing virtual queue replacement");
+  // Original D8 generated a lambda$0 method called by a retained synthetic
+  // companion class. Preserve that method to avoid leaving a dangling invoke.
+  List<Method> methods=new ArrayList<>();
+  for(Method m:overlay.getMethods())methods.add(m);
+  for(Method old:baseline.getMethods()){
+   boolean found=false;
+   for(Method n:methods)if(n.getName().equals(old.getName())&&desc(n).equals(desc(old))){found=true;break;}
+   if(!found){
+    if(!old.getName().startsWith("lambda$"))
+     throw new IllegalStateException("unexpected removed queue method "+old.getName()+desc(old));
+    methods.add(old);
+   }
+  }
+  ClassDef combined=new ImmutableClassDef(overlay.getType(),overlay.getAccessFlags(),overlay.getSuperclass(),
+    overlay.getInterfaces(),overlay.getSourceFile(),overlay.getAnnotations(),overlay.getFields(),methods);
+  abi(baseline,combined);
+  return combined;
+ }
  static Instruction changedInvoke(Instruction invoke,MethodReference target){
   if(invoke instanceof Instruction35c){
    Instruction35c x=(Instruction35c)invoke;
@@ -149,7 +169,7 @@ public final class PatchVirtualLanesV151 {
   Set<String> seen=new HashSet<>();List<ClassDef> all=new ArrayList<>();
   for(ClassDef c:load(base).getClasses()){
    seen.add(c.getType());
-   if(queue(c.getType())){abi(c,patches.get(c.getType()));all.add(patches.get(c.getType()));}
+   if(queue(c.getType()))all.add(queueOverlay(c,patches.get(c.getType())));
    else if(c.getType().equals(R+"VirtualWindows;"))all.add(virtualWindows(c));
    else all.add(c);
   }
@@ -172,7 +192,7 @@ public final class PatchVirtualLanesV151 {
   int unchanged=0,changed=0;
   for(ClassDef before:load(base).getClasses()){
    ClassDef actual=after.remove(before.getType());if(actual==null)throw new IllegalStateException("class removed "+before.getType());
-   ClassDef patched=queue(before.getType())?patches.get(before.getType()):
+   ClassDef patched=queue(before.getType())?queueOverlay(before,patches.get(before.getType())):
       before.getType().equals(R+"VirtualWindows;")?virtualWindows(before):before;
    ClassDef expected=version(new ImmutableDexFile(API,Arrays.asList(patched))).getClasses().iterator().next();
    if(!Arrays.equals(canonical(expected),canonical(actual)))
