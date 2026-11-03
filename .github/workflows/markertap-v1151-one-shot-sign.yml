@@ -1,0 +1,61 @@
+name: MarkerTap v1.151 one-shot original-key signing and RC release
+
+on:
+  push:
+    branches:
+      - markertap/v1.151-virtual-lane-isolation
+    paths:
+      - '.github/workflows/markertap-v1151-one-shot-sign.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: markertap-v1151-one-shot-key
+  cancel-in-progress: false
+
+jobs:
+  sign-verified-rc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: markertap/v1.151-virtual-lane-isolation
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Fetch the original signed v1.150 baseline by exact SHA-256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/markertap-public"
+          gh release download markertap-v1.150 -R "$GITHUB_REPOSITORY" -p MarkerTap-v1.150-integrated-signed.apk -D "$RUNNER_TEMP/markertap-public"
+          echo "58e6cd830350473dad218352b3e23f4efcb214b2624e1122823ceb1093345067  $RUNNER_TEMP/markertap-public/MarkerTap-v1.150-integrated-signed.apk" | sha256sum --check -
+      - name: Download and verify checksum-pinned SDK35 and JADX
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Host regressions and audited unsigned v1.151 APK integration
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 -m py_compile one-shot-v151-release.py
+          python3 run-tests.py
+          python3 build-v151-from-v150.py \
+            --baseline "$RUNNER_TEMP/markertap-public/MarkerTap-v1.150-integrated-signed.apk" \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+          echo '54cfccffa8bd6b5149fb2da563088b1cd3dde85037f567a33182308619d8befe  output/MarkerTap-v1.151-integrated-unsigned.apk' | sha256sum --check -
+      - name: Receive original JKS only under ephemeral RSA encryption; sign, verify and publish prerelease
+        working-directory: markertap/v1.145-physical-return
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -u one-shot-v151-release.py
+      - name: Keep private signer material OUT of Actions artifacts
+        if: always()
+        run: |
+          echo 'Only encrypted handoff metadata and the signed APK may be published.'
+          echo 'No original JKS or password is saved to the repository, artifacts, or logs.'

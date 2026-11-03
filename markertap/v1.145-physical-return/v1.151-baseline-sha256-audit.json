@@ -1,0 +1,16 @@
+{
+  "checked_at_utc": "2026-11-03T00:18:45Z",
+  "artifact": "MarkerTap-v1.144-integrated-signed.apk",
+  "source": "User-provided ChatGPT Library artifact; materialized into isolated local analysis container (not committed or uploaded)",
+  "size_bytes": 5639011,
+  "expected_sha256": "f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970",
+  "observed_sha256": "f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970",
+  "pinned_baseline_bytes_match": true,
+  "verification_method": "stat and sha256sum on actual materialized APK bytes",
+  "limitations": [
+    "No Android SDK35, JADX1.5.3, DEX patch build or original signing key available in this isolated container",
+    "No v1.151 APK produced or signed",
+    "No Pixel 10 / Android 17 on-device test",
+    "Does not attest the baseline signing certificate or release-download bytes"
+  ]
+}
