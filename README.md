@@ -1,14 +1,15 @@
-# MarkerTap v1.157 開発候補 — 全ミニゲームのCM2秒継続・HOME→タスクキル→起動Intent
+# MarkerTap v1.157 — CM2秒検出後のHOME→対象ゲーム停止→登録Intent（署名済みプレリリース）
 
-**[改修PR #41](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/41)** / [ホスト検証](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/markertap-v1157-two-second-ad-recovery.yml)
+**[▶ MarkerTap v1.157 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.157-rc1/MarkerTap-v1.157-integrated-signed.apk)**
 
-対応する各ミニゲームでCMを2回以上の新鮮な証拠により2秒継続と判断したとき、タップを停止し、HOMEの実際の表示確認後、ADB接続済みの実行部から**そのゲームのパッケージだけ**を `am force-stop`、次いで登録済み起動Intentを送信するソース改修候補です。複数仮想画面の復帰を混線させず、他ゲームは停止しません。HOME未確認・ADB未許可・仮想画面側のHOME未対応ではタスク停止も起動Intentも送らず保留します。15分に2回までの上限と60秒のクールダウンを設けています。
+[公開Release](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.157-rc1) / [SHA-256チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.157-rc1/SHA256SUMS-v1.157.txt) / [DEX実ビルド・監査](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41728042799) / [元証明書での署名と公開照合](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41728868632) / [PR #41](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/41)
 
-開拓うさぎのデイリーミッション「ゲット」／受取／報酬画面閉じる候補も追加しました。CM視聴を条件とする報酬は2秒での強制停止により失われる可能性があります。報酬ボタンの入力受付と実際の加算は区別して検証する必要があります。
+既知ミニゲームについて、新しい画像2枚以上でCM表示が2秒続いたとき、HOME表示を確認→当該ゲームのみADBでforce-stop→登録済みIntentで再起動するDEX回復ブリッジを、実配布v1.156 APKからSHA固定で統合しました。物理画面・仮想画面・ADB実行部の元メソッドを保存した監査が通過しています。HOMEが確認できない仮想画面や、未接続ADBでは強制停止せず保留します。他ゲームの停止を避け、1時間などの無限ループにならないよう再試行を制限しています。
 
-**このブランチは実装・ホスト検証用です。v1.157のDEXビルド、元証明書による署名、Android 17実機による動作と報酬加算の確認は未完了で、署名済みv1.157 APKはまだ公開していません。** 現在ダウンロード可能な[署名済みv1.156](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.156-rc1/MarkerTap-v1.156-integrated-signed.apk)にはこの改修は含まれません。新機能が使えるという意味ではありません。
+versionName **1.157**、versionCode **160**、パッケージ jp.tapmarker.lite。署名済みSHA-256：0108aadfa717c676dfe30b4f678a5c1526277e11b01ae16f85317d8b8dd50f7d。元のMarkerTap証明書に一致するAPK v2/v3署名済みです。通常の上書き更新が可能です。
 
-**2026-11-04 ABI追加確認：** [公開署名済みv1.156 APKの実バイナリ照合・DEXの対象メソッド検証が成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41725804938)。これは差分ビルドの前提確認であり、v1.157のAPK生成・署名・Android 17実機確認の完了を意味しません。署名済みv1.157のダウンロードURLはまだありません。
+**未確認事項：** Pixel 10 / Android 17、仮想2画面、広告離脱とゲーム再開、報酬の実加算、収納後通信や長時間安定は実機未検証です。開拓うさぎのミッション報酬UI認識はPRにソース候補を置いていますが、v1.157の署名済みDEX APKにはその追加候補は含まれません。広告視聴が報酬条件の場合、2秒後の中断で報酬が得られなくなる可能性があります。実機確認まではPRをDraftに維持し、安定版には昇格しません。
+
 
 ---
 
