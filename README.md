@@ -1,6 +1,14 @@
-# MarkerTap v1.151 — 仮想画面ごとの処理分離（未公開候補）
+# MarkerTap v1.151 — 仮想画面ごとの処理分離（署名済み検証版）
 
-**v1.151のAPK全体の未署名ビルドとDEX監査はGitHub Actionsで合格。署名済みAPKはまだ公開していません。**
+## 公開済み署名APK（検証版・安定版未昇格）
+
+**[MarkerTap v1.151-rc1 署名済みAPK直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.151-rc1/MarkerTap-v1.151-integrated-signed.apk)**
+
+[公開Release](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.151-rc1) / [署名・ダウンロードのCI検証](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41572253002) / [チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.151-rc1/SHA256SUMS-v1.151.txt)
+
+署名済みAPK SHA-256 `ae2db2972780e50966f26243ab5fd8f2f6d9106056eeda233a2d75a1f9535dab`。元の証明書と一致するv2/v3署名、ZIP CRC、ホスト試験、DEX統合監査および公開後の原本一致を検証。Pixel 10 / Android17の実機・仮想2画面・収納後のオフライン解消・広告復帰は未検証。既存の1.150の配布は変更していません。
+
+
 
 - [今回の修正仕様・未検証項目](markertap/v1.145-physical-return/v1.151-virtual-lanes.md)
 - [v1.151統合APKビルド成功（未署名・実機未検証）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41562962175)
@@ -9,7 +17,7 @@
 - [収納時オフライン・仮想2画面の不具合記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/issues/33)
 - [既存のv1.150署名済みAPK（修正前）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.150)
 
-収納後のゲーム内オフライン表示は未解決です。今回の変更により、各仮想画面の画像取得を最大2件まで独立処理し、取得待ちの連鎖を減らす設計としました。画面を収納しても実行状態は変更せず、電話側プレビューのレイアウトを保持する修正を追加しました。未署名APK SHA-256: `54cfccffa8bd6b5149fb2da563088b1cd3dde85037f567a33182308619d8befe`。正規署名鍵が確認できず実機接続もないため、完全自律・通信維持・Android実機テスト済みとは表記しません。
+収納後のゲーム内オフライン表示は未解決です。今回の変更により、各仮想画面の画像取得を最大2件まで独立処理し、取得待ちの連鎖を減らす設計としました。画面を収納しても実行状態は変更せず、電話側プレビューのレイアウトを保持する修正を追加しました。未署名APK SHA-256: `54cfccffa8bd6b5149fb2da563088b1cd3dde85037f567a33182308619d8befe`。元の署名鍵で署名したAPKは公開済みですが、実機接続がないため完全自律・通信維持・Android実機テスト済みとは表記しません。
 
 ---
 
