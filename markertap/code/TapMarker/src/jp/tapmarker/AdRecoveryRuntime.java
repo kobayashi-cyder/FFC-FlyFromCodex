@@ -14,7 +14,8 @@ import java.util.WeakHashMap;
  */
 final class AdRecoveryRuntime {
   private static final WeakHashMap<AutoPilot,AdTwoSecondRecovery> physical=new WeakHashMap<>();
-  private static final WeakHashMap<AutoPilot,Long> externalFirst=new WeakHashMap<>();
+  private static final class Foreign {String packageName="";long firstAt=-1;}
+  private static final WeakHashMap<AutoPilot,Foreign> externalFirst=new WeakHashMap<>();
   private static AdTwoSecondRecovery policy(AutoPilot p){
     synchronized(physical){AdTwoSecondRecovery v=physical.get(p);if(v==null){v=new AdTwoSecondRecovery();physical.put(p,v);}return v;}
   }
@@ -56,10 +57,17 @@ final class AdRecoveryRuntime {
     if(p.target.equals(foreground)){synchronized(externalFirst){externalFirst.remove(p);}return false;}
     if(foreground==null||foreground.isEmpty()||foreground.equals("com.android.systemui")||
        foreground.equals("jp.tapmarker.lite")||!AdExitPolicy.adState(p.phases.engine.current))return false;
-    long first; synchronized(externalFirst){Long old=externalFirst.get(p);
-      first=old==null||old>now?now:old;externalFirst.put(p,first);}
+    long first;
     AdTwoSecondRecovery r=policy(p);
-    // Fresh, stable foreground observations substitute for absent game frames.
+    synchronized(externalFirst){
+      Foreign old=externalFirst.get(p);
+      if(old==null){old=new Foreign();externalFirst.put(p,old);}
+      if(!foreground.equals(old.packageName)||now<old.firstAt){
+        old.packageName=foreground;old.firstAt=now;r.changedForeground();
+      }
+      first=old.firstAt;
+    }
+    // Foreign foreground must be stable, and every observation current.
     r.observe(p.target,now,now,true,false);
     if(now-first<AdTwoSecondRecovery.AD_MS)return true;
     if(r.step()==AdTwoSecondRecovery.Step.HOME)beginPhysical(p,token,r);
