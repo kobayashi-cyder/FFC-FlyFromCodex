@@ -57,3 +57,11 @@ subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(lane),
  str(root/'src/jp/tapmarker/VirtualPreviewVisibilityBridge.java'),
  str(root/'tests/virtual/VirtualPreviewVisibilityBridgeTest.java')],check=True)
 subprocess.run(['java','-cp',str(lane),'jp.tapmarker.VirtualPreviewVisibilityBridgeTest'],check=True)
+
+# Physical screenshot copy is bounded and uses an independent worker per screen.
+copy=root/'build/virtual-copy-tests'
+copy.mkdir(parents=True,exist_ok=True)
+subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(copy),
+ str(root/'src/jp/tapmarker/VirtualCopyExecutorFactory.java'),
+ str(root/'tests/virtual/VirtualCopyExecutorFactoryTest.java')],check=True)
+subprocess.run(['java','-cp',str(copy),'jp.tapmarker.VirtualCopyExecutorFactoryTest'],check=True)
