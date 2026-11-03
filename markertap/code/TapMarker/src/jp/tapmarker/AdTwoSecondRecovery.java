@@ -20,6 +20,7 @@ final class AdTwoSecondRecovery {
   synchronized int attempts(){return attempts;}
   synchronized void reset(){step=Step.OBSERVE;first=last=entered=-1;freshFrames=0;target="";cooldownUntil=-1;windowStart=-1;attempts=0;}
   private void clearObservation(){first=last=-1;freshFrames=0;}
+  synchronized void changedForeground(){if(step==Step.OBSERVE)clearObservation();}
   synchronized boolean observe(String pkg,long capturedAt,long now,boolean positiveAd,boolean gameHome) {
     if(pkg==null||pkg.isEmpty()||now<0)return false;
     if(!pkg.equals(target)){reset();target=pkg;}
