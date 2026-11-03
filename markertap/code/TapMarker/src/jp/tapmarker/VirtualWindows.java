@@ -497,6 +497,42 @@ final class VirtualWindows {
    }
   });
  }
+
+ /** Per-display, authorized ADB recovery. The shell reports independent
+  * HOME, force-stop and Intent evidence. Never kill a game if HOME is not shown.
+  */
+ void recoverAd(Window w,java.util.function.BooleanSupplier valid,
+                java.util.function.IntConsumer result){
+  if(w==null||w.id<=0||w.closed||remote==null||!valid.getAsBoolean()||!checkInput(w)){
+   result.accept(0);return;
+  }
+  final long lane=w.inputLane.enter();
+  if(lane<0){result.accept(0);return;}
+  final int id=w.id;
+  final VirtualProtocol service=remote;
+  final long epoch=remoteEpoch;
+  if(s.progressErrors!=null)s.progressErrors.action(w.pkg,
+     "CM2秒：仮想HOME確認→対象ゲームtask kill→登録Intent",id,Float.NaN,Float.NaN);
+  w.io.execute(()->{
+   int bits=0;
+   try{
+    if(valid.getAsBoolean()&&w.inputLane.valid(lane)&&w.id==id&&!w.closed)
+      bits=service.recoverAd(id,epoch);
+   }catch(Exception ignored){/* failure leaves evidence bits at zero */}
+   final int evidence=bits;
+   s.h.post(()->{
+    boolean current=w.inputLane.valid(lane)&&w.id==id&&!w.closed&&valid.getAsBoolean();
+    w.inputLane.complete(lane);
+    if(current){
+      w.screenInfo=null;
+      requestFrameRefresh(w);
+      state(w,evidence==7?"HOME・タスク停止・Intent完了 / 新しい画面を検証中":
+        "広告復帰保留 / HOME・task kill・Intentの実行証拠が不十分 ("+evidence+")");
+      result.accept(evidence);
+    }
+   });
+  });
+ }
  void restore(Window w,boolean restart,java.util.function.BooleanSupplier valid,Runnable done,Runnable failed){
   if(w==null||w.id<=0||w.closed||!valid.getAsBoolean()){failed.run();return;}
   if(s.progressErrors!=null)s.progressErrors.action(w.pkg,restart?"ゲームのタスク再起動を要求":"アプリ復帰を要求",w.id,Float.NaN,Float.NaN);
