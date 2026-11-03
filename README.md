@@ -1,5 +1,18 @@
 # FFC — FlyFromCodex
 
+## MarkerTap v1.154 — Wi-FiなしのローカルADB再接続・署名済み検証版（2026-11-03）
+
+**[▶ MarkerTap v1.154 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.154-rc1/MarkerTap-v1.154-integrated-signed.apk)**  
+[GitHub Release v1.154-rc1](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.154-rc1) / [SHA-256チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.154-rc1/SHA256SUMS-v1.154.txt) / [署名・公開URL検証成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41615453059) / [改修PR #38](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/38)
+
+パッケージ `jp.tapmarker.lite`、versionName **1.154**、versionCode **157**、公開APK SHA-256 `1e5c95fa21fa6c6a8d935ab280b7689dc90789bb61d32a89cf1ccf0bd1cf18b7`。v1.153と同じ更新用署名証明書を検証済み。APK v2/v3署名・DEXクラスとメソッド変更監査・ZIP・16KiB zipalign・公開ファイルの再ダウンロードとバイト一致が成功しています。秘密の署名鍵はリポジトリに公開していません。
+
+**改修：** 起動済みのADB実行部を再利用し、以前に同じ端末で認証成功した`127.0.0.1` のADBポートを保存。Wi-Fiがなくても、そのポートがAndroid側でまだ待ち受けていれば接続を試みます。利用できなければ既存のWi-Fiデバッグ検出へ戻します。未ペアリングのポートを無断使用せず、他端末への接続・ポート範囲スキャン・権限の自動昇格は行いません。
+
+**重要な制約：** 初回のペアリングにはAndroidのデバッグ許可が必要です。アップグレード直後は、成功したローカルADBポートを記録するため、通常のワイヤレスADB接続を一度実行する必要があります。Android側が待受を閉じた場合や再起動後にポートが変わった場合、ローカルホストのみでは再起動できません。また、ゲーム自体がインターネットを要する場合は別の通信手段が必要です。
+
+**検証段階：** 署名・公開URL・ホストテストまで完了した**プレリリース検証版**です。Pixel 10 / Android 17の実機でのWi-Fi切断・再接続、2画面自律、収納・広告復帰・報酬回収は未検証であり、完全自律の保証はありません。問題があれば下のv1.153 / v1.151に戻せます。
+
 ## MarkerTap v1.153 — 署名済み統合APK（2026-11-03）
 
 **[▶ MarkerTap v1.153 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.153-rc1/MarkerTap-v1.153-integrated-signed.apk)**  
