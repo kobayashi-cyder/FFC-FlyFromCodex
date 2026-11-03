@@ -21,7 +21,7 @@ import urllib.parse
 import urllib.request
 
 REPO = "kobayashi-cyder/FFC-FlyFromCodex"
-BRANCH = "markertap/v1.153-virtual-lane-isolation"
+BRANCH = "markertap/v1.153-integrated-release"
 CHANNEL = "markertap/v1153-signer-handoff/"
 TAG = "markertap-v1.153-rc1"
 APP = "MarkerTap-v1.153-integrated-signed.apk"
