@@ -20,6 +20,8 @@ jobs:
             markertap/code/TapMarker/src/jp/tapmarker
             markertap/code/TapMarker/tests/RewardEvaluationConnectomeTest.java
             markertap/code/TapMarker/tests/KurashiruPointHudTest.java
+            markertap/code/TapMarker/tests/KurashiruClaimPolicyTest.java
+            markertap/code/TapMarker/tests/SharedPointClaimArbiterTest.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -40,6 +42,17 @@ jobs:
             markertap/code/TapMarker/src/jp/tapmarker/KurashiruPointHud.java \
             markertap/code/TapMarker/tests/KurashiruPointHudTest.java
           java -Djava.awt.headless=true -cp /tmp/kurashiru-hud jp.tapmarker.KurashiruPointHudTest
+      - name: Compile and validate claim attribution and cross-game point isolation
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/claim-policy
+          javac --release 8 -encoding UTF-8 -d /tmp/claim-policy \
+            markertap/code/TapMarker/src/jp/tapmarker/KurashiruClaimPolicy.java \
+            markertap/code/TapMarker/tests/KurashiruClaimPolicyTest.java \
+            markertap/code/TapMarker/src/jp/tapmarker/SharedPointClaimArbiter.java \
+            markertap/code/TapMarker/tests/SharedPointClaimArbiterTest.java
+          java -cp /tmp/claim-policy jp.tapmarker.KurashiruClaimPolicyTest
+          java -cp /tmp/claim-policy jp.tapmarker.SharedPointClaimArbiterTest
       - name: Validate physical and virtual source wiring without claiming APK integration
         run: |
           python3 - <<'PY'
@@ -63,5 +76,11 @@ jobs:
           assert 'KurashiruPointHud.read(pixels::get' in s
           assert 'observeBalance("pt"' in a
           assert 'observeBalance("pt"' in s
+          assert 'KurashiruClaimPolicy.isClaim(target' in a
+          assert 'KurashiruClaimPolicy.isClaim(slot.pkg' in s
+          assert 'KurashiruClaimPolicy.rewardVisible(target' in a
+          assert 'KurashiruClaimPolicy.rewardVisible(slot.pkg' in s
+          assert 'SharedPointClaimArbiter.allowed' in a
+          assert 'SharedPointClaimArbiter.allowed' in s
           print('Source integration: 10 checks passed; device / signed APK not validated')
           PY
