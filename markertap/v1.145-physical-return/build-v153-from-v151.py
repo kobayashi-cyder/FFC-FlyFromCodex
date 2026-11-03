@@ -115,7 +115,7 @@ def sha256(path):
 def build(base, sdk, jadx):
     if sha256(base) != BASE_SHA256:
         raise ValueError("STOP: public signed 1.151 APK baseline digest mismatch")
-    builddir = ROOT / "build" / "v151-incremental"
+    builddir = ROOT / "build" / "v153-incremental"
     evidence = builddir / "evidence"
     for name in ("helpers", "classes", "dex", "evidence"):
         (builddir / name).mkdir(parents=True, exist_ok=True)
