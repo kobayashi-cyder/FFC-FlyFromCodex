@@ -70,3 +70,6 @@ subprocess.run(['java','-cp',str(copy),'jp.tapmarker.VirtualCopyExecutorFactoryT
 
 # Host-only release gate regression: rejects incomplete or mismatched evidence.
 subprocess.run(['python3',str(root/'tests/test_verify_release_download.py')],check=True)
+
+# v1.152 per-window refresh decisions and Android source wiring (host only).
+subprocess.run(['python3',str(root/'tests/test_virtual_refresh_source.py')],check=True)
