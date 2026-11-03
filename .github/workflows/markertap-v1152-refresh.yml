@@ -37,3 +37,35 @@ jobs:
         run: |
           echo 'Source validation only. v1.152 Android DEX integration and signed APK are NOT validated.'
           echo 'Do not substitute v1.151 signed APK for unbuilt v1.152.'
+
+  android-source-compile:
+    needs: pure-java-regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Fetch checksum-pinned Android SDK35
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Compile the changed VirtualWindows with the Android source tree (no signing)
+        working-directory: markertap/code/TapMarker
+        run: |
+          set -euo pipefail
+          SDK="../../v1.145-physical-return/tooling/sdk"
+          BT="$SDK/build-tools/35.0.0"
+          JAR="$SDK/platforms/android-35/android.jar"
+          test -f "$JAR"
+          python3 tools/generate-locales.py
+          mkdir -p build/classes build/generated
+          "$BT/aapt2" compile --dir res -o build/resources.zip
+          "$BT/aapt2" link -o build/base.apk --manifest AndroidManifest.xml -I "$JAR" --java build/generated --custom-package jp.tapmarker build/resources.zip
+          LIBS=$(printf '%s:' libs/*.jar)
+          find src build/generated third-party/libadb-android-master/libadb/src/main/java -name '*.java' | sort > build/v152-sources.txt
+          java -jar toolchain/ecj.jar -nowarn -source 8 -target 8 -encoding UTF-8 -classpath "$JAR:$LIBS" -d build/classes @build/v152-sources.txt
+          test -f build/classes/jp/tapmarker/VirtualWindows.class
+          test -f build/classes/jp/tapmarker/VirtualRefreshPolicy.class
+          echo 'Android source compilation PASS; no v1.152 signed APK is generated.'
