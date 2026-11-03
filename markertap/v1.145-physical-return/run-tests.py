@@ -27,13 +27,17 @@ video_sources=[
  root/'src/jp/tapmarker/KaitakuVideoModalPolicy.java',
  root/'src/jp/tapmarker/KaitakuActionPacer.java',
  root/'src/jp/tapmarker/KaitakuVideoNamedControls.java',
+ root/'src/jp/tapmarker/KaitakuRewardClaimPolicy.java',
+ root/'src/jp/tapmarker/KaitakuRewardClaimGate.java',
+ root/'src/jp/tapmarker/KaitakuRewardNamedControls.java',
+ root/'tests/KaitakuRewardClaimV157Test.java',
  root/'tests/KaitakuVideoModalPolicyTest.java',
  root/'tests/KaitakuActionPacerTest.java',
  root/'tests/video/VideoActionHostStubs.java',
  root/'tests/video/KaitakuVideoNamedControlsTest.java',
 ]
 subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(video)]+[str(p) for p in video_sources],check=True)
-for cls in ['KaitakuVideoModalPolicyTest','KaitakuActionPacerTest','KaitakuVideoNamedControlsTest']:
+for cls in ['KaitakuVideoModalPolicyTest','KaitakuActionPacerTest','KaitakuVideoNamedControlsTest','KaitakuRewardClaimV157Test']:
  subprocess.run(['java','-cp',str(video),'jp.tapmarker.'+cls],check=True)
 subprocess.run(['python3',str(root/'tests/video_source_audit.py')],check=True)
 # Virtual fast scan is JVM-pure and exercises both 1-screen and 2-screen policies.
