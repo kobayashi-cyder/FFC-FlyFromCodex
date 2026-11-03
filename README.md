@@ -1,5 +1,14 @@
 # FFC — FlyFromCodex
 
+## MarkerTap v1.151 — 署名済み検証版APK（2026-11-03）
+
+**[▶ MarkerTap v1.151 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.151-rc1/MarkerTap-v1.151-integrated-signed.apk)**  
+[GitHub Release v1.151-rc1](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.151-rc1) / [SHA-256チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.151-rc1/SHA256SUMS-v1.151.txt) / [署名・公開URL・ダウンロード検証成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41572253002) / [修正PR #34](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/34)
+
+パッケージ `jp.tapmarker.lite`、versionName **1.151** / versionCode **154**、5,651,299 bytes。APK SHA-256 `ae2db2972780e50966f26243ab5fd8f2f6d9106056eeda233a2d75a1f9535dab`。既存のMarkerTapと同じ署名証明書（SHA-256 `7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1`）を検証し、v2/v3署名、ZIP CRC、DEX監査・ホスト試験、公開APKのバイト一致を確認。
+
+**検証版のため安定版への置き換えは未実施。** Pixel 10 / Android 17の仮想1・2画面、収納・復元後のオフライン表示、広告からの復帰、報酬回収、継続稼働は実機未検証。現行v1.150の配布リンクも引き続き利用できます。秘密の署名鍵は公開されていません。
+
 ## MarkerTap v1.150 — 署名済みAPK直接ダウンロード（2026-11-03）
 
 **[▶ MarkerTap v1.150 署名済み統合APKをダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.150/MarkerTap-v1.150-integrated-signed.apk)**  
