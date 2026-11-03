@@ -19,6 +19,7 @@ jobs:
           sparse-checkout: |
             markertap/code/TapMarker/src/jp/tapmarker
             markertap/code/TapMarker/tests/RewardEvaluationConnectomeTest.java
+            markertap/code/TapMarker/tests/KurashiruPointHudTest.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -31,6 +32,14 @@ jobs:
             markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java \
             markertap/code/TapMarker/tests/RewardEvaluationConnectomeTest.java
           java -cp /tmp/reward-eval jp.tapmarker.RewardEvaluationConnectomeTest
+      - name: Compile and test common top-left pt HUD parser
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/kurashiru-hud
+          javac --release 8 -encoding UTF-8 -d /tmp/kurashiru-hud \
+            markertap/code/TapMarker/src/jp/tapmarker/KurashiruPointHud.java \
+            markertap/code/TapMarker/tests/KurashiruPointHudTest.java
+          java -Djava.awt.headless=true -cp /tmp/kurashiru-hud jp.tapmarker.KurashiruPointHudTest
       - name: Validate physical and virtual source wiring without claiming APK integration
         run: |
           python3 - <<'PY'
@@ -49,5 +58,10 @@ jobs:
           assert 'claimSent(id,"coin",at)' in s
           assert 'claimAcknowledged(pendingEvaluationReceipt' in a
           assert 'claimAcknowledged(slot.pendingEvaluationReceipt' in s
+          assert 'KurashiruPointHud.read(pixels::get' in a
+          assert 'KurashiruPointHud.read(framePixels::get' in s
+          assert 'KurashiruPointHud.read(pixels::get' in s
+          assert 'observeBalance("pt"' in a
+          assert 'observeBalance("pt"' in s
           print('Source integration: 10 checks passed; device / signed APK not validated')
           PY
