@@ -1,5 +1,14 @@
 # FFC — FlyFromCodex
 
+## MarkerTap v1.153 — Shizuku不要・内蔵ADB自律復旧（開発ソース / 2026-11-03）
+
+**[▶ v1.153 改修ソースを直接開く](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/tree/markertap/v1.153-embedded-adb-no-shizuku/markertap/code/TapMarker)**  
+[改修PR #36](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/36) / [変更内容・操作手順](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/markertap/v1.153-embedded-adb-no-shizuku/markertap/v1.145-physical-return/v1.153-embedded-adb.md) / [Shizuku不要のCI検証成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41609308904) / [画面別自律復旧PR #35](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/35)
+
+**実装内容（ソース）:** 外部ShizukuのAPI・Providerへの依存を除去し、MarkerTap内蔵のワイヤレスADB実行部を優先。ユーザーがペア設定した端末に限り自動再接続し、仮想画面ごとの画像再取得・表示再作成・復旧上限を扱います。ホストCIでは接続制御28項目と復旧判定26項目の検査が通過しています。Android 11以降で初回ワイヤレスデバッグ許可・ペアリングが必要で、OS側の権限制限は解除しません。
+
+**重要：v1.153の署名済みAPKはまだ存在しません。** 上記リンクは開発ソースであり、インストールできるAPKではありません。従来のAndroidソースにビルド依存物が欠け、署名済みv1.151へ改修を統合・同一証明書で再署名し実機検証する工程が未完了です。**v1.151の既存APKにv1.152/v1.153の復旧・Shizuku不要化は入っていません。** 配布済みAPKを偽って差し替えず、インストール可能な最新公開候補は以下のv1.151リンクを維持します。
+
 ## MarkerTap v1.151 — 署名済み検証版APK（2026-11-03）
 
 **[▶ MarkerTap v1.151 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.151-rc1/MarkerTap-v1.151-integrated-signed.apk)**  
