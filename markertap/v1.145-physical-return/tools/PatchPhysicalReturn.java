@@ -90,6 +90,41 @@ public final class PatchPhysicalReturn {
    throw new IllegalStateException("MainActivity home UI hook changed: "+wrapped);
   return withMethods(c,ms);
  }
+ static Method isolateCopyWorker(Method m,int[] count){
+  if(!m.getName().equals("<init>")||m.getImplementation()==null)return m;
+  MethodImplementation original=m.getImplementation();List<Instruction> ins=new ArrayList<>();
+  for(Instruction x:original.getInstructions())ins.add(x);
+  MethodReference factory=new ImmutableMethodReference(ROOT+"VirtualCopyExecutorFactory;","create",
+    Arrays.asList("Ljava/util/concurrent/ThreadFactory;"),"Ljava/util/concurrent/ExecutorService;");
+  for(int i=0;i+2<ins.size();i++){
+   Instruction invoke=ins.get(i),move=ins.get(i+1),assign=ins.get(i+2);
+   if(!(invoke instanceof ReferenceInstruction)||!(move instanceof OneRegisterInstruction)
+      ||move.getOpcode()!=Opcode.MOVE_RESULT_OBJECT||!(assign instanceof Instruction22c)
+      ||assign.getOpcode()!=Opcode.IPUT_OBJECT)continue;
+   Reference methodRef=((ReferenceInstruction)invoke).getReference();
+   Reference fieldRef=((Instruction22c)assign).getReference();
+   if(!(methodRef instanceof MethodReference)||!(fieldRef instanceof FieldReference))continue;
+   MethodReference call=(MethodReference)methodRef;FieldReference field=(FieldReference)fieldRef;
+   if(!call.getDefiningClass().equals("Ljava/util/concurrent/Executors;")
+      ||!call.getName().equals("newSingleThreadExecutor")
+      ||!desc(call).equals("(Ljava/util/concurrent/ThreadFactory;)Ljava/util/concurrent/ExecutorService;")
+      ||!field.getDefiningClass().equals(ROOT+"VirtualWindows;")
+      ||!field.getName().equals("frameCopyWork"))continue;
+   if(((OneRegisterInstruction)move).getRegisterA()!=((Instruction22c)assign).getRegisterA())
+    throw new IllegalStateException("frame-copy executor register changed");
+   if(invoke instanceof Instruction35c){
+    Instruction35c x=(Instruction35c)invoke;
+    ins.set(i,new ImmutableInstruction35c(Opcode.INVOKE_STATIC,x.getRegisterCount(),
+      x.getRegisterC(),x.getRegisterD(),x.getRegisterE(),x.getRegisterF(),x.getRegisterG(),factory));
+   }else if(invoke instanceof Instruction3rc){
+    Instruction3rc x=(Instruction3rc)invoke;
+    ins.set(i,new ImmutableInstruction3rc(Opcode.INVOKE_STATIC_RANGE,x.getStartRegister(),x.getRegisterCount(),factory));
+   }else throw new IllegalStateException("unsupported frame-copy executor instruction format");
+   count[0]++;
+  }
+  return method(m,m.getName(),new ImmutableMethodImplementation(original.getRegisterCount(),ins,
+    original.getTryBlocks(),original.getDebugItems()));
+ }
  static ClassDef patch(ClassDef c){
   if(c.getType().equals(ROOT+"RecoveryEscalation;"))return getters(c);
   if(c.getType().equals(ROOT+"TapService;")||c.getType().equals(ROOT+"MainActivity;"))return panelPatch(c);
@@ -107,9 +142,10 @@ public final class PatchPhysicalReturn {
   // Phone-side preview collapse must not remove the layout of the virtual
   // display's host. This only changes the overlay View, not its display.
   if(c.getType().equals(ROOT+"VirtualWindows;")){
-   List<Method> ms=new ArrayList<>();int[] calls={0};int found=0;
+   List<Method> ms=new ArrayList<>();int[] calls={0},copyCalls={0};int found=0;
    for(Method m:c.getMethods()){
-    if(m.getName().equals("updatePreviewVisibility")){
+    if(m.getName().equals("<init>"))ms.add(isolateCopyWorker(m,copyCalls));
+    else if(m.getName().equals("updatePreviewVisibility")){
      found++;
      Method next=redirect(m,"Landroid/view/View;","setVisibility",ROOT+"VirtualPreviewVisibilityBridge;","setVisibility",
        Arrays.asList("Landroid/view/View;","I"),"V",calls);
@@ -118,7 +154,7 @@ public final class PatchPhysicalReturn {
      ms.add(next);
     }else ms.add(m);
    }
-   if(found!=1||calls[0]!=1)throw new IllegalStateException("virtual preview hook changed: "+found+"/"+calls[0]);
+   if(found!=1||calls[0]!=1||copyCalls[0]!=1)throw new IllegalStateException("virtual display hooks changed: preview="+found+"/"+calls[0]+" copy="+copyCalls[0]);
    return withMethods(c,ms);
   }
   if(c.getType().equals(ROOT+"VirtualLoadPolicy;")){
@@ -238,7 +274,7 @@ public final class PatchPhysicalReturn {
   }
   for(ClassDef c:load(patch).getClasses()){
    if(frameQueueType(c.getType())){if(!names.contains(c.getType()))throw new IllegalStateException("unexpected queue type: "+c.getType());continue;}
-   if(!c.getType().startsWith(ROOT+"PhysicalRecoveryBridge")&&!c.getType().startsWith(ROOT+"PhysicalReturnEpisode")&&!c.getType().startsWith(ROOT+"PanelModeController")&&!c.getType().startsWith(ROOT+"PanelModePolicy")&&!c.getType().startsWith(ROOT+"KaitakuVideoModalPolicy")&&!c.getType().startsWith(ROOT+"VirtualFastWait")&&!c.getType().startsWith(ROOT+"KaitakuActionPacer")&&!c.getType().startsWith(ROOT+"KaitakuVideoNamedControls")&&!c.getType().startsWith(ROOT+"VirtualPreviewVisibilityBridge"))throw new IllegalStateException("unexpected overlay class: "+c.getType());
+   if(!c.getType().startsWith(ROOT+"PhysicalRecoveryBridge")&&!c.getType().startsWith(ROOT+"PhysicalReturnEpisode")&&!c.getType().startsWith(ROOT+"PanelModeController")&&!c.getType().startsWith(ROOT+"PanelModePolicy")&&!c.getType().startsWith(ROOT+"KaitakuVideoModalPolicy")&&!c.getType().startsWith(ROOT+"VirtualFastWait")&&!c.getType().startsWith(ROOT+"KaitakuActionPacer")&&!c.getType().startsWith(ROOT+"KaitakuVideoNamedControls")&&!c.getType().startsWith(ROOT+"VirtualPreviewVisibilityBridge")&&!c.getType().startsWith(ROOT+"VirtualCopyExecutorFactory"))throw new IllegalStateException("unexpected overlay class: "+c.getType());
    if(!names.add(c.getType()))throw new IllegalStateException("duplicate class: "+c.getType());classes.add(c);
   }
   DexFileFactory.writeDexFile(output,version(new ImmutableDexFile(API,classes)));System.out.println("Merged "+classes.size()+" classes");
@@ -257,7 +293,7 @@ public final class PatchPhysicalReturn {
    if(Arrays.equals(canonical(c),canonical(actual)))preserved++;else changed.add(c.getType());
   }
   if(!changed.containsAll(Arrays.asList(ROOT+"AutoPilot;",ROOT+"ProgressErrors;",ROOT+"RecoveryEscalation;",ROOT+"TapService;",ROOT+"MainActivity;",ROOT+"KaitakuUiEvidence;",ROOT+"SplitPilot;",ROOT+"VirtualLoadPolicy;",ROOT+"VirtualWindows;",ROOT+"VirtualFrameQueue;")))throw new IllegalStateException("hooks not integrated");
-  for(String n:after.keySet())if(!n.startsWith(ROOT+"PhysicalRecoveryBridge")&&!n.startsWith(ROOT+"PhysicalReturnEpisode")&&!n.startsWith(ROOT+"PanelModeController")&&!n.startsWith(ROOT+"PanelModePolicy")&&!n.startsWith(ROOT+"KaitakuVideoModalPolicy")&&!n.startsWith(ROOT+"VirtualFastWait")&&!n.startsWith(ROOT+"KaitakuActionPacer")&&!n.startsWith(ROOT+"KaitakuVideoNamedControls")&&!n.startsWith(ROOT+"VirtualPreviewVisibilityBridge"))throw new IllegalStateException("unexpected added type "+n);
+  for(String n:after.keySet())if(!n.startsWith(ROOT+"PhysicalRecoveryBridge")&&!n.startsWith(ROOT+"PhysicalReturnEpisode")&&!n.startsWith(ROOT+"PanelModeController")&&!n.startsWith(ROOT+"PanelModePolicy")&&!n.startsWith(ROOT+"KaitakuVideoModalPolicy")&&!n.startsWith(ROOT+"VirtualFastWait")&&!n.startsWith(ROOT+"KaitakuActionPacer")&&!n.startsWith(ROOT+"KaitakuVideoNamedControls")&&!n.startsWith(ROOT+"VirtualPreviewVisibilityBridge")&&!n.startsWith(ROOT+"VirtualCopyExecutorFactory"))throw new IllegalStateException("unexpected added type "+n);
   if(after.size()<3)throw new IllegalStateException("new runtime absent");
   System.out.println("Original classes byte-for-byte equivalent after canonical DEX serialization: "+preserved+"; reviewed changes: "+changed+"; added: "+after.keySet());
  }
