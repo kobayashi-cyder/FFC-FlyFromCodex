@@ -1,0 +1,43 @@
+name: MarkerTap v1.151 virtual lane isolation preflight
+
+on:
+  push:
+    branches:
+      - markertap/v1.151-virtual-lane-isolation
+    paths:
+      - 'markertap/v1.145-physical-return/**'
+      - '.github/workflows/markertap-v1151-isolation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-and-dex-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Host regressions (2-display fairness, no stale/mixed frames, collapse)
+        working-directory: markertap/v1.145-physical-return
+        run: python3 run-tests.py
+      - name: Prepare pinned Android and JADX toolchain
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Compile DEX integration patcher and validate scripts
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 -m py_compile build.py sign-release.py release-local.py
+          javac --release 8 -encoding UTF-8 \
+            -cp tooling/jadx/lib/jadx-1.5.3-all.jar \
+            -d build/tools-preflight tools/PatchPhysicalReturn.java
+      - name: Explicitly prevent unsigned or untested APK publication
+        run: |
+          echo 'No APK is published by this workflow.'
+          echo 'A pinned v1.144 baseline, original signing key, and Pixel 10 tests'
+          echo 'are required before v1.151 can be marked installable.'
