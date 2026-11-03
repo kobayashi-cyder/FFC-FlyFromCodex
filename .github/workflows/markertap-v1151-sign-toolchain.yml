@@ -1,0 +1,36 @@
+name: MarkerTap v1.151 public signing toolchain export (no keys)
+on:
+  push:
+    branches:
+      - markertap/v1.151-virtual-lane-isolation
+    paths:
+      - '.github/workflows/markertap-v1151-sign-toolchain.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export-apksigner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and verify public pinned build-tools35
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Verify signing tools are available
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          test -f tooling/build-tools/android-15/lib/apksigner.jar
+          test -f tooling/build-tools/android-15/apksigner
+          sha256sum tooling/build-tools/android-15/lib/apksigner.jar
+          java -jar tooling/build-tools/android-15/lib/apksigner.jar --version
+      - name: Export non-secret, checksum-pinned signing tool only
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1151-public-apksigner35-no-keys
+          retention-days: 3
+          if-no-files-found: error
+          path: |
+            markertap/v1.145-physical-return/tooling/build-tools/android-15/lib/apksigner.jar
+            markertap/v1.145-physical-return/tooling/build-tools/android-15/apksigner
