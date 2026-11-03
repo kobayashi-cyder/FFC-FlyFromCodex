@@ -8,6 +8,8 @@
 
 **このブランチは実装・ホスト検証用です。v1.157のDEXビルド、元証明書による署名、Android 17実機による動作と報酬加算の確認は未完了で、署名済みv1.157 APKはまだ公開していません。** 現在ダウンロード可能な[署名済みv1.156](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.156-rc1/MarkerTap-v1.156-integrated-signed.apk)にはこの改修は含まれません。新機能が使えるという意味ではありません。
 
+**2026-11-04 ABI追加確認：** [公開署名済みv1.156 APKの実バイナリ照合・DEXの対象メソッド検証が成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41725804938)。これは差分ビルドの前提確認であり、v1.157のAPK生成・署名・Android 17実機確認の完了を意味しません。署名済みv1.157のダウンロードURLはまだありません。
+
 ---
 
 # MarkerTap v1.151 — 仮想画面ごとの処理分離（署名済み検証版）
