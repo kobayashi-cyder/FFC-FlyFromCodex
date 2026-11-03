@@ -132,7 +132,7 @@ def build(base, sdk, jadx):
     )]
     # The bridge is compiled with the v1.152 pure-Java state machine. These
     # classes use only Android SDK35 + Java8, not historical Shizuku jars.
-    sources += [ROOT.parent / "code/TapMarker/src/jp/tapmarker/" / name for name in ("LoopbackRoutePolicy.java", "LoopbackRetryPolicy.java")]
+    sources += [ROOT.parent / "code/TapMarker/src/jp/tapmarker/LoopbackRoutePolicy.java", ROOT / "src/jp/tapmarker/LoopbackRetryPolicy.java"]
     run(["javac", "--release", "8", "-encoding", "UTF-8", "-cp", android,
          "-d", builddir / "classes"] + sources, evidence / "compile-runtime.log")
     jar = builddir / "runtime.jar"
