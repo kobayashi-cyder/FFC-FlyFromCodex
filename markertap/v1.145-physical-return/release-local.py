@@ -14,8 +14,8 @@ import sys
 
 ROOT=Path(__file__).resolve().parent
 BASE_SHA="f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970"
-VERSION="1.150"
-NAME="MarkerTap-v1.150-integrated-signed.apk"
+VERSION="1.151"
+NAME="MarkerTap-v1.151-integrated-signed.apk"
 
 def sha256(path):
     digest=hashlib.sha256()
@@ -48,7 +48,7 @@ def main():
         raise ValueError("STOP: signing key must never be in public output directory")
     run([sys.executable,ROOT/"run-tests.py"])
     run([sys.executable,ROOT/"build.py","--baseline",base,"--sdk",a.sdk.resolve(),"--jadx",a.jadx.resolve()])
-    unsigned=ROOT/"output/MarkerTap-v1.150-integrated-unsigned.apk"
+    unsigned=ROOT/"output/MarkerTap-v1.151-integrated-unsigned.apk"
     outdir.mkdir(parents=True,exist_ok=True)
     signed=outdir/NAME
     run([sys.executable,ROOT/"sign-release.py","--unsigned",unsigned,"--keystore",key,"--sdk",a.sdk.resolve(),"--out",signed])
@@ -57,7 +57,7 @@ def main():
     if result["signed_apk_sha256"]!=sha256(signed) or result["version_name"]!=VERSION:
         signed.unlink(missing_ok=True)
         raise ValueError("STOP: signed file differs from independent receipt")
-    (outdir/"SHA256SUMS-v1.150.txt").write_text(sha256(signed)+"  "+signed.name+"\n",encoding="utf-8")
+    (outdir/"SHA256SUMS-v1.151.txt").write_text(sha256(signed)+"  "+signed.name+"\n",encoding="utf-8")
     print("Signed integrated APK host verified (not device tested):",signed)
     print("SHA256="+sha256(signed))
 
