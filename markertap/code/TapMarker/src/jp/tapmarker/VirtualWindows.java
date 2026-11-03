@@ -82,6 +82,79 @@ final class VirtualWindows {
   String text=s.appLabel(w.pkg)+"\n\n状態："+w.runState+"\n送信完了："+w.inputs+"回\n停止理由："+(w.stopReason.isEmpty()?"なし":w.stopReason)+"\n入力先の確認："+(w.inputRecovery.pending?w.inputRecovery.status():"待機なし");
   AlertDialog dialog=new UiStrings.DialogBuilder(s).setTitle("この画面の状況").setMessage(text).setPositiveButton("詳しい状況",(d,which)->showStatus()).setNegativeButton(pcPresentation?"表示を隠す":"この画面を閉じる",(d,which)->remove(w)).setNeutralButton("リフレッシュ",(d,which)->showRefreshDialog(w)).create();dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY);dialog.show();
  }
+ 
+ /** Unknown network state is not evidence of an outage; fail open to observation. */
+ boolean networkValidated(){
+  try{
+   ConnectivityManager cm=(ConnectivityManager)s.getSystemService(Context.CONNECTIVITY_SERVICE);
+   if(cm==null)return true;
+   Network active=cm.getActiveNetwork();
+   NetworkCapabilities caps=active==null?null:cm.getNetworkCapabilities(active);
+   return caps!=null&&caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+  }catch(SecurityException unavailable){return true;}
+ }
+ boolean hasFreshDnsFailure(Window w,long now){
+  if(w.screenInfo==null||now-w.screenInfoAt>2000||w.screenInfoAt>now)return false;
+  String text=w.screenInfo.text;
+  return text!=null&&(text.contains("Cannot resolve destination host")
+   ||text.contains("ERR_NAME_NOT_RESOLVED")||text.contains("名前を解決できません"));
+ }
+ void showRefreshDialog(Window w){
+  if(!windows.contains(w)||w.closed)return;
+  AlertDialog dialog=new UiStrings.DialogBuilder(s).setTitle(s.appLabel(w.pkg)+"：リフレッシュ")
+   .setItems(new String[]{"画像だけを再取得","この仮想画面だけを再作成"},
+       (d,which)->refreshOneWindow(w,which==1))
+   .setNegativeButton("キャンセル",null).create();
+  dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY);dialog.show();
+ }
+ void refreshOneWindow(Window w,boolean hard){
+  if(!windows.contains(w)||w.closed||w.id<=0||w.rebuilding){
+   s.pilot.note("対象画面の再作成中、または利用不可です");return;
+  }
+  long now=SystemClock.uptimeMillis();
+  VirtualRefreshPolicy.Decision decision=w.refreshPolicy.manualRefresh(
+   now,hard,networkValidated(),hasFreshDnsFailure(w,now));
+  performWindowRefresh(w,decision);
+ }
+ void onSingleDisplayRemoved(Window w,int displayId){
+  if(w.closed||w.rebuilding||w.id!=displayId)return;
+  // Actual backend/binder death remains a global safety stop.
+  if(remote!=null&&(remote.binder==null||!remote.binder.isBinderAlive())){
+   backendLost();return;
+  }
+  w.removedObserved=true;
+  record("#"+displayId+" 仮想画面単独消失 / 他画面は維持");
+  long now=SystemClock.uptimeMillis();
+  VirtualRefreshPolicy.Decision decision=w.refreshPolicy.observe(
+   new VirtualRefreshPolicy.Observation(now,Math.min(w.frameAt,now),
+     s.pilot.splitPilot.active&&s.pilot.splitPilot.virtualMode,
+     false,networkValidated(),hasFreshDnsFailure(w,now),true,false));
+  performWindowRefresh(w,decision);
+ }
+ /** Never pause the global pilot or close other windows for an isolated failure. */
+ void performWindowRefresh(Window w,VirtualRefreshPolicy.Decision decision){
+  if(w.closed||!windows.contains(w))return;
+  switch(decision.action){
+   case WAIT_NETWORK:state(w,"ネットワーク回復待機（再起動しません）");return;
+   case WAIT_DNS:state(w,"DNS回復待機（再起動しません）");return;
+   case REQUEST_FRAME:requestFrameRefresh(w);state(w,"画像を再取得中");return;
+   case RECREATE_DISPLAY:
+    if(w.rebuilding)return;
+    final int expectedGeneration=generation;
+    rebuild(w,()->!w.closed&&generation==expectedGeneration&&windows.contains(w),
+     ()->{w.removedObserved=false;state(w,"再生成画面の主画面を検証中");},
+     error->{w.refreshPolicy.failRebuild();quarantineWindow(w,"画面再生成失敗："+error);});
+    return;
+   case QUARANTINE:quarantineWindow(w,"復旧回数の上限に到達");return;
+   default:return;
+  }
+ }
+ void quarantineWindow(Window w,String reason){
+  if(w.closed||!w.stopReason.isEmpty())return;
+  w.stopReason=reason;w.inputLane.cancel();state(w,"個別停止");
+  record("#"+w.id+" "+s.appLabel(w.pkg)+" を個別隔離："+reason);
+  s.pilot.note(s.appLabel(w.pkg)+"：この画面のみ停止。ほかの画面は継続");
+ }
  void state(Window w,String text){
   w.runState=text;refreshHeadings();if(w.title==null)return;
   String shown=w.inputRecovery.pending?w.inputRecovery.status():!w.inputError.isEmpty()?"入力を再確認中":UiKit.concise(text);
