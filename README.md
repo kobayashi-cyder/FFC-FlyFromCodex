@@ -1,13 +1,15 @@
 # FFC — FlyFromCodex
 
-## MarkerTap v1.153 — Shizuku不要・内蔵ADB自律復旧（開発ソース / 2026-11-03）
+## MarkerTap v1.153 — 署名済み統合APK（2026-11-03）
 
-**[▶ v1.153 改修ソースを直接開く](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/tree/markertap/v1.153-embedded-adb-no-shizuku/markertap/code/TapMarker)**  
-[改修PR #36](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/36) / [変更内容・操作手順](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/markertap/v1.153-embedded-adb-no-shizuku/markertap/v1.145-physical-return/v1.153-embedded-adb.md) / [Shizuku不要のCI検証成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41609308904) / [画面別自律復旧PR #35](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/35)
+**[▶ MarkerTap v1.153 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.153-rc1/MarkerTap-v1.153-integrated-signed.apk)**  
+[GitHub Release v1.153-rc1](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.153-rc1) / [SHA-256チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.153-rc1/SHA256SUMS-v1.153.txt) / [署名・外部ダウンロード検証成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41612946538) / [DEX統合PR #37](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/37) / [Shizuku不要設計PR #36](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/36)
 
-**実装内容（ソース）:** 外部ShizukuのAPI・Providerへの依存を除去し、MarkerTap内蔵のワイヤレスADB実行部を優先。ユーザーがペア設定した端末に限り自動再接続し、仮想画面ごとの画像再取得・表示再作成・復旧上限を扱います。ホストCIでは接続制御28項目と復旧判定26項目の検査が通過しています。Android 11以降で初回ワイヤレスデバッグ許可・ペアリングが必要で、OS側の権限制限は解除しません。
+**インストール可能な署名済み検証版です。** パッケージ `jp.tapmarker.lite`、versionName **1.153** / versionCode **156**、5,655,395 bytes。APK SHA-256 `9a3fa3b4fea3e04bcff92531a8f908724edf33efab99710366cab9c793ff3824`。元の更新用署名証明書 SHA-256 `7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1` と一致。APK v2/v3署名・DEX変更監査・ZIP/zipalign・公開URLからの再取得とバイト一致を検証済みです。秘密の署名鍵はGitHubに公開していません。
 
-**重要：v1.153の署名済みAPKはまだ存在しません。** 上記リンクは開発ソースであり、インストールできるAPKではありません。従来のAndroidソースにビルド依存物が欠け、署名済みv1.151へ改修を統合・同一証明書で再署名し実機検証する工程が未完了です。**v1.151の既存APKにv1.152/v1.153の復旧・Shizuku不要化は入っていません。** 配布済みAPKを偽って差し替えず、インストール可能な最新公開候補は以下のv1.151リンクを維持します。
+**今回のAPKに実際に組み込まれた機能：** 既存の内蔵ワイヤレスADBへの起動経路、画面ごとの画像再取得・段階的な再作成、ネットワーク/DNSエラー時の再起動抑止、画面単独障害の復旧判断と回数制限。**Shizuku別アプリのインストールは基本経路に不要**ですが、v1.151ベースの互換性を保つため旧Shizukuのクラス/ProviderはAPK内に残ります。コード全削除版ではなく、起動時に内蔵ADBへ振り分ける統合版です。非root端末での初回ペアリング・デバッグ許可は必要です。
+
+**検証状況：** 署名・ビルド・公開配布まで成功。ただし Pixel 10 / Android 17 の実機、仮想2画面を最小化した際の通信状態、広告復帰、報酬回収、自律の連続成功については**未検証**です。現段階は**プレリリース候補**として扱い、安定版の自動置換・完全自律の宣言はしません。問題があれば、下のv1.151 / v1.150配布リンクへ戻せます。
 
 ## MarkerTap v1.151 — 署名済み検証版APK（2026-11-03）
 
