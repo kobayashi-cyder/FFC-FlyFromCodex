@@ -18,6 +18,9 @@ jobs:
           sparse-checkout: |
             markertap/code/TapMarker/src/jp/tapmarker
             markertap/code/TapMarker/tests/AdTwoSecondRecoveryTest.java
+            markertap/v1.145-physical-return/src/jp/tapmarker
+            markertap/v1.145-physical-return/tests/KaitakuRewardClaimV157Test.java
+            markertap/v1.145-physical-return/tests/video/VideoActionHostStubs.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -30,6 +33,21 @@ jobs:
             markertap/code/TapMarker/src/jp/tapmarker/AdTwoSecondRecovery.java \
             markertap/code/TapMarker/tests/AdTwoSecondRecoveryTest.java
           java -cp /tmp/ad-policy jp.tapmarker.AdTwoSecondRecoveryTest
+      - name: Verify the Kaitaku mission Get / receipt candidate path
+        run: |
+          set -euo pipefail
+          root=markertap/v1.145-physical-return
+          mkdir -p /tmp/kaitaku-reward
+          javac --release 8 -encoding UTF-8 -d /tmp/kaitaku-reward \
+            "$root/src/jp/tapmarker/KaitakuRewardClaimPolicy.java" \
+            "$root/src/jp/tapmarker/KaitakuRewardClaimGate.java" \
+            "$root/src/jp/tapmarker/KaitakuRewardNamedControls.java" \
+            "$root/src/jp/tapmarker/KaitakuVideoModalPolicy.java" \
+            "$root/src/jp/tapmarker/KaitakuActionPacer.java" \
+            "$root/src/jp/tapmarker/KaitakuVideoNamedControls.java" \
+            "$root/tests/video/VideoActionHostStubs.java" \
+            "$root/tests/KaitakuRewardClaimV157Test.java"
+          java -cp /tmp/kaitaku-reward jp.tapmarker.KaitakuRewardClaimV157Test
       - name: Verify all game lanes and strict recovery order are wired in source
         run: |
           python3 - <<'PY'
