@@ -1,0 +1,36 @@
+name: MarkerTap v1.153 standalone ADB bridge audit
+
+on:
+  push:
+    branches:
+      - markertap/v1.153-embedded-adb-no-shizuku
+  pull_request:
+    paths:
+      - 'markertap/code/TapMarker/src/**'
+      - 'markertap/code/TapMarker/AndroidManifest.xml'
+      - 'markertap/code/TapMarker/tests/WirelessModePolicyTest.java'
+      - 'markertap/v1.145-physical-return/tests/test_embedded_adb_independence.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-external-shizuku:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify no Shizuku APK/provider required and ADB reconnect rules
+        run: python3 markertap/v1.145-physical-return/tests/test_embedded_adb_independence.py
+      - name: Verify independent virtual refresh source baseline
+        run: python3 markertap/v1.145-physical-return/tests/test_virtual_refresh_source.py
+      - name: Explicit APK publication restriction
+        run: |
+          echo 'Host checks and source audit only.'
+          echo 'No signed MarkerTap v1.153 APK exists from this workflow.'
+          echo 'User-authorized wireless debugging/pairing remains required on unrooted devices.'
