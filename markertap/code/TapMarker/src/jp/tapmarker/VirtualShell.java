@@ -20,6 +20,16 @@ public final class VirtualShell extends Binder {
     case VirtualProtocol.GESTURE:{int id=data.readInt();float[] points=data.createFloatArray();long duration=data.readLong(),requestEpoch=data.readLong();boolean ok;Entry entry=owned(id);synchronized(entry){ok=armed&&epoch.get()==requestEpoch&&gesture(id,points,duration,requestEpoch);}reply.writeNoException();reply.writeInt(ok?1:0);return true;}
     case VirtualProtocol.BACK:{int id=data.readInt();long requestEpoch=data.readLong();boolean ok;Entry entry=owned(id);synchronized(entry){ok=armed&&epoch.get()==requestEpoch&&back(id);}reply.writeNoException();reply.writeInt(ok?1:0);return true;}
     case VirtualProtocol.RELEASE:release(data.readInt());reply.writeNoException();return true;
+    case VirtualProtocol.FORCE_STOP_GAME:{
+      String game=data.readString();
+      boolean ok=armed&&forceStopRegistered(game,-1);
+      reply.writeNoException();reply.writeInt(ok?1:0);return true;
+    }
+    case VirtualProtocol.AD_RECOVER:{
+      int id=data.readInt();long expected=data.readLong();
+      int result=recoverAdvertisement(id,expected);
+      reply.writeNoException();reply.writeInt(result);return true;
+    }
     case VirtualProtocol.PAUSE:armed=false;epoch.incrementAndGet();reply.writeNoException();return true;
     case VirtualProtocol.VERSION:reply.writeNoException();reply.writeInt(VirtualProtocol.IMPLEMENTATION);return true;
     case VirtualProtocol.REGISTER_OWNER:registerOwner(data.readStrongBinder());reply.writeNoException();return true;
@@ -86,6 +96,75 @@ public final class VirtualShell extends Binder {
   try{display(event,id);return inject(event,id,uid);}finally{event.recycle();}
  }
  boolean back(int id)throws Exception{Entry e=owned(id);long now=SystemClock.uptimeMillis();KeyEvent down=new KeyEvent(now,now,KeyEvent.ACTION_DOWN,KeyEvent.KEYCODE_BACK,0);KeyEvent up=new KeyEvent(now,now,KeyEvent.ACTION_UP,KeyEvent.KEYCODE_BACK,0);display(down,id);display(up,id);if(!inject(down,id,e.uid))return false;return inject(up,id,e.uid);}
+
+ /** ADB shell can stop only known mini-game apps. It must never kill MarkerTap,
+  * an arbitrary user application, or a game also running in a different lane.
+  */
+ boolean forceStopRegistered(String game,int sourceDisplay)throws Exception{
+  if(!AdRecoveryShell.known(game)||!armed||closed)return false;
+  for(Entry e:displays.values())if(game.equals(e.pkg)&&e.id!=sourceDisplay)return false;
+  return command(5000,"/system/bin/am","force-stop","--user","current",game);
+ }
+ boolean command(long timeoutMs,String... argv)throws Exception{
+  java.lang.Process proc=new ProcessBuilder(argv).redirectErrorStream(true).start();
+  try{
+   if(!proc.waitFor(timeoutMs,TimeUnit.MILLISECONDS)){proc.destroyForcibly();return false;}
+   return proc.exitValue()==0;
+  }finally{proc.destroy();}
+ }
+ /** Strong evidence: HOME on the same owned display is visible at the top.
+  * No launcher activity means the virtual display cannot satisfy this contract.
+  */
+ boolean homeShownOnDisplay(int id)throws Exception{
+  Intent query=new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+  android.content.pm.ResolveInfo launcher=context.getPackageManager().resolveActivity(query,0);
+  if(launcher==null||launcher.activityInfo==null)return false;
+  String homePkg=launcher.activityInfo.packageName;
+  Object manager=Class.forName("android.app.ActivityTaskManager").getMethod("getService").invoke(null);
+  Method method;
+  try{method=manager.getClass().getMethod("getAllRootTaskInfosOnDisplay",int.class);}
+  catch(NoSuchMethodException legacy){method=manager.getClass().getMethod("getAllStackInfosOnDisplay",int.class);}
+  Object result=method.invoke(manager,id);
+  if(!(result instanceof java.util.List))return false;
+  for(Object task:(java.util.List<?>)result){
+   if(task==null)return false;
+   Class<?> type=task.getClass();
+   if(type.getField("displayId").getInt(task)!=id)return false;
+   if(!type.getField("visible").getBoolean(task))continue;
+   Object top=type.getField("topActivity").get(task);
+   if(top==null)return false;
+   String foreground=(String)top.getClass().getMethod("getPackageName").invoke(top);
+   return homePkg.equals(foreground);
+  }
+  return false;
+ }
+ /** The only allowed sequence: own display -> HOME key -> verify launcher ->
+  * force-stop this known game -> explicit registered component Intent on display.
+  * Results are bit flags; callers must never infer 7 from partial success.
+  */
+ int recoverAdvertisement(int id,long expected)throws Exception{
+  if(id<=0||!armed||closed||epoch.get()!=expected)return 0;
+  Entry entry=owned(id);if(!AdRecoveryShell.known(entry.pkg))return 0;
+  synchronized(entry){
+   if(!armed||closed||epoch.get()!=expected)return 0;
+   if(!command(3000,"/system/bin/input","-d",String.valueOf(id),"keyevent","3"))return 0;
+   long until=SystemClock.uptimeMillis()+2000;
+   boolean shown=false;
+   do{
+    if(!armed||closed||epoch.get()!=expected||displays.get(id)!=entry)return 0;
+    try{if(homeShownOnDisplay(id)){shown=true;break;}}catch(Exception unsupported){return 0;}
+    SystemClock.sleep(100);
+   }while(SystemClock.uptimeMillis()<until);
+   if(!shown)return 0;
+   int result=1;
+   if(!forceStopRegistered(entry.pkg,id))return result;
+   result|=2;
+   if(!armed||closed||epoch.get()!=expected||displays.get(id)!=entry)return result;
+   try{launch(id,Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);result|=4;}
+   catch(Exception unavailable){/* leave 1|2 for explicit, inspectable failure */}
+   return result;
+  }
+ }
  void release(int id){Entry e=displays.remove(id);if(e!=null){try{e.display.release();}finally{e.surface.release();}}}
  // Each display must be released even if another one throws during cleanup.
  void closeAll(){closed=true;armed=false;epoch.incrementAndGet();for(Integer id:new ArrayList<>(displays.keySet()))try{release(id);}catch(Throwable ignored){}}
