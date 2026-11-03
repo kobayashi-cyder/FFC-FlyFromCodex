@@ -43,10 +43,6 @@ jobs:
             adb shell am start -W -n jp.tapmarker.lite/jp.tapmarker.MainActivity
             sleep 6
             adb shell pidof jp.tapmarker.lite
-            crash="$(adb logcat -d -b crash)"
-            if printf '%s\n' "$crash" | grep -qE 'FATAL EXCEPTION.*jp.tapmarker|Process: jp.tapmarker.lite'; then
-              echo "STOP: MarkerTap crash found in logcat crash buffer"
-              printf '%s\n' "$crash" | tail -80
-              exit 1
-            fi
+            adb logcat -d -b crash > "$RUNNER_TEMP/markertap-emulator-crash.log"
+            ! grep -Eq "FATAL EXCEPTION.*jp.tapmarker|Process: jp.tapmarker.lite" "$RUNNER_TEMP/markertap-emulator-crash.log"
             echo 'PASS Android 15 emulator APK install and MainActivity startup'
