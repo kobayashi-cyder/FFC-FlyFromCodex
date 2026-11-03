@@ -15,7 +15,7 @@ import sys
 import zipfile
 
 PACKAGE = "jp.tapmarker.lite"
-VERSION = "1.156"
+VERSION = "1.157"
 CODE = "160"
 CERT_SHA256 = "7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1"
 # Byte-for-byte unsigned APK produced by the passing full-integration CI run.
