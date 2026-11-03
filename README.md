@@ -1,5 +1,17 @@
 # FFC — FlyFromCodex
 
+## MarkerTap v1.157 — CM2秒継続後のHOME→対象ゲーム停止→起動Intent（署名済みプレリリース・2026-11-04）
+
+**[▶ MarkerTap v1.157 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.157-rc1/MarkerTap-v1.157-integrated-signed.apk)**
+
+[GitHub Release v1.157-rc1](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.157-rc1) / [SHA-256チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.157-rc1/SHA256SUMS-v1.157.txt) / [DEX統合・ホスト試験](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41728042799) / [署名・公開ファイル照合](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41728868632) / [改修PR #41](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/41)
+
+v1.156の署名済みAPKのSHA-256を固定して、物理画面・仮想画面・ADBシェル実行部の3か所へDEX差分を統合しました。対象の既知ミニゲームで広告の正の観測を2枚以上、2秒以上継続して確認した場合に、HOME操作と実表示の確認を行い、認証済みADB実行部から**当該ゲームのパッケージだけ**を停止し、登録された起動Intentで再開を試みます。HOMEを確認できない、ADBが利用できない、仮想画面にHOMEが存在しない場合は**強制停止せず保留**します。回復試行の回数・間隔制限もあります。
+
+パッケージ名 jp.tapmarker.lite、versionName **1.157**、versionCode **160**。署名済みAPK SHA-256：0108aadfa717c676dfe30b4f678a5c1526277e11b01ae16f85317d8b8dd50f7d。従来と同じ更新用証明書（SHA-256：7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1）でAPK v2/v3署名を検証し、公開ファイルも照合済み。通常はアンインストールせず上書き更新できます。
+
+**検証範囲・注意：** これは**実機試験前のプレリリース**です。Pixel 10 / Android 17での広告2秒判定、仮想2画面のHOME、ADB停止とIntent、収納時通信、報酬の実加算、クラッシュ解消は未確認です。広告視聴報酬は2秒で中断すると失う可能性があります。開拓うさぎの「ゲット」等の報酬認識ソース候補はPR #41にありますが、**今回のDEX差分APKには追加収録されていません**。今回の主な変更は広告復帰経路です。
+
 ## MarkerTap v1.156 — 仮想画面「手動操作中」の長時間残留対策・署名済み検証版（2026-11-03）
 
 **[▶ MarkerTap v1.156 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.156-rc1/MarkerTap-v1.156-integrated-signed.apk)**  
