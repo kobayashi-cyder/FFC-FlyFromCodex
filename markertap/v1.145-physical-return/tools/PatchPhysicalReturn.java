@@ -104,6 +104,23 @@ public final class PatchPhysicalReturn {
    if(calls[0]!=1)throw new IllegalStateException("Kaitaku named UI hook changed: "+calls[0]);
    return withMethods(c,ms);
   }
+  // Phone-side preview collapse must not remove the layout of the virtual
+  // display's host. This only changes the overlay View, not its display.
+  if(c.getType().equals(ROOT+"VirtualWindows;")){
+   List<Method> ms=new ArrayList<>();int[] calls={0};int found=0;
+   for(Method m:c.getMethods()){
+    if(m.getName().equals("updatePreviewVisibility")){
+     found++;
+     Method next=redirect(m,"Landroid/view/View;","setVisibility",ROOT+"VirtualPreviewVisibilityBridge;","setVisibility",
+       Arrays.asList("Landroid/view/View;","I"),"V",calls);
+     next=redirect(next,"Landroid/widget/LinearLayout;","setVisibility",ROOT+"VirtualPreviewVisibilityBridge;","setVisibility",
+       Arrays.asList("Landroid/view/View;","I"),"V",calls);
+     ms.add(next);
+    }else ms.add(m);
+   }
+   if(found!=1||calls[0]!=1)throw new IllegalStateException("virtual preview hook changed: "+found+"/"+calls[0]);
+   return withMethods(c,ms);
+  }
   if(c.getType().equals(ROOT+"VirtualLoadPolicy;")){
    List<Method> ms=new ArrayList<>();int wrapped=0;
    for(Method m:c.getMethods()){
@@ -194,27 +211,57 @@ public final class PatchPhysicalReturn {
   System.out.println("Compile-only API signatures from pinned APK: "+classes.size()+" classes (never packaged)");
  }
  static byte[] canonical(ClassDef c)throws Exception{MemoryDataStore store=new MemoryDataStore();DexPool.writeTo(store,new ImmutableDexFile(API,Arrays.asList(c)));return store.getData();}
+ static boolean frameQueueType(String type){
+  return type.equals(ROOT+"VirtualFrameQueue;")||type.equals(ROOT+"VirtualFrameQueue$Request;");
+ }
+ /** Do not silently replace a changed baseline ABI with incompatible bytecode. */
+ static void frameQueueAbi(ClassDef old,ClassDef replacement){
+  if(replacement==null)throw new IllegalStateException("Missing isolated queue overlay: "+old.getType());
+  for(Field f:old.getFields()){
+   boolean found=false;for(Field other:replacement.getFields())if(other.getName().equals(f.getName())&&other.getType().equals(f.getType())){found=true;break;}
+   if(!found)throw new IllegalStateException("Queue field ABI changed: "+old.getType()+"."+f.getName());
+  }
+  for(Method m:old.getMethods()){
+   boolean found=false;for(Method other:replacement.getMethods())
+    if(other.getName().equals(m.getName())&&desc(other).equals(desc(m))){found=true;break;}
+   if(!found)throw new IllegalStateException("Queue method ABI changed: "+old.getType()+"."+m.getName()+desc(m));
+  }
+ }
  static void merge(String base,String patch,String output)throws Exception{
+  Map<String,ClassDef> overrides=new HashMap<>();
+  for(ClassDef overlay:load(patch).getClasses())if(frameQueueType(overlay.getType()))overrides.put(overlay.getType(),overlay);
   List<ClassDef> classes=new ArrayList<>();Set<String> names=new HashSet<>();
-  for(ClassDef c:load(base).getClasses()){classes.add(patch(c));names.add(c.getType());}
-  for(ClassDef c:load(patch).getClasses()){if(!c.getType().startsWith(ROOT+"PhysicalRecoveryBridge")&&!c.getType().startsWith(ROOT+"PhysicalReturnEpisode")&&!c.getType().startsWith(ROOT+"PanelModeController")&&!c.getType().startsWith(ROOT+"PanelModePolicy")&&!c.getType().startsWith(ROOT+"KaitakuVideoModalPolicy")&&!c.getType().startsWith(ROOT+"VirtualFastWait")&&!c.getType().startsWith(ROOT+"KaitakuActionPacer")&&!c.getType().startsWith(ROOT+"KaitakuVideoNamedControls"))throw new IllegalStateException("unexpected overlay class: "+c.getType());if(!names.add(c.getType()))throw new IllegalStateException("duplicate class: "+c.getType());classes.add(c);}
+  for(ClassDef c:load(base).getClasses()){
+   if(frameQueueType(c.getType())){ClassDef replacement=overrides.get(c.getType());frameQueueAbi(c,replacement);classes.add(replacement);}
+   else classes.add(patch(c));
+   names.add(c.getType());
+  }
+  for(ClassDef c:load(patch).getClasses()){
+   if(frameQueueType(c.getType())){if(!names.contains(c.getType()))throw new IllegalStateException("unexpected queue type: "+c.getType());continue;}
+   if(!c.getType().startsWith(ROOT+"PhysicalRecoveryBridge")&&!c.getType().startsWith(ROOT+"PhysicalReturnEpisode")&&!c.getType().startsWith(ROOT+"PanelModeController")&&!c.getType().startsWith(ROOT+"PanelModePolicy")&&!c.getType().startsWith(ROOT+"KaitakuVideoModalPolicy")&&!c.getType().startsWith(ROOT+"VirtualFastWait")&&!c.getType().startsWith(ROOT+"KaitakuActionPacer")&&!c.getType().startsWith(ROOT+"KaitakuVideoNamedControls")&&!c.getType().startsWith(ROOT+"VirtualPreviewVisibilityBridge"))throw new IllegalStateException("unexpected overlay class: "+c.getType());
+   if(!names.add(c.getType()))throw new IllegalStateException("duplicate class: "+c.getType());classes.add(c);
+  }
   DexFileFactory.writeDexFile(output,version(new ImmutableDexFile(API,classes)));System.out.println("Merged "+classes.size()+" classes");
  }
- static void audit(String base,String result)throws Exception{
+ static void audit(String base,String result,String patchDex)throws Exception{
   Map<String,ClassDef> after=new TreeMap<>();for(ClassDef c:load(result).getClasses())after.put(c.getType(),c);
+  Map<String,ClassDef> overrides=new HashMap<>();
+  for(ClassDef overlay:load(patchDex).getClasses())if(frameQueueType(overlay.getType()))overrides.put(overlay.getType(),overlay);
   Set<String> changed=new TreeSet<>();int preserved=0;
   for(ClassDef c:load(base).getClasses()){
    ClassDef actual=after.remove(c.getType());if(actual==null)throw new IllegalStateException("missing original class: "+c.getType());
-   ClassDef expected=version(new ImmutableDexFile(API,Arrays.asList(patch(c)))).getClasses().iterator().next();
+   ClassDef replacement=frameQueueType(c.getType())?overrides.get(c.getType()):patch(c);
+   if(frameQueueType(c.getType()))frameQueueAbi(c,replacement);
+   ClassDef expected=version(new ImmutableDexFile(API,Arrays.asList(replacement))).getClasses().iterator().next();
    if(!Arrays.equals(canonical(expected),canonical(actual)))throw new IllegalStateException("unexpected modification: "+c.getType());
    if(Arrays.equals(canonical(c),canonical(actual)))preserved++;else changed.add(c.getType());
   }
-  if(!changed.containsAll(Arrays.asList(ROOT+"AutoPilot;",ROOT+"ProgressErrors;",ROOT+"RecoveryEscalation;",ROOT+"TapService;",ROOT+"MainActivity;",ROOT+"KaitakuUiEvidence;",ROOT+"SplitPilot;",ROOT+"VirtualLoadPolicy;")))throw new IllegalStateException("hooks not integrated");
-  for(String n:after.keySet())if(!n.startsWith(ROOT+"PhysicalRecoveryBridge")&&!n.startsWith(ROOT+"PhysicalReturnEpisode")&&!n.startsWith(ROOT+"PanelModeController")&&!n.startsWith(ROOT+"PanelModePolicy")&&!n.startsWith(ROOT+"KaitakuVideoModalPolicy")&&!n.startsWith(ROOT+"VirtualFastWait")&&!n.startsWith(ROOT+"KaitakuActionPacer")&&!n.startsWith(ROOT+"KaitakuVideoNamedControls"))throw new IllegalStateException("unexpected added type "+n);
+  if(!changed.containsAll(Arrays.asList(ROOT+"AutoPilot;",ROOT+"ProgressErrors;",ROOT+"RecoveryEscalation;",ROOT+"TapService;",ROOT+"MainActivity;",ROOT+"KaitakuUiEvidence;",ROOT+"SplitPilot;",ROOT+"VirtualLoadPolicy;",ROOT+"VirtualWindows;",ROOT+"VirtualFrameQueue;")))throw new IllegalStateException("hooks not integrated");
+  for(String n:after.keySet())if(!n.startsWith(ROOT+"PhysicalRecoveryBridge")&&!n.startsWith(ROOT+"PhysicalReturnEpisode")&&!n.startsWith(ROOT+"PanelModeController")&&!n.startsWith(ROOT+"PanelModePolicy")&&!n.startsWith(ROOT+"KaitakuVideoModalPolicy")&&!n.startsWith(ROOT+"VirtualFastWait")&&!n.startsWith(ROOT+"KaitakuActionPacer")&&!n.startsWith(ROOT+"KaitakuVideoNamedControls")&&!n.startsWith(ROOT+"VirtualPreviewVisibilityBridge"))throw new IllegalStateException("unexpected added type "+n);
   if(after.size()<3)throw new IllegalStateException("new runtime absent");
   System.out.println("Original classes byte-for-byte equivalent after canonical DEX serialization: "+preserved+"; reviewed changes: "+changed+"; added: "+after.keySet());
  }
  public static void main(String[] a)throws Exception{
-  if(a[0].equals("api"))api(a[1],a[2]);else if(a[0].equals("merge"))merge(a[1],a[2],a[3]);else if(a[0].equals("audit"))audit(a[1],a[2]);else throw new IllegalArgumentException("api|merge|audit");
+  if(a[0].equals("api"))api(a[1],a[2]);else if(a[0].equals("merge"))merge(a[1],a[2],a[3]);else if(a[0].equals("audit"))audit(a[1],a[2],a[3]);else throw new IllegalArgumentException("api|merge|audit");
  }
 }
