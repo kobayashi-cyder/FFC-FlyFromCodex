@@ -46,7 +46,7 @@ public final class KurashiruClaimPolicyTest {
     ok(!KurashiruClaimPolicy.rewardVisible("com.kurashiru.coin.drop",engine,samples),"no image no reward");
     samples.put(w.regionId,new float[1536]);
     ok(KurashiruClaimPolicy.rewardVisible("com.kurashiru.coin.drop",engine,samples),"fresh matching reward UI");
-    samples.get(w.regionId)[0]=1f;
+    java.util.Arrays.fill(samples.get(w.regionId),1f);
     ok(!KurashiruClaimPolicy.rewardVisible("com.kurashiru.coin.drop",engine,samples),"disagreeing reward UI");
     KurashiruRewardProof proof=new KurashiruRewardProof();
     ok(!proof.observe(true,100,100),"one matching frame does not prove reward");
