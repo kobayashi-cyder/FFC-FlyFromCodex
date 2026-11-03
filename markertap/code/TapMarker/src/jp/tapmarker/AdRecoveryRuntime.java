@@ -33,9 +33,15 @@ final class AdRecoveryRuntime {
   static boolean advertisement(PhaseEngine e,Map<String,float[]> samples,int width,int height,String pkg){
     if(e==null||samples==null||e.windowRelative||!AdExitPolicy.adState(e.current))return false;
     if(gameHome(pkg,e,samples))return false;
-    // The ad phase is entered by existing screenshot/interrupt logic. A named
-    // Close or playable-ad marker is additional proof, not permission to click.
-    return true;
+    // A state name alone is NOT ad evidence: a loading/reward screen might
+    // enter "-ad" through a timeout. Require a positive ad-specific marker.
+    if(PlayableAdEvidence.visible(samples,width,height)||
+       AdHomeRecovery.visible(samples,width,height))return true;
+    for(String key:new String[]{AdCloseAutomaton.LEFT,AdCloseAutomaton.RIGHT}){
+      float[] v=samples.get(key);
+      if(v!=null&&v.length==1&&v[0]==1)return true;
+    }
+    return false;
   }
   static boolean physical(AutoPilot p,int token,Map<String,float[]> samples,int width,int height){
     if(p==null||!p.active||p.token!=token||p.splitPilot.active||p.phases==null||
