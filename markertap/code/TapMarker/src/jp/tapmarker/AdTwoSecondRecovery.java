@@ -55,6 +55,12 @@ final class AdTwoSecondRecovery {
     if(now<entered||now-entered>VERIFY_DEADLINE_MS){hold(now);return false;}
     if(!home)return false;hold(now);return true;
   }
+  /** The authorized shell reports all three steps on the owned display. */
+  synchronized boolean confirmedRemote(long now,int evidence){
+    if(step!=Step.HOME)return false;
+    if(evidence!=7||now<entered){hold(now);return false;}
+    step=Step.VERIFY;entered=now;return true;
+  }
   synchronized boolean expired(long now){
     if(step==Step.HOME&&now-entered>HOME_DEADLINE_MS||step==Step.VERIFY&&now-entered>VERIFY_DEADLINE_MS){hold(now);return true;}
     return false;
