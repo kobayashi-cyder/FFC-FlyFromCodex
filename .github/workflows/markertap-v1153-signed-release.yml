@@ -1,0 +1,56 @@
+name: MarkerTap v1.153 original-certificate signed RC (one-shot encrypted key)
+
+on:
+  push:
+    branches:
+      - markertap/v1.153-integrated-release
+    paths:
+      - '.github/workflows/markertap-v1153-signed-release.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: markertap-v153-private-original-signer
+  cancel-in-progress: false
+
+jobs:
+  sign-audited-integrated-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: markertap/v1.153-integrated-release
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Require exact original-signed v1.151 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/base"
+          gh release download markertap-v1.151-rc1 -R "$GITHUB_REPOSITORY"             -p MarkerTap-v1.151-integrated-signed.apk -D "$RUNNER_TEMP/base"
+          echo "ae2db2972780e50966f26243ab5fd8f2f6d9106056eeda233a2d75a1f9535dab  $RUNNER_TEMP/base/MarkerTap-v1.151-integrated-signed.apk" | sha256sum -c -
+      - name: Prepare checksum-pinned Android SDK and DEX toolchain
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Host regressions and full unsigned DEX integration audit
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 run-tests.py
+          python3 build-v153-from-v151.py             --baseline "$RUNNER_TEMP/base/MarkerTap-v1.151-integrated-signed.apk"             --sdk tooling/sdk             --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+          echo 'db603019edc2de671028f8db00a3fe15b520f07fcd501c17a8c4d2feb24a6899  output/MarkerTap-v1.153-integrated-unsigned.apk' | sha256sum -c -
+      - name: One-time encrypted original signing key handoff, sign and publish
+        working-directory: markertap/v1.145-physical-return
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -u one-shot-v153-release.py
+      - name: No private signing material in artifacts
+        if: always()
+        run: |
+          echo 'Private JKS is never committed or stored as an Actions artifact.'
+          echo 'The runner temporary signer is deleted on exit.'
