@@ -54,8 +54,8 @@ jobs:
           assert 'slot.evaluation.observeAd' in r
           assert 'evaluation.invalidatePending()' in r
           assert 'slot.evaluation.invalidatePending()' in r
-          assert 'claimSent(id,"coin",at)' in a
-          assert 'claimSent(id,"coin",at)' in s
+          assert 'claimSent(id,"pt",at)' in a
+          assert 'claimSent(id,"pt",at)' in s
           assert 'claimAcknowledged(pendingEvaluationReceipt' in a
           assert 'claimAcknowledged(slot.pendingEvaluationReceipt' in s
           assert 'KurashiruPointHud.read(pixels::get' in a
