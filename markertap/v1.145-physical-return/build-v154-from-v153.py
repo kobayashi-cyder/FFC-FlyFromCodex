@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Integrate v1.153 fixes into the public, verified 1.151 signed baseline.
+"""Integrate v1.154 local ADB reconnect into verified original-certificate v1.153 APK.
 
 This produces an UNSIGNED internal regression artifact, never an installable
 or signed update. All original APK signing blocks become invalid when bytes
@@ -114,7 +114,7 @@ def sha256(path):
 
 def build(base, sdk, jadx):
     if sha256(base) != BASE_SHA256:
-        raise ValueError("STOP: public signed 1.151 APK baseline digest mismatch")
+        raise ValueError("STOP: signed v1.153 APK baseline digest mismatch")
     builddir = ROOT / "build" / "v154-loopback"
     evidence = builddir / "evidence"
     for name in ("helpers", "classes", "dex", "evidence"):
@@ -190,7 +190,7 @@ def build(base, sdk, jadx):
             raise ValueError("unsigned APK ZIP CRC failed")
     report = {
         "status": "unsigned_host_build_only_not_installable_or_device_tested",
-        "base_version": "1.151",
+        "base_version": "1.153",
         "base_sha256": BASE_SHA256,
         "base_release": "https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.153-rc1",
         "new_version": VERSION,
