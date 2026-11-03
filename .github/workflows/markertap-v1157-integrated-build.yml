@@ -1,0 +1,70 @@
+name: MarkerTap v1.157 build SHA-locked DEX integrated candidate (unsigned)
+on:
+  push:
+    branches:
+      - markertap/v1.157-ad-home-intent-all-games
+    paths:
+      - '.github/workflows/markertap-v1157-integrated-build.yml'
+      - 'markertap/v1.145-physical-return/build-v157-from-v156.py'
+      - 'markertap/v1.145-physical-return/src/jp/tapmarker/AdV157DexBridge.java'
+      - 'markertap/v1.145-physical-return/tools/PatchAdV157.java'
+      - 'markertap/code/TapMarker/src/jp/tapmarker/AdTwoSecondRecovery.java'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integrated-unsigned-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            markertap/v1.145-physical-return/build-v157-from-v156.py
+            markertap/v1.145-physical-return/setup-toolchain.py
+            markertap/v1.145-physical-return/src/jp/tapmarker/AdV157DexBridge.java
+            markertap/v1.145-physical-return/tools/PatchAdV157.java
+            markertap/code/TapMarker/src/jp/tapmarker/AdTwoSecondRecovery.java
+            markertap/code/TapMarker/tests/AdTwoSecondRecoveryTest.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Authenticate original-certificate baseline
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v157-base"
+          gh release download markertap-v1.156-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.156-integrated-signed.apk -D "$RUNNER_TEMP/v157-base"
+          echo "b4bf94683710c3810a5dd193263dc555977f77f1091a5d8dff45bbafc69da8e6  $RUNNER_TEMP/v157-base/MarkerTap-v1.156-integrated-signed.apk" | sha256sum -c -
+      - name: Pin Android 35 and dexlib2 toolchain
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Execute deterministic 2-second recovery policy tests
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/policy"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/policy" \
+            markertap/code/TapMarker/src/jp/tapmarker/AdTwoSecondRecovery.java \
+            markertap/code/TapMarker/tests/AdTwoSecondRecoveryTest.java
+          java -cp "$RUNNER_TEMP/policy" jp.tapmarker.AdTwoSecondRecoveryTest
+      - name: Integrate 3 DEX wrappers; audit unchanged classes assets and APK identity
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 build-v157-from-v156.py \
+            --baseline "$RUNNER_TEMP/v157-base/MarkerTap-v1.156-integrated-signed.apk" \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+          sha256sum output/MarkerTap-v1.157-integrated-unsigned.apk
+      - name: Keep unsigned APK and reproducible audit evidence (not installable update)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1157-UNSIGNED-DEX-integrated-not-for-installation
+          path: |
+            markertap/v1.145-physical-return/output/MarkerTap-v1.157-integrated-unsigned.apk
+            markertap/v1.145-physical-return/build/v157-ad-recovery/evidence/*
+          if-no-files-found: error
+          retention-days: 7
