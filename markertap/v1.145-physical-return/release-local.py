@@ -13,7 +13,8 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parent
-BASE_SHA="f62e8d6020a3cacb2ea9a9085be235ea48da12f03c5de2f4e3ae80b801b6e970"
+BASE_SHA="58e6cd830350473dad218352b3e23f4efcb214b2624e1122823ceb1093345067"
+BUILD_SCRIPT="build-v151-from-v150.py"
 VERSION="1.151"
 NAME="MarkerTap-v1.151-integrated-signed.apk"
 
@@ -39,7 +40,7 @@ def main():
     key=a.keystore.resolve()
     outdir=a.outdir.resolve()
     if not base.is_file() or sha256(base)!=BASE_SHA:
-        raise ValueError("STOP: original v1.144 integrated baseline SHA-256 mismatch")
+        raise ValueError("STOP: original signed v1.150 baseline SHA-256 mismatch")
     if not key.is_file():
         raise FileNotFoundError("STOP: existing MarkerTap keystore is required")
     if not os.environ.get("MARKERTAP_STORE_PASSWORD"):
@@ -47,7 +48,7 @@ def main():
     if outdir==key.parent or key.is_relative_to(outdir):
         raise ValueError("STOP: signing key must never be in public output directory")
     run([sys.executable,ROOT/"run-tests.py"])
-    run([sys.executable,ROOT/"build.py","--baseline",base,"--sdk",a.sdk.resolve(),"--jadx",a.jadx.resolve()])
+    run([sys.executable,ROOT/BUILD_SCRIPT,"--baseline",base,"--sdk",a.sdk.resolve(),"--jadx",a.jadx.resolve()])
     unsigned=ROOT/"output/MarkerTap-v1.151-integrated-unsigned.apk"
     outdir.mkdir(parents=True,exist_ok=True)
     signed=outdir/NAME
