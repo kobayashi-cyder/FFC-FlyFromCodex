@@ -1,6 +1,6 @@
 package jp.tapmarker;
 import android.content.*;import android.hardware.display.*;import android.os.*;import android.view.*;import java.lang.reflect.*;import java.util.*;import java.util.concurrent.TimeUnit;
-/** Runs only in a user-authorized Shizuku or ADB process. No arbitrary shell RPC. */
+/** Runs only inside a user-authorized ADB shell process. No arbitrary shell RPC. */
 public final class VirtualShell extends Binder {
  volatile TargetedInput input;final Context context;final int controllerUid;final Map<Integer,Entry> displays=new java.util.concurrent.ConcurrentHashMap<>();volatile boolean armed,closed;volatile IBinder ownerHost;final java.util.concurrent.atomic.AtomicLong epoch=new java.util.concurrent.atomic.AtomicLong();
  static final class Entry {VirtualDisplay display;Surface surface;String component,pkg;int width,height,uid;volatile int id;}

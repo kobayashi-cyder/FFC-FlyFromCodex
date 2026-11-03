@@ -4,6 +4,8 @@ final class WirelessModePolicy {
  boolean automatic,paused,sessionRecovery;long retryAt;int failures;
  void mode(boolean enabled){automatic=enabled;paused=false;sessionRecovery=false;failures=0;retryAt=0;}
  boolean shouldConnect(boolean wifi,boolean backend,boolean working,long now){return (automatic||sessionRecovery)&&!paused&&wifi&&!backend&&!working&&now>=retryAt;}
+ /** Do not launch privileged connection discovery until the user has paired. */
+ boolean shouldReconnectPaired(boolean wifi,boolean backend,boolean working,boolean paired,long now){return paired&&shouldConnect(wifi,backend,working,now);}
  void attempted(long now){retryAt=now+20000;}
  void failed(long now){failures=Math.min(failures+1,4);retryAt=now+Math.min(60000,10000L*(1L<<failures));}
  void connected(){failures=0;retryAt=0;sessionRecovery=false;}

@@ -28,6 +28,16 @@ public class WirelessModePolicyTest {
   check(p.cancelForWifiLoss(false,true,true,false),"offline discovery without a backend may be cancelled");
   check(!p.cancelForWifiLoss(false,true,false,false),"explicit pairing is not cancelled by quiet maintenance");
   check(!p.cancelForWifiLoss(true,true,true,false),"connected Wi-Fi keeps bootstrap active");
+
+  // Embedded ADB must not silently start before the user authorizes pairing.
+  p.mode(true);
+  check(!p.shouldReconnectPaired(true,false,false,false,500000),"no pairing: cannot auto-launch ADB");
+  check(p.shouldReconnectPaired(true,false,false,true,500000),"paired: automatic reconnect allowed");
+  check(!p.shouldReconnectPaired(false,false,false,true,500000),"paired but no Wi-Fi: hold");
+  check(!p.shouldReconnectPaired(true,true,false,true,500000),"paired with existing backend: reuse");
+  check(!p.shouldReconnectPaired(true,false,true,true,500000),"paired with in-flight bootstrap: wait");
+  p.pause();
+  check(!p.shouldReconnectPaired(true,false,false,true,500000),"user stopped: do not restart");
   System.out.println("WirelessModePolicyTest: "+checks+" checks passed; Wi-Fi/ADB on-device behavior not tested");
  }
 }
