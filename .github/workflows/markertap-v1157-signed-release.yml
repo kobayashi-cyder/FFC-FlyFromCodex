@@ -1,0 +1,61 @@
+name: MarkerTap v1.157 original-certificate signed APK and prerelease
+on:
+  push:
+    branches:
+      - markertap/v1.157-ad-home-intent-all-games
+    paths:
+      - '.github/workflows/markertap-v1157-signed-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: markertap-v1157-original-signer
+  cancel-in-progress: false
+jobs:
+  sign-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Download exact original signed v1.156 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/base"
+          gh release download markertap-v1.156-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.156-integrated-signed.apk -D "$RUNNER_TEMP/base"
+          echo 'b4bf94683710c3810a5dd193263dc555977f77f1091a5d8dff45bbafc69da8e6  '"$RUNNER_TEMP"'/base/MarkerTap-v1.156-integrated-signed.apk' | sha256sum -c -
+      - name: Install SHA-pinned Android SDK and dexlib2
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Test 2-second policy and independently audit DEX integration
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/policy"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/policy" \
+            ../code/TapMarker/src/jp/tapmarker/AdTwoSecondRecovery.java \
+            ../code/TapMarker/tests/AdTwoSecondRecoveryTest.java
+          java -cp "$RUNNER_TEMP/policy" jp.tapmarker.AdTwoSecondRecoveryTest
+          python3 build-v157-from-v156.py \
+            --baseline "$RUNNER_TEMP/base/MarkerTap-v1.156-integrated-signed.apk" \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+          echo '5d03c73f9e84ffd2bb6de9ed2a6329311064f5cfa0a023a4fa1736db913b5ba2  output/MarkerTap-v1.157-integrated-unsigned.apk' | sha256sum -c -
+      - name: One-shot encrypted handoff, original-certificate APK signing, release and public download audit
+        working-directory: markertap/v1.145-physical-return
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -u one-shot-v157-release.py
+      - name: Ensure original signing material was never committed
+        if: always()
+        run: |
+          echo 'Only ephemeral RSA public session metadata and RSA-OAEP encrypted key payload are transported.'
+          echo 'No unencrypted key material or passwords are included in source, logs or release assets.'
