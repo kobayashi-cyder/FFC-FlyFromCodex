@@ -20,9 +20,14 @@ final class AdRecoveryRuntime {
   }
   static boolean busy(AutoPilot p){AdTwoSecondRecovery r=policy(p);return r.step()==AdTwoSecondRecovery.Step.HOME||
      r.step()==AdTwoSecondRecovery.Step.KILL||r.step()==AdTwoSecondRecovery.Step.INTENT;}
+  private static boolean hasKaitakuHome(Map<String,float[]> samples){
+    if(samples==null)return false;
+    float[] mark=samples.get("kaitaku-default-home");
+    return mark!=null&&mark.length==1&&mark[0]==1;
+  }
   static boolean gameHome(String pkg,PhaseEngine e,Map<String,float[]> samples){
     return RecoveryEvidence.home(e,samples)||
-      KaitakuPreset.APP.equals(pkg)&&KaitakuPreset.home(samples);
+      "com.kurashiru.kaitaku.usagi".equals(pkg)&&hasKaitakuHome(samples);
   }
   static boolean advertisement(PhaseEngine e,Map<String,float[]> samples,int width,int height,String pkg){
     if(e==null||samples==null||e.windowRelative||!AdExitPolicy.adState(e.current))return false;
@@ -106,7 +111,7 @@ final class AdRecoveryRuntime {
       p.s.startActivity(intent);
       if(!r.confirmedIntent(SystemClock.uptimeMillis(),true))throw new IllegalStateException("Intent stage");
       p.phases.record("HOME確認・対象ゲーム限定force-stop成功・登録Intent送信 / 進行と報酬は未確認");
-      String verify=KaitakuPreset.APP.equals(p.target)?KaitakuPreset.P+"verify":PresetRegistry.verify(p.target);
+      String verify="com.kurashiru.kaitaku.usagi".equals(p.target)?"kaitaku-default-verify":PresetRegistry.verify(p.target);
       if(!verify.isEmpty()&&p.phases.engine.phases.containsKey(verify))
         p.phases.engine.enter(verify,SystemClock.uptimeMillis());
       else p.phases.engine.invalidateObservation();
@@ -135,7 +140,7 @@ final class AdRecoveryRuntime {
         if(!r.confirmedRemote(at,result))
           pilot.s.pilot.note("広告復帰保留 / HOME・task kill・Intentの証明不十分 ("+result+")");
         else{
-          String verify=KaitakuPreset.APP.equals(slot.pkg)?KaitakuPreset.P+"verify":PresetRegistry.verify(slot.pkg);
+          String verify="com.kurashiru.kaitaku.usagi".equals(slot.pkg)?"kaitaku-default-verify":PresetRegistry.verify(slot.pkg);
           if(!verify.isEmpty()&&e.phases.containsKey(verify))e.enter(verify,at);else e.invalidateObservation();
           slot.phases.record("対象仮想画面：HOME→force-stop→Intent送信済 / 報酬未確認");
         }
