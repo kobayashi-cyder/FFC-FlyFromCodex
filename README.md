@@ -1,5 +1,18 @@
 # FFC — FlyFromCodex
 
+## MarkerTap v1.156 — 仮想画面「手動操作中」の長時間残留対策・署名済み検証版（2026-11-03）
+
+**[▶ MarkerTap v1.156 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.156-rc1/MarkerTap-v1.156-integrated-signed.apk)**  
+[GitHub Release v1.156-rc1](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.156-rc1) / [SHA-256チェックサム](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.156-rc1/SHA256SUMS-v1.156.txt) / [ビルド・署名検証成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41622513405) / [改修PR #40](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/40)
+
+ユーザー提供の約35秒の録画で、左「増えうさぎ」仮想画面が広告の表示中に**「手動操作中」表示のまま長く進まない**状態を確認。右の「クラシル開拓…」側でも動画広告が流れ続け「確認中」のままでした。録画中にアプリ全体のクラッシュは確認できておらず、実機のログは未受領のためクラッシュ原因の断定はしていません。
+
+**変更：** v1.155の署名済みAPKをベースに、ユーザーが仮想画面をタッチした際の一時保留を監視。12秒後にその画面の手動ホールド期限、独立した入力ガード、実行状態を検証し、期限経過後も「手動操作中」が残っている場合に表示と認識スケジュールを更新します。ほかの画面に触れず、広告の無条件タップ・表示画面の強制再生成・権限の昇格は行いません。v1.155のWi-FiなしローカルADBおよび停止ループ抑制は引き続き維持します。
+
+パッケージ `jp.tapmarker.lite`、versionName **1.156**、versionCode **159**、APK SHA-256 `b4bf94683710c3810a5dd193263dc555977f77f1091a5d8dff45bbafc69da8e6`。v1.155までのインストールと同じ更新用証明書でAPK v2/v3署名、12項目の追加テスト・既存回帰試験・DEX監査・公開ファイル照合成功。**v1.155をアンインストールせず上書き更新**を推奨します。
+
+**重要な制限：** 本版は**実機未検証のプレリリース**です。動画中の広告からの自動離脱や報酬回収、Pixel 10 / Android 17での2画面連続自律、過去のクラッシュ原因の解消まで保証するものではありません。更新後も停止する場合は、MarkerTapの診断ZIPまたはAndroidクラッシュログを添付してください。前版v1.155の配布リンクは以下に残しています。
+
 ## MarkerTap v1.155 — 停止ループ抑制・署名済み安定化候補（2026-11-03）
 
 **[▶ MarkerTap v1.155 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.155-rc1/MarkerTap-v1.155-integrated-signed.apk)**  
