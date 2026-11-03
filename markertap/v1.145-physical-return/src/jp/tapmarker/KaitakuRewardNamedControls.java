@@ -9,23 +9,26 @@ import java.util.Map;
 final class KaitakuRewardNamedControls {
   static void apply(PhaseEngine engine,String context,List<KaitakuNamedControls.Control> controls,
                     Map<String,float[]> out,int width,int height){
-    if(engine==null||out==null||engine.current==null||!engine.current.startsWith("kaitaku-default-")){
-      KaitakuVideoNamedControls.apply(engine,context,controls,out,width,height);return;
-    }
+    if(!tryApply(engine,context,controls,out,width,height))
+      KaitakuVideoNamedControls.apply(engine,context,controls,out,width,height);
+  }
+  /** Called only when the video modal classifier has no active modal. */
+  static boolean tryApply(PhaseEngine engine,String context,List<KaitakuNamedControls.Control> controls,
+                    Map<String,float[]> out,int width,int height){
+    if(engine==null||out==null||engine.current==null||!engine.current.startsWith("kaitaku-default-"))
+      return false;
     List<KaitakuRewardClaimPolicy.Hit> hits=new ArrayList<>();
     if(controls!=null)for(KaitakuNamedControls.Control c:controls)
       if(c!=null)hits.add(new KaitakuRewardClaimPolicy.Hit(c.label,c.bounds));
     KaitakuRewardClaimPolicy.Decision d=KaitakuRewardClaimPolicy.decide(engine.current,context,hits);
-    if(d.kind==KaitakuRewardClaimPolicy.Kind.NONE){
-      KaitakuVideoNamedControls.apply(engine,context,controls,out,width,height);return;
-    }
+    if(d.kind==KaitakuRewardClaimPolicy.Kind.NONE)return false;
     KaitakuActionPacer.reset(engine);
     KaitakuNamedControls.clear(out);
     if(d.kind==KaitakuRewardClaimPolicy.Kind.RECEIPT_CLOSE){
       KaitakuRewardClaimGate.receipt(engine);
-      KaitakuActionEvidence.put(out,"close",d.rect);return;
+      KaitakuActionEvidence.put(out,"close",d.rect);return true;
     }
-    if(d.kind==KaitakuRewardClaimPolicy.Kind.HOLD)return;
+    if(d.kind==KaitakuRewardClaimPolicy.Kind.HOLD)return true;
     KaitakuActionEvidence.put(out,"mission-page",null);
     if(engine.current.equals("kaitaku-default-missions")){
       if(d.kind==KaitakuRewardClaimPolicy.Kind.CLAIM&&KaitakuRewardClaimGate.allow(engine,d.rect))
@@ -33,6 +36,7 @@ final class KaitakuRewardNamedControls {
       else if(d.kind==KaitakuRewardClaimPolicy.Kind.BACK)
         KaitakuActionEvidence.put(out,"back",d.rect);
     }
+    return true;
   }
   private KaitakuRewardNamedControls(){}
 }
