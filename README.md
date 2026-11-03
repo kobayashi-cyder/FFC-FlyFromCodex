@@ -1,13 +1,15 @@
 # MarkerTap v1.151 — 仮想画面ごとの処理分離（未公開候補）
 
-**このブランチはソース修正・回帰テスト段階です。v1.151の署名済みAPKはまだ公開していません。**
+**v1.151のAPK全体の未署名ビルドとDEX監査はGitHub Actionsで合格。署名済みAPKはまだ公開していません。**
 
 - [今回の修正仕様・未検証項目](markertap/v1.145-physical-return/v1.151-virtual-lanes.md)
+- [v1.151統合APKビルド成功（未署名・実機未検証）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41562962175)
+- [v1.151検証専用のCIアーティファクト（更新インストール不可）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41562962175/artifacts/13198131860)
 - [v1.151ホスト・DEXの検証ワークフロー](.github/workflows/markertap-v1151-isolation.yml)
 - [収納時オフライン・仮想2画面の不具合記録](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/issues/33)
 - [既存のv1.150署名済みAPK（修正前）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.150)
 
-収納後のゲーム内オフライン表示は未解決です。今回の変更により、各仮想画面の画像取得を最大2件まで独立処理し、取得待ちの連鎖を減らす設計としました。画面を収納しても実行状態は変更せず、電話側プレビューのレイアウトを保持する修正を追加しました。完全自律・通信維持・Android実機テスト済みとは表記しません。
+収納後のゲーム内オフライン表示は未解決です。今回の変更により、各仮想画面の画像取得を最大2件まで独立処理し、取得待ちの連鎖を減らす設計としました。画面を収納しても実行状態は変更せず、電話側プレビューのレイアウトを保持する修正を追加しました。未署名APK SHA-256: `54cfccffa8bd6b5149fb2da563088b1cd3dde85037f567a33182308619d8befe`。正規署名鍵が確認できず実機接続もないため、完全自律・通信維持・Android実機テスト済みとは表記しません。
 
 ---
 
