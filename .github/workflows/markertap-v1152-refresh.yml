@@ -59,7 +59,9 @@ jobs:
           BT="$SDK/build-tools/35.0.0"
           JAR="$SDK/platforms/android-35/android.jar"
           test -f "$JAR"
-          python3 tools/generate-locales.py
+          # The historical source snapshot omits tools/ui-translations.tsv.
+          # Use the already-versioned Android resources to compile this patch.
+          test -d res
           mkdir -p build/classes build/generated
           "$BT/aapt2" compile --dir res -o build/resources.zip
           "$BT/aapt2" link -o build/base.apk --manifest AndroidManifest.xml -I "$JAR" --java build/generated --custom-package jp.tapmarker build/resources.zip
