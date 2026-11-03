@@ -41,3 +41,45 @@ jobs:
           echo 'No APK is published by this workflow.'
           echo 'A pinned v1.144 baseline, original signing key, and Pixel 10 tests'
           echo 'are required before v1.151 can be marked installable.'
+
+
+  full-unsigned-integration:
+    needs: host-and-dex-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Fetch genuine signed v1.150 baseline and reject incorrect bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/markertap-base
+          gh release download markertap-v1.150 -R ${{ github.repository }} -p MarkerTap-v1.150-integrated-signed.apk -D /tmp/markertap-base
+          cd /tmp/markertap-base
+          echo '58e6cd830350473dad218352b3e23f4efcb214b2624e1122823ceb1093345067  MarkerTap-v1.150-integrated-signed.apk' | sha256sum --check -
+      - name: Download checksum-pinned Android SDK35 and JADX
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Build and audit integrated v1.151 candidate WITHOUT SIGNING
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 build-v151-from-v150.py \
+            --baseline /tmp/markertap-base/MarkerTap-v1.150-integrated-signed.apk \
+            --sdk tooling/sdk \
+            --jadx tooling/jadx/lib/jadx-1.5.3-all.jar
+      - name: Upload review-only unsigned evidence, NOT a release
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1.151-unsigned-NOT-INSTALLABLE
+          retention-days: 2
+          if-no-files-found: error
+          path: |
+            markertap/v1.145-physical-return/output/MarkerTap-v1.151-integrated-unsigned.apk
+            markertap/v1.145-physical-return/build/v151-incremental/evidence/result.json
+            markertap/v1.145-physical-return/build/v151-incremental/evidence/*.log
