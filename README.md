@@ -1,3 +1,15 @@
+# MarkerTap v1.157 開発候補 — 全ミニゲームのCM2秒継続・HOME→タスクキル→起動Intent
+
+**[改修PR #41](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/41)** / [ホスト検証](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/markertap-v1157-two-second-ad-recovery.yml)
+
+対応する各ミニゲームでCMを2回以上の新鮮な証拠により2秒継続と判断したとき、タップを停止し、HOMEの実際の表示確認後、ADB接続済みの実行部から**そのゲームのパッケージだけ**を `am force-stop`、次いで登録済み起動Intentを送信するソース改修候補です。複数仮想画面の復帰を混線させず、他ゲームは停止しません。HOME未確認・ADB未許可・仮想画面側のHOME未対応ではタスク停止も起動Intentも送らず保留します。15分に2回までの上限と60秒のクールダウンを設けています。
+
+開拓うさぎのデイリーミッション「ゲット」／受取／報酬画面閉じる候補も追加しました。CM視聴を条件とする報酬は2秒での強制停止により失われる可能性があります。報酬ボタンの入力受付と実際の加算は区別して検証する必要があります。
+
+**このブランチは実装・ホスト検証用です。v1.157のDEXビルド、元証明書による署名、Android 17実機による動作と報酬加算の確認は未完了で、署名済みv1.157 APKはまだ公開していません。** 現在ダウンロード可能な[署名済みv1.156](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.156-rc1/MarkerTap-v1.156-integrated-signed.apk)にはこの改修は含まれません。新機能が使えるという意味ではありません。
+
+---
+
 # MarkerTap v1.151 — 仮想画面ごとの処理分離（署名済み検証版）
 
 ## 公開済み署名APK（検証版・安定版未昇格）
