@@ -20,6 +20,7 @@ jobs:
             markertap/code/TapMarker/src/jp/tapmarker
             markertap/code/TapMarker/tests/RewardEvaluationConnectomeTest.java
             markertap/code/TapMarker/tests/KurashiruPointHudTest.java
+            markertap/code/TapMarker/tests/KurashiruPointHudRecordedTest.java
             markertap/code/TapMarker/tests/KurashiruClaimPolicyTest.java
             markertap/code/TapMarker/tests/SharedPointClaimArbiterTest.java
       - uses: actions/setup-java@v4
@@ -40,8 +41,10 @@ jobs:
           mkdir -p /tmp/kurashiru-hud
           javac --release 8 -encoding UTF-8 -d /tmp/kurashiru-hud \
             markertap/code/TapMarker/src/jp/tapmarker/KurashiruPointHud.java \
-            markertap/code/TapMarker/tests/KurashiruPointHudTest.java
+            markertap/code/TapMarker/tests/KurashiruPointHudTest.java \
+            markertap/code/TapMarker/tests/KurashiruPointHudRecordedTest.java
           java -Djava.awt.headless=true -cp /tmp/kurashiru-hud jp.tapmarker.KurashiruPointHudTest
+          java -Djava.awt.headless=true -cp /tmp/kurashiru-hud jp.tapmarker.KurashiruPointHudRecordedTest
       - name: Compile and validate claim attribution and cross-game point isolation
         run: |
           set -euo pipefail
