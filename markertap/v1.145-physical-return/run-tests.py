@@ -67,3 +67,6 @@ subprocess.run(['javac','--release','8','-encoding','UTF-8','-d',str(copy),
  str(root/'src/jp/tapmarker/VirtualCopyExecutorFactory.java'),
  str(root/'tests/virtual/VirtualCopyExecutorFactoryTest.java')],check=True)
 subprocess.run(['java','-cp',str(copy),'jp.tapmarker.VirtualCopyExecutorFactoryTest'],check=True)
+
+# Host-only release gate regression: rejects incomplete or mismatched evidence.
+subprocess.run(['python3',str(root/'tests/test_verify_release_download.py')],check=True)
