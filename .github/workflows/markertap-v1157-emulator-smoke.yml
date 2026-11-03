@@ -38,7 +38,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            set -euo pipefail
+            set -eu
             adb install -r "$RUNNER_TEMP/apk/MarkerTap-v1.157-integrated-signed.apk"
             adb shell am start -W -n jp.tapmarker.lite/jp.tapmarker.MainActivity
             sleep 6
