@@ -32,7 +32,7 @@ jobs:
           java-version: '17'
       - name: Authenticate original-certificate baseline
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/v157-base"
