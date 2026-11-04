@@ -1,0 +1,31 @@
+name: MarkerTap v1.159 capture-pacing host regression
+on:
+  push:
+    branches:
+      - 'markertap/v1.159-capture-pacing-test'
+    paths:
+      - 'markertap/v1.159-capture-pacing/**'
+      - 'markertap/code/TapMarker/src/jp/tapmarker/TransitionTiming.java'
+      - 'markertap/v1.158-binary-overlay/RewardV158Capture.java'
+      - '.github/workflows/markertap-v1159-capture-pacing-host.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Check Java8 host pacing
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v159"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/v159" \
+            markertap/code/TapMarker/src/jp/tapmarker/TransitionTiming.java \
+            markertap/v1.159-capture-pacing/TransitionTimingV159Test.java
+          java -cp "$RUNNER_TEMP/v159" jp.tapmarker.TransitionTimingV159Test
+          grep -F 'MIN_SCAN_MS=1600,EXPIRE_MS=5000' markertap/v1.158-binary-overlay/RewardV158Capture.java
