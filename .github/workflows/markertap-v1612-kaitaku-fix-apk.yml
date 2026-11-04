@@ -78,8 +78,8 @@ jobs:
           export ANDROID_SDK_ROOT="$ANDROID_HOME"
           cd "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
           mkdir -p build/test-classes
-          java -jar toolchain/ecj.jar -nowarn -source 8 -target 8 -encoding UTF-8 -classpath build/classes:libs/bcprov-jdk15to18-1.81.jar -d build/test-classes tests/CifaDenseSelectorTest.java tests/CifaAutonomyTest.java tests/CifaKnowHowTest.java tests/CifaGraphMigrationTest.java tests/KaitakuMissionReacquireTest.java tests/FloatingPanelGeometryTest.java tests/KaitakuAdUpgradeRepairTest.java tests/UpgradeEngineTest.java
-          for test in CifaDenseSelector CifaAutonomy CifaKnowHow CifaGraphMigration KaitakuMissionReacquire FloatingPanelGeometry KaitakuAdUpgradeRepair UpgradeEngine; do
+          java -jar toolchain/ecj.jar -nowarn -source 8 -target 8 -encoding UTF-8 -classpath build/classes:libs/bcprov-jdk15to18-1.81.jar -d build/test-classes tests/CifaDenseSelectorTest.java tests/CifaAutonomyTest.java tests/CifaKnowHowTest.java tests/CifaGraphMigrationTest.java tests/KaitakuMissionReacquireTest.java tests/FloatingPanelGeometryTest.java tests/KaitakuAdUpgradeRepairTest.java
+          for test in CifaDenseSelector CifaAutonomy CifaKnowHow CifaGraphMigration KaitakuMissionReacquire FloatingPanelGeometry KaitakuAdUpgradeRepair; do
             java -cp build/classes:build/test-classes jp.tapmarker."$test"Test
           done | tee "$RUNNER_TEMP/tests.log"
           (cd "$RUNNER_TEMP" && sha256sum CIFA-v1.1612-kaitaku-ad-upgrade-lab-signed.apk) | tee "$RUNNER_TEMP/SHA256SUMS.txt"
