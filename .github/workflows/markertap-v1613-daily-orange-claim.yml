@@ -8,7 +8,7 @@ on:
       - ".github/workflows/markertap-v1613-daily-orange-claim.yml"
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   make-lab-apk:
     runs-on: ubuntu-latest
@@ -105,3 +105,22 @@ jobs:
             ${{ runner.temp }}/package-name.txt
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish installable APK as an experimental GitHub prerelease
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="cifa-v1.1613-dailyget-installfix-lab"
+          apk="$RUNNER_TEMP/CIFA-v1.1613-daily-get-installfix-signed.apk"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Existing prerelease remains immutable: $tag"
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" --prerelease \
+              --title "CIFA 1.161.3 Daily Get installfix (test only)" \
+              --notes "Experimental, separate-package signed APK. Not an update to MarkerTap or the previous CIFA lab. Package jp.tapmarker.cifa.getfix1613 avoids CI certificate update conflicts. Pixel 10 / Android 17 input and reward collection remain unverified. Do not treat as a stable production release." \
+              "$apk" "$RUNNER_TEMP/SHA256SUMS.txt" "$RUNNER_TEMP/INSTALL-NOTE.txt"
+          fi
+
