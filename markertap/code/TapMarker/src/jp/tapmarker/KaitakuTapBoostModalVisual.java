@@ -22,8 +22,21 @@ final class KaitakuTapBoostModalVisual {
   private static boolean white(int c){return r(c)>242&&g(c)>242&&b(c)>242;}
   private static boolean yellow(int c){return r(c)>215&&g(c)>125&&g(c)<210&&b(c)<85;}
   private static boolean dark(int c){return r(c)<100&&g(c)<100&&b(c)<100;}
+  private static boolean pink(int c){return r(c)>200&&g(c)>155&&g(c)<220&&b(c)>185&&b(c)>g(c)+10;}
+  // Full-screen 1080x2424 recording: the pink-header dialog sits HIGHER
+  // than the earlier 684x1536 screenshot with a floating overlay.
+  private static float[] recordedTapBoost(int w,int h,RegionSampler.Pixels p){
+    if(!pink(px(w,h,p,.17f,.23f))||!pink(px(w,h,p,.83f,.23f))||
+       !white(px(w,h,p,.17f,.34f))||!white(px(w,h,p,.83f,.34f))||
+       !white(px(w,h,p,.17f,.45f))||!white(px(w,h,p,.83f,.45f))||
+       !yellow(px(w,h,p,.30f,.55f))||!yellow(px(w,h,p,.70f,.55f))||
+       !dark(px(w,h,p,.30f,.59f))||!dark(px(w,h,p,.70f,.59f))||
+       !white(px(w,h,p,.17f,.63f))||!white(px(w,h,p,.83f,.63f)))return null;
+    return new float[]{.21f,.518f,.79f,.581f};
+  }
   static float[] find(int w,int h,RegionSampler.Pixels p){
     if(p==null||w<200||h<400)return null;
+    float[] recorded=recordedTapBoost(w,h,p);if(recorded!=null)return recorded;
     if(!cream(px(w,h,p,.10f,.34f))||!cream(px(w,h,p,.90f,.34f))||
        !cream(px(w,h,p,.10f,.39f))||!cream(px(w,h,p,.90f,.39f))||
        !white(px(w,h,p,.10f,.45f))||!white(px(w,h,p,.90f,.45f))||
