@@ -1,0 +1,41 @@
+name: Weight-Space Lab standalone Android APK
+on:
+  push:
+    branches:
+      - feat/weight-space-lab-apk-20261104
+    paths:
+      - "weight-space-android/**"
+      - ".github/workflows/weight-space-demo-apk.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install pinned Android tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Build, sign with a temporary test key, verify, and test
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash weight-space-android/build-apk.sh
+      - name: Upload installable demo APK and test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WeightSpaceLab-v0.1-standalone-test-signed
+          path: weight-space-android/build/artifacts/
+          if-no-files-found: warn
+          retention-days: 30
