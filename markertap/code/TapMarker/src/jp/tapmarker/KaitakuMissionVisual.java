@@ -18,6 +18,31 @@ final class KaitakuMissionVisual {
       Math.abs(r(c)-g(c))<12&&Math.abs(g(c)-b(c))<12;}
   private static boolean white(int c){return r(c)>235&&g(c)>235&&b(c)>235;}
   private static boolean yellow(int c){return r(c)>213&&g(c)>120&&g(c)<215&&b(c)<80;}
+  // Stronger, independent evidence from the full-resolution 98s video:
+  // the pink daily-mission title and its first, gray-progress STAGE row.
+  // Never press a later yellow "開く" external-link button.
+  private static boolean pinkHeader(int c){
+    return r(c)>=180&&r(c)<=240&&g(c)>=130&&g(c)<=205&&
+           b(c)>=170&&b(c)<=230&&b(c)>=g(c)+10;
+  }
+  private static boolean orangeBanner(int c){
+    return r(c)>230&&g(c)>115&&g(c)<205&&b(c)<95;
+  }
+  static boolean modernHeader(int w,int h,RegionSampler.Pixels p){
+    return p!=null&&w>=200&&h>=400&&
+      pinkHeader(px(w,h,p,.10f,.18f))&&
+      pinkHeader(px(w,h,p,.60f,.20f))&&
+      orangeBanner(px(w,h,p,.10f,.34f));
+  }
+  static float[] firstStagePlay(int w,int h,RegionSampler.Pixels p){
+    if(!modernHeader(w,h,p))return null;
+    if(!gray(px(w,h,p,.30f,.60f))||!gray(px(w,h,p,.45f,.60f))||
+       !white(px(w,h,p,.30f,.66f))||
+       !yellow(px(w,h,p,.71f,.655f))||
+       !yellow(px(w,h,p,.87f,.655f)))return null;
+    // First row only: the video explicitly shows this is stage "プレイ".
+    return new float[]{.683f,.633f,.918f,.682f};
+  }
   static boolean visible(int w,int h,RegionSampler.Pixels p){
     if(p==null||w<200||h<400)return false;
     int rows=0;
