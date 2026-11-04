@@ -67,7 +67,12 @@ jobs:
           python3 markertap/tools/check_preserved_features.py "$RUNNER_TEMP/test-only-do-not-install.apk" \
             --report "$RUNNER_TEMP/legacy-required-features.json"
           legacy_status=$?
-          if [ "$parity_status" -ne 0 ] || [ "$legacy_status" -ne 0 ]; then
+          python3 markertap/tools/check_minimize_binary.py \
+            --baseline "$RUNNER_TEMP/baseline/MarkerTap-v1.157-integrated-signed.apk" \
+            --candidate "$RUNNER_TEMP/test-only-do-not-install.apk" \
+            --report "$RUNNER_TEMP/minimized-floating-ui-parity.json"
+          mini_status=$?
+          if [ "$parity_status" -ne 0 ] || [ "$legacy_status" -ne 0 ] || [ "$mini_status" -ne 0 ]; then
             echo 'STOP: preserving v1.157 behavior is not proven. No APK may be published.'
             exit 1
           fi
@@ -79,5 +84,6 @@ jobs:
           path: |
             ${{ runner.temp }}/legacy-required-features.json
             ${{ runner.temp }}/v157-class-and-assets-parity.json
+            ${{ runner.temp }}/minimized-floating-ui-parity.json
           if-no-files-found: warn
           retention-days: 14
