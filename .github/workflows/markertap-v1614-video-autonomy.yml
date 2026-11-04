@@ -1,7 +1,7 @@
-name: Build CIFA v1.161.4 Kaitaku Kaitaku video autonomy APK
+name: Build CIFA v1.161.4 Kaitaku video autonomy APK
 on:
   push:
-    branches: ["markertap/v1.1614-daily-orange-claim"]
+    branches: ["markertap/v1.1614-video-autonomy-fixes"]
     paths:
       - "markertap/v1.161-cifa/**"
       - "markertap/code/**"
@@ -119,7 +119,7 @@ jobs:
             echo "Existing prerelease remains immutable: $tag"
           else
             gh release create "$tag" --target "$GITHUB_SHA" --prerelease \
-              --title "CIFA 1.161.3 Video Autonomy (test only)" \
+              --title "CIFA 1.161.4 Video Autonomy (test only)" \
               --notes "Experimental, separate-package signed APK. Not an update to MarkerTap or the previous CIFA lab. Package jp.tapmarker.cifa.getfix1614 avoids CI certificate update conflicts. Pixel 10 / Android 17 input and reward collection remain unverified. Do not treat as a stable production release." \
               "$apk" "$RUNNER_TEMP/SHA256SUMS.txt" "$RUNNER_TEMP/INSTALL-NOTE.txt"
           fi
