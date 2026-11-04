@@ -26,6 +26,7 @@ public final class KurashiruClaimPolicyTest {
     ok(!KurashiruClaimPolicy.isClaim(pkg,id,false),"unexecuted claim: "+id);
   }
   public static void main(String[]args){
+    checkClaim("com.kurashiru.kaitaku.usagi","kaitaku-default-missions-get");
     checkClaim("com.kurashiru.fue.usagi","usagi-default-ゲットのみタップ");
     checkClaim("com.kurashiru.fue.usagi","usagi-default-通常獲得の中央");
     checkClaim("com.kurashiru.coin.drop","coin-default-get-tap");
@@ -37,6 +38,14 @@ public final class KurashiruClaimPolicyTest {
     ok(!KurashiruClaimPolicy.isClaim("com.kurashiru.coin.drop","coin-default-mission-button-tap",true),"mission open is not reward");
     ok(!KurashiruClaimPolicy.isClaim("com.kurashiru.poipoi.usagi","poipoi-default-reward-tap",true),"close is not reward");
     ok(!KurashiruClaimPolicy.isClaim("com.kurashiru.nouen.usagi","farm-default-reward-shown",true),"farm popup is not a user claim");
+    Map<String,float[]> kaitaku=new HashMap<>();
+    kaitaku.put("kaitaku-default-close",new float[]{1});
+    ok(!KurashiruClaimPolicy.rewardVisible("com.kurashiru.kaitaku.usagi",new PhaseEngine(),kaitaku),"generic close or ad opt-out is not payout proof");
+    kaitaku.put("kaitaku-default-receipt-proof",new float[]{1});
+    ok(KurashiruClaimPolicy.rewardVisible("com.kurashiru.kaitaku.usagi",new PhaseEngine(),kaitaku),"text-scoped Kaitaku payout evidence");
+    kaitaku.put("kaitaku-default-receipt-proof",new float[]{0});
+    ok(!KurashiruClaimPolicy.rewardVisible("com.kurashiru.kaitaku.usagi",new PhaseEngine(),kaitaku),"expired payout evidence cannot credit");
+    ok(!KurashiruClaimPolicy.isClaim("com.kurashiru.kaitaku.usagi","kaitaku-default-missions-back",true),"mission exit never counts as reward");
 
     PhaseEngine engine=new PhaseEngine();
     PhaseEngine.Watch w=new PhaseEngine.Watch();
