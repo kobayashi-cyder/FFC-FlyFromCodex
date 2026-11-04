@@ -21,8 +21,10 @@ public final class PatchRewardV158 {
  private static final String BRIDGE=ROOT+"AdV157DexBridge;";
  private static final String LAMBDA=ROOT+"AdV157DexBridge$$ExternalSyntheticLambda";
  private static final String[] EXTRA={
-   ROOT+"RewardV158Observer",ROOT+"RewardEvaluationConnectome",
-   ROOT+"RewardLanePlanner",ROOT+"KurashiruPointHud"
+   ROOT+"RewardV158Observer",ROOT+"RewardV158Capture",
+   ROOT+"RewardEvaluationConnectome",ROOT+"RewardLanePlanner",
+   ROOT+"KurashiruPointHud",ROOT+"KurashiruRewardProof",
+   ROOT+"FarmPassiveReward",ROOT+"SharedPointClaimArbiter"
  };
 
  private static DexFile dex(String file)throws Exception{
