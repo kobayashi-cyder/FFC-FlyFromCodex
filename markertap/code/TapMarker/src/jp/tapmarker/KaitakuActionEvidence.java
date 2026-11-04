@@ -63,14 +63,24 @@ final class KaitakuActionEvidence {
    if(tapAd!=null){put(out,"tap-ad-start",tapAd);blockHome(out);return;}
    if(e.current.equals(KaitakuPreset.P+"claim-wait"))return;
    if(!mission(e,w,h,p,out)){
-    if(KaitakuMissionVisual.visible(w,h,p)){
-      put(out,"mission-page",null);blockHome(out);return;
-    }
+    // Claim evidence MUST precede generic page detection. An early page
+    // return used to swallow the actual orange "ゲット" candidate.
     float[] orange=KaitakuOrangeClaimEvidence.find(w,h,p);
     if(orange!=null){
-     put(out,"mission-page",null);blockHome(out);
-     if(e.current.equals(KaitakuPreset.P+"missions")&&
-        KaitakuRewardClaimGate.allow(e,orange))put(out,"get",orange);
+      put(out,"mission-page",null);blockHome(out);
+      if(e.current.equals(KaitakuPreset.P+"missions")&&
+         KaitakuRewardClaimGate.allow(e,orange))put(out,"get",orange);
+      return;
+    }
+    float[] stage=KaitakuMissionVisual.firstStagePlay(w,h,p);
+    if(stage!=null){
+      KaitakuRewardClaimGate.absent(e);
+      put(out,"mission-page",null);blockHome(out);
+      if(e.current.equals(KaitakuPreset.P+"missions"))put(out,"play",stage);
+      return;
+    }
+    if(KaitakuMissionVisual.visible(w,h,p)){
+      put(out,"mission-page",null);blockHome(out);return;
     }
    }
    return;

@@ -44,9 +44,12 @@ final class KaitakuOrangeClaimEvidence {
   static float[] find(int w,int h,RegionSampler.Pixels pixels){
     if(pixels==null||w<200||h<400)return null;
     // Independent page-layout anchors. Reject orange advertisements and game overlays.
-    if(!beige(rgb(w,h,pixels,.15f,.08f))||!beige(rgb(w,h,pixels,.62f,.08f))||
-       !dark(rgb(w,h,pixels,.15f,.22f))||
-       !white(rgb(w,h,pixels,.15f,.28f))||!white(rgb(w,h,pixels,.83f,.28f)))return null;
+    boolean legacy=beige(rgb(w,h,pixels,.15f,.08f))&&
+       beige(rgb(w,h,pixels,.62f,.08f))&&dark(rgb(w,h,pixels,.15f,.22f))&&
+       white(rgb(w,h,pixels,.15f,.28f))&&white(rgb(w,h,pixels,.83f,.28f));
+    // The supplied recording has an OS/fullscreen pink mission header;
+    // older cropped evidence used a beige header. Retain both.
+    if(!legacy&&!KaitakuMissionVisual.modernHeader(w,h,pixels))return null;
     int first=(int)(h*.32f),last=(int)(h*.92f),step=Math.max(1,h/850),start=-1,end=-1;
     for(int y=first;y<=last;y+=step){
       if(orangeSides(w,h,pixels,y)){
