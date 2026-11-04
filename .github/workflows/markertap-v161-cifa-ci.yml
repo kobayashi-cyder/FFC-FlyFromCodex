@@ -1,0 +1,74 @@
+name: MarkerTap v1.161 CIFA dense replacement source checks
+on:
+  push:
+    branches: ["markertap/v1.161-cifa-reactive-banc-free"]
+    paths:
+      - "markertap/code/**"
+      - "markertap/v1.161-cifa/**"
+      - ".github/workflows/markertap-v161-cifa-ci.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compiled-source-and-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install pinned Android SDK and compilers
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          if ! command -v rg >/dev/null; then sudo apt-get update -qq; sudo apt-get install -y -qq ripgrep; fi
+      - name: Validate active CIFA routing and absence of BANC dependencies
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          base=Path("markertap/code/TapMarker/src/jp/tapmarker")
+          for runner in ("AutoPilot.java","SplitPilot.java"):
+              source=(base/runner).read_text()
+              assert "CifaRuntime" in source and "CifaAutonomy" in source, runner
+              for legacy in ("BancRuntime","BancAutonomy","BancSelector","BancSettings","BANC自律"):
+                  assert legacy not in source, runner+" still uses "+legacy
+          for part in ("CifaAutonomy.java","CifaRuntime.java","CifaUiControls.java","CifaDenseSelector.java","CifaKnowHow.java"):
+              source=(base/part).read_text()
+              assert "new Banc" not in source and "BancRuntime" not in source, part
+          assert "STALL_MS=1200,SCAN_MS=600" in (base/"CifaAutonomy.java").read_text()
+          assert "migration?s.getSharedPreferences" in (base/"CifaRuntime.java").read_text()
+          print("PASS: physical and dual-screen routes use independent CIFA, old learning read-only")
+          PY
+      - name: Restore mirror, compile and validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 markertap/tools/restore_source.py --extract-to "$RUNNER_TEMP/MarkerTap-restored"
+          test -f "$RUNNER_TEMP/MarkerTap-restored/TapMarker/src/jp/tapmarker/CifaDenseSelector.java"
+          keytool -genkeypair -noprompt -alias tapmarker -keyalg RSA -keysize 2048 -validity 1 -keystore "$RUNNER_TEMP/ci.jks" -storepass android -keypass android -dname 'CN=Source test only'
+          export ANDROID_SDK_ROOT="$ANDROID_HOME" TAPMARKER_KEYSTORE="$RUNNER_TEMP/ci.jks"
+          export TAPMARKER_OUTPUT="$RUNNER_TEMP/HISTORICAL-BUILD-NOT-FOR-INSTALL.apk"
+          cd "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
+          bash build.sh > "$RUNNER_TEMP/build.log" 2>&1 || { tail -100 "$RUNNER_TEMP/build.log"; exit 1; }
+          mkdir -p build/test-classes
+          java -jar toolchain/ecj.jar -nowarn -source 8 -target 8 -encoding UTF-8 -classpath build/classes:libs/bcprov-jdk15to18-1.81.jar -d build/test-classes tests/CifaDenseSelectorTest.java tests/CifaAutonomyTest.java tests/CifaKnowHowTest.java tests/CifaGraphMigrationTest.java tests/BancSelectorTest.java tests/BancAutonomyTest.java tests/BancKnowHowTest.java tests/KaitakuMissionReacquireTest.java
+          for test in CifaDenseSelector CifaAutonomy CifaKnowHow CifaGraphMigration BancSelector BancAutonomy BancKnowHow KaitakuMissionReacquire; do
+            echo "=== $test ==="
+            java -cp build/classes:build/test-classes jp.tapmarker.${test}Test
+          done 2>&1 | tee "$RUNNER_TEMP/regression.log"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$RUNNER_TEMP/HISTORICAL-BUILD-NOT-FOR-INSTALL.apk"
+          echo "PASS: historical source mirror only; original v1.159 APK parity and owner signing NOT established" | tee "$RUNNER_TEMP/status.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarkerTap-v161-CIFA-source-validation-NOT-APK
+          path: |
+            ${{ runner.temp }}/build.log
+            ${{ runner.temp }}/regression.log
+            ${{ runner.temp }}/status.txt
+          if-no-files-found: ignore
+          retention-days: 14
