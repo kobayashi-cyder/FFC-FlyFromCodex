@@ -186,6 +186,30 @@ final class RewardV158Observer {
     l.receipt="";l.evaluation.invalidatePending();
     l.proof.reset();l.farm.reset();
   }
+  static long cycles(Object owner){
+    if(owner==null)return 0;
+    synchronized(LANES){
+      Lane l=LANES.get(owner);
+      if(l==null)return 0;
+      synchronized(l){return l.evaluation.cycles();}
+    }
+  }
+  static double score(Object owner){
+    if(owner==null)return 0;
+    synchronized(LANES){
+      Lane l=LANES.get(owner);
+      if(l==null)return 0;
+      synchronized(l){return l.evaluation.score();}
+    }
+  }
+  static boolean verifying(Object owner){
+    if(owner==null)return false;
+    synchronized(LANES){
+      Lane l=LANES.get(owner);
+      if(l==null)return false;
+      synchronized(l){return !l.receipt.isEmpty()&&l.evaluation.awaitingProof();}
+    }
+  }
   static String report(Object owner){
     if(owner==null)return "未観測";
     synchronized(LANES){
