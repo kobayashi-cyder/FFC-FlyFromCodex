@@ -1,5 +1,18 @@
 # FFC — FlyFromCodex
 
+## CIFA v1.161.8 — 開拓うさぎ98秒動画対応・2画面固定の署名済み検証版（2026-11-05）
+
+**[▶ CIFA v1.161.8 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1618-fullcycle-2display-final-lab/CIFA-v1.1618-fullcycle-2display-signed.apk)**
+
+- **今回の実修正:** 提供された98秒動画を基に、ピンク見出しの「タップ2倍」（黄色「使用する」）と「コインアップチャンス」（下段「このままはじめる」）を別々に認識。ミッション画面の最初の未達ステージ「プレイ」とオレンジ「ゲット」の判定を分離し、汎用ミッション画面判定がゲット候補を先に消していた分岐を修正。旧レイアウトの認識も残しています。
+- **従来の制約を保持:** v1.161.6の最大2画面固定を統合。旧設定に3〜4画面が残っていても上限2とし、アプリ選択で3〜4画面オプションを表示せず、過剰数を保存しません。アプリ内表示は「CIFA v1.161.8 (Lab)」です。
+- **署名と回帰検証:** [GitHub Actions build #41929592236](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41929592236) SUCCESS。12系統・**3,413件**のホスト回帰検査に合格。APK v2/v3署名検証、16KB zipalign、ZIP/DEX整合、固有パッケージID検査を通過。
+- **配布APK:** 5,897,116バイト、SHA-256 `d4a0295b0f4ed190856eda94f5bdd9347f5f5100cbce92879b4cf8e0713cb8af`。パッケージ `jp.tapmarker.cifa.getfix1618`。CIテスト鍵の別アプリであり、既存の `jp.tapmarker.lite` と以前の検証版を**上書きしません**。初回設定は必要です。異なる署名鍵を用いた将来ビルドで上書き更新できる保証はありません。
+- **未実施の実機合格条件:** Pixel 10 / Android 17での実際の入力、CMの完走・戻り、タップ効率効果、ゲット報酬の入金、および長時間連続自律稼働。現在の成功はソースの実装とCIシミュレーション・パッケージ検査までであり、完全自律を実機実証したものではありません。
+- [GitHub Release](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/cifa-v1.1618-fullcycle-2display-final-lab) / [98秒録画修正 PR #54](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/54) / [2画面安全制限統合 PR #55](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/55) / [SHA256SUMS.txt](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1618-fullcycle-2display-final-lab/SHA256SUMS.txt)
+
+---
+
 ## CIFA v1.161.6 — 開拓うさぎ自律候補・2画面上限・正しいアプリ表示（2026-11-05）
 
 **[▶ CIFA v1.161.6 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1616-two-display-lab/CIFA-v1.1616-two-display-signed.apk)**
