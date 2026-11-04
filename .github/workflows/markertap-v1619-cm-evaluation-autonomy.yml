@@ -1,11 +1,11 @@
 name: Build CIFA v1.161.9 CM detection evaluation autonomy APK
 on:
   push:
-    branches: ["markertap/v1.1619-kaitaku-fullcycle-two-display"]
+    branches: ["markertap/v1.1619-cm-detect-evaluation-autonomy"]
     paths:
       - "markertap/v1.161-cifa/**"
       - "markertap/code/**"
-      - ".github/workflows/markertap-v1619-kaitaku-fullcycle-two-display.yml"
+      - ".github/workflows/markertap-v1619-cm-evaluation-autonomy.yml"
   workflow_dispatch:
 permissions:
   contents: write
@@ -93,7 +93,8 @@ jobs:
           cat > "$RUNNER_TEMP/INSTALL-NOTE.txt" <<'NOTE'
           CIFA v1.161.9 CM Return Evaluation Autonomy lab APK.
           Package: jp.tapmarker.cifa.getfix1619 (different from installed jp.tapmarker.lite).
-          This APK does NOT update or remove the installed MarkerTap app or earlier CIFA lab apps, and does not import their app data.\n          Two-stage CM: positive evidence -> HOME+Intent, then >=2 seconds fresh residual CM -> HOME+target-only force-stop+Intent. Evaluation J credits only proven reward cycles and balance changes.
+          This APK does NOT update or remove the installed MarkerTap app or earlier CIFA lab apps, and does not import their app data. 
+          Two-stage CM: positive evidence -> HOME+Intent, then >=2 seconds fresh residual CM -> HOME+target-only force-stop+Intent. Evaluation J credits only proven reward cycles and balance changes.
           Built from restored CIFA source with v1.161.9 orange mission claim detection and a temporary test signing key.
           Android on-device install/recognition/gesture/virtual display validation has NOT been performed.
           This release uses a UNIQUE application package ID to avoid signature conflicts with previous CIFA lab APKs. A future build with a new temporary key cannot update this same package.
