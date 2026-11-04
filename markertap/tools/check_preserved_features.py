@@ -28,7 +28,7 @@ def uleb(data,off):
  raise ValueError("bad uleb")
 
 def defined(data):
- if not data.startswith(b"dex\\n"):raise ValueError("Not a DEX")
+ if data[:4]!=bytes((100,101,120,10)):raise ValueError("Not a DEX")
  size,so,typeto,tido=struct.unpack_from("<4I",data,0x38)
  nc,co=struct.unpack_from("<2I",data,0x60)
  if max(size,typeto,nc)>1000000:raise ValueError("Corrupt DEX header")
