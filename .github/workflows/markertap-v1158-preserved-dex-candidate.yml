@@ -21,6 +21,18 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - name: Gate binary receipt scoring with Java 8 host regressions
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/receipt-evidence"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/receipt-evidence" \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java \
+            markertap/code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java \
+            markertap/code/TapMarker/src/jp/tapmarker/SharedPointClaimArbiter.java \
+            markertap/v1.158-binary-overlay/RewardV158Proof.java \
+            markertap/v1.158-binary-overlay/RewardV158Observer.java \
+            markertap/v1.158-binary-overlay/RewardV158ObserverTest.java
+          java -cp "$RUNNER_TEMP/receipt-evidence" jp.tapmarker.RewardV158ObserverTest
       - name: Download SHA-authenticated original-signed v1.157 APK
         env:
           GH_TOKEN: ${{ github.token }}
