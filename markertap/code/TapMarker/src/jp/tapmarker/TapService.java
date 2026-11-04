@@ -77,18 +77,80 @@ public class TapService extends AccessibilityService {
   try{if(pilot!=null)pilot.virtualWindows.fatalSession(reason+" / ロック画面保護");else stopAll(reason);}catch(Throwable ignored){}
   try{if(pilot!=null)pilot.wireless.pauseMaintenance();}catch(Throwable ignored){}
   try{removeCapture();}catch(Throwable ignored){}
-  try{if(panel!=null)panel.setVisibility(View.GONE);}catch(Throwable ignored){}
+  try{if(panel!=null)syncPanelVisibility(false);}catch(Throwable ignored){}
   for(Mark mark:marks)try{mark.view.setVisibility(View.INVISIBLE);}catch(Throwable ignored){}
  }
  void leaveScreenGuard(){
   if(!screenGuardActive||systemScreenLocked())return;
   screenGuardActive=false;
-  if(panel!=null)panel.setVisibility(View.VISIBLE);
+  syncPanelVisibility(false);
   if(pilot!=null){pilot.hide(false);pilot.note("ロック解除済み / 自動操作は停止中です。再開は手動で行ってください");}
   refresh();
  }
  Button button(String label,Runnable action){Button b=UiKit.button(this,label,false,action);b.setTextSize(12);b.setMinHeight(UiKit.dp(this,42));b.setMinimumHeight(UiKit.dp(this,42));return b;}
  boolean compact=true;LinearLayout compactBar,panelDetails;ScrollView panelScroll;Button fold,primary;
+ boolean panelMinimized;TextView minimizeBubble;WindowManager.LayoutParams minimizeBubbleParams;
+ void syncPanelVisibility(boolean importActive){
+  boolean guard=isScreenGuarded();
+  if(panel!=null)panel.setVisibility(FloatingPanelGeometry.panelVisible(panelMinimized,guard,importActive)?View.VISIBLE:View.GONE);
+  if(minimizeBubble!=null)minimizeBubble.setVisibility(FloatingPanelGeometry.bubbleVisible(panelMinimized,guard,importActive)?View.VISIBLE:View.GONE);
+ }
+ void minimizePanel(){
+  if(panel==null||panelMinimized||isScreenGuarded())return;
+  ensureMinimizeBubble();panelMinimized=true;
+  syncPanelVisibility(pilot!=null&&pilot.recordingImportActive);
+ }
+ void restorePanel(){
+  if(!panelMinimized)return;
+  panelMinimized=false;syncPanelVisibility(pilot!=null&&pilot.recordingImportActive);
+ }
+ void reflowMinimizeBubble(){
+  if(minimizeBubble==null||minimizeBubbleParams==null||wm==null)return;
+  android.util.DisplayMetrics dm=new android.util.DisplayMetrics();wm.getDefaultDisplay().getRealMetrics(dm);
+  minimizeBubbleParams.x=FloatingPanelGeometry.clamp(minimizeBubbleParams.x,dm.widthPixels,minimizeBubbleParams.width);
+  minimizeBubbleParams.y=FloatingPanelGeometry.clamp(minimizeBubbleParams.y,dm.heightPixels,minimizeBubbleParams.height);
+  wm.updateViewLayout(minimizeBubble,minimizeBubbleParams);
+ }
+ void ensureMinimizeBubble(){
+  if(minimizeBubble!=null)return;
+  android.util.DisplayMetrics dm=new android.util.DisplayMetrics();wm.getDefaultDisplay().getRealMetrics(dm);
+  int width=UiKit.dp(this,76),height=UiKit.dp(this,56);
+  android.content.SharedPreferences saved=getSharedPreferences("panelUi",0);
+  minimizeBubbleParams=params(width,height);
+  minimizeBubbleParams.x=FloatingPanelGeometry.clamp(saved.getInt("minimizedX",dm.widthPixels-width-UiKit.dp(this,8)),dm.widthPixels,width);
+  minimizeBubbleParams.y=FloatingPanelGeometry.clamp(saved.getInt("minimizedY",UiKit.dp(this,110)),dm.heightPixels,height);
+  minimizeBubble=new UiStrings.DisplayText(this);
+  minimizeBubble.setText("CIFA");
+  minimizeBubble.setTextSize(14);
+  minimizeBubble.setGravity(Gravity.CENTER);
+  minimizeBubble.setTextColor(0xffffffff);
+  minimizeBubble.setBackground(UiKit.shape(this,0xff174776,24));
+  minimizeBubble.setContentDescription("CIFA最小化フロート。タップでパネルを復元、ドラッグで移動");
+  minimizeBubble.setClickable(true);
+  minimizeBubble.setOnClickListener(v->restorePanel());
+  final float[] down=new float[4];final boolean[] dragged={false};
+  minimizeBubble.setOnTouchListener((v,e)->{
+   switch(e.getActionMasked()){
+   case MotionEvent.ACTION_DOWN:
+    down[0]=e.getRawX();down[1]=e.getRawY();down[2]=minimizeBubbleParams.x;down[3]=minimizeBubbleParams.y;dragged[0]=false;return true;
+   case MotionEvent.ACTION_MOVE:
+    if(!FloatingPanelGeometry.isTap(down[0],down[1],e.getRawX(),e.getRawY(),UiKit.dp(this,8)))dragged[0]=true;
+    if(dragged[0]){
+     minimizeBubbleParams.x=FloatingPanelGeometry.clamp((int)(down[2]+e.getRawX()-down[0]),dm.widthPixels,minimizeBubbleParams.width);
+     minimizeBubbleParams.y=FloatingPanelGeometry.clamp((int)(down[3]+e.getRawY()-down[1]),dm.heightPixels,minimizeBubbleParams.height);
+     wm.updateViewLayout(minimizeBubble,minimizeBubbleParams);
+    }return true;
+   case MotionEvent.ACTION_UP:
+    if(dragged[0])getSharedPreferences("panelUi",0).edit().putInt("minimizedX",minimizeBubbleParams.x).putInt("minimizedY",minimizeBubbleParams.y).apply();
+    else v.performClick();
+    return true;
+   case MotionEvent.ACTION_CANCEL:return true;
+   default:return true;
+   }
+  });
+  minimizeBubble.setVisibility(View.GONE);
+  wm.addView(minimizeBubble,minimizeBubbleParams);
+ }
  void compactPanel(boolean enabled){
   compact=enabled;if(panel==null)return;boolean learning=pilot!=null&&pilot.learning!=null&&pilot.learning.active;
   if(!enabled&&pilot!=null&&pilot.virtualWindows.headings!=null)pilot.virtualWindows.headings.collapse();
@@ -103,13 +165,13 @@ public class TapService extends AccessibilityService {
  LinearLayout panelRow(){return UiKit.row(this,panelDetails);}
  void panelButton(LinearLayout row,String label,Runnable action){UiKit.cell(this,row,button(label,action));}
  public void showPanel(){
-  if(panel!=null)return;
+  if(panel!=null){restorePanel();return;}
   android.util.DisplayMetrics dm=new android.util.DisplayMetrics();wm.getDefaultDisplay().getRealMetrics(dm);
   panel=UiKit.column(this);panel.setPadding(UiKit.dp(this,12),UiKit.dp(this,8),UiKit.dp(this,12),UiKit.dp(this,12));panel.setBackground(UiKit.shape(this,0xfff8fafb,16));panel.setElevation(UiKit.dp(this,10));
   status=UiKit.text(this,"MarkerTap",13,UiKit.INK,false);status.setPadding(0,UiKit.dp(this,4),0,UiKit.dp(this,8));status.setContentDescription("実行状況。ドラッグして操作パネルを移動");panel.addView(status);
   compactBar=UiKit.row(this,panel);primary=UiKit.button(this,"自動開始",true,()->{if(pilot!=null)AutomationRouter.start(pilot,true);});UiKit.cell(this,compactBar,primary);
   Button stop=button("全停止",()->stopAll());stop.setTextColor(0xffa52b34);UiKit.cell(this,compactBar,stop);
-  LinearLayout quick=UiKit.row(this,panel);panelButton(quick,"対象",()->{if(pilot!=null)pilot.splitLauncher.choose();});panelButton(quick,"画面",()->{if(pilot!=null)pilot.virtualWindows.previewSizeDialog();});fold=button("詳細",()->compactPanel(!compact));UiKit.cell(this,quick,fold);
+  LinearLayout quick=UiKit.row(this,panel);panelButton(quick,"対象",()->{if(pilot!=null)pilot.splitLauncher.choose();});panelButton(quick,"画面",()->{if(pilot!=null)pilot.virtualWindows.previewSizeDialog();});fold=button("詳細",()->compactPanel(!compact));UiKit.cell(this,quick,fold);panelButton(quick,"最小化",()->minimizePanel());
   if(progressErrors!=null)progressErrors.attach(panel);if(pilot!=null)pilot.virtualWindows.attachHeadings(panel);
   panelScroll=new ScrollView(this);panelScroll.setFillViewport(false);panelDetails=UiKit.column(this);panelScroll.addView(panelDetails);int maxHeight=Math.max(UiKit.dp(this,90),Math.min(UiKit.dp(this,340),dm.heightPixels-UiKit.dp(this,245)));panel.addView(panelScroll,new LinearLayout.LayoutParams(-1,maxHeight));
   panelSection("マーカーとタップ");LinearLayout manual=panelRow();start=button("連打開始",()->primaryAction());UiKit.cell(this,manual,start);panelButton(manual,"タップ確認",()->testTap());
@@ -120,9 +182,9 @@ public class TapService extends AccessibilityService {
   panelSection("状況と設定");LinearLayout errors=panelRow();panelButton(errors,"進行エラーを見る",()->ProgressErrors.showLatest(this));LinearLayout tools=panelRow();panelButton(tools,"詳しい状況",()->{if(pilot!=null)pilot.virtualWindows.showStatus();});panelButton(tools,"アプリ設定",()->startActivity(new Intent(this,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)));
   LinearLayout exit=panelRow();panelButton(exit,"パネルを終了",()->close());
   int width=Math.min(UiKit.dp(this,320),Math.max(UiKit.dp(this,180),dm.widthPixels-UiKit.dp(this,16)));
-  WindowManager.LayoutParams p=params(width,-2);android.content.SharedPreferences saved=getSharedPreferences("panelUi",0);p.x=Math.max(0,Math.min(saved.getInt("x",UiKit.dp(this,8)),dm.widthPixels-width));p.y=Math.max(UiKit.dp(this,24),Math.min(saved.getInt("y",UiKit.dp(this,56)),Math.max(UiKit.dp(this,24),dm.heightPixels-UiKit.dp(this,235))));wm.addView(panel,p);
+  WindowManager.LayoutParams p=params(width,-2);android.content.SharedPreferences saved=getSharedPreferences("panelUi",0);p.x=Math.max(0,Math.min(saved.getInt("x",UiKit.dp(this,8)),dm.widthPixels-width));p.y=Math.max(UiKit.dp(this,24),Math.min(saved.getInt("y",UiKit.dp(this,56)),Math.max(UiKit.dp(this,24),dm.heightPixels-UiKit.dp(this,235))));wm.addView(panel,p);ensureMinimizeBubble();
   final float[] pos=new float[4];status.setOnTouchListener((v,e)->{if(e.getActionMasked()==MotionEvent.ACTION_DOWN){pos[0]=e.getRawX();pos[1]=e.getRawY();pos[2]=p.x;pos[3]=p.y;}else if(e.getActionMasked()==MotionEvent.ACTION_MOVE){p.x=Math.max(0,Math.min((int)(pos[2]+e.getRawX()-pos[0]),dm.widthPixels-panel.getWidth()));p.y=Math.max(0,Math.min((int)(pos[3]+e.getRawY()-pos[1]),dm.heightPixels-panel.getHeight()));wm.updateViewLayout(panel,p);}else if(e.getActionMasked()==MotionEvent.ACTION_UP){getSharedPreferences("panelUi",0).edit().putInt("x",p.x).putInt("y",p.y).apply();}return true;});
-  load();if(pilot!=null){pilot.logic.load(currentApp);pilot.phases.load(currentApp);pilot.hide(false);}compactPanel(true);if(isScreenGuarded())panel.setVisibility(View.GONE);refresh();
+  load();if(pilot!=null){pilot.logic.load(currentApp);pilot.phases.load(currentApp);pilot.hide(false);}compactPanel(true);syncPanelVisibility(false);refresh();
   if(!saved.contains("y"))panel.post(()->{if(panel==null)return;p.y=Math.max(UiKit.dp(this,24),dm.heightPixels-panel.getHeight()-UiKit.dp(this,20));wm.updateViewLayout(panel,p);});
  }
  boolean clearArmed;
@@ -173,8 +235,8 @@ public class TapService extends AccessibilityService {
  void switchProfile(String pkg){if(pkg.equals(currentApp)){if(pilot!=null)pilot.hide(false);else for(Mark m:marks)m.view.setVisibility(View.VISIBLE);return;}stop();removeCapture();if(currentApp.isEmpty()){currentApp=pkg;save();}else{save();for(Mark m:marks)wm.removeView(m.view);marks.clear();currentApp=pkg;markerEditing=false;load();save();}renumber();if(pilot!=null){pilot.logic.load(currentApp);pilot.phases.load(currentApp);pilot.hide(false);}if(pilot!=null)pilot.note("アプリ別 / 学習"+pilot.ruleCount(pkg)+"件");}
  Runnable detectApp=()->{if(panel==null||pilot==null||pilot.dailyRunner.route.active()||pilot.activeDialog!=null&&pilot.activeDialog.isShowing()||pilot.learning!=null&&pilot.learning.active||pilot.shotBusy||pilot.splitLauncher.preparing||pilot.wireless.working||pilot.splitPilot.active||!pilot.virtualWindows.windows.isEmpty())return;String pkg=pilot.packageNow();if(!validApp(pkg))return;android.content.SharedPreferences prefs=getSharedPreferences("markers",0);if(pkg.equals(currentApp)){if(pilot!=null)pilot.hide(false);else for(Mark m:marks)m.view.setVisibility(View.VISIBLE);return;}if(pilot.active){if(!pilot.recoverExternal()){pilot.note("対象アプリ外 / オートマトンの状態を保持して待機");pilot.schedulePhase(pilot.token,100);}return;}if(prefs.contains("profile:"+GameProfiles.key(this,pkg))){switchProfile(pkg);}else if(!currentApp.isEmpty()){stop();removeCapture();for(Mark m:marks)m.view.setVisibility(View.INVISIBLE);pilot.note("未登録アプリ / アプリ登録で作成");}};
  void prepareVirtualRun(){if(pilot!=null&&pilot.learning!=null)pilot.learning.cancel();if(pilot!=null)pilot.stopSingle(false);running=false;generation++;if(markerTapper!=null)markerTapper.pause("停止中");removeCapture();for(Mark m:marks)m.view.setVisibility(View.INVISIBLE);touchable(true);}
- void close(){stopAll("アプリの実行部終了");if(panel==null)return;if(pilot!=null)pilot.virtualWindows.closeViews();removeCapture();save();for(Mark m:marks)wm.removeView(m.view);marks.clear();if(panel!=null){wm.removeView(panel);panel=null;status=null;}}
- public void onConfigurationChanged(android.content.res.Configuration c){super.onConfigurationChanged(c);boolean languageOnly=UiStrings.languageOnly(uiConfiguration,c);uiConfiguration=new android.content.res.Configuration(c);if(languageOnly){UiStrings.refresh(panel);if(pilot!=null){for(VirtualWindows.Window w:pilot.virtualWindows.windows){UiStrings.refresh(w.view);pilot.virtualWindows.state(w,w.runState);}pilot.virtualWindows.reflow();}lastRefreshAt=0;refresh();return;}contacts().refresh();if(pilot!=null&&pilot.virtualSession()){pilot.virtualWindows.reflow();refresh();return;}if(pilot!=null&&pilot.splitPilot.active){inputTargetVersion++;pilot.splitPilot.geometryChanged();refresh();return;}if(pilot!=null&&pilot.active&&(pilot.autonomousMain()||pilot.phases.engine.windowRelative)){inputTargetVersion++;pilot.geometryChanged();refresh();return;}stop();removeCapture();UiStrings.toast(this,"画面の向きが変わりました。マーカー位置を確認してください",0).show();} public void onAccessibilityEvent(AccessibilityEvent e){
+ void close(){stopAll("アプリの実行部終了");if(panel==null&&minimizeBubble==null)return;if(pilot!=null)pilot.virtualWindows.closeViews();removeCapture();save();for(Mark m:marks)wm.removeView(m.view);marks.clear();if(panel!=null){wm.removeView(panel);panel=null;status=null;}if(minimizeBubble!=null){wm.removeView(minimizeBubble);minimizeBubble=null;minimizeBubbleParams=null;}panelMinimized=false;}
+ public void onConfigurationChanged(android.content.res.Configuration c){super.onConfigurationChanged(c);reflowMinimizeBubble();boolean languageOnly=UiStrings.languageOnly(uiConfiguration,c);uiConfiguration=new android.content.res.Configuration(c);if(languageOnly){UiStrings.refresh(panel);if(pilot!=null){for(VirtualWindows.Window w:pilot.virtualWindows.windows){UiStrings.refresh(w.view);pilot.virtualWindows.state(w,w.runState);}pilot.virtualWindows.reflow();}lastRefreshAt=0;refresh();return;}contacts().refresh();if(pilot!=null&&pilot.virtualSession()){pilot.virtualWindows.reflow();refresh();return;}if(pilot!=null&&pilot.splitPilot.active){inputTargetVersion++;pilot.splitPilot.geometryChanged();refresh();return;}if(pilot!=null&&pilot.active&&(pilot.autonomousMain()||pilot.phases.engine.windowRelative)){inputTargetVersion++;pilot.geometryChanged();refresh();return;}stop();removeCapture();UiStrings.toast(this,"画面の向きが変わりました。マーカー位置を確認してください",0).show();} public void onAccessibilityEvent(AccessibilityEvent e){
   if(systemScreenLocked()){if(!screenGuardActive)enterScreenGuard("端末がロックされました");return;}
   if(screenGuardActive)leaveScreenGuard();
   if(pilot!=null)pilot.wireless.onEvent(e);if(e.getEventType()==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED||e.getEventType()==AccessibilityEvent.TYPE_WINDOWS_CHANGED){safetyChecked=0;inputTargetVersion++;if(pilot!=null)pilot.virtualWindows.invalidateScreenInfo();}if(e.getEventType()==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED&&pilot!=null&&pilot.farmActive())pilot.farmConfirmed=false;if(e.getEventType()==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED&&pilot!=null&&pilot.usagiPresetActive())pilot.usagiGameConfirmed=false;if(e.getEventType()==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED){if(pilot!=null){pilot.coinConfirmed=false;pilot.shoppingConfirmed=false;pilot.boxConfirmed=false;pilot.boxCheckedAt=0;pilot.poipoiConfirmed=false;pilot.poipoiCheckedAt=0;pilot.coinCheckedAt=0;pilot.shoppingCheckedAt=0;pilot.adHome.reset();}if(running)markerLogic.update();h.removeCallbacks(detectApp);h.postDelayed(detectApp,200);}}public void onInterrupt(){if(pilot!=null)pilot.virtualWindows.fatalSession("ユーザー補助の割込み / 全実行部停止");else stopAll("ユーザー補助の割込み");}public void onTrimMemory(int level){super.onTrimMemory(level);if(level==10||level==15||level>=60){PresetData.clear();if(performance!=null)performance.memoryPressure();if(pilot!=null)pilot.virtualWindows.trimFrameCircuit();}}public void onDestroy(){
