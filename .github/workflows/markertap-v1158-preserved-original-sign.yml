@@ -1,0 +1,109 @@
+name: MarkerTap 1.158 original-cert signing gate - test artifact only
+on:
+  push:
+    branches: ["markertap/v1.157-preserved-reward-evaluation"]
+    paths:
+      - ".github/workflows/markertap-v1158-preserved-original-sign.yml"
+      - "markertap/v1.158-binary-overlay/sign-v158-preserved.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: markertap-v1158-preserved-original-signing
+  cancel-in-progress: false
+jobs:
+  original-signer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Require original private signing material (never substitute a test key)
+        env:
+          ORIGINAL_JKS: ${{ secrets.MARKERTAP_ORIGINAL_JKS_B64 }}
+          ORIGINAL_PASSWORD: ${{ secrets.MARKERTAP_ORIGINAL_STORE_PASSWORD }}
+        run: |
+          if [ -z "$ORIGINAL_JKS" ] || [ -z "$ORIGINAL_PASSWORD" ]; then
+            echo 'BLOCKED: original MarkerTap signing keystore/password are not configured as protected GitHub Actions secrets.'
+            echo 'No signed output is created; the original v1.157 remains intact.'
+            exit 3
+          fi
+      - name: Download exact released v1.157 original-signed APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/baseline"
+          gh release download markertap-v1.157-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.157-integrated-signed.apk -D "$RUNNER_TEMP/baseline"
+          echo '0108aadfa717c676dfe30b4f678a5c1526277e11b01ae16f85317d8b8dd50f7d  '"$RUNNER_TEMP"'/baseline/MarkerTap-v1.157-integrated-signed.apk' | sha256sum -c -
+      - name: Prepare SHA-pinned original Android and dexlib2 toolchain
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Build and re-audit candidate from exact v1.157 DEX
+        run: |
+          set -euo pipefail
+          python3 markertap/v1.158-binary-overlay/build-v158-from-v157.py \
+            --baseline "$RUNNER_TEMP/baseline/MarkerTap-v1.157-integrated-signed.apk" \
+            --sdk markertap/v1.145-physical-return/tooling/sdk \
+            --jadx markertap/v1.145-physical-return/tooling/jadx/lib/jadx-1.5.3-all.jar
+          CAND=markertap/v1.158-binary-overlay/output/MarkerTap-v1.158-preserved-unsigned.apk
+          echo '7aaa5df0637d1835f792b75a514c0ced430302998eb29c244df7e0ee1d4b5c0e  '"$CAND" | sha256sum -c -
+          python3 markertap/tools/audit_v157_apk_parity.py \
+            --baseline "$RUNNER_TEMP/baseline/MarkerTap-v1.157-integrated-signed.apk" \
+            --candidate "$CAND" --report "$RUNNER_TEMP/parity.json"
+          python3 markertap/tools/check_minimize_binary.py \
+            --baseline "$RUNNER_TEMP/baseline/MarkerTap-v1.157-integrated-signed.apk" \
+            --candidate "$CAND" --report "$RUNNER_TEMP/minimized-panel.json"
+      - name: Original certificate sign, validate v2/v3 and zero traces of private signing key
+        working-directory: markertap/v1.158-binary-overlay
+        env:
+          MARKERTAP_ORIGINAL_JKS_B64: ${{ secrets.MARKERTAP_ORIGINAL_JKS_B64 }}
+          MARKERTAP_STORE_PASSWORD: ${{ secrets.MARKERTAP_ORIGINAL_STORE_PASSWORD }}
+          MARKERTAP_KEY_PASSWORD: ${{ secrets.MARKERTAP_ORIGINAL_KEY_PASSWORD }}
+          MARKERTAP_ORIGINAL_KEY_ALIAS: ${{ vars.MARKERTAP_ORIGINAL_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          JKS="$RUNNER_TEMP/original-key.jks"
+          trap 'rm -f "$JKS"' EXIT
+          printf '%s' "$MARKERTAP_ORIGINAL_JKS_B64" | base64 -d > "$JKS"
+          mkdir -p output
+          python3 sign-v158-preserved.py \
+            --unsigned output/MarkerTap-v1.158-preserved-unsigned.apk \
+            --keystore "$JKS" \
+            --sdk ../v1.145-physical-return/tooling/sdk \
+            --alias "${MARKERTAP_ORIGINAL_KEY_ALIAS:-tapmarker}" \
+            --out output/MarkerTap-v1.158-ORIGINAL-CERT-TEST-ONLY.apk
+          sha256sum output/MarkerTap-v1.158-ORIGINAL-CERT-TEST-ONLY.apk > output/SHA256SUMS-TEST-ONLY.txt
+          printf '%s\n' \
+            'ORIGINAL CERTIFICATE TEST BUILD ONLY — Android 17 and actual reward collection not device validated.' \
+            'This is not a stable release and does not replace the README download.' \
+            'Do not install over your working app without an independent settings backup.' \
+            > output/INSTALLATION-NOTICE-TEST-ONLY.txt
+      - name: Double-check preserved all classes/assets after signing
+        run: |
+          set -euo pipefail
+          SIGNED=markertap/v1.158-binary-overlay/output/MarkerTap-v1.158-ORIGINAL-CERT-TEST-ONLY.apk
+          python3 markertap/tools/audit_v157_apk_parity.py \
+            --baseline "$RUNNER_TEMP/baseline/MarkerTap-v1.157-integrated-signed.apk" \
+            --candidate "$SIGNED" --report "$RUNNER_TEMP/signed-parity.json"
+          python3 markertap/tools/check_minimize_binary.py \
+            --baseline "$RUNNER_TEMP/baseline/MarkerTap-v1.157-integrated-signed.apk" \
+            --candidate "$SIGNED" --report "$RUNNER_TEMP/signed-minimized-panel.json"
+      - name: Upload signed test candidate only after certificate and preservation verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1.158-ORIGINAL-CERT-SIGNED-TEST-ONLY
+          path: |
+            markertap/v1.158-binary-overlay/output/MarkerTap-v1.158-ORIGINAL-CERT-TEST-ONLY.apk
+            markertap/v1.158-binary-overlay/output/MarkerTap-v1.158-ORIGINAL-CERT-TEST-ONLY.validation.json
+            markertap/v1.158-binary-overlay/output/SHA256SUMS-TEST-ONLY.txt
+            markertap/v1.158-binary-overlay/output/INSTALLATION-NOTICE-TEST-ONLY.txt
+            ${{ runner.temp }}/signed-parity.json
+            ${{ runner.temp }}/signed-minimized-panel.json
+          if-no-files-found: error
+          retention-days: 14
