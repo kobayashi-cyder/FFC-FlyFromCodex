@@ -1,3 +1,16 @@
+## CIFA v1.161.3 — 開拓うさぎ「ゲット」画像認識・自動受取候補（署名済み検証版・2026-11-05）
+
+**[▶ v1.161.3 署名済み検証APKの取得（GitHub Actions）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41866877687)** — ページ下部 **Artifacts** → `CIFA-v1.1613-kaitaku-ad-upgrade-isolated-lab-signed` をクリックしてZIPを取得し、`CIFA-v1.1613-kaitaku-ad-upgrade-lab-signed.apk` を展開してください。GitHubへのログインが必要な場合があります。
+
+- APK（5,893,020 bytes）：SHA-256 `370f22be6d02fdc06593ead47221ce02443a72abaa6ff4e21d7614167005ca95`。CIの`SHA256SUMS.txt`と実ダウンロードしたAPKが一致。
+- `apksigner verify`：APK v2/v3署名 **合格**、ZIP CRC整合性 **合格**。成果物内に`KaitakuOrangeClaimEvidence`と`CifaAutonomy`を含むことを確認。
+- パッケージ `jp.tapmarker.cifa.kaitaku`。既存`jp.tapmarker.lite`と別アプリです。従来のMarkerTapに上書きせず、設定・学習記憶を移行しません。CIの一時署名鍵は次回ビルドでは一致しないことがあります。
+- 黄色の達成済みゲージとオレンジの「ゲット」を同時に見つけた場合のみ受取候補にします。2フレーム確認→既存のジェスチャー事前確認→送信→受取ポップアップの独立確認、を想定。未達成の黄色「プレイ」ボタンは受取対象外。
+- **未合格**：Pixel 10 / Android 17 実機のタップ、受取ポップアップ・報酬反映、仮想2画面、長時間安定稼働。画像のテーマ・解像度・スクロール位置が異なる場合は動かない可能性があります。実機での報酬獲得を保証しません。
+- [改修PR #49](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/49) / [CI完了の確認](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41866877687)。本番版への昇格と`main`の配布先変更は、端末実測が済むまで保留します。
+
+---
+
 ## MarkerTap / CIFA v1.161.2 — 開拓うさぎCM検知・タップ効率の修正検証版（2026-11-05）
 
 **[▶ GitHub Actionsで署名済み検証APKのZIPを取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41854514439)**（ページの Artifacts → `CIFA-v1.1612-kaitaku-ad-upgrade-isolated-lab-signed`）
