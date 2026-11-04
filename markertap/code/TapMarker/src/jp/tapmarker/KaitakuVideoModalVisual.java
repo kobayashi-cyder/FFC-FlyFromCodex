@@ -1,9 +1,15 @@
 package jp.tapmarker;
 
-/** Narrow visual fallback for the user's "コインアップチャンス!!" modal.
- * Returns ONLY its non-advertising "このままはじめる" opt-out region.
- * Independent cream header, white card, yellow ad CTA and dark separator
- * are all required. A normal reward popup or mission page does not qualify.
+/**
+ * Screenshot-grounded fallback for the user's "コインアップチャンス!!" modal.
+ * The November 5 recording places the cream header at y=.285-.35,
+ * the golden rewarded-ad button at y=.66-.73, and the separate non-ad
+ * "このままはじめる" opt-out at y=.75-.79.
+ *
+ * The previous probes at y=.30 and y=.65 hit black title glyphs and white
+ * card background. They made the detector reject the actual recorded modal.
+ * Only the opt-out is returned: never the paid/ad CTA. Caller still requires
+ * fresh app-screen evidence and independently authorized gesture delivery.
  */
 final class KaitakuVideoModalVisual {
   private static int pixel(int w,int h,RegionSampler.Pixels p,float x,float y){
@@ -17,17 +23,19 @@ final class KaitakuVideoModalVisual {
   private static boolean white(int c){return r(c)>242&&g(c)>242&&b(c)>242;}
   private static boolean yellow(int c){return r(c)>219&&g(c)>135&&g(c)<205&&b(c)<70;}
   private static boolean dark(int c){return r(c)<95&&g(c)<95&&b(c)<95;}
+
   static float[] find(int w,int h,RegionSampler.Pixels p){
     if(p==null||w<200||h<400)return null;
-    if(!cream(pixel(w,h,p,.12f,.30f))||!cream(pixel(w,h,p,.85f,.30f))||
-       !white(pixel(w,h,p,.12f,.42f))||!white(pixel(w,h,p,.85f,.42f))||
-       !white(pixel(w,h,p,.14f,.55f))||!white(pixel(w,h,p,.85f,.55f))||
-       !yellow(pixel(w,h,p,.25f,.65f))||!yellow(pixel(w,h,p,.75f,.65f))||
-       !dark(pixel(w,h,p,.20f,.715f))||!dark(pixel(w,h,p,.80f,.715f))||
-       !white(pixel(w,h,p,.10f,.74f))||!white(pixel(w,h,p,.50f,.74f))||
-       !dark(pixel(w,h,p,.05f,.42f)))return null;
-    // The opt-out line lies below the large yellow ad CTA.
-    return new float[]{.245f,.700f,.755f,.730f};
+    // Probe undecorated strips, not text glyphs. Independent horizontal
+    // strips reject mission cards, ordinary game frames and full-screen ads.
+    if(!cream(pixel(w,h,p,.10f,.29f))||!cream(pixel(w,h,p,.90f,.29f))||
+       !white(pixel(w,h,p,.12f,.40f))||!white(pixel(w,h,p,.88f,.40f))||
+       !white(pixel(w,h,p,.10f,.60f))||!white(pixel(w,h,p,.90f,.60f))||
+       !yellow(pixel(w,h,p,.22f,.67f))||!yellow(pixel(w,h,p,.78f,.67f))||
+       !dark(pixel(w,h,p,.22f,.73f))||!dark(pixel(w,h,p,.78f,.73f))||
+       !white(pixel(w,h,p,.10f,.77f))||!white(pixel(w,h,p,.90f,.77f)))
+      return null;
+    return new float[]{.245f,.750f,.755f,.790f};
   }
   private KaitakuVideoModalVisual(){}
 }
