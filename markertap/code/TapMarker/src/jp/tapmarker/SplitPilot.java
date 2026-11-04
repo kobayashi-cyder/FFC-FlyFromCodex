@@ -3,14 +3,15 @@ import android.accessibilityservice.*;import android.graphics.*;import android.o
 import android.view.Display;
 /** Independent engines/input lanes; virtual frames use one leased processing workspace. */
 final class SplitPilot {
+ final RewardLanePlanner rewardLanePlanner=new RewardLanePlanner();
  final TapService s;volatile boolean active;boolean virtualMode,parallelVirtual;volatile int token,index;long lastShot;Slot[] slots;
  static final class Slot {final RewardReceipt receipt=new RewardReceipt();final RewardEvaluationConnectome evaluation=new RewardEvaluationConnectome();final FarmPassiveReward farmPassive=new FarmPassiveReward();final KurashiruRewardProof rewardEvidence=new KurashiruRewardProof();String pendingEvaluationReceipt="";final FarmAdErrorRecovery farmAdError=new FarmAdErrorRecovery();final ContinuousTapSession mainTaps=new ContinuousTapSession();Tapper tapper;UpgradeActions upgrades;BancRuntime banc;LearnedLayout repairLayout=new LearnedLayout();LearnedLayout learned;AdaptiveLayout layout;VirtualPresetProfile virtualProfile;AppPhases phases;String pkg;boolean home,stopped;long checked,lastShot,processingMs,observedAt,lastHomeProbe;final ManualIntervention manual=new ManualIntervention();final AdTwoSecondRecovery adTwoSecond=new AdTwoSecondRecovery();final DisplayRecovery displayRecovery=new DisplayRecovery();volatile long lastFrameAt;volatile String sampleError="";String recognition="未判定";boolean cyclePending;int scheduleVersion;int retries,missionTaps;RecoveryBudget recovery=new RecoveryBudget(),missionBudget=new RecoveryBudget(4);MissionJourney journey=new MissionJourney();CoinMissionJourney coinJourney=new CoinMissionJourney();AdInterruption interruption=new AdInterruption();AdExitPolicy adExit=new AdExitPolicy();Slot(TapService s,String pkg){this.pkg=pkg;phases=new AppPhases(s);phases.load(pkg);if(!phases.engine.windowRelative){if(pkg.equals(UsagiPreset.APP))phases.installUsagi();else if(pkg.equals(FarmPreset.APP))phases.installFarm();else if(pkg.equals(CoinPreset.APP))phases.installCoin();else if(pkg.equals(ShoppingPreset.APP))phases.installShopping();else if(pkg.equals(BoxPreset.APP))phases.installBox();else if(pkg.equals(PoipoiPreset.APP))phases.installPoipoi();}if(!phases.loadIssue.isEmpty())throw new IllegalArgumentException(phases.loadIssue);if(phases.engine.phases.isEmpty())throw new IllegalArgumentException(s.appLabel(pkg)+"：オートマトン未設定");phases.engine=phases.engine.runtimeCopy();CoinNoAdPolicy.apply(phases.engine);phases.runtimeOnly=true;learned=phases.engine.windowRelative?new LearnedLayout():null;layout=AdaptiveLayout.install(phases.engine,pkg,phases.references(PresetRegistry.asset(pkg)),phases.references("virtual-home-preset.json"));if(layout!=null){layout.relativeEnabled=!phases.customized;if(!phases.customized)layout.configureTargets(pkg,phases.references("visual-targets.json"));virtualProfile=layout.profile;if(!phases.customized)AdCloseAutomaton.install(phases.engine,pkg);}if(FarmPreset.APP.equals(pkg)&&!phases.customized&&!phases.engine.windowRelative)FarmControlEvidence.install(phases.engine);phases.engine.strictRuntime=true;phases.engine.current=phases.engine.initial;String error=phases.engine.validateStart();if(!error.isEmpty())throw new IllegalArgumentException(error);phases.engine.enter(phases.engine.initial,SystemClock.uptimeMillis());if(CoinPreset.APP.equals(pkg)&&!phases.customized)coinJourney.route(phases.engine.current);AutomatonNormalizer.normalizeRuntime(phases.engine);upgrades=new UpgradeActions(s,pkg,phases.engine);banc=new BancRuntime(s,pkg,phases.storage(),phases.engine);}}
  SplitPilot(TapService s){this.s=s;}
  void geometryChanged(){if(!active||virtualMode)return;token++;for(Slot slot:slots){pauseMain(slot);slot.home=false;slot.checked=0;slot.observedAt=0;slot.cyclePending=false;SharedPointClaimArbiter.release(slot.evaluation,slot.pendingEvaluationReceipt);slot.evaluation.invalidatePending();slot.rewardEvidence.reset();slot.farmPassive.reset();slot.pendingEvaluationReceipt="";slot.scheduleVersion++;if(slot.upgrades!=null)slot.upgrades.cancel("画面配置を再確認");if(slot.banc!=null)slot.banc.cancel();if(slot.layout!=null)slot.layout.relocator.clear();if(slot.learned!=null)slot.learned=new LearnedLayout();slot.phases.engine.restartObservation(SystemClock.uptimeMillis());}later(token,150);}
- void resetRun(){if(slots!=null)for(Slot slot:slots){SharedPointClaimArbiter.release(slot.evaluation,slot.pendingEvaluationReceipt);slot.evaluation.invalidatePending();slot.rewardEvidence.reset();slot.farmPassive.reset();slot.pendingEvaluationReceipt="";pauseMain(slot);if(slot.upgrades!=null)slot.upgrades.cancel("停止中");if(slot.banc!=null)slot.banc.cancel();}active=false;token++;virtualMode=false;parallelVirtual=false;}
+ void resetRun(){rewardLanePlanner.reset();if(slots!=null)for(Slot slot:slots){SharedPointClaimArbiter.release(slot.evaluation,slot.pendingEvaluationReceipt);slot.evaluation.invalidatePending();slot.rewardEvidence.reset();slot.farmPassive.reset();slot.pendingEvaluationReceipt="";pauseMain(slot);if(slot.upgrades!=null)slot.upgrades.cancel("停止中");if(slot.banc!=null)slot.banc.cancel();}active=false;token++;virtualMode=false;parallelVirtual=false;}
  void stop(){resetRun();if(s.pilot!=null&&s.pilot.virtualWindows!=null)s.pilot.virtualWindows.pause();s.pilot.panelTouchable(true);s.touchable(true);}
  void start(){start(s.pilot.splitLauncher.targets());}
- void start(String[] targets){s.stop();virtualMode=false;if(Build.VERSION.SDK_INT<34){s.pilot.note("複数画面自律にはAndroid14以降が必要です");return;}ArrayList<Slot> ready=new ArrayList<>();try{for(String pkg:targets){if(s.pilot.splitLauncher.bounds(pkg)==null){s.pilot.note(s.appLabel(pkg)+"のウインドウが未表示です");return;}ready.add(new Slot(s,pkg));}}catch(Exception failure){s.pilot.note("状態設定："+failure.getMessage());return;}if(ready.isEmpty()){s.pilot.note("対象アプリを選択してください");return;}slots=ready.toArray(new Slot[0]);active=true;index=0;lastShot=0;int t=++token;s.compactPanel(true);next(t);}
+ void start(String[] targets){s.stop();virtualMode=false;if(Build.VERSION.SDK_INT<34){s.pilot.note("複数画面自律にはAndroid14以降が必要です");return;}ArrayList<Slot> ready=new ArrayList<>();try{for(String pkg:targets){if(s.pilot.splitLauncher.bounds(pkg)==null){s.pilot.note(s.appLabel(pkg)+"のウインドウが未表示です");return;}ready.add(new Slot(s,pkg));}}catch(Exception failure){s.pilot.note("状態設定："+failure.getMessage());return;}if(ready.isEmpty()){s.pilot.note("対象アプリを選択してください");return;}slots=ready.toArray(new Slot[0]);rewardLanePlanner.reset();active=true;index=0;lastShot=0;int t=++token;s.compactPanel(true);next(t);}
  void startVirtual(String[] targets){
   if(active&&virtualMode)return;
   ArrayList<Slot> ready=new ArrayList<>();try{for(String pkg:targets){VirtualWindows.Window w=s.pilot.virtualWindows.window(pkg);if(w==null||!w.launched||w.frameAt<=0){s.pilot.virtualWindows.startFailed(s.appLabel(pkg)+"：仮想画面の起動を確認できません");return;}Slot slot=new Slot(s,pkg);slot.phases.runtimeOnly=true;if(!slot.phases.customized&&!slot.phases.engine.windowRelative&&PresetRegistry.supports(pkg))slot.phases.engine.enter(PresetRegistry.verify(pkg),SystemClock.uptimeMillis());s.pilot.dailyRunner.install(slot.phases.engine,pkg,true);ready.add(slot);}}catch(Exception e){s.pilot.virtualWindows.startFailed("仮想状態設定："+e.getMessage());return;}
@@ -19,10 +20,29 @@ final class SplitPilot {
    public boolean running(){return active&&virtualMode;}
    public void preparePhysical(){resetRun();s.prepareVirtualRun();if(PcControl.ownsRun(s))s.pilot.wireless.pauseMaintenance();else s.pilot.wireless.resumeMaintenance();}
    public boolean arm(){return s.pilot.virtualWindows.arm();}
-   public void activate(){slots=ready.toArray(new Slot[0]);virtualMode=true;parallelVirtual=s.pilot.virtualWindows.remote!=null;active=true;index=0;lastShot=0;int t=++token;s.pilot.virtualWindows.started();if(parallelVirtual){for(int i=0;i<slots.length;i++)later(slots[i],t,VirtualLoadPolicy.scanOffset(i,slots.length,s.performance.profile().scanMs));}else next(t);}
+   public void activate(){slots=ready.toArray(new Slot[0]);rewardLanePlanner.reset();virtualMode=true;parallelVirtual=s.pilot.virtualWindows.remote!=null;active=true;index=0;lastShot=0;int t=++token;s.pilot.virtualWindows.started();if(parallelVirtual){for(int i=0;i<slots.length;i++)later(slots[i],t,VirtualLoadPolicy.scanOffset(i,slots.length,s.performance.profile().scanMs));}else next(t);}
   });
  }
- void nextVirtual(int t){nextVirtual(slots[index++%slots.length],t);}
+ int chooseRewardLane(){
+   if(slots==null||slots.length==0)return -1;
+   int n=slots.length;boolean[] eligible=new boolean[n],verifying=new boolean[n];
+   long[] cycles=new long[n];double[] values=new double[n];
+   long now=SystemClock.uptimeMillis();
+   for(int i=0;i<n;i++){
+     Slot slot=slots[i];
+     eligible[i]=!slot.stopped&&!slot.cyclePending&&!slot.manual.holding(now);
+     verifying[i]=!slot.pendingEvaluationReceipt.isEmpty()
+         &&slot.evaluation.awaitingProof();
+     cycles[i]=slot.evaluation.cycles();
+     values[i]=slot.evaluation.score();
+   }
+   return rewardLanePlanner.select(eligible,verifying,cycles,values);
+  }
+  void nextVirtual(int t){
+   int choice=chooseRewardLane();
+   if(choice<0){later(t,150);return;}
+   nextVirtual(slots[choice],t);
+  }
  void nextVirtual(Slot slot,int t){
   if(!valid(t)||slot.cyclePending)return;slot.cyclePending=true;if(slot.manual.holding(SystemClock.uptimeMillis())){pauseMain(slot);later(slot,t,150);return;}
   if(slot.stopped){VirtualWindows.Window stopped=s.pilot.virtualWindows.window(slot.pkg);if(stopped!=null)s.pilot.virtualWindows.state(stopped,"停止状態");boolean all=true;for(Slot other:slots)all&=other.stopped;if(all){s.stop("全画面の状態機械が停止状態になった");return;}later(slot,t,350);return;}
@@ -122,7 +142,11 @@ final class SplitPilot {
  boolean valid(int t){return active&&token==t;}
  void later(int t,long delay){s.h.postDelayed(()->next(t),Math.max(0,delay));}
  void later(Slot slot,int t,long delay){slot.cyclePending=false;if(!parallelVirtual){later(t,delay);return;}int version=++slot.scheduleVersion;s.h.postDelayed(()->{if(valid(t)&&parallelVirtual&&version==slot.scheduleVersion)nextVirtual(slot,t);},Math.max(0,delay));}
- void next(int t){if(!valid(t))return;if(virtualMode){nextVirtual(t);return;}if(s.guardDialog()){later(t,500);return;}Slot slot=slots[index++%slots.length];if(slot.stopped){boolean all=true;for(Slot other:slots)all&=other.stopped;if(all){stop();s.pilot.note("全アプリ停止状態");return;}later(t,50);return;}
+ void next(int t){if(!valid(t))return;if(virtualMode){nextVirtual(t);return;}if(s.guardDialog()){later(t,500);return;}int chosen=chooseRewardLane();
+  if(chosen<0){boolean all=true;for(Slot other:slots)all&=other.stopped;
+    if(all){stop();s.pilot.note("全アプリ停止状態");return;}
+    later(t,150);return;}
+  Slot slot=slots[chosen];
 
  AccessibilityWindowInfo selected=null;Rect bounds=null;for(AccessibilityWindowInfo w:s.getWindows()){if(w.getType()!=AccessibilityWindowInfo.TYPE_APPLICATION)continue;AccessibilityNodeInfo n=w.getRoot();if(n==null)continue;boolean match=slot.pkg.contentEquals(n.getPackageName()==null?"":n.getPackageName());n.recycle();if(match){selected=w;bounds=new Rect();w.getBoundsInScreen(bounds);break;}}
  if(selected==null||bounds==null||bounds.isEmpty()){slot.home=false;pauseMain(slot);s.pilot.note(s.appLabel(slot.pkg)+"：未表示のため待機");later(t,350);return;}if(!s.pilot.splitLauncher.exposed(slot.pkg,bounds)){slot.home=false;pauseMain(slot);s.pilot.note(s.appLabel(slot.pkg)+"：重なりを解消すると再開");later(t,350);return;}final Rect rect=new Rect(bounds);final int id=selected.getId();long wait=TransitionTiming.remaining(lastShot,SystemClock.uptimeMillis());s.h.postDelayed(()->capture(slot,id,rect,t),wait);
