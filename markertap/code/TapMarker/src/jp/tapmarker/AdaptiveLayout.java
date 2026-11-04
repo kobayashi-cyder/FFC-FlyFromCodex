@@ -17,6 +17,7 @@ class AdaptiveLayout {
  static final float NORMAL_Y=(.78f-.097f)/(.775f-.0246f),NORMAL_TOP=.097f-.0246f*NORMAL_Y;
  AdaptiveLayout(PhaseEngine engine,VirtualPresetProfile profile,boolean usagi,float[] home,float tolerance){this.engine=engine;this.profile=profile;this.usagi=usagi;canonicalHome=home;canonicalTolerance=tolerance;homeHeader=profile.header;homeButton=profile.button;homeReference=profile.reference;}
  static AdaptiveLayout install(PhaseEngine e,String app,Map<String,float[]> canonical,Map<String,float[]> evidence){
+  if(KaitakuPreset.APP.equals(app))return KaitakuLayout.choose(e,app,canonical);
   if(PoipoiPreset.APP.equals(app))return PoipoiLayout.install(e,canonical);
   if(BoxPreset.APP.equals(app))return BoxLayout.install(e,canonical);
   if(CoinPreset.APP.equals(app))return CoinLayout.install(e,canonical);

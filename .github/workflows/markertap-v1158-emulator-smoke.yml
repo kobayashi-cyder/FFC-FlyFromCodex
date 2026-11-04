@@ -1,0 +1,76 @@
+name: MarkerTap v1.158 source-built Android15 emulator startup smoke - CI key only
+on:
+  push:
+    branches:
+      - markertap/v1.158-reward-gated-connectome
+    paths:
+      - '.github/workflows/markertap-v1158-emulator-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android35-launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install pinned SDK and restore source
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          if ! command -v rg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ripgrep
+          fi
+          python3 markertap/tools/restore_source.py \
+            --output "$RUNNER_TEMP/source-v158.zip" \
+            --extract-to "$RUNNER_TEMP/marker-project"
+      - name: Build with disposable key and assert v1.158 package identity
+        run: |
+          set -euo pipefail
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export TAPMARKER_KEYSTORE="$RUNNER_TEMP/emulator-ci-only.jks"
+          export TAPMARKER_OUTPUT="$RUNNER_TEMP/MarkerTap-v1.158-CI-TEST-NOT-UPGRADEABLE.apk"
+          keytool -genkeypair -noprompt -keyalg RSA -keysize 2048 -validity 2 \
+            -alias tapmarker -keystore "$TAPMARKER_KEYSTORE" -storepass android \
+            -keypass android -dname "CN=Emulator smoke test only"
+          (cd "$RUNNER_TEMP/marker-project/TapMarker" && bash build.sh)
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "$TAPMARKER_OUTPUT" | grep "name='jp.tapmarker.lite' versionCode='161' versionName='1.158'"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$TAPMARKER_OUTPUT"
+      - name: Grant emulator KVM acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android15 emulator install, MainActivity startup, package and crash smoke
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            set -eu
+            adb install -r "$RUNNER_TEMP/MarkerTap-v1.158-CI-TEST-NOT-UPGRADEABLE.apk"
+            adb shell am start -W -n jp.tapmarker.lite/jp.tapmarker.MainActivity
+            sleep 4
+            adb shell pidof jp.tapmarker.lite
+            adb logcat -d -b crash > "$RUNNER_TEMP/markertap-v158-emulator-crash.log"
+            ! grep -Eq 'FATAL EXCEPTION.*jp.tapmarker|Process: jp.tapmarker.lite' "$RUNNER_TEMP/markertap-v158-emulator-crash.log"
+            echo 'PASS Android15 emulator launch; Android17 and app-specific rewards NOT tested'
+      - name: Preserve emulator diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1158-emulator-smoke-evidence-not-upgradeable
+          path: |
+            ${{ runner.temp }}/markertap-v158-emulator-crash.log
+          if-no-files-found: ignore
+          retention-days: 7
