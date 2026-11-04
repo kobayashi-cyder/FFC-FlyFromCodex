@@ -34,7 +34,8 @@ final class KaitakuVideoNamedControls {
     // Canvas accessibility exposes the title but not its button. Do not
     // downgrade this independent visual evidence to a HOLD.
     if(d.result==KaitakuVideoModalPolicy.Result.HOLD&&
-       KaitakuActionEvidence.present(out,"close"))return;
+       (KaitakuActionEvidence.present(out,"close")||
+        KaitakuActionEvidence.present(out,"tap-ad-start")))return;
     // Freeze ordinary-home and mission actions while a modal is present.
     KaitakuNamedControls.clear(out);
     if(d.result==KaitakuVideoModalPolicy.Result.DISMISS &&
@@ -43,7 +44,12 @@ final class KaitakuVideoNamedControls {
       // Candidate pacing does not replace action-result/frame verification.
       KaitakuActionEvidence.put(out,"close",d.bounds);
     }
-    // HOLD never fabricates coordinates or taps the rewarded-ad action.
+    if(d.result==KaitakuVideoModalPolicy.Result.START_AD &&
+       KaitakuActionPacer.allow(e,d.kind,d.bounds,System.nanoTime()/1000000L)) {
+      KaitakuActionEvidence.put(out,"tap-ad-start",d.bounds);
+    }
+    // HOLD never fabricates coordinates. A named CTA or strictly verified
+    // pixel geometry is required before any rewarded-ad start candidate.
   }
   private KaitakuVideoNamedControls() {}
 }
