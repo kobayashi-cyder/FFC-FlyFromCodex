@@ -6,6 +6,12 @@ on:
       - "markertap/v1.161-cifa/**"
       - "markertap/code/**"
       - ".github/workflows/markertap-v1619-cm-evaluation-autonomy.yml"
+  pull_request:
+    branches: ["markertap/v1.1618-kaitaku-fullcycle-two-display"]
+    paths:
+      - "markertap/v1.161-cifa/**"
+      - "markertap/code/**"
+      - ".github/workflows/markertap-v1619-cm-evaluation-autonomy.yml"
   workflow_dispatch:
 permissions:
   contents: write
