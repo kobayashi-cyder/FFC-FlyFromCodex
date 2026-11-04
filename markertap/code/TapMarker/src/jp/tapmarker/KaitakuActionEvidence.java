@@ -29,6 +29,9 @@ final class KaitakuActionEvidence {
    if(shared("title",t,w,h,p)==null)continue;
    float[] get=shared("get",t,w,h,p),play=get==null?shared("play",t,w,h,p):null,back=get==null&&play==null?shared("back",t,w,h,p):null;
    if(get==null&&play==null&&back==null)continue;
+   // A fresh, independently recognized non-Get mission row disarms a
+   // completed claim. The next task may legitimately use the same position.
+   if(get==null&&play!=null)KaitakuRewardClaimGate.absent(e);
    put(out,"mission-page",null);blockHome(out);
    if(e.current.equals(KaitakuPreset.P+"missions")){if(get!=null){if(KaitakuRewardClaimGate.allow(e,get))put(out,"get",get);}else if(play!=null)put(out,"play",play);else if(back!=null)put(out,"back",back);}
    return true;
@@ -50,7 +53,12 @@ final class KaitakuActionEvidence {
   }
   if(home.proceed)return;
   if(!home.home){
-   if(reward(w,h,p,out)){KaitakuRewardClaimGate.receipt(e);return;}
+   if(reward(w,h,p,out)){
+    if(e.current.equals(KaitakuPreset.P+"claim-wait"))KaitakuRewardClaimGate.receipt(e);
+    return;
+   }
+   float[] optOut=KaitakuVideoModalVisual.find(w,h,p);
+   if(optOut!=null){put(out,"close",optOut);blockHome(out);return;}
    if(e.current.equals(KaitakuPreset.P+"claim-wait"))return;
    if(!mission(e,w,h,p,out)){
     float[] orange=KaitakuOrangeClaimEvidence.find(w,h,p);
@@ -70,7 +78,14 @@ final class KaitakuActionEvidence {
   if(now>=nextUpgrade){
    float[] left=control("action-eff-title",EFF_TITLE,"action-eff-cost",EFF_COST,"action-eff-ad",EFF_AD,t,w,h,p);
    float[] right=control("action-auto-title",AUTO_TITLE,"action-auto-cost",AUTO_COST,"action-auto-ad",AUTO_AD,t,w,h,p);
-   if(left!=null&&(upgradeTurn%2==0||right==null)){put(out,"upgrade",KaitakuEvidence.map(new float[]{.045f,.821f,.34f,.865f},left));return;}
+   // The original sprite references are brittle when the level/cost changes.
+   // Use both screenshot pod frames as fallback; the side engine still
+   // requires TWO distinct fresh frames before any gesture.
+   if(left==null&&KaitakuControlVisual.visible(w,h,p,false))left=new float[]{1,1,0,0};
+   if(right==null&&KaitakuControlVisual.visible(w,h,p,true))right=new float[]{1,1,0,0};
+   // upgradeTurn only advances in upgrade-wait, which the side engine removes.
+   // Stable 30-second windows avoid alternation across its two-frame quorum.
+   if(left!=null&&((now/30000L)%2==0||right==null)){put(out,"upgrade",KaitakuEvidence.map(new float[]{.045f,.821f,.34f,.865f},left));return;}
    if(right!=null){put(out,"auto-upgrade",KaitakuEvidence.map(new float[]{.68f,.821f,.96f,.865f},right));return;}
   }
   if(now>=nextBoost){String key=boostTurn%2==0?"tap-boost":"auto-boost";float[] bounds=boostTurn%2==0?TAP_BOOST:AUTO_BOOST;
