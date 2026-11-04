@@ -24,8 +24,22 @@ final class KaitakuVideoModalVisual {
   private static boolean yellow(int c){return r(c)>219&&g(c)>135&&g(c)<205&&b(c)<70;}
   private static boolean dark(int c){return r(c)<95&&g(c)<95&&b(c)<95;}
 
+  private static boolean pink(int c){return r(c)>200&&g(c)>155&&g(c)<220&&b(c)>185&&b(c)>g(c)+10;}
+  // The 98s Nov 5 recording has a smaller, PINK-headed coin dialog.
+  // The previous cream-header detector must remain for earlier layouts.
+  private static float[] recordedCoinDialog(int w,int h,RegionSampler.Pixels p){
+    if(!pink(pixel(w,h,p,.17f,.28f))||!pink(pixel(w,h,p,.83f,.28f))||
+       !white(pixel(w,h,p,.17f,.40f))||!white(pixel(w,h,p,.83f,.40f))||
+       !white(pixel(w,h,p,.17f,.52f))||!white(pixel(w,h,p,.83f,.52f))||
+       !yellow(pixel(w,h,p,.23f,.57f))||!yellow(pixel(w,h,p,.77f,.57f))||
+       !dark(pixel(w,h,p,.30f,.61f))||!dark(pixel(w,h,p,.70f,.61f))||
+       !white(pixel(w,h,p,.17f,.63f))||!white(pixel(w,h,p,.83f,.63f)))return null;
+    // Below the rewarded-ad CTA, on the separate "このままはじめる" line.
+    return new float[]{.29f,.620f,.71f,.652f};
+  }
   static float[] find(int w,int h,RegionSampler.Pixels p){
     if(p==null||w<200||h<400)return null;
+    float[] recorded=recordedCoinDialog(w,h,p);if(recorded!=null)return recorded;
     // Probe undecorated strips, not text glyphs. Independent horizontal
     // strips reject mission cards, ordinary game frames and full-screen ads.
     if(!cream(pixel(w,h,p,.10f,.29f))||!cream(pixel(w,h,p,.90f,.29f))||
