@@ -23,6 +23,7 @@ public final class PatchRewardV158 {
  private static final String[] EXTRA={
    ROOT+"RewardV158Observer",ROOT+"RewardV158Capture",
    ROOT+"RewardV158VirtualHud",
+   ROOT+"RewardV158Scheduler",
    ROOT+"RewardEvaluationConnectome",ROOT+"RewardLanePlanner",
    ROOT+"KurashiruPointHud",ROOT+"KurashiruRewardProof",
    ROOT+"FarmPassiveReward",ROOT+"SharedPointClaimArbiter"
