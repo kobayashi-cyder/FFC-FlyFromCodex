@@ -12,10 +12,13 @@ public final class UpgradeEngine {
  private boolean confirmingAd,adPending,adAway;private float[] adBefore;private long adSentAt,adResumeAt=-1,nextAdAt;
  public UpgradeEngine(PhaseEngine engine,String pkg){
   owner=engine;String id=pkg.equals(FarmPreset.APP)?FarmPreset.P+"upgrade-ready":pkg.equals(UsagiPreset.APP)?UsagiPreset.PREFIX+"amount-tap":"";
-  if(id.isEmpty())return;
-  for(PhaseEngine.Phase phase:engine.phases.values())for(Iterator<PhaseEngine.Watch> it=phase.watches.iterator();it.hasNext();){PhaseEngine.Watch w=it.next();if(w.id.equals(id)&&w.action==PhaseEngine.CENTER&&w.condition==PhaseEngine.MATCH&&phase.markersDuring){rules.put(w.id,w);origins.put(w.id,phase.id);it.remove();}}
+  // Kaitaku upgrades are side controls. Moving the main phase to upgrade-wait
+  // stops the continuous tapping loop before any result can be observed.
+  String[] ids=KaitakuPreset.APP.equals(pkg)?new String[]{KaitakuPreset.P+"main-upgrade",KaitakuPreset.P+"main-auto-upgrade"}:id.isEmpty()?new String[0]:new String[]{id};
+  if(ids.length==0)return;
+  for(PhaseEngine.Phase phase:engine.phases.values())for(Iterator<PhaseEngine.Watch> it=phase.watches.iterator();it.hasNext();){PhaseEngine.Watch w=it.next();if(Arrays.asList(ids).contains(w.id)&&w.action==PhaseEngine.CENTER&&w.condition==PhaseEngine.MATCH&&phase.markersDuring){rules.put(w.id,w);origins.put(w.id,phase.id);it.remove();}}
   if(!rules.isEmpty())status="強化ボタンの確認待ち";
-  String wait=pkg.equals(FarmPreset.APP)?FarmPreset.P+"upgrade-wait":UsagiPreset.PREFIX+"amount-wait";
+  String wait=pkg.equals(FarmPreset.APP)?FarmPreset.P+"upgrade-wait":pkg.equals(UsagiPreset.APP)?UsagiPreset.PREFIX+"amount-wait":KaitakuPreset.P+"upgrade-wait";
   boolean referenced=engine.initial.equals(wait)||engine.current.equals(wait);for(PhaseEngine.Phase phase:engine.phases.values())for(PhaseEngine.Watch w:phase.watches)if(w.nextPhase.equals(wait))referenced=true;
   if(!referenced&&!rules.isEmpty())engine.phases.remove(wait);
  }
