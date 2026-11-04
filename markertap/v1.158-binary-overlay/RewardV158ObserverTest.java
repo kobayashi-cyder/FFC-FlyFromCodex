@@ -41,14 +41,14 @@ public final class RewardV158ObserverTest {
     sample(lane,COIN,model,1000,empty(),false,true);
     balance(lane,COIN,100,1100);
     model.lastCompletedRule="coin-default-get-tap";
-    sample(lane,COIN,1800,empty(),false,false);
+    sample(lane,COIN,model,1800,empty(),false,false);
     balance(lane,COIN,110,1900);
     yes(RewardV158Observer.report(lane).contains("受領確定0回"),"tap alone not reward");
     Map<String,float[]> proof=empty();proof.put("reward",new float[1536]);
-    sample(lane,COIN,2200,proof,false,false);
+    sample(lane,COIN,model,2200,proof,false,false);
     balance(lane,COIN,110,2300);
     yes(RewardV158Observer.report(lane).contains("受領確定0回"),"single popup not proof");
-    sample(lane,COIN,2800,proof,false,false);
+    sample(lane,COIN,model,2800,proof,false,false);
     balance(lane,COIN,110,3000);
     yes(RewardV158Observer.report(lane).contains("受領確定0回"),"first balance not enough");
     balance(lane,COIN,110,3500);
