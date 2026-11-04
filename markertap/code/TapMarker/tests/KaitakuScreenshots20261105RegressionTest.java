@@ -118,7 +118,7 @@ public final class KaitakuScreenshots20261105RegressionTest {
     coin.fill(.15f,.255f,.85f,.316f,0xeebde4);
     coin.fill(.15f,.316f,.85f,.655f,0xffffff);
     coin.fill(.22f,.552f,.78f,.605f,0xf0b300);
-    coin.fill(.30f,.607f,.70f,.620f,0x2d2d2d);
+    coin.fill(.29f,.607f,.71f,.620f,0x2d2d2d);
     float[] opt=KaitakuVideoModalVisual.find(coin.w,coin.h,coin);
     ok(opt!=null&&opt[1]>=.615f&&opt[3]<=.66f,
        "recording coin popup -> only nonadvertising start line");
