@@ -49,21 +49,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          keytool -genkeypair -noprompt -alias tapmarker -keyalg RSA -keysize 2048 -validity 365 -keystore "$RUNNER_TEMP/ci-cifa-lab.jks" -storepass android -keypass android -dname "CN=CIFA v1.161 separate test app"
+          keytool -genkeypair -noprompt -alias tapmarker -keyalg RSA -keysize 2048 -validity 365 -keystore "$RUNNER_TEMP/ci-cifa-lab.jks" -storepass android -keypass android -dname "CN=CIFA daily get unique test app"
           export ANDROID_SDK_ROOT="$ANDROID_HOME"
           export TAPMARKER_KEYSTORE="$RUNNER_TEMP/ci-cifa-lab.jks"
-          export TAPMARKER_OUTPUT="$RUNNER_TEMP/CIFA-v1.1613-kaitaku-ad-upgrade-lab-signed.apk"
+          export TAPMARKER_OUTPUT="$RUNNER_TEMP/CIFA-v1.1613-daily-get-installfix-signed.apk"
           cd "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
           bash build.sh > "$RUNNER_TEMP/build.log" 2>&1 || { tail -150 "$RUNNER_TEMP/build.log"; exit 1; }
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$RUNNER_TEMP/CIFA-v1.1613-kaitaku-ad-upgrade-lab-signed.apk" > "$RUNNER_TEMP/signature-verification.txt"
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 "$RUNNER_TEMP/CIFA-v1.1613-kaitaku-ad-upgrade-lab-signed.apk"
-          PKG=$("$ANDROID_HOME/build-tools/35.0.0/aapt2" dump packagename "$RUNNER_TEMP/CIFA-v1.1613-kaitaku-ad-upgrade-lab-signed.apk")
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$RUNNER_TEMP/CIFA-v1.1613-daily-get-installfix-signed.apk" > "$RUNNER_TEMP/signature-verification.txt"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 "$RUNNER_TEMP/CIFA-v1.1613-daily-get-installfix-signed.apk"
+          PKG=$("$ANDROID_HOME/build-tools/35.0.0/aapt2" dump packagename "$RUNNER_TEMP/CIFA-v1.1613-daily-get-installfix-signed.apk")
           echo "$PKG" | tee "$RUNNER_TEMP/package-name.txt"
-          test "$PKG" = "jp.tapmarker.cifa.kaitaku"
+          test "$PKG" = "jp.tapmarker.cifa.getfix1613"
           python3 - <<'PY'
           import zipfile,os
           from pathlib import Path
-          apk=Path(os.environ["RUNNER_TEMP"])/"CIFA-v1.1613-kaitaku-ad-upgrade-lab-signed.apk"
+          apk=Path(os.environ["RUNNER_TEMP"])/"CIFA-v1.1613-daily-get-installfix-signed.apk"
           with zipfile.ZipFile(apk) as z:
               assert z.testzip() is None
               assert "classes.dex" in z.namelist()
@@ -82,22 +82,22 @@ jobs:
           for test in CifaDenseSelector CifaAutonomy CifaKnowHow CifaGraphMigration KaitakuMissionReacquire FloatingPanelGeometry KaitakuAdUpgradeRepair KaitakuOrangeClaimEvidence; do
             java -cp build/classes:build/test-classes jp.tapmarker."$test"Test
           done | tee "$RUNNER_TEMP/tests.log"
-          (cd "$RUNNER_TEMP" && sha256sum CIFA-v1.1613-kaitaku-ad-upgrade-lab-signed.apk) | tee "$RUNNER_TEMP/SHA256SUMS.txt"
+          (cd "$RUNNER_TEMP" && sha256sum CIFA-v1.1613-daily-get-installfix-signed.apk) | tee "$RUNNER_TEMP/SHA256SUMS.txt"
           cat > "$RUNNER_TEMP/INSTALL-NOTE.txt" <<'NOTE'
-          CIFA v1.161.3 Kaitaku ad/efficiency side-action repair lab APK.
-          Package: jp.tapmarker.cifa.kaitaku (different from installed jp.tapmarker.lite).
-          This APK does NOT upgrade MarkerTap v1.159, import its app data, or preserve its runtime.
-          Built from a historical source mirror with v1.161 CIFA, v1.161.1 minimize fix, and v1.161.3 Kaitaku ad/upgrade repair and a temporary test signing key.
+          CIFA v1.161.3 Daily Get installfix lab APK.
+          Package: jp.tapmarker.cifa.getfix1613 (different from installed jp.tapmarker.lite).
+          This APK does NOT update or remove the installed MarkerTap app or earlier CIFA lab apps, and does not import their app data.
+          Built from restored CIFA source with v1.161.3 orange mission claim detection and a temporary test signing key.
           Android on-device install/recognition/gesture/virtual display validation has NOT been performed.
-          The test signing key is not persisted across workflow runs: uninstall this test app before replacing it.
+          This release uses a UNIQUE application package ID to avoid signature conflicts with previous CIFA lab APKs. A future build with a new temporary key cannot update this same package.
           Keep the main MarkerTap app installed and unchanged.
           To minimize: open the floating CIFA control panel, tap 最小化; drag the CIFA bubble; tap it to restore.
           NOTE
       - uses: actions/upload-artifact@v4
         with:
-          name: CIFA-v1.1613-kaitaku-ad-upgrade-isolated-lab-signed
+          name: CIFA-v1.1613-daily-get-installfix-isolated-signed
           path: |
-            ${{ runner.temp }}/CIFA-v1.1613-kaitaku-ad-upgrade-lab-signed.apk
+            ${{ runner.temp }}/CIFA-v1.1613-daily-get-installfix-signed.apk
             ${{ runner.temp }}/INSTALL-NOTE.txt
             ${{ runner.temp }}/SHA256SUMS.txt
             ${{ runner.temp }}/tests.log
