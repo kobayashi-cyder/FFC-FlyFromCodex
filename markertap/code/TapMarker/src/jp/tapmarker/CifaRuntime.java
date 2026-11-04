@@ -8,10 +8,10 @@ import org.json.*;
 
 /** Per-game/per-graph memory and Android adapter shared by single and virtual runners. */
 final class CifaRuntime {
- final TapService s;final String pkg,scope,key;final CifaAutonomy core;
+ final TapService s;final String pkg,scope,key,legacyKey;final CifaAutonomy core;
  static CifaKnowHow sharedKnowledge;static int savedSharedRevision;
  CifaAutonomy.Ui ui=CifaAutonomy.Ui.empty();int savedRevision;String saveError="";
- CifaRuntime(TapService s,String pkg,String scope,PhaseEngine engine){this.s=s;this.pkg=pkg;this.scope=scope;this.key="memory:"+scope+":"+CifaGraphIdentity.of(scope,engine);this.core=new CifaAutonomy(knowledge(s),scope);load();core.reset(SystemClock.uptimeMillis());}
+ CifaRuntime(TapService s,String pkg,String scope,PhaseEngine engine){this.s=s;this.pkg=pkg;this.scope=scope;this.key="memory:"+scope+":"+CifaGraphIdentity.of(scope,engine);this.legacyKey="memory:"+scope+":"+CifaGraphIdentity.legacyOf(scope,engine);this.core=new CifaAutonomy(knowledge(s),scope);load();core.reset(SystemClock.uptimeMillis());}
  boolean enabled(){return s.getSharedPreferences("cifaAutonomy",0).getBoolean("enabled",true);}
  boolean pending(){return enabled()&&core.pending();}
  void cancel(){core.cancel();save();}
@@ -43,9 +43,16 @@ final class CifaRuntime {
   core.fail(SystemClock.uptimeMillis(),"ボタンが入力直前に変化・入力拒否 / 再確認");save();return false;
  }
  void load(){
-  try{JSONObject memory=new JSONObject(s.getSharedPreferences("cifaAutonomy",0).getString(key,"{}"));if(memory.optInt("schema",0)!=1)return;
-   JSONArray factors=memory.optJSONArray("gains");if(factors!=null&&factors.length()==16){double[] values=new double[16];for(int i=0;i<16;i++)values[i]=factors.getDouble(i);core.selector.restore(values);}
+  try{String fresh=s.getSharedPreferences("cifaAutonomy",0).getString(key,null);
+   // Previously VERIFIED, graph-scoped skills can be imported once.
+   // BANC weight gains cannot be interpreted as CIFA dense weights.
+   boolean migration=fresh==null;
+   String prior=migration?s.getSharedPreferences("bancAutonomy",0).getString(legacyKey,"{}"):fresh;
+   JSONObject memory=new JSONObject(prior);
+   if(memory.optInt("schema",0)!=1)return;
+   JSONArray factors=migration?null:memory.optJSONArray("gains");if(factors!=null&&factors.length()==16){double[] values=new double[16];for(int i=0;i<16;i++)values[i]=factors.getDouble(i);core.selector.restore(values);}
    JSONArray skills=memory.optJSONArray("skills");if(skills!=null)for(int i=0;i<Math.min(128,skills.length());i++){JSONObject row=skills.getJSONObject(i);CifaAutonomy.Skill skill=new CifaAutonomy.Skill();skill.id=row.getString("id");skill.context=row.getString("context");skill.kind=row.getString("kind");skill.label=row.getString("label");skill.destination=row.optString("destination","");skill.before=AppLogic.read(row.getJSONArray("before"));skill.bounds=AppLogic.read(row.getJSONArray("bounds"));skill.attempts=row.getInt("attempts");skill.successes=row.getInt("successes");skill.failures=row.getInt("failures");skill.rewardSum=row.getDouble("reward");boolean valid=skill.before.length==768&&CifaAutonomy.validBounds(skill.bounds)&&skill.attempts>=0&&skill.successes>=0&&skill.failures>=0&&skill.successes+skill.failures==skill.attempts&&Double.isFinite(skill.rewardSum)&&CifaAutonomy.safeKind(skill.label,skill.context).equals(skill.kind);for(float value:skill.before)valid&=Float.isFinite(value)&&value>=0&&value<=1;if(valid)core.skills.put(skill.id,skill);}
+   if(migration){core.revision++;saveError="旧版の検証済み操作履歴を安全条件付きで移行";}
   }catch(Exception damaged){saveError="学習記憶の読込に失敗 / 登録済み設定で継続";core.skills.clear();}
  }
  void save(){saveKnowledge(s);if(savedRevision==core.revision)return;
@@ -57,7 +64,10 @@ final class CifaRuntime {
  String report(){return core.report()+(saveError.isEmpty()?"":"\n"+saveError);}
  static synchronized CifaKnowHow knowledge(TapService s){
   if(sharedKnowledge!=null)return sharedKnowledge;sharedKnowledge=new CifaKnowHow();
-  try{JSONObject memory=new JSONObject(s.getSharedPreferences("cifaAutonomy",0).getString("sharedKnowHowV1","{}"));if(memory.optInt("schema",0)!=1)return sharedKnowledge;JSONArray rows=memory.optJSONArray("procedures");List<CifaKnowHow.Row> values=new ArrayList<>();if(rows!=null)for(int i=0;i<Math.min(160,rows.length());i++){JSONObject item=rows.getJSONObject(i);CifaKnowHow.Row row=new CifaKnowHow.Row();row.kind=item.getString("kind");row.source=item.getString("sourceGame");row.attempts=item.getInt("attempts");row.successes=item.getInt("successes");row.failures=item.getInt("failures");row.rewardSum=item.getDouble("rewardSum");row.latencySum=item.getDouble("resultLatencySum");row.latencySquared=item.getDouble("resultLatencySquared");values.add(row);}sharedKnowledge.restore(values);
+  try{String fresh=s.getSharedPreferences("cifaAutonomy",0).getString("sharedKnowHowV1",null);
+   boolean migrate=fresh==null;
+   String stored=migrate?s.getSharedPreferences("bancAutonomy",0).getString("sharedKnowHowV1","{}"):fresh;
+   JSONObject memory=new JSONObject(stored);if(memory.optInt("schema",0)!=1)return sharedKnowledge;JSONArray rows=memory.optJSONArray("procedures");List<CifaKnowHow.Row> values=new ArrayList<>();if(rows!=null)for(int i=0;i<Math.min(160,rows.length());i++){JSONObject item=rows.getJSONObject(i);CifaKnowHow.Row row=new CifaKnowHow.Row();row.kind=item.getString("kind");row.source=item.getString("sourceGame");row.attempts=item.getInt("attempts");row.successes=item.getInt("successes");row.failures=item.getInt("failures");row.rewardSum=item.getDouble("rewardSum");row.latencySum=item.getDouble("resultLatencySum");row.latencySquared=item.getDouble("resultLatencySquared");values.add(row);}sharedKnowledge.restore(values);if(migrate)savedSharedRevision=-1;
   }catch(Exception damaged){sharedKnowledge.restore(Collections.emptyList());}return sharedKnowledge;
  }
  static synchronized void saveKnowledge(TapService s){
