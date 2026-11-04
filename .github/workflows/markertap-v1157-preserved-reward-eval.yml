@@ -24,6 +24,8 @@ jobs:
             markertap/v1.157-evaluation-host-tests/KurashiruClaimPolicyTest.java
             markertap/v1.157-evaluation-host-tests/SharedPointClaimArbiterTest.java
             markertap/v1.157-evaluation-host-tests/FarmPassiveRewardTest.java
+            markertap/code/TapMarker/src/jp/tapmarker/RewardLanePlanner.java
+            markertap/v1.157-evaluation-host-tests/RewardLanePlannerTest.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -61,6 +63,14 @@ jobs:
           java -cp /tmp/claim-policy jp.tapmarker.KurashiruClaimPolicyTest
           java -cp /tmp/claim-policy jp.tapmarker.SharedPointClaimArbiterTest
           java -cp /tmp/claim-policy jp.tapmarker.FarmPassiveRewardTest
+      - name: Verify bounded reward-aware sequential lane decisions
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reward-lane
+          javac --release 8 -encoding UTF-8 -d /tmp/reward-lane \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardLanePlanner.java \
+            markertap/v1.157-evaluation-host-tests/RewardLanePlannerTest.java
+          java -cp /tmp/reward-lane jp.tapmarker.RewardLanePlannerTest
       - name: Validate physical and virtual source wiring without claiming APK integration
         run: |
           python3 - <<'PY'
@@ -71,6 +81,9 @@ jobs:
           r=(root/'AdRecoveryRuntime.java').read_text()
           assert 'final RewardEvaluationConnectome evaluation' in a
           assert 'final RewardEvaluationConnectome evaluation' in s
+          assert 'rewardLanePlanner.select' in s
+          assert 'choice=chooseRewardLane()' in s
+          assert 'chosen=chooseRewardLane()' in s
           assert 'p.evaluation.observeAd' in r
           assert 'slot.evaluation.observeAd' in r
           assert 'evaluation.invalidatePending()' in r
