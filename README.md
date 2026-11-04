@@ -1,3 +1,17 @@
+## CIFA v1.161.3 — インストール衝突対策版「ゲット」自動回収候補（2026-11-05）
+
+**[▶ APKを直接ダウンロード（GitHub Release）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1613-dailyget-installfix-lab/CIFA-v1.1613-daily-get-installfix-signed.apk)**
+
+- **解決する問題：** 過去のCIFA検証版 `jp.tapmarker.cifa.kaitaku` はCI実行ごとに署名鍵が変わり、インストール済み検証版への上書き時に署名不一致を起こし得ます。今回のAPKは新しい **`jp.tapmarker.cifa.getfix1613`** を使用し、以前の検証版・正式MarkerTapと同居できます。端末に出た実際のインストールエラーは未取得のため、原因を確定したものではありません。
+- **ビルド・署名：** [GitHub Actions成功](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41915385940)。APK v2/v3署名、ZIP CRC、16KB zipalign、ホスト回帰テストに合格。サイズ5,893,020バイト、SHA-256: `e80d39743f033edc1eeed28b596293f0bca03e9ef008c3129a3fb5419f135486`。生成APKのバイト列とGitHub ReleaseのSHA-256は一致。
+- **機能：** ミッション画面の達成済み黄色ゲージとオレンジ「ゲット」を確認し、既存の状態遷移に受取候補を渡します。未達成の黄色「プレイ」を報酬と誤認しないようにしています。
+- **インストール：** Androidの「ファイル」アプリ→ダウンロード→APKを開き、必要なら設定→アプリ→特別なアプリアクセス→不明なアプリのインストールで使用したアプリを許可。前のCIFA検証版や元のMarkerTapを削除する必要はありません。
+- **未検証：** Pixel 10/Android 17での実際のAPKインストール結果、ジェスチャー、広告復帰、報酬受領、長時間運転。安全なテスト専用別パッケージとしての公開であり本番安定版ではありません。CI署名鍵は保存しないため、このパッケージ名でも今後の別ビルドがそのまま更新できるとは限りません。
+- [試験リリース](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/cifa-v1.1613-dailyget-installfix-lab) / [改修PR #49](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/49) / [テスト結果・ハッシュ一覧](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41915385940)
+
+
+---
+
 ## MarkerTap / CIFA v1.161.2 — 開拓うさぎCM検知・タップ効率の修正検証版（2026-11-05）
 
 **[▶ GitHub Actionsで署名済み検証APKのZIPを取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41854514439)**（ページの Artifacts → `CIFA-v1.1612-kaitaku-ad-upgrade-isolated-lab-signed`）

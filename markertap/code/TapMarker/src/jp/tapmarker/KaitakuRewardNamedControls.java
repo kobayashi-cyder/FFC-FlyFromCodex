@@ -23,7 +23,18 @@ final class KaitakuRewardNamedControls {
     KaitakuRewardClaimPolicy.Decision d=KaitakuRewardClaimPolicy.decide(engine.current,context,hits);
     if(d.kind==KaitakuRewardClaimPolicy.Kind.NONE)return false;
     KaitakuActionPacer.reset(engine);
+    // An accessibility page label without a claimable child is not negative
+    // evidence against a freshly verified on-screen orange Get control.
+    if((d.kind==KaitakuRewardClaimPolicy.Kind.PAGE||
+        d.kind==KaitakuRewardClaimPolicy.Kind.BACK)&&
+       KaitakuActionEvidence.present(out,"get")&&
+       engine.current.equals(KaitakuPreset.P+"missions"))return true;
     KaitakuNamedControls.clear(out);
+    // Keep claim-wait as a real outcome-checking phase, not an instant replay.
+    if(engine.current.equals(KaitakuPreset.P+"claim-wait")&&
+       (d.kind==KaitakuRewardClaimPolicy.Kind.CLAIM||
+        d.kind==KaitakuRewardClaimPolicy.Kind.PAGE||
+        d.kind==KaitakuRewardClaimPolicy.Kind.BACK))return true;
     if(d.kind==KaitakuRewardClaimPolicy.Kind.RECEIPT_CLOSE){
       KaitakuRewardClaimGate.receipt(engine);
       KaitakuActionEvidence.put(out,"close",d.rect);
