@@ -47,7 +47,7 @@ final class SplitPilot {
   if(!valid(t)||slot.cyclePending)return;slot.cyclePending=true;if(slot.manual.holding(SystemClock.uptimeMillis())){pauseMain(slot);later(slot,t,150);return;}
   if(slot.stopped){VirtualWindows.Window stopped=s.pilot.virtualWindows.window(slot.pkg);if(stopped!=null)s.pilot.virtualWindows.state(stopped,"停止状態");boolean all=true;for(Slot other:slots)all&=other.stopped;if(all){s.stop("全画面の状態機械が停止状態になった");return;}later(slot,t,350);return;}
   VirtualWindows.Window w=s.pilot.virtualWindows.window(slot.pkg);if(w!=null&&recoverDisplay(slot,w,t))return;if(w!=null){String actual=s.pilot.virtualWindows.screen(w).pkg;long now=SystemClock.uptimeMillis();w.restoreReceipt.observePackage(slot.pkg.equals(actual),w.frameAt,now);w.inputRecovery.observePackage(slot.pkg,actual,w.frameAt,now);if(recoverInputTarget(slot,w,t))return;}if(w==null||!s.pilot.virtualWindows.check(w)){slot.home=false;pauseMain(slot);later(slot,t,350);return;}
-  long period=PerformancePolicy.scanInterval(s.performance.profile(),slot.processingMs,slots.length,s.performance.cores);
+  long period=CycleCadencePolicy.interval(s.performance.profile(),slot.processingMs,slots.length,s.performance.cores,slot.pkg,slot.phases.engine.current,slot.phases.engine.enteredAt,SystemClock.uptimeMillis(),slot.evaluation.awaitingProof());
   long wait=Math.max(0,period-(SystemClock.uptimeMillis()-slot.lastShot));
   s.h.postDelayed(()->{if(!valid(t)||w.closed)return;slot.lastShot=SystemClock.uptimeMillis();sampleVirtual(slot,w,t);},wait);
  }
