@@ -159,7 +159,8 @@ def build(base,sdk,jadx):
       bridge,
       HERE/"RewardV158Observer.java",
       HERE/"RewardV158Capture.java",
-      ROOT/"code/TapMarker/src/jp/tapmarker/KurashiruClaimPolicy.java",
+      HERE/"RewardV158Proof.java",
+      
       ROOT/"code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java",
       ROOT/"code/TapMarker/src/jp/tapmarker/SharedPointClaimArbiter.java",
       ROOT/"code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java",
