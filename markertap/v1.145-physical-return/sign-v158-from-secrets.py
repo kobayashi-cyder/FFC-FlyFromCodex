@@ -26,6 +26,8 @@ def digest(path):
     return h.hexdigest()
 
 def main():
+    if os.environ.get("GITHUB_REPOSITORY")!="kobayashi-cyder/FFC-FlyFromCodex" or os.environ.get("GITHUB_REF_NAME")!="markertap/v1.158-reward-gated-connectome":
+        raise RuntimeError("Refusing to sign from an unexpected GitHub repository or branch")
     # Never log or serialize the original key or password into GitHub files.
     original=os.environ.get("MARKERTAP_ORIGINAL_JKS_B64","")
     password=os.environ.get("MARKERTAP_ORIGINAL_STORE_PASSWORD","")
