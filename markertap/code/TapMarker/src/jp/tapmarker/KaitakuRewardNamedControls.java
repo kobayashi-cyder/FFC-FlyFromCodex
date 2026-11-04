@@ -31,8 +31,10 @@ final class KaitakuRewardNamedControls {
        engine.current.equals(KaitakuPreset.P+"missions"))return true;
     KaitakuNamedControls.clear(out);
     // Keep claim-wait as a real outcome-checking phase, not an instant replay.
-    if(d.kind==KaitakuRewardClaimPolicy.Kind.CLAIM&&
-       engine.current.equals(KaitakuPreset.P+"claim-wait"))return true;
+    if(engine.current.equals(KaitakuPreset.P+"claim-wait")&&
+       (d.kind==KaitakuRewardClaimPolicy.Kind.CLAIM||
+        d.kind==KaitakuRewardClaimPolicy.Kind.PAGE||
+        d.kind==KaitakuRewardClaimPolicy.Kind.BACK))return true;
     if(d.kind==KaitakuRewardClaimPolicy.Kind.RECEIPT_CLOSE){
       KaitakuRewardClaimGate.receipt(engine);
       KaitakuActionEvidence.put(out,"close",d.rect);
