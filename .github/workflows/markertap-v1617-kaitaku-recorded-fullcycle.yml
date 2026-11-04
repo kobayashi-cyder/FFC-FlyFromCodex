@@ -113,7 +113,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag="cifa-v1.1617-recorded-fullcycle-lab"
+          tag="cifa-v1.1617-recorded-fullcycle-final-lab"
           apk="$RUNNER_TEMP/CIFA-v1.1617-recorded-fullcycle-signed.apk"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "Existing prerelease remains immutable: $tag"
