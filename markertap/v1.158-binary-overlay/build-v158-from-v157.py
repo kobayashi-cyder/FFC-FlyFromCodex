@@ -139,6 +139,14 @@ def inject_bridge(out):
         "RewardV158Observer.invalidate(p);"+physical_reset)
     generated=generated.replace(virtual_reset,
         "RewardV158Observer.invalidate(slot);"+virtual_reset)
+    # The original SplitPilot.applySamples schedules subsequent scans. Set only
+    # the subsequent index; never interfere with its successful action path.
+    old_end='catch(Exception failed){throw new IllegalStateException("Original applySamples failed",failed);}'
+    if generated.count(old_end)!=1:
+        raise ValueError("v1.157 virtual wrapper completion site changed")
+    generated=generated.replace(old_end,old_end+'''
+   try{RewardV158Scheduler.afterSplit(original,SystemClock.uptimeMillis());}
+   catch(Throwable schedulingUnavailable){}''')
     p=out/"src/jp/tapmarker/AdV157DexBridge.java"
     p.parent.mkdir(parents=True,exist_ok=True)
     p.write_text(generated,encoding="utf-8")
@@ -166,6 +174,7 @@ def build(base,sdk,jadx):
       HERE/"RewardV158Observer.java",
       HERE/"RewardV158Capture.java",
       HERE/"RewardV158VirtualHud.java",
+      HERE/"RewardV158Scheduler.java",
       HERE/"RewardV158Proof.java",
       
       ROOT/"code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java",
@@ -186,6 +195,7 @@ def build(base,sdk,jadx):
             if not any(name.startswith(x) for x in (
               "AdV157DexBridge","RewardV158Observer","RewardV158Capture",
               "RewardV158VirtualHud",
+              "RewardV158Scheduler",
               "RewardEvaluationConnectome","RewardLanePlanner","KurashiruPointHud",
               "KurashiruRewardProof","KurashiruClaimPolicy",
               "FarmPassiveReward","SharedPointClaimArbiter")):
