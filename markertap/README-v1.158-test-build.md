@@ -1,3 +1,13 @@
+# MarkerTap — 通常配布版への復帰
+
+**通常利用するAPK：v1.157署名済み統合版**
+
+**[▶ 通常版 MarkerTap v1.157 APK（READMEの現行リンクと同じ）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.157-rc1/MarkerTap-v1.157-integrated-signed.apk)**
+
+このバージョンは従来のMarkerTapと同じ更新用署名証明書で署名されています。v1.158のテスト署名APKは通常配布版から外し、開発用の記録としてのみ残します。**テスト署名版をv1.157の正式署名版へそのまま上書きすることはできません**。テスト署名版をインストール済みなら、設定・診断データを退避したうえで再インストールが必要になる場合があります。
+
+---
+
 # MarkerTap v1.158 — test build only (2026-11-04)
 
 **正式更新APKではありません。**
