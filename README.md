@@ -1,3 +1,16 @@
+## MarkerTap v1.158 — 報酬評価・最小化UI保持（元証明書で署名済み試験版・2026-11-04）
+
+**[▶ MarkerTap v1.158 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.158-preserved-rc1/MarkerTap-v1.158-preserved-original-signed.apk)**
+
+[GitHub Release（v1.158-preserved-rc1）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/markertap-v1.158-preserved-rc1) / [署名・16KB整合性・versionCode確認の成功ログ](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41802295093) / [検証JSON](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.158-preserved-rc1/MarkerTap-v1.158-preserved-original-signed.validation.json) / [ソース・改修PR #43](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/43)
+
+- パッケージ `jp.tapmarker.lite`、versionName **1.158**、versionCode **161**。**元のv1.157と同じ署名証明書**でv2/v3署名済み。16KB ZIP配置検査成功。APK SHA-256: `56e13b2249fb9ce8c98f498498ea14146ddf4095307707c6911214f2f5463ef8`。
+- 旧v1.157のDEX **1,613クラスと全資産**を保持。**最小化後のドラッグ可能な復帰ボタン**を含むUI 13クラスを保存し、報酬確定の評価関数、物理画面HUD・仮想画面ROI読取、優先順位更新を追加。
+- **試験版の制約:** Pixel 10/Android 17実機での操作、報酬の実加算、広告からの回復、長時間自動稼働は未検証。機能を実機で検証できるまで安定版扱いしません。
+- 元の署名秘密鍵は公開していません。APKは原本と一致する署名ブロックの再構成からGitHub Actions上でも検証しています。v1.157は別のプレリリースとして保存しています。
+
+---
+
 # MarkerTap v1.157 — CM2秒検出後のHOME→対象ゲーム停止→登録Intent（署名済みプレリリース）
 
 **[▶ MarkerTap v1.157 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.157-rc1/MarkerTap-v1.157-integrated-signed.apk)**
