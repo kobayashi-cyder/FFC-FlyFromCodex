@@ -33,6 +33,17 @@ jobs:
             markertap/v1.158-binary-overlay/RewardV158Observer.java \
             markertap/v1.158-binary-overlay/RewardV158ObserverTest.java
           java -cp "$RUNNER_TEMP/receipt-evidence" jp.tapmarker.RewardV158ObserverTest
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/receipt-evidence" \
+            markertap/v1.145-physical-return/tests/host/android/os/SystemClock.java \
+            markertap/code/TapMarker/src/jp/tapmarker/KurashiruPointHud.java \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java \
+            markertap/code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java \
+            markertap/code/TapMarker/src/jp/tapmarker/SharedPointClaimArbiter.java \
+            markertap/v1.158-binary-overlay/RewardV158Proof.java \
+            markertap/v1.158-binary-overlay/RewardV158Observer.java \
+            markertap/v1.158-binary-overlay/RewardV158VirtualHud.java \
+            markertap/v1.158-binary-overlay/RewardV158VirtualHudTest.java
+          java -cp "$RUNNER_TEMP/receipt-evidence" jp.tapmarker.RewardV158VirtualHudTest
       - name: Download SHA-authenticated original-signed v1.157 APK
         env:
           GH_TOKEN: ${{ github.token }}
