@@ -1,4 +1,4 @@
-name: MarkerTap v1.158 full Android source build and regression (ephemeral CI key)
+name: MarkerTap v1.158 Android source build + test-only APK artifact (ephemeral key)
 on:
   push:
     branches: ["markertap/v1.158-reward-gated-connectome"]
@@ -52,3 +52,40 @@ jobs:
           test -f "$TAPMARKER_OUTPUT"
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2" dump badging "$TAPMARKER_OUTPUT" | grep "versionCode='161' versionName='1.158'"
           echo "Full Android source compile, APK package and ephemeral v2/v3 signature checked. Legacy tests not run here. This is a v1.158 build with an ephemeral CI key, not an update-signed release."
+
+      - name: Package v1.158 signed test APK and unsigned original-signing input with SHA256 proofs
+        run: |
+          set -euo pipefail
+          PACKAGE_DIR="$RUNNER_TEMP/v158-test-artifacts"
+          mkdir -p "$PACKAGE_DIR"
+          cp "$RUNNER_TEMP/ci-validation-only.apk" "$PACKAGE_DIR/MarkerTap-v1.158-TEST-SIGNED-NOT-UPGRADEABLE.apk"
+          cp "$RUNNER_TEMP/markertap-src/TapMarker/build/aligned.apk" "$PACKAGE_DIR/MarkerTap-v1.158-UNSIGNED-ORIGINAL-SIGNING-INPUT.apk"
+          cd "$PACKAGE_DIR"
+          sha256sum MarkerTap-v1.158-*.apk > SHA256SUMS.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs \
+            MarkerTap-v1.158-TEST-SIGNED-NOT-UPGRADEABLE.apk > signing-validation.txt
+          test "$(grep -c 'Verified using v2 scheme (APK Signature Scheme v2): true' signing-validation.txt)" = 1
+          test "$(grep -c 'Verified using v3 scheme (APK Signature Scheme v3): true' signing-validation.txt)" = 1
+          if grep -Fq '7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1' signing-validation.txt; then
+            echo 'TEST APK must not be confused with original-certificate release'; exit 1
+          fi
+          printf '%s\n' \
+            'TEST BUILD ONLY: not update-compatible with signed v1.157. Same package name but DIFFERENT certificate.' \
+            'Do not uninstall your working v1.157 to install this test APK without backing up settings.' \
+            'Android15 emulator startup passed in a separate CI run; Android17/Pixel10 and reward payouts NOT validated.' \
+            'The UNSIGNED aligned APK can be signed only with the original private key and must be SHA-audited.' \
+            'Keystores and private keys are not included in this artifact.' \
+            > INSTALLATION-NOTICE.txt
+      - name: Upload verifiable test APK and original-signing input (not a release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1.158-TEST-APK-and-UNSIGNED-not-upgradeable
+          path: |
+            ${{ runner.temp }}/v158-test-artifacts/MarkerTap-v1.158-TEST-SIGNED-NOT-UPGRADEABLE.apk
+            ${{ runner.temp }}/v158-test-artifacts/MarkerTap-v1.158-UNSIGNED-ORIGINAL-SIGNING-INPUT.apk
+            ${{ runner.temp }}/v158-test-artifacts/SHA256SUMS.txt
+            ${{ runner.temp }}/v158-test-artifacts/signing-validation.txt
+            ${{ runner.temp }}/v158-test-artifacts/INSTALLATION-NOTICE.txt
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
