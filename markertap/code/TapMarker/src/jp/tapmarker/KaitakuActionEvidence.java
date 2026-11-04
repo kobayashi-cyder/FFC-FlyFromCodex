@@ -45,9 +45,11 @@ final class KaitakuActionEvidence {
  }
  void sample(PhaseEngine e,KaitakuEvidence.Result home,int w,int h,RegionSampler.Pixels p,long now,Map<String,float[]> out){
   for(String key:KEYS)out.put(KaitakuPreset.P+key,new float[]{0});
-  if(firstAt<0){firstAt=now;nextMission=now+10000;nextUpgrade=now+2000;nextBoost=now+20000;}
+  if(firstAt<0){firstAt=now;nextMission=KaitakuMissionCadence.initial(now);nextUpgrade=now+2000;nextBoost=now+20000;}
   if(!state.equals(e.current)){state=e.current;stateAt=now;
-   if(state.equals(KaitakuPreset.P+"mission-opening")||state.equals(KaitakuPreset.P+"missions"))nextMission=now+60000;
+   // A confirmed state transition adjusts only the next mission inspection.
+   // Reward acceptance remains guarded by the existing two-frame proof.
+   nextMission=KaitakuMissionCadence.entered(state,now,nextMission);
    if(state.equals(KaitakuPreset.P+"upgrade-wait")){nextUpgrade=now+15000;upgradeTurn++;}
    if(state.equals(KaitakuPreset.P+"control-wait")){nextBoost=now+120000;boostTurn++;}
   }
