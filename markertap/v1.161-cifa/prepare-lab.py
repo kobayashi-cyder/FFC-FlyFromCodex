@@ -15,8 +15,8 @@ text=manifest.read_text()
 assert 'package="jp.tapmarker.lite"' in text
 assert 'android:versionCode="126"' in text
 text=text.replace('package="jp.tapmarker.lite"','package="jp.tapmarker.cifa.lab"',1)
-text=text.replace('android:versionCode="126"','android:versionCode="1"',1)
-text=text.replace('android:versionName="1.123"','android:versionName="1.161-cifa-lab"',1)
+text=text.replace('android:versionCode="126"','android:versionCode="2"',1)
+text=text.replace('android:versionName="1.123"','android:versionName="1.161.1-cifa-lab"',1)
 manifest.write_text(text)
 
 # Avoid conflicting authorities/intent packages with the installed MarkerTap.
