@@ -31,6 +31,7 @@ public final class FarmPassiveRewardTest {
     eq(1,score.cycles(),"no repeated credit");
     // Played again but no additional points deposited.
     yes(gate.observe(true,false,110,700,700,score).isEmpty(),"new playable baseline");
+    yes(!score.observeBalance("pt",110,700,700),"new gameplay frame records wallet");
     String second=gate.observe(false,true,110,800,800,score);
     yes(!second.isEmpty(),"second candidate may open");
     score.observeBalance("pt",110,800,800);
