@@ -14,9 +14,9 @@ assert manifest.exists() and (root/"src/jp/tapmarker/CifaRuntime.java").exists()
 text=manifest.read_text()
 assert 'package="jp.tapmarker.lite"' in text
 assert 'android:versionCode="126"' in text
-text=text.replace('package="jp.tapmarker.lite"','package="jp.tapmarker.cifa.getfix1615"',1)
-text=text.replace('android:versionCode="126"','android:versionCode="7"',1)
-text=text.replace('android:versionName="1.123"','android:versionName="1.161.5-cifa-video-calibrated"',1)
+text=text.replace('package="jp.tapmarker.lite"','package="jp.tapmarker.cifa.getfix1616"',1)
+text=text.replace('android:versionCode="126"','android:versionCode="8"',1)
+text=text.replace('android:versionName="1.123"','android:versionName="1.161.6-cifa-two-display"',1)
 manifest.write_text(text)
 
 # Avoid conflicting authorities/intent packages with the installed MarkerTap.
@@ -36,7 +36,7 @@ manifest.write_text(manifest.read_text().replace("jp.tapmarker.lite","jp.tapmark
 translations=root/"tools/generate-locales.py"
 src=translations.read_text()
 old="'app_name':('マーカー連打 軽量版','MarkerTap Lite'),"
-new="'app_name':('CIFA 動画座標修正 検証版','CIFA Video Calibrated Lab'),"
+new="'app_name':('CIFA 二画面自律 検証版','CIFA Two Display Lab'),"
 assert src.count(old)==1
 translations.write_text(src.replace(old,new))
-print("PASS: CIFA lab package is isolated; test versionCode 7 and unique authorities")
+print("PASS: CIFA lab package is isolated; test versionCode 8 and unique authorities")
