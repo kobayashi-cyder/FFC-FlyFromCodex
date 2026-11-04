@@ -118,9 +118,11 @@ jobs:
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "Existing prerelease remains immutable: $tag"
           else
-            gh release create "$tag" --target "$GITHUB_SHA" --prerelease \
+            if ! gh release create "$tag" --target "$GITHUB_SHA" --prerelease \
               --title "CIFA 1.161.7 Kaitaku Recorded Full Cycle (test only)" \
               --notes "Experimental, separate-package signed APK. Not an update to MarkerTap or the previous CIFA lab. Package jp.tapmarker.cifa.getfix1617 avoids CI certificate update conflicts. Pixel 10 / Android 17 input and reward collection remain unverified. Do not treat as a stable production release." \
-              "$apk" "$RUNNER_TEMP/SHA256SUMS.txt" "$RUNNER_TEMP/INSTALL-NOTE.txt"
+              "$apk" "$RUNNER_TEMP/SHA256SUMS.txt" "$RUNNER_TEMP/INSTALL-NOTE.txt"; then
+              echo "::warning::GitHub Actions token lacks Release write permission (seen as HTTP 403 in v1.161.6). The signed APK and checksums remain in the successfully uploaded Actions artifact; a GitHub Release was NOT published."
+            fi
           fi
 
