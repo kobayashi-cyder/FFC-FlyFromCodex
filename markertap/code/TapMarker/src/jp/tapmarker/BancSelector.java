@@ -26,7 +26,9 @@ public final class BancSelector {
    boolean[] required=new boolean[6];required[ROUTE_TARGET[route]]=true;
    for(int tick=5;tick>=0;tick--){
     OUTPUT_CONE[route][tick]=required.clone();
-    for(int i=0;i<16;i++)if(required[TO[i]])required[FROM[i]]=true;
+    boolean[] prior=required.clone();
+    for(int i=0;i<16;i++)if(required[TO[i]])prior[FROM[i]]=true;
+    required=prior;
    }
   }
  }
