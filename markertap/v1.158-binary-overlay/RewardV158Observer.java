@@ -25,7 +25,7 @@ final class RewardV158Observer {
     final FarmPassiveReward farm=new FarmPassiveReward();
     final KurashiruRewardProof proof=new KurashiruRewardProof();
     String pkg="",receipt="",lastCompleted="";
-    boolean initialized;
+    boolean initialized,playable,reward;
     long lastSample=-1;
     long completedAt=-1;
   }
@@ -148,14 +148,10 @@ final class RewardV158Observer {
       if(capturedAt<=l.lastSample)return;
       l.lastSample=capturedAt;
       boolean reward=rewardVisible(pkg,model,samples);
+      l.playable=playable&&!positiveAd;
+      l.reward=reward;
       if(!l.receipt.isEmpty()&&l.proof.observe(reward,capturedAt,now))
         l.evaluation.claimAcknowledged(l.receipt,now);
-      if(pkg.equals("com.kurashiru.nouen.usagi")){
-        long previouslyObserved=l.evaluation.latestBalance();
-        String id=l.farm.observe(playable&&!positiveAd,reward,previouslyObserved,
-            capturedAt,now,l.evaluation);
-        if(!id.isEmpty())l.receipt=id;
-      }
     }
   }
   static void balance(Object owner,String pkg,long amount,long capturedAt,long now){
@@ -163,6 +159,13 @@ final class RewardV158Observer {
     Lane l=lane(owner);
     synchronized(l){
       if(!pkg.equals(l.pkg))return;
+      if(pkg.equals("com.kurashiru.nouen.usagi")&&
+          l.lastSample>0&&capturedAt>=l.lastSample&&
+          capturedAt-l.lastSample<RewardEvaluationConnectome.FRESH_MS){
+        String passive=l.farm.observe(l.playable,l.reward,amount,
+            capturedAt,now,l.evaluation);
+        if(!passive.isEmpty())l.receipt=passive;
+      }
       if(!l.receipt.isEmpty() &&
           !SharedPointClaimArbiter.allowed(l.evaluation,l.receipt,now)){
         invalidateLocked(l);
