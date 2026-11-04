@@ -15,7 +15,7 @@ text=manifest.read_text()
 assert 'package="jp.tapmarker.lite"' in text
 assert 'android:versionCode="126"' in text
 text=text.replace('package="jp.tapmarker.lite"','package="jp.tapmarker.cifa.getfix1619"',1)
-text=text.replace('android:versionCode="126"','android:versionCode="9"',1)
+text=text.replace('android:versionCode="126"','android:versionCode="10"',1)
 text=text.replace('android:versionName="1.123"','android:versionName="1.161.9-cifa-cm-eval-autonomy"',1)
 manifest.write_text(text)
 
