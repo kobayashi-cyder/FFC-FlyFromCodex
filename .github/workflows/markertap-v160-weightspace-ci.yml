@@ -1,0 +1,64 @@
+name: MarkerTap v1.160 source-only smoke (not a production APK)
+on:
+  push:
+    branches: ["markertap/v1.160-weightspace-reacquire-candidate"]
+    paths:
+      - "markertap/code/**"
+      - "markertap/v1.160-weightspace/**"
+      - ".github/workflows/markertap-v160-weightspace-ci.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Host regression (new observation gate)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/host"
+          javac -d "$RUNNER_TEMP/host" markertap/code/TapMarker/src/jp/tapmarker/KaitakuMissionReacquire.java markertap/code/TapMarker/tests/KaitakuMissionReacquireTest.java
+          java -cp "$RUNNER_TEMP/host" jp.tapmarker.KaitakuMissionReacquireTest | tee "$RUNNER_TEMP/host-test.txt"
+          python3 - <<'PY'
+          from pathlib import Path
+          text=Path("markertap/code/TapMarker/src/jp/tapmarker/AutoPilot.java").read_text()
+          assert 'kaitakuMissionGate.observe(' in text
+          assert 'phases.engine.enter(KaitakuPreset.P+"missions"' in text
+          assert 'cancelRegisteredReturn();phases.engine.enter(KaitakuPreset.P+"missions"' in text
+          print("PASS: v160 production-source call site found")
+          PY
+      - name: Install pinned Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          if ! command -v rg >/dev/null; then sudo apt-get update -qq; sudo apt-get install -y -qq ripgrep; fi
+      - name: Restore historical source mirror and compile only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 markertap/tools/restore_source.py --extract-to "$RUNNER_TEMP/mirror"
+          keytool -genkeypair -noprompt -alias tapmarker -keyalg RSA -keysize 2048 -validity 1 -keystore "$RUNNER_TEMP/ci-key.jks" -storepass android -keypass android -dname "CN=CI test only"
+          cd "$RUNNER_TEMP/mirror/TapMarker"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME" TAPMARKER_KEYSTORE="$RUNNER_TEMP/ci-key.jks"
+          export TAPMARKER_OUTPUT="$RUNNER_TEMP/ci-only.apk"
+          bash build.sh > "$RUNNER_TEMP/compile.log" 2>&1 || { tail -100 "$RUNNER_TEMP/compile.log"; exit 1; }
+          echo "PASS: historical source mirror compiled. Do NOT install this APK." | tee "$RUNNER_TEMP/compilation-status.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarkerTap-v160-source-smoke-NOT-APK
+          path: |
+            ${{ runner.temp }}/host-test.txt
+            ${{ runner.temp }}/compile.log
+            ${{ runner.temp }}/compilation-status.txt
+          if-no-files-found: ignore
+          retention-days: 14
