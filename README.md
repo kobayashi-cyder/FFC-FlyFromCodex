@@ -1,3 +1,16 @@
+## MarkerTap / CIFA v1.161.2 — 開拓うさぎCM検知・タップ効率の修正検証版（2026-11-05）
+
+**[▶ GitHub Actionsで署名済み検証APKのZIPを取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41854514439)**（ページの Artifacts → `CIFA-v1.1612-kaitaku-ad-upgrade-isolated-lab-signed`）
+
+- 検証APK：`CIFA-v1.1612-kaitaku-ad-upgrade-lab-signed.apk` / パッケージ `jp.tapmarker.cifa.kaitaku`。既存の`jp.tapmarker.lite`、`jp.tapmarker.cifa.lab`とは**別アプリ**です。
+- 強化操作を通常連打から分離し、送信後は新しい画面で変化を再確認。開拓うさぎのCM終了マーカー認識も有効化し、`-ad`状態への移行を待たずに独立した視覚的CM証拠を扱います。
+- Pixel 10/Android 17の実機テスト、強化のゲーム内成立、広告復帰、`FRAME_STALE`の根本解消は**未確認**。広告視聴報酬が必要な場合、途中中断で得られない可能性があります。
+- CIテスト：CIFA判断・遷移・UI・開拓うさぎの追加24チェック、署名v2/v3、16KB整列を確認。SHA-256：`ad3d4e2cb64060d2ec4a688c1cdb87c8c1d0b1d4b77cda72854a20576f0f2fb3`。
+- このテスト鍵はCIの実行ごとに変わるため、次の検証APKで上書きできない場合があります。メインアプリのデータを移行・上書きしません。
+- [改修PR #48](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/48) / [CI実行と検証ログ](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41854514439)
+
+---
+
 ## MarkerTap v1.158 — 報酬評価・最小化UI保持（元証明書で署名済み試験版・2026-11-04）
 
 **[▶ MarkerTap v1.158 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/markertap-v1.158-preserved-rc1/MarkerTap-v1.158-preserved-original-signed.apk)**

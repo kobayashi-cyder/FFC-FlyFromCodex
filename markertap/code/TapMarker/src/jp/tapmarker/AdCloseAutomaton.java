@@ -10,7 +10,7 @@ final class AdCloseAutomaton {
   String id=AdExitPolicy.corner(label,bounds,top);if(!handles(id))return false;for(PhaseEngine.Region r:e.activeRegions())if(r.id.equals(id))return true;return false;
  }
  static void install(PhaseEngine engine,String app){
-  boolean usagi=UsagiPreset.APP.equals(app),farm=FarmPreset.APP.equals(app),coin=CoinPreset.APP.equals(app),shopping=ShoppingPreset.APP.equals(app),box=BoxPreset.APP.equals(app),poipoi=PoipoiPreset.APP.equals(app);if(!usagi&&!farm&&!coin&&!shopping&&!box&&!poipoi)return;
+  boolean usagi=UsagiPreset.APP.equals(app),farm=FarmPreset.APP.equals(app),coin=CoinPreset.APP.equals(app),shopping=ShoppingPreset.APP.equals(app),box=BoxPreset.APP.equals(app),poipoi=PoipoiPreset.APP.equals(app),kaitaku=KaitakuPreset.APP.equals(app);if(!usagi&&!farm&&!coin&&!shopping&&!box&&!poipoi&&!kaitaku)return;
   if(engine.windowRelative)return;
   String prefix=PresetRegistry.prefix(app);
   float cornerWidth=coin||shopping||box||poipoi?.13f:.10f;

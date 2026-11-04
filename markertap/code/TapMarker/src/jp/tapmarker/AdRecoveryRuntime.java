@@ -31,7 +31,11 @@ final class AdRecoveryRuntime {
       "com.kurashiru.kaitaku.usagi".equals(pkg)&&hasKaitakuHome(samples);
   }
   static boolean advertisement(PhaseEngine e,Map<String,float[]> samples,int width,int height,String pkg){
-    if(e==null||samples==null||e.windowRelative||!AdExitPolicy.adState(e.current))return false;
+    // For Kaitaku a full-screen ad may interrupt main/upgrade/verify before the
+    // old timeout has moved the state into -ad. Require independent visual
+    // evidence below; the state name alone never identifies an ad.
+    if(e==null||samples==null||e.windowRelative||
+       (!KaitakuPreset.APP.equals(pkg)&&!AdExitPolicy.adState(e.current)))return false;
     if(gameHome(pkg,e,samples))return false;
     // A state name alone is NOT ad evidence: a loading/reward screen might
     // enter "-ad" through a timeout. Require a positive ad-specific marker.

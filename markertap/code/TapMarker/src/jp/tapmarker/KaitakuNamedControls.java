@@ -21,6 +21,17 @@ final class KaitakuNamedControls {
    clear(out);KaitakuActionEvidence.put(out,key,c.bounds);
    if(key.equals("mini-live"))out.put(AdaptiveLayout.MAIN,RegionMath.center(c.bounds,w,h));return;
   }
+  // Physical accessibility labels provide precise bounds when the game exposes
+  // a named efficiency control. Pixel evidence remains the fallback for Canvas UIs.
+  if(engine.current.equals(KaitakuPreset.P+"main")&&KaitakuPreset.home(out)&&
+     !KaitakuActionEvidence.gamePage(out)&&!KaitakuActionEvidence.present(out,"mission-open")){
+    c=find(controls,"タップ効率","タップ効率アップ","タップ効率を上げる");
+    if(c!=null&&c.bounds.length==4&&c.bounds[0]>=0&&c.bounds[2]<=.5f&&
+       c.bounds[1]>=.70f&&c.bounds[3]<=.97f&&c.bounds[2]>c.bounds[0]&&c.bounds[3]>c.bounds[1]){
+      KaitakuActionEvidence.put(out,"upgrade",c.bounds);
+      return;
+    }
+  }
   if(!mission)return;
   c=find(controls,"ゲット","受け取る","報酬を受け取る","一括受取","一括で受け取る");String key="get";
   if(c==null){c=find(controls,"プレイ","ゲームへ戻る");key="play";}

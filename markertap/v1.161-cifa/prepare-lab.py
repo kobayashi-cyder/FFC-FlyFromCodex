@@ -14,9 +14,9 @@ assert manifest.exists() and (root/"src/jp/tapmarker/CifaRuntime.java").exists()
 text=manifest.read_text()
 assert 'package="jp.tapmarker.lite"' in text
 assert 'android:versionCode="126"' in text
-text=text.replace('package="jp.tapmarker.lite"','package="jp.tapmarker.cifa.lab"',1)
-text=text.replace('android:versionCode="126"','android:versionCode="2"',1)
-text=text.replace('android:versionName="1.123"','android:versionName="1.161.1-cifa-lab"',1)
+text=text.replace('package="jp.tapmarker.lite"','package="jp.tapmarker.cifa.kaitaku"',1)
+text=text.replace('android:versionCode="126"','android:versionCode="3"',1)
+text=text.replace('android:versionName="1.123"','android:versionName="1.161.2-cifa-kaitaku-lab"',1)
 manifest.write_text(text)
 
 # Avoid conflicting authorities/intent packages with the installed MarkerTap.
@@ -29,14 +29,14 @@ for prefix in ("src","res","assets"):
             try:body=file.read_text()
             except UnicodeError:continue
             if "jp.tapmarker.lite" in body:
-                file.write_text(body.replace("jp.tapmarker.lite","jp.tapmarker.cifa.lab"))
-manifest.write_text(manifest.read_text().replace("jp.tapmarker.lite","jp.tapmarker.cifa.lab"))
+                file.write_text(body.replace("jp.tapmarker.lite","jp.tapmarker.cifa.kaitaku"))
+manifest.write_text(manifest.read_text().replace("jp.tapmarker.lite","jp.tapmarker.cifa.kaitaku"))
 
 # Distinct launcher name must be obvious even if the original app is installed.
 translations=root/"tools/generate-locales.py"
 src=translations.read_text()
 old="'app_name':('マーカー連打 軽量版','MarkerTap Lite'),"
-new="'app_name':('CIFA 実験版（別アプリ）','CIFA Lab (separate app)'),"
+new="'app_name':('CIFA 開拓うさぎ検証版','CIFA Kaitaku Lab'),"
 assert src.count(old)==1
 translations.write_text(src.replace(old,new))
-print("PASS: CIFA lab package is isolated; test versionCode 1 and unique authorities")
+print("PASS: CIFA lab package is isolated; test versionCode 3 and unique authorities")
