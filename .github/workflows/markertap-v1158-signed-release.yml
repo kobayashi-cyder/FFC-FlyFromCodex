@@ -1,4 +1,4 @@
-name: MarkerTap v1.158 source-built original-certificate signed prerelease
+name: MarkerTap v1.158 original-certificate signed prerelease (protected repository secrets)
 on:
   push:
     branches:
@@ -32,7 +32,7 @@ jobs:
             sudo apt-get update -qq
             sudo apt-get install -y -qq ripgrep
           fi
-      - name: Validate 111 receipt, HUD, conflict and passive-farm host assertions
+      - name: Validate reward, HUD, conflict and farm host assertions
         run: |
           set -euo pipefail
           SRC=markertap/code/TapMarker/src/jp/tapmarker
@@ -71,17 +71,21 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 "$UNSIGNED"
           sha256sum "$UNSIGNED"
           echo "MARKERTAP_EXPECTED_UNSIGNED_SHA256=$(sha256sum "$UNSIGNED" | cut -d' ' -f1)" >> "$GITHUB_ENV"
-      - name: Secure original-signing-key handoff, v2/v3 certificate verification and GitHub prerelease
+      - name: Sign only with the original protected MarkerTap key and publish verified prerelease
         env:
           GH_TOKEN: ${{ github.token }}
-          MARKERTAP_ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+          MARKERTAP_ORIGINAL_JKS_B64: ${{ secrets.MARKERTAP_ORIGINAL_JKS_B64 }}
+          MARKERTAP_ORIGINAL_STORE_PASSWORD: ${{ secrets.MARKERTAP_ORIGINAL_STORE_PASSWORD }}
+          MARKERTAP_ORIGINAL_KEY_PASSWORD: ${{ secrets.MARKERTAP_ORIGINAL_KEY_PASSWORD }}
+          MARKERTAP_ORIGINAL_KEY_ALIAS: ${{ vars.MARKERTAP_ORIGINAL_KEY_ALIAS }}
         working-directory: markertap/v1.145-physical-return
         run: |
           set -euo pipefail
-          python3 -u one-shot-v158-release.py
+          # Missing secrets fail before any release or unbounded handoff polling.
+          python3 -u sign-v158-from-secrets.py
       - name: Signing hygiene
         if: always()
         run: |
           echo 'The original private signing JKS is never committed or printed.'
-          echo 'The original-key handoff requires an externally supplied, encrypted payload.'
+          echo 'The original-key JKS and password must be configured in GitHub Actions repository secrets.'
           echo 'No release is published unless the original signing certificate SHA-256 is verified.'
