@@ -1,0 +1,87 @@
+name: MarkerTap v1.158 source-built original-certificate signed prerelease
+on:
+  push:
+    branches:
+      - markertap/v1.158-reward-gated-connectome
+    paths:
+      - '.github/workflows/markertap-v1158-signed-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: markertap-v1158-original-key-signer
+  cancel-in-progress: false
+jobs:
+  sign-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Configure Android API 35 SDK and Java source tooling
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          if ! command -v rg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ripgrep
+          fi
+      - name: Validate 111 receipt, HUD, conflict and passive-farm host assertions
+        run: |
+          set -euo pipefail
+          SRC=markertap/code/TapMarker/src/jp/tapmarker
+          TEST=markertap/v1.158-host-tests
+          ORIG=markertap/code/TapMarker/tests
+          mkdir -p "$RUNNER_TEMP/v158-host" "$RUNNER_TEMP/v158-hud" "$RUNNER_TEMP/v158-claim"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/v158-host" "$SRC/RewardEvaluationConnectome.java" "$ORIG/RewardEvaluationConnectomeTest.java"
+          java -cp "$RUNNER_TEMP/v158-host" jp.tapmarker.RewardEvaluationConnectomeTest
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/v158-hud" "$SRC/KurashiruPointHud.java" "$TEST/KurashiruPointHudTest.java" "$TEST/KurashiruPointHudRecordedTest.java"
+          java -Djava.awt.headless=true -cp "$RUNNER_TEMP/v158-hud" jp.tapmarker.KurashiruPointHudTest
+          java -Djava.awt.headless=true -cp "$RUNNER_TEMP/v158-hud" jp.tapmarker.KurashiruPointHudRecordedTest
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/v158-claim" "$SRC/KurashiruClaimPolicy.java" "$TEST/KurashiruClaimPolicyTest.java" "$SRC/SharedPointClaimArbiter.java" "$TEST/SharedPointClaimArbiterTest.java" "$SRC/RewardEvaluationConnectome.java" "$SRC/FarmPassiveReward.java" "$TEST/FarmPassiveRewardTest.java"
+          java -cp "$RUNNER_TEMP/v158-claim" jp.tapmarker.KurashiruClaimPolicyTest
+          java -cp "$RUNNER_TEMP/v158-claim" jp.tapmarker.SharedPointClaimArbiterTest
+          java -cp "$RUNNER_TEMP/v158-claim" jp.tapmarker.FarmPassiveRewardTest
+      - name: Reassemble authenticated Android source and create v1.158 unsigned candidate
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+        run: |
+          set -euo pipefail
+          python3 markertap/tools/restore_source.py \
+            --output "$RUNNER_TEMP/markertap-verified-source.zip" \
+            --extract-to "$RUNNER_TEMP/markertap-v158"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export TAPMARKER_KEYSTORE="$RUNNER_TEMP/ci-only-not-an-update-key.jks"
+          export TAPMARKER_OUTPUT="$RUNNER_TEMP/not-for-installation-ci.apk"
+          keytool -genkeypair -noprompt -keyalg RSA -keysize 2048 -validity 2 \
+            -alias tapmarker -keystore "$TAPMARKER_KEYSTORE" \
+            -storepass android -keypass android -dname "CN=Ephemeral CI Validation"
+          (cd "$RUNNER_TEMP/markertap-v158/TapMarker" && bash build.sh)
+          mkdir -p markertap/v1.145-physical-return/output
+          cp "$RUNNER_TEMP/markertap-v158/TapMarker/build/aligned.apk" \
+            markertap/v1.145-physical-return/output/MarkerTap-v1.158-integrated-unsigned.apk
+          UNSIGNED="markertap/v1.145-physical-return/output/MarkerTap-v1.158-integrated-unsigned.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "$UNSIGNED" | grep "name='jp.tapmarker.lite' versionCode='161' versionName='1.158'"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 "$UNSIGNED"
+          sha256sum "$UNSIGNED"
+          echo "MARKERTAP_EXPECTED_UNSIGNED_SHA256=$(sha256sum "$UNSIGNED" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Secure original-signing-key handoff, v2/v3 certificate verification and GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MARKERTAP_ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+        working-directory: markertap/v1.145-physical-return
+        run: |
+          set -euo pipefail
+          python3 -u one-shot-v158-release.py
+      - name: Signing hygiene
+        if: always()
+        run: |
+          echo 'The original private signing JKS is never committed or printed.'
+          echo 'The original-key handoff requires an externally supplied, encrypted payload.'
+          echo 'No release is published unless the original signing certificate SHA-256 is verified.'
