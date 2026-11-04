@@ -1,3 +1,17 @@
+## CIFA v1.161.5 — 開拓うさぎ動画に基づく認識修正・署名済み検証APK（2026-11-05）
+
+**[▶ CIFA v1.161.5 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1615-real-video-pixel-lab/CIFA-v1.1615-real-video-pixel-signed.apk)**
+
+- **用途:** 開拓うさぎのタップ効率・オート強化ボタンの誤検知／見逃し、および「コインアップチャンス!!」の見送り操作の誤認識を、2026-11-05提供動画の画面に合わせて修正。既存の「ゲット」受領確認・期限付き再試行、CM保護処理と統合した別パッケージ検証版です。
+- **ビルド・署名:** [GitHub Actions #41921925169](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41921925169) 成功。9系統・計**2,315**のJava回帰チェック成功。APK署名検証、16KB zipalign、DEX/ZIP構造検査とパッケージID検査を通過。
+- **APK:** 5,893,020バイト、SHA-256 `81a0dfabcad7a588e0fe668e5c79fc38ad9599cc14793ffe89d8a89a38db1ab7`（GitHub Releaseのアセットdigestとビルドログが一致）。検証用アプリID `jp.tapmarker.cifa.getfix1615`。元の `jp.tapmarker.lite` は上書きしません。
+- **インストール:** 上のAPKを保存しAndroidの「ファイル」アプリから開き、必要な場合のみダウンロード元の「不明なアプリのインストール」を許可してください。以前のCIFA検証版と共存できますが、独立アプリのため設定は自動移行しません。毎回異なるCIテスト鍵で署名されるため、将来のAPKで上書き更新できるとは限りません。
+- **Android起動検証:** [Android 15（API 35）エミュレーター #41923377225](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41923377225) で、**Release公開APKそのもの**のSHA照合・インストール・MainActivity起動・6秒後のプロセス生存・クラッシュログ検査・スクリーンショット保存が成功。
+- **検証境界:** 動画のオフライン画像再生で左右強化パネルとコインアップ画面の候補認識を確認。ただし**Pixel 10/Android 17の実機入力、広告視聴完遂、ゲット報酬の実受領、長時間完全自律は未検証**です。完成版や本番安定版としては扱わないでください。
+- [GitHub Release](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/cifa-v1.1615-real-video-pixel-lab) / [改修差分 PR #51](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/51) / [SHA256SUMS.txt](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1615-real-video-pixel-lab/SHA256SUMS.txt)
+
+---
+
 ## CIFA v1.161.4 — CM・タップ効率・ゲット自律処理の録画対応検証版（2026-11-05）
 
 **[▶ 署名済み検証APKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1614-video-autonomy-lab/CIFA-v1.1614-video-autonomy-signed.apk)**

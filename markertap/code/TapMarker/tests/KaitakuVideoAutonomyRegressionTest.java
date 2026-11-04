@@ -15,6 +15,10 @@ public final class KaitakuVideoAutonomyRegressionTest {
   }
   static Frame home(){
     Frame f=new Frame(0x83d7fb);
+    // Real recording: white top HUD, orange main action, bottom TIPS panel.
+    f.fill(.18f,.085f,.35f,.115f,0xffffff);
+    f.fill(.40f,.720f,.60f,.765f,0xffcb01);
+    f.fill(.30f,.890f,.70f,.930f,0xffffff);
     for(float center:new float[]{.20f,.80f}){
       f.fill(center-.115f,.817f,center+.115f,.869f,0x2d2d2d);
       f.fill(center-.113f,.823f,center+.113f,.862f,0xffffff);
@@ -23,10 +27,12 @@ public final class KaitakuVideoAutonomyRegressionTest {
   }
   static Frame coinChance(){
     Frame f=new Frame(0x252525);
-    f.fill(.08f,.28f,.92f,.36f,0xfff1c2);
-    f.fill(.08f,.36f,.92f,.76f,0xffffff);
-    f.fill(.15f,.638f,.85f,.702f,0xf0b300);
-    f.fill(.15f,.710f,.85f,.721f,0x2d2d2d);
+    // Card geometry is taken from the Nov 5 recording, not the earlier
+    // synthetic layout which put yellow pixels at the wrong vertical row.
+    f.fill(.05f,.28f,.95f,.355f,0xfff0c2);
+    f.fill(.05f,.355f,.95f,.80f,0xffffff);
+    f.fill(.14f,.660f,.86f,.727f,0xf0b300);
+    f.fill(.14f,.727f,.86f,.742f,0x2d2d2d);
     return f;
   }
   static void visual(){
@@ -34,11 +40,17 @@ public final class KaitakuVideoAutonomyRegressionTest {
     ok(KaitakuControlVisual.visible(home.w,home.h,home,false),"left upgrade pod visible");
     ok(KaitakuControlVisual.visible(home.w,home.h,home,true),"right auto pod visible");
     ok(KaitakuVideoModalVisual.find(home.w,home.h,home)==null,"normal home is not coin modal");
-    home.fill(.37f,.825f,.44f,.837f,0x101010);
-    ok(!KaitakuControlVisual.visible(home.w,home.h,home,false),"modal/dimmed center blocks upgrade");
+    // Expanded terrain may cover all blue separators: upgrade remains valid.
+    home.fill(.34f,.805f,.66f,.875f,0xbca55b);
+    ok(KaitakuControlVisual.visible(home.w,home.h,home,false),"expanded terrain must not hide upgrade");
+    ok(KaitakuControlVisual.visible(home.w,home.h,home,true),"expanded terrain must not hide auto upgrade");
+    // A modal covering the central main CTA invalidates upgrade evidence.
+    home.fill(.44f,.72f,.56f,.76f,0x252525);
+    ok(!KaitakuControlVisual.visible(home.w,home.h,home,false),"modal blocks upgrade");
+    ok(!KaitakuControlVisual.visible(home.w,home.h,home,true),"modal blocks auto upgrade");
     Frame chance=coinChance();
     float[] dismiss=KaitakuVideoModalVisual.find(chance.w,chance.h,chance);
-    ok(dismiss!=null&&dismiss[1]>.69f&&dismiss[3]<.75f,"only nonadvertising opt-out targeted");
+    ok(dismiss!=null&&dismiss[1]>=.74f&&dismiss[3]<=.80f,"only nonadvertising opt-out targeted");
     ok(!KaitakuControlVisual.visible(chance.w,chance.h,chance,false),"coin modal blocks upgrades");
     chance.fill(.15f,.638f,.85f,.702f,0xffffff);
     ok(KaitakuVideoModalVisual.find(chance.w,chance.h,chance)==null,"missing yellow CTA rejects modal");
