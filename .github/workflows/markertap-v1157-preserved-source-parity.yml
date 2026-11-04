@@ -51,7 +51,7 @@ jobs:
           export TAPMARKER_OUTPUT="$RUNNER_TEMP/test-only-do-not-install.apk"
           keytool -genkeypair -noprompt -keyalg RSA -keysize 2048 -validity 2 \
             -alias tapmarker -keystore "$TAPMARKER_KEYSTORE" \
-            -storepass android -keypass android -dname "CN=CI only, never release"
+            -storepass android -keypass android -dname "CN=Ephemeral CI Validation"
           (cd "$RUNNER_TEMP/v157-evaluation-source/TapMarker" && bash build.sh)
           test -f "$TAPMARKER_OUTPUT"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$TAPMARKER_OUTPUT"
