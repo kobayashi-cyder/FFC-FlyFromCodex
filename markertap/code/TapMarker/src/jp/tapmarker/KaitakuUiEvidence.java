@@ -31,7 +31,7 @@ final class KaitakuUiEvidence {
    }finally{root.recycle();}
   });
   if(result==null||now<result.value.started||now-result.value.started>350)return;
-  KaitakuNamedControls.apply(e,result.value.text,result.value.controls,out,v.width,v.height);
+  KaitakuVideoNamedControls.apply(e,result.value.text,result.value.controls,out,v.width,v.height);
  }
  private KaitakuUiEvidence(){}
 }
