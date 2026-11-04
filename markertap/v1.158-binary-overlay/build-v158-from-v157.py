@@ -117,10 +117,16 @@ def inject_bridge(out):
     virt_hook="""public static void runVirtual(Object original,Object slot,Map<String,float[]> samples,Rect rect,int token){
    try{
      Object phases=get(slot,"phases"),model=get(phases,"engine");
-     if(sameVirtual(original,token)&&known((String)get(slot,"pkg")))
-       RewardV158Observer.observe(slot,(String)get(slot,"pkg"),model,samples,
+     String pkg=(String)get(slot,"pkg");
+     if(sameVirtual(original,token)&&known(pkg)){
+       RewardV158Observer.observe(slot,pkg,model,samples,
          time(slot,"observedAt"),SystemClock.uptimeMillis(),
          ad(model,samples,rect.width(),rect.height()),home(model,samples));
+       Object service=get(original,"s"),pilot=get(service,"pilot"),
+           windows=get(pilot,"virtualWindows"),window=invoke(windows,"window",pkg);
+       if(window!=null&&pkg.equals(get(invoke(windows,"screen",window),"pkg")))
+         RewardV158VirtualHud.capture(slot,windows,window,pkg);
+     }
    }catch(Throwable unavailable){}"""
     generated=original.replace(physical,phys_hook).replace(virtual,virt_hook)
     # On a real HOME/force-stop recovery start, throw away any unconfirmed
@@ -159,6 +165,7 @@ def build(base,sdk,jadx):
       bridge,
       HERE/"RewardV158Observer.java",
       HERE/"RewardV158Capture.java",
+      HERE/"RewardV158VirtualHud.java",
       HERE/"RewardV158Proof.java",
       
       ROOT/"code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java",
@@ -178,6 +185,7 @@ def build(base,sdk,jadx):
             name=path.name
             if not any(name.startswith(x) for x in (
               "AdV157DexBridge","RewardV158Observer","RewardV158Capture",
+              "RewardV158VirtualHud",
               "RewardEvaluationConnectome","RewardLanePlanner","KurashiruPointHud",
               "KurashiruRewardProof","KurashiruClaimPolicy",
               "FarmPassiveReward","SharedPointClaimArbiter")):
@@ -229,7 +237,7 @@ def build(base,sdk,jadx):
       "preserved_all_original_classes":True,
       "preserved_all_original_assets":True,
       "original_minimized_float_preserved":True,
-      "new_binary_scoring":"Physical frame HUD + completed claim + 2-frame reward evidence + 2 fresh increased balances, and farm passive receipt, fail closed. Virtual frames: CM only until independent HUD is connected.",
+      "new_binary_scoring":"Physical screenshot and virtual ROI frame HUD both feed the same completed-action or farm-passive claim + independent 2-frame reward proof + two matching fresh increased balances. No evidence means no score.",
       "safe_for_release":False,
       "original_signature":False,
       "pixel10_tested":False,
