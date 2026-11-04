@@ -51,23 +51,29 @@ jobs:
       - name: Fetch checksum-pinned Android SDK35
         working-directory: markertap/v1.145-physical-return
         run: python3 setup-toolchain.py
-      - name: Compile the changed VirtualWindows with the Android source tree (no signing)
-        working-directory: markertap/code/TapMarker
+      - name: Compile source-restored Android project (v1.152 policy and v1.158 wiring, no signing)
         run: |
           set -euo pipefail
-          SDK="../../v1.145-physical-return/tooling/sdk"
-          BT="$SDK/build-tools/35.0.0"
+          ROOT="$GITHUB_WORKSPACE"
+          SDK="$ROOT/markertap/v1.145-physical-return/tooling/sdk"
           JAR="$SDK/platforms/android-35/android.jar"
+          BT="$SDK/build-tools/35.0.0"
           test -f "$JAR"
-          # The historical source snapshot omits tools/ui-translations.tsv.
-          # Use the already-versioned Android resources to compile this patch.
-          test -d res
+          python3 markertap/tools/restore_source.py \
+            --output "$RUNNER_TEMP/v152-compile-source.zip" \
+            --extract-to "$RUNNER_TEMP/v152-compile-src"
+          cd "$RUNNER_TEMP/v152-compile-src/TapMarker"
+          python3 tools/generate-locales.py
           mkdir -p build/classes build/generated
           "$BT/aapt2" compile --dir res -o build/resources.zip
-          "$BT/aapt2" link -o build/base.apk --manifest AndroidManifest.xml -I "$JAR" --java build/generated --custom-package jp.tapmarker build/resources.zip
+          "$BT/aapt2" link -o build/base.apk --manifest AndroidManifest.xml \
+            -I "$JAR" --java build/generated --custom-package jp.tapmarker build/resources.zip
           LIBS=$(printf '%s:' libs/*.jar)
-          find src build/generated third-party/libadb-android-master/libadb/src/main/java -name '*.java' | sort > build/v152-sources.txt
-          javac -source 8 -target 8 -Xlint:-options -encoding UTF-8 -classpath "$JAR:$LIBS" -d build/classes @build/v152-sources.txt
+          find src build/generated third-party/libadb-android-master/libadb/src/main/java \
+            -name '*.java' | sort > build/v152-sources.txt
+          java -jar toolchain/ecj.jar -nowarn -source 8 -target 8 -encoding UTF-8 \
+            -classpath "$JAR:$LIBS" -d build/classes @build/v152-sources.txt
           test -f build/classes/jp/tapmarker/VirtualWindows.class
           test -f build/classes/jp/tapmarker/VirtualRefreshPolicy.class
-          echo 'Android source compilation PASS; no v1.152 signed APK is generated.'
+          test -f build/classes/jp/tapmarker/RewardEvaluationConnectome.class
+          echo 'Full restored Android source compiles, v1.152 refresh and v1.158 objective classes present. No APK signed here.'
