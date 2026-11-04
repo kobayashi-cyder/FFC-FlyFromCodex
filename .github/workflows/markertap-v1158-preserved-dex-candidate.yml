@@ -1,0 +1,109 @@
+name: MarkerTap 1.158 binary graft from signed v1.157 - full preservation audit
+on:
+  push:
+    branches: ["markertap/v1.157-preserved-reward-evaluation"]
+    paths:
+      - ".github/workflows/markertap-v1158-preserved-dex-candidate.yml"
+      - "markertap/v1.158-binary-overlay/**"
+      - "markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java"
+      - "markertap/code/TapMarker/src/jp/tapmarker/RewardLanePlanner.java"
+      - "markertap/code/TapMarker/src/jp/tapmarker/KurashiruPointHud.java"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-dex-graft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Gate binary receipt scoring with Java 8 host regressions
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/receipt-evidence"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/receipt-evidence" \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java \
+            markertap/code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java \
+            markertap/code/TapMarker/src/jp/tapmarker/SharedPointClaimArbiter.java \
+            markertap/v1.158-binary-overlay/RewardV158Proof.java \
+            markertap/v1.158-binary-overlay/RewardV158Observer.java \
+            markertap/v1.158-binary-overlay/RewardV158ObserverTest.java
+          java -cp "$RUNNER_TEMP/receipt-evidence" jp.tapmarker.RewardV158ObserverTest
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/receipt-evidence" \
+            markertap/v1.145-physical-return/tests/host/android/os/SystemClock.java \
+            markertap/code/TapMarker/src/jp/tapmarker/KurashiruPointHud.java \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java \
+            markertap/code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java \
+            markertap/code/TapMarker/src/jp/tapmarker/SharedPointClaimArbiter.java \
+            markertap/v1.158-binary-overlay/RewardV158Proof.java \
+            markertap/v1.158-binary-overlay/RewardV158Observer.java \
+            markertap/v1.158-binary-overlay/RewardV158VirtualHud.java \
+            markertap/v1.158-binary-overlay/RewardV158VirtualHudTest.java
+          java -cp "$RUNNER_TEMP/receipt-evidence" jp.tapmarker.RewardV158VirtualHudTest
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/receipt-evidence" \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardLanePlanner.java \
+            markertap/code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java \
+            markertap/code/TapMarker/src/jp/tapmarker/SharedPointClaimArbiter.java \
+            markertap/v1.158-binary-overlay/RewardV158Proof.java \
+            markertap/v1.158-binary-overlay/RewardV158Observer.java \
+            markertap/v1.158-binary-overlay/RewardV158Scheduler.java \
+            markertap/v1.158-binary-overlay/RewardV158SchedulerTest.java
+          java -cp "$RUNNER_TEMP/receipt-evidence" jp.tapmarker.RewardV158SchedulerTest
+      - name: Download SHA-authenticated original-signed v1.157 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/original"
+          gh release download markertap-v1.157-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.157-integrated-signed.apk -D "$RUNNER_TEMP/original"
+          echo '0108aadfa717c676dfe30b4f678a5c1526277e11b01ae16f85317d8b8dd50f7d  '"$RUNNER_TEMP"'/original/MarkerTap-v1.157-integrated-signed.apk' | sha256sum -c -
+      - name: Restore the original pinned dexlib2 and Android SDK35 tools
+        working-directory: markertap/v1.145-physical-return
+        run: python3 setup-toolchain.py
+      - name: Compile only approved runtime hooks and graft into preserved DEX
+        run: |
+          set -euo pipefail
+          python3 markertap/v1.158-binary-overlay/build-v158-from-v157.py \
+            --baseline "$RUNNER_TEMP/original/MarkerTap-v1.157-integrated-signed.apk" \
+            --sdk markertap/v1.145-physical-return/tooling/sdk \
+            --jadx markertap/v1.145-physical-return/tooling/jadx/lib/jadx-1.5.3-all.jar
+      - name: Forbid missing old classes, changed assets, or missing floating minimization
+        run: |
+          set -euo pipefail
+          BASE="$RUNNER_TEMP/original/MarkerTap-v1.157-integrated-signed.apk"
+          CAND="markertap/v1.158-binary-overlay/output/MarkerTap-v1.158-preserved-unsigned.apk"
+          python3 markertap/tools/audit_v157_apk_parity.py \
+            --baseline "$BASE" --candidate "$CAND" \
+            --report "$RUNNER_TEMP/full-v157-class-assets-parity.json"
+          python3 markertap/tools/check_preserved_features.py "$CAND" \
+            --report "$RUNNER_TEMP/legacy-connectome-assets.json"
+          python3 markertap/tools/check_minimize_binary.py \
+            --baseline "$BASE" --candidate "$CAND" \
+            --report "$RUNNER_TEMP/minimized-floating-ui-parity.json"
+      - name: Confirm this is unsigned and not a release
+        run: |
+          set -euo pipefail
+          CAND="markertap/v1.158-binary-overlay/output/MarkerTap-v1.158-preserved-unsigned.apk"
+          if "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$CAND"; then
+            echo 'STOP: candidate is unexpectedly signed'; exit 1
+          fi
+          echo 'UNSIGNED candidate only. Must never replace old download or auto-update a device.'
+      - name: Upload unsigned host artifact and audit reports (engineering only)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-1.158-UNSIGNED-PRESERVED-DEX-ENGINEERING-ONLY
+          path: |
+            markertap/v1.158-binary-overlay/output/MarkerTap-v1.158-preserved-unsigned.apk
+            markertap/v1.158-binary-overlay/build/v158-preserved/evidence/result.json
+            ${{ runner.temp }}/full-v157-class-assets-parity.json
+            ${{ runner.temp }}/legacy-connectome-assets.json
+            ${{ runner.temp }}/minimized-floating-ui-parity.json
+          if-no-files-found: error
+          retention-days: 14

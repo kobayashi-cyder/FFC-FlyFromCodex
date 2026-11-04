@@ -1,5 +1,5 @@
 package jp.tapmarker;
-import android.app.*;import android.accessibilityservice.*;import android.content.*;import android.net.*;import android.content.pm.PackageManager;import android.graphics.*;import android.hardware.display.*;import android.media.*;import android.os.*;import android.util.*;import android.view.*;import android.view.accessibility.*;import android.widget.*;import java.nio.ByteBuffer;import java.util.*;import java.util.concurrent.*
+import android.app.*;import android.accessibilityservice.*;import android.content.*;import android.net.*;import android.content.pm.PackageManager;import android.graphics.*;import android.hardware.display.*;import android.media.*;import android.os.*;import android.util.*;import android.view.*;import android.view.accessibility.*;import android.widget.*;import java.nio.ByteBuffer;import java.util.*;import java.util.concurrent.*;
 /** Each display renders to its own ImageReader; resizing the preview never removes a display. */
 final class VirtualWindows {
  final TapService s;final VirtualFrameQueue frameQueue=new VirtualFrameQueue();boolean framePumpScheduled;final ArrayList<Window> windows=new ArrayList<>();volatile int generation;volatile VirtualProtocol remote;

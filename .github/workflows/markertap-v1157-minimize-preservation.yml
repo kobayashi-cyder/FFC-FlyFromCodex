@@ -1,0 +1,61 @@
+name: MarkerTap v1.157 movable minimized float - authenticated APK regression
+on:
+  push:
+    branches: ["markertap/v1.157-preserved-reward-evaluation"]
+    paths:
+      - ".github/workflows/markertap-v1157-minimize-preservation.yml"
+      - "markertap/tools/check_minimize_binary.py"
+      - "markertap/tools/check_preserved_features.py"
+      - "markertap/v1.145-physical-return/src/jp/tapmarker/PanelModePolicy.java"
+      - "markertap/v1.145-physical-return/tests/PanelModePolicyTest.java"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  keep-minimized-float:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Download exact signed v1.157 APK and verify SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/old"
+          gh release download markertap-v1.157-rc1 -R "$GITHUB_REPOSITORY" \
+            -p MarkerTap-v1.157-integrated-signed.apk -D "$RUNNER_TEMP/old"
+          echo '0108aadfa717c676dfe30b4f678a5c1526277e11b01ae16f85317d8b8dd50f7d  '"$RUNNER_TEMP"'/old/MarkerTap-v1.157-integrated-signed.apk' | sha256sum -c -
+      - name: Verify genuine signed DEX contains minimized floating UI
+        run: |
+          set -euo pipefail
+          python3 markertap/tools/check_minimize_binary.py \
+            --baseline "$RUNNER_TEMP/old/MarkerTap-v1.157-integrated-signed.apk" \
+            --report "$RUNNER_TEMP/minimize-existing-apk.json"
+      - name: Run 35+ presentation-only regression checks
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/panel-policy"
+          javac --release 8 -encoding UTF-8 -d "$RUNNER_TEMP/panel-policy" \
+            markertap/v1.145-physical-return/src/jp/tapmarker/PanelModePolicy.java \
+            markertap/v1.145-physical-return/tests/PanelModePolicyTest.java
+          java -cp "$RUNNER_TEMP/panel-policy" jp.tapmarker.PanelModePolicyTest
+      - name: Validate interaction code explicitly retains drag vs tap
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          ui=Path("markertap/v1.145-physical-return/src/jp/tapmarker/PanelModeController.java").read_text()
+          for needle in ("installMinimizedDrag(s,restoreButton)",
+                         "getScaledTouchSlop()", "minimizedX", "minimizedY",
+                         "restorePanel(TapService s)", "v.performClick()",
+                         "getInt(LAST_EXPANDED", "PanelModePolicy.MINIMIZED",
+                         "switchMode(s,PanelModePolicy.restoredMode(previous))",
+                         "s.getSharedPreferences(PREF,0).edit().putInt(MINI_X,p.x).putInt(MINI_Y,p.y).apply()"):
+              assert needle in ui, "Lost minimized drag or restore hook: "+needle
+          print("PASS: minimized button drag/tap, position persistence, prior-layout restoration")
+          PY
