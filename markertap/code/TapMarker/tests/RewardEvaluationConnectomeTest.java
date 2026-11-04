@@ -65,6 +65,18 @@ public final class RewardEvaluationConnectomeTest {
     eq(1,fast.cycles(),"physical lane not affected");
     yes(!virtual.observeBalance("coin",100000,450,2400),"stale frame ignored");
 
+    // A reward dialog can stay visible across multiple fresh screenshots.
+    // A second UI acknowledgment must not erase the first valid time anchor.
+    RewardEvaluationConnectome repeated=new RewardEvaluationConnectome();
+    repeated.observeBalance("pt",600,3000,3000);
+    yes(repeated.claimSent("repeat-ui","pt",3100),"receipt candidate opened");
+    yes(repeated.claimAcknowledged("repeat-ui",3200),"first completed popup proof");
+    yes(!repeated.observeBalance("pt",610,3300,3300),"post-popup balance frame one");
+    yes(repeated.claimAcknowledged("repeat-ui",3350),"persistent popup does not shift original proof");
+    yes(repeated.observeBalance("pt",610,3325,3375),"second screenshot after first proof still credits despite later repeated popup");
+    eq(1,repeated.cycles(),"one UI episode one cycle");
+    eq(10,repeated.quantity(),"only real pt delta counted");
+
     double after=virtual.score();
     virtual.observeAd(600,600,true);
     virtual.observeAd(1700,1700,true);
