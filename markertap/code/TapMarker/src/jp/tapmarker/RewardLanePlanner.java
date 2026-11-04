@@ -42,28 +42,16 @@ final class RewardLanePlanner {
     double best=Double.NEGATIVE_INFINITY;
     for(int k=0;k<eligible.length;k++){
       int i=(cursor+k)%eligible.length;
-      if(!eligible[i])continue;
-      // Hard fairness bound, independent of the magnitude of a lane's reward.
-      if(visits[i]>min)continue; // always observe the least-served lane first
+      if(!eligible[i]||visits[i]>=min+MAX_VISIT_SKEW)continue;
+      // Per-scan confirmed objective, clipped so one outlier cannot
+      // dominate observation of a different eligible lane.
       double value=0;
       if(anyProven&&Double.isFinite(objective[i]))
-        value=objective[i]/Math.max(1,visits[i]);
-      if(verifying[i])value+=10000; // eligible pending-proof frames only
+        value=Math.max(-200,Math.min(200,
+            objective[i]/Math.max(1,visits[i])));
+      value-=200.0*(visits[i]-min);
+      if(verifying[i])value+=1000;
       if(value>best){best=value;chosen=i;}
-    }
-    // A top-performing lane may take one additional scan only if every active
-    // lane was already observed; it may never be >2 scans ahead.
-    if(anyProven&&chosen>=0&&!verifying[chosen]){
-      for(int k=0;k<eligible.length;k++){
-        int i=(cursor+k)%eligible.length;
-        if(!eligible[i]||visits[i]>min+1
-            ||!Double.isFinite(objective[i]))continue;
-        double candidate=objective[i]/Math.max(1,visits[i]);
-        double current=Double.isFinite(objective[chosen])
-            ?objective[chosen]/Math.max(1,visits[chosen]):Double.NEGATIVE_INFINITY;
-        if(candidate>current+20 && visits[i]<=min+1)
-          chosen=i;
-      }
     }
     if(chosen<0)return -1;
     if(visits[chosen]>=Integer.MAX_VALUE-2){
