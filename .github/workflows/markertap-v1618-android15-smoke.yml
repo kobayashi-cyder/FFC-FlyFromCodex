@@ -1,0 +1,58 @@
+name: CIFA v1.161.8 signed lab APK Android emulator smoke
+on:
+  push:
+    branches: ["markertap/v1.1618-kaitaku-fullcycle-two-display"]
+    paths: [".github/workflows/markertap-v1618-android15-smoke.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android35-startup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Fetch signed APK from immutable GitHub prerelease and authenticate digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/cifa"
+          gh release download cifa-v1.1618-fullcycle-2display-final-lab -R "$GITHUB_REPOSITORY" -p CIFA-v1.1618-fullcycle-2display-signed.apk -D "$RUNNER_TEMP/cifa"
+          echo 'd4a0295b0f4ed190856eda94f5bdd9347f5f5100cbce92879b4cf8e0713cb8af  '"$RUNNER_TEMP"'/cifa/CIFA-v1.1618-fullcycle-2display-signed.apk' | sha256sum -c -
+      - name: Allow emulator KVM hardware acceleration
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and launch signed APK on Android 15 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            set -eu
+            adb install "$RUNNER_TEMP/cifa/CIFA-v1.1618-fullcycle-2display-signed.apk"
+            adb shell pm path jp.tapmarker.cifa.getfix1618
+            adb shell am start -W -n jp.tapmarker.cifa.getfix1618/jp.tapmarker.MainActivity
+            sleep 6
+            adb shell pidof jp.tapmarker.cifa.getfix1618
+            adb logcat -d -b crash > "$RUNNER_TEMP/cifa-emulator-crash.log"
+            ! grep -Eq 'Process: jp.tapmarker.cifa.getfix1618|FATAL EXCEPTION' "$RUNNER_TEMP/cifa-emulator-crash.log"
+            adb shell screencap -p /sdcard/cifa-smoke.png
+            adb pull /sdcard/cifa-smoke.png "$RUNNER_TEMP/cifa-smoke.png"
+            echo 'PASS: CIFA v1.161.8 signed package installed, foreground activity launched, survived 6s on Android 15 emulator without crash'
+      - name: Publish emulator startup evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cifa-v1618-android15-emulator-smoke
+          path: |
+            ${{ runner.temp }}/cifa-smoke.png
+            ${{ runner.temp }}/cifa-emulator-crash.log
+          retention-days: 30
+          if-no-files-found: warn
