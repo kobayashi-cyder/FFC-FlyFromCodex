@@ -119,7 +119,7 @@ jobs:
             echo "Existing prerelease remains immutable: $tag"
           else
             gh release create "$tag" --target "$GITHUB_SHA" --prerelease \
-              --title "CIFA 1.161.5 Tap Boost Ad and Mission Return (test only)" \
+              --title "CIFA 1.161.6 Tap Boost Ad and Mission Return (test only)" \
               --notes "Experimental, separate-package signed APK. Not an update to MarkerTap or the previous CIFA lab. Package jp.tapmarker.cifa.getfix1616 avoids CI certificate update conflicts. Pixel 10 / Android 17 input and reward collection remain unverified. Do not treat as a stable production release." \
               "$apk" "$RUNNER_TEMP/SHA256SUMS.txt" "$RUNNER_TEMP/INSTALL-NOTE.txt"
           fi
