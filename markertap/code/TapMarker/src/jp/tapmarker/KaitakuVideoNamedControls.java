@@ -14,7 +14,8 @@ final class KaitakuVideoNamedControls {
     if(context==null||!(context.contains("コイン")||context.contains("ｺｲﾝ")||
        context.contains("タップ")||context.contains("ﾀｯﾌﾟ"))) {
       KaitakuActionPacer.reset(e);
-      if(!KaitakuRewardNamedControls.tryApply(e,context,controls,out,w,h))
+      if(!KaitakuRewardNamedControls.tryApply(e,context,controls,out,w,h)&&
+         !(e.current.equals(KaitakuPreset.P+"missions")&&KaitakuActionEvidence.present(out,"get")))
         KaitakuNamedControls.apply(e,context,controls,out,w,h);
       return;
     }
@@ -25,7 +26,8 @@ final class KaitakuVideoNamedControls {
     if(d.result==KaitakuVideoModalPolicy.Result.NONE) {
       // A genuinely changed screen must make the next opt-out immediately tappable.
       KaitakuActionPacer.reset(e);
-      if(!KaitakuRewardNamedControls.tryApply(e,context,controls,out,w,h))
+      if(!KaitakuRewardNamedControls.tryApply(e,context,controls,out,w,h)&&
+         !(e.current.equals(KaitakuPreset.P+"missions")&&KaitakuActionEvidence.present(out,"get")))
         KaitakuNamedControls.apply(e,context,controls,out,w,h);return;
     }
     // Freeze ordinary-home and mission actions while a modal is present.
