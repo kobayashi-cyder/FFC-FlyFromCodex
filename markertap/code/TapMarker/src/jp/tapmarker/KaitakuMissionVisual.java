@@ -34,12 +34,17 @@ final class KaitakuMissionVisual {
       pinkHeader(px(w,h,p,.60f,.20f))&&
       orangeBanner(px(w,h,p,.10f,.34f));
   }
+  // Orange Get may also satisfy the broad yellow RGB family. Play needs
+  // the specifically GOLDEN non-claim pill to avoid false Play on rewards.
+  private static boolean playGold(int c){
+    return r(c)>215&&g(c)>=165&&g(c)<215&&b(c)<70&&r(c)-g(c)<100;
+  }
   static float[] firstStagePlay(int w,int h,RegionSampler.Pixels p){
     if(!modernHeader(w,h,p))return null;
     if(!gray(px(w,h,p,.30f,.60f))||!gray(px(w,h,p,.45f,.60f))||
        !white(px(w,h,p,.30f,.66f))||
-       !yellow(px(w,h,p,.71f,.655f))||
-       !yellow(px(w,h,p,.87f,.655f)))return null;
+       !playGold(px(w,h,p,.71f,.655f))||
+       !playGold(px(w,h,p,.87f,.655f)))return null;
     // First row only: the video explicitly shows this is stage "プレイ".
     return new float[]{.683f,.633f,.918f,.682f};
   }
