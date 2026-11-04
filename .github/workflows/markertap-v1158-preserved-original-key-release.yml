@@ -1,0 +1,98 @@
+name: MarkerTap v1.158 original-key-signed reproducible release
+on:
+  push:
+    branches:
+      - markertap/v1.157-preserved-reward-evaluation
+    paths:
+      - .github/workflows/markertap-v1158-preserved-original-key-release.yml
+      - markertap/v1.158-binary-overlay/reconstruct-signed-with-public-block.py
+      - markertap/v1.158-binary-overlay/v158-public-signing-block.b64
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  sign-verify-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download byte-audited UNSIGNED original-preserved v1.158 candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download 41794569467 --repo "$GITHUB_REPOSITORY" --dir evidence
+          find evidence -type f | sort
+          test -n "$(find evidence -type f -name 'MarkerTap-v1.158-preserved-unsigned.apk' -print -quit)"
+      - name: Reconstruct byte-identical APK from precomputed PUBLIC signature (no private key in CI)
+        shell: bash
+        run: |
+          set -euo pipefail
+          unsigned="$(find evidence -type f -name 'MarkerTap-v1.158-preserved-unsigned.apk' -print -quit)"
+          python markertap/v1.158-binary-overlay/reconstruct-signed-with-public-block.py \
+            "$unsigned" \
+            markertap/v1.158-binary-overlay/v158-public-signing-block.b64 \
+            dist/MarkerTap-v1.158-preserved-original-signed.apk
+          printf '56e13b2249fb9ce8c98f498498ea14146ddf4095307707c6911214f2f5463ef8  %s\n' \
+            dist/MarkerTap-v1.158-preserved-original-signed.apk | sha256sum --check
+      - uses: android-actions/setup-android@v3
+      - name: Verify signatures with Android official apksigner and ZIP alignment
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "build-tools;35.0.0" "platforms;android-35" >/dev/null
+          sdk="$ANDROID_HOME/build-tools/35.0.0"
+          apk=dist/MarkerTap-v1.158-preserved-original-signed.apk
+          "$sdk/apksigner" verify --min-sdk-version 24 --verbose --print-certs "$apk" | tee dist/apksigner-verification.txt
+          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' dist/apksigner-verification.txt
+          grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' dist/apksigner-verification.txt
+          grep -qi '7f42d636e4d3c251f475eb998fbe8e92b515ded8bce3ff4d30aa90b9a738cfb1' dist/apksigner-verification.txt
+          "$sdk/zipalign" -c -P 16 -v 4 "$apk" | tee dist/zipalign-verification.txt
+          "$sdk/aapt" dump badging "$apk" | tee dist/aapt-badging.txt
+          grep -q "versionCode='161' versionName='1.158'" dist/aapt-badging.txt
+          python - <<'PY'
+          import json
+          p='dist/MarkerTap-v1.158-preserved-original-signed.validation.json'
+          o=json.load(open(p));o['android_official_apksigner_v2_v3_verified']=True
+          o['zipalign_16k_verified']=True;o['android_15_emulator_smoke_from_previous_unsigned_candidate_run']='41795017451'
+          open(p,'w').write(json.dumps(o,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarkerTap-v1.158-PRESERVED-ORIGINAL-KEY-SIGNED-ANDROID-VERIFIED
+          path: dist/
+          retention-days: 90
+      - name: Publish signed testing release after all verification passes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag=markertap-v1.158-preserved-rc1
+          cat > dist/RELEASE_NOTES.md <<'EOF'
+          MarkerTap v1.158 preserved-original APK — ORIGINAL certificate signed v2/v3.
+          VersionCode 161, package jp.tapmarker.lite.
+          All 1613 original v1.157 DEX classes and original assets preserved; 13 minimized floating UI classes preserved.
+          Adds read-only reward proof, HUD screenshot and ROI, score scheduling, and fail-closed checks.
+          v1.158 source PR: #43. No original private signing key stored in GitHub.
+          This is an engineering pre-release. Actual Pixel 10/Android 17, real-game reward, long-run autoplay and ad-resume are NOT device-validated.
+          Retain a copy of the v1.157 signed APK for rollback (Android app downgrades may require uninstall and lose app data).
+          EOF
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" \
+              dist/MarkerTap-v1.158-preserved-original-signed.apk \
+              dist/MarkerTap-v1.158-preserved-original-signed.validation.json \
+              --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" \
+              dist/MarkerTap-v1.158-preserved-original-signed.apk \
+              dist/MarkerTap-v1.158-preserved-original-signed.validation.json \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --prerelease \
+              --title "MarkerTap v1.158 preserved original-key signed (experimental)" \
+              --notes-file dist/RELEASE_NOTES.md
+          fi
