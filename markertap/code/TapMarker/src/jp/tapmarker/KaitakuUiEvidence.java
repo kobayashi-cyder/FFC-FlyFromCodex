@@ -30,7 +30,8 @@ final class KaitakuUiEvidence {
     if(!s.pilot.active||s.pilot.token!=token||s.inputTargetVersion!=geometry)return null;return new Page(text.toString(),controls,started);
    }finally{root.recycle();}
   });
-  if(result==null||now<result.value.started||now-result.value.started>350)return;
+  if(result==null||result.value==null||Math.abs(now-result.value.started)>350
+      ||SystemClock.uptimeMillis()-result.completedAt>250)return;
   KaitakuVideoNamedControls.apply(e,result.value.text,result.value.controls,out,v.width,v.height);
  }
  private KaitakuUiEvidence(){}
