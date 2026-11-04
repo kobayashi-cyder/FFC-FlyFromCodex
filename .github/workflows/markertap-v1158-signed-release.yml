@@ -69,6 +69,10 @@ jobs:
           UNSIGNED="markertap/v1.145-physical-return/output/MarkerTap-v1.158-integrated-unsigned.apk"
           "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "$UNSIGNED" | grep "name='jp.tapmarker.lite' versionCode='161' versionName='1.158'"
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 "$UNSIGNED"
+          # HARD STOP: preserve previously shipped game, panel, connectome and
+          # recovery controls before an original-certificate APK can be signed.
+          python3 markertap/tools/check_preserved_features.py "$UNSIGNED" \
+            --report "$RUNNER_TEMP/markertap-v158-preservation-gate.json"
           sha256sum "$UNSIGNED"
           echo "MARKERTAP_EXPECTED_UNSIGNED_SHA256=$(sha256sum "$UNSIGNED" | cut -d' ' -f1)" >> "$GITHUB_ENV"
       - name: Sign only with the original protected MarkerTap key and publish verified prerelease
