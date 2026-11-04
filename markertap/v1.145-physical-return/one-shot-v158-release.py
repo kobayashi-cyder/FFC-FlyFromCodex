@@ -216,7 +216,7 @@ def main():
         signed = ROOT / "output" / APP
         sh("python3", "sign-v158-release.py",
            "--unsigned", unsigned, "--keystore", key,
-           "--sdk", ROOT / "tooling" / "sdk", "--out", signed, env=env)
+           "--sdk", Path(os.environ.get("MARKERTAP_ANDROID_SDK_ROOT", str(ROOT / "tooling" / "sdk"))), "--out", signed, env=env)
         del env
         receipt = json.loads((ROOT / "output" / "MarkerTap-v1.158-integrated-signed.validation.json").read_text())
         if (receipt.get("signed_apk_sha256") != sha256(signed)
