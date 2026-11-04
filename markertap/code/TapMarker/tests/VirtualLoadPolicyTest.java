@@ -1,16 +1,16 @@
 package jp.tapmarker;
 
-/** Four-display timing simulation; exercises the policies used by the Android adapter. */
+/** Fixed-two runtime limit; scheduling stress additionally covers legacy 3/4-lane data. */
 public final class VirtualLoadPolicyTest {
  static int checks;
  static void check(boolean ok,String why){checks++;if(!ok)throw new AssertionError(why);}
  static void limits(){
-  for(int bad:new int[]{Integer.MIN_VALUE,-1,0,1,5,Integer.MAX_VALUE}){
+  for(int bad:new int[]{Integer.MIN_VALUE,-1,0,1,3,4,5,Integer.MAX_VALUE}){
    check(VirtualLoadPolicy.limit(bad)==2,"invalid saved settings retain the safe two-display default");
    check(!VirtualLoadPolicy.allows(3,bad),"invalid settings cannot silently enable extra displays");
   }
-  for(int limit=2;limit<=4;limit++)for(int selected=0;selected<=6;selected++)
-   check(VirtualLoadPolicy.allows(selected,limit)==(selected>0&&selected<=limit),"selection must fit the saved limit without truncating the target list");
+  for(int limit=0;limit<=6;limit++)for(int selected=0;selected<=6;selected++)
+   check(VirtualLoadPolicy.allows(selected,limit)==(selected>0&&selected<=2),"saved 3/4-lane settings cannot exceed the two-display ceiling");
  }
  static void fourDisplays(PerformancePolicy.Profile p,int count){
   long interval=VirtualLoadPolicy.decodeInterval(p,count,true,true);
@@ -55,6 +55,6 @@ public final class VirtualLoadPolicyTest {
  }
  public static void main(String[] args){
   limits();for(PerformancePolicy.Profile p:new PerformancePolicy.Profile[]{PerformancePolicy.ECO,PerformancePolicy.NORMAL,PerformancePolicy.QUICK,PerformancePolicy.F52A})for(int count=2;count<=4;count++)fourDisplays(p,count);lifecycle();
-  System.out.println("VirtualLoadPolicyTest: "+checks+" checks passed; 2/3/4 selections, phased captures, delayed callbacks and four-display recovery; Android throughput and RAM not measured");
+  System.out.println("VirtualLoadPolicyTest: "+checks+" checks passed; fixed two-display runtime cap, phased captures, legacy multi-lane scheduling stress; Android throughput and RAM not measured");
  }
 }
