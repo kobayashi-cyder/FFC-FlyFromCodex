@@ -64,7 +64,17 @@ final class RewardV158Scheduler {
         knownReward|=cycles[i]>0||verifying[i];
       }
       // Not enough actual evidence? Retain v1.157's normal index behavior.
-      if(!knownReward)return;
+      if(!knownReward){
+        // No scored eligible lane: keep the legacy index when possible, but
+        // do not waste another scan on a stopped or manually held slot.
+        int index=((Number)get(split,"index")).intValue();
+        if(!eligible[Math.floorMod(index,slots.length)]){
+          for(int i=0;i<slots.length;i++)if(eligible[i]){
+            set(split,"index",i);break;
+          }
+        }
+        return;
+      }
       RewardLanePlanner planner;
       synchronized(PLANNERS){
         planner=PLANNERS.get(split);
