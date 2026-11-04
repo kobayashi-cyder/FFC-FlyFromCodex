@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
  * scheduling. Failure/timeout means NO score, not a guessed point total.
  */
 final class RewardV158Capture {
-  private static final long MIN_SCAN_MS=1200,EXPIRE_MS=5000;
+  private static final long MIN_SCAN_MS=1600,EXPIRE_MS=5000;
   private static final ExecutorService WORKER=
     Executors.newSingleThreadExecutor(r->{
       Thread t=new Thread(r,"MarkerTap-v158-pt-proof");
