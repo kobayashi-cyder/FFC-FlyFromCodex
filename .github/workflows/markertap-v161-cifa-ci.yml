@@ -55,7 +55,7 @@ jobs:
           cd "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
           bash build.sh > "$RUNNER_TEMP/build.log" 2>&1 || { tail -100 "$RUNNER_TEMP/build.log"; exit 1; }
           mkdir -p build/test-classes
-          java -jar toolchain/ecj.jar -nowarn -source 8 -target 8 -encoding UTF-8 -classpath build/classes:libs/bcprov-jdk15to18-1.81.jar -d build/test-classes tests/*.java
+          java -jar toolchain/ecj.jar -nowarn -source 8 -target 8 -encoding UTF-8 -classpath build/classes:libs/bcprov-jdk15to18-1.81.jar -d build/test-classes tests/CifaDenseSelectorTest.java tests/CifaAutonomyTest.java tests/CifaKnowHowTest.java tests/CifaGraphMigrationTest.java tests/BancSelectorTest.java tests/BancAutonomyTest.java tests/BancKnowHowTest.java tests/KaitakuMissionReacquireTest.java
           for test in CifaDenseSelector CifaAutonomy CifaKnowHow CifaGraphMigration BancSelector BancAutonomy BancKnowHow KaitakuMissionReacquire; do
             echo "=== $test ==="
             java -cp build/classes:build/test-classes jp.tapmarker.${test}Test
