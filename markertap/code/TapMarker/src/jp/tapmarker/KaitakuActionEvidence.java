@@ -30,7 +30,7 @@ final class KaitakuActionEvidence {
    float[] get=shared("get",t,w,h,p),play=get==null?shared("play",t,w,h,p):null,back=get==null&&play==null?shared("back",t,w,h,p):null;
    if(get==null&&play==null&&back==null)continue;
    put(out,"mission-page",null);blockHome(out);
-   if(e.current.equals(KaitakuPreset.P+"missions")){if(get!=null)put(out,"get",get);else if(play!=null)put(out,"play",play);else put(out,"back",back);}
+   if(e.current.equals(KaitakuPreset.P+"missions")){if(get!=null&&KaitakuRewardClaimGate.allow(e,get))put(out,"get",get);else if(play!=null)put(out,"play",play);else put(out,"back",back);}
    return true;
   }return false;
  }
@@ -50,12 +50,14 @@ final class KaitakuActionEvidence {
   }
   if(home.proceed)return;
   if(!home.home){
-   if(!reward(w,h,p,out)&&!mission(e,w,h,p,out)
+   if(reward(w,h,p,out)){KaitakuRewardClaimGate.receipt(e);return;}
+   if(!mission(e,w,h,p,out)
        &&!e.current.equals(KaitakuPreset.P+"claim-wait")){
     float[] orange=KaitakuOrangeClaimEvidence.find(w,h,p);
     if(orange!=null){
      put(out,"mission-page",null);blockHome(out);
-     if(e.current.equals(KaitakuPreset.P+"missions"))put(out,"get",orange);
+     if(e.current.equals(KaitakuPreset.P+"missions")&&
+        KaitakuRewardClaimGate.allow(e,orange))put(out,"get",orange);
     }
    }
    return;
