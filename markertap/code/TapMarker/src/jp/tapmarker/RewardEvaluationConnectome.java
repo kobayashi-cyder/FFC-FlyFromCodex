@@ -75,6 +75,23 @@ final class RewardEvaluationConnectome {
   }
 
   /**
+   * Farm-like games can grant the credit when the reward popup appears, before
+   * any Close gesture. Use a verified PRE-popup playable-frame balance instead
+   * of the potentially already-increased balance in the current screenshot.
+   * Call only from the strictly gated passive-receipt observer.
+   */
+  synchronized boolean claimFromPriorPlay(String receiptId,String unit,long at,
+                                           long observedBefore,long observedAt){
+    if(receiptId==null||receiptId.isEmpty()||unit==null||unit.isEmpty()
+        ||at<=0||creditedIds.contains(receiptId)||pending!=null
+        ||!unit.equals(balanceUnit)||observedBefore<0||observedAt<=0
+        ||observedAt>=at||at-observedAt>BASELINE_TTL_MS
+        ||latestBalance<observedBefore||latestBalanceAt<observedAt)return false;
+    pending=new Claim(receiptId,unit,at,observedBefore);
+    return true;
+  }
+
+  /**
    * Evidence of the actual post-claim reward response (not generic close).
    * The UI alone does not create a score or a completed cycle.
    */
