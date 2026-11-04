@@ -184,5 +184,5 @@ public final class CifaAutonomy {
   skill.attempts++;if(ok){skill.successes++;skill.destination=destination;}else skill.failures++;skill.rewardSum+=ok?.2:-.5;
   while(skills.size()>128)skills.remove(skills.keySet().iterator().next());
  }
- public synchronized String report(){int learned=0;for(Skill skill:skills.values())if(skill.acquired())learned++;return "BANC888：6集約ノード・16接続\n自律復帰 "+recoveries+"回 / 結果確認 "+verified+"回 / 未確認・失敗 "+failures+"回\n候補手順 "+skills.size()+"件 / 獲得手順 "+learned+"件\n"+(transferEnabled?knowHow.report(sourceGame)+"\n他ゲームのノウハウ利用候補 "+transferredProposals+"回":"ゲーム間のノウハウ共有はOFF")+"\n"+status;}
+ public synchronized String report(){int learned=0;for(Skill skill:skills.values())if(skill.acquired())learned++;return "CIFA：8入力・16中間ノードの高密度判断器\n自律復帰 "+recoveries+"回 / 結果確認 "+verified+"回 / 未確認・失敗 "+failures+"回\n候補手順 "+skills.size()+"件 / 獲得手順 "+learned+"件\n"+(transferEnabled?knowHow.report(sourceGame)+"\n他ゲームのノウハウ利用候補 "+transferredProposals+"回":"ゲーム間のノウハウ共有はOFF")+"\n"+status;}
 }
