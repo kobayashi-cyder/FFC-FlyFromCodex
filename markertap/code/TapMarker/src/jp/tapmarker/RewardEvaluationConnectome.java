@@ -98,7 +98,11 @@ final class RewardEvaluationConnectome {
   synchronized boolean claimAcknowledged(String receiptId,long at){
     if(pending==null||!pending.id.equals(receiptId)||at<=pending.sentAt
         ||at-pending.sentAt>CLAIM_TTL_MS)return false;
-    pending.uiAt=at;return true;
+    // The first verified payout screen anchors the evidence window. Repeated
+    // screenshots of the same popup must never shift the window forward and
+    // discard valid post-receipt balance readings.
+    if(pending.uiAt<0)pending.uiAt=at;
+    return at>=pending.uiAt;
   }
 
   /**
