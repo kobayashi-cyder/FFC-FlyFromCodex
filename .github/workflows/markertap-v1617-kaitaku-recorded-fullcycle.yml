@@ -1,0 +1,126 @@
+name: Build CIFA v1.161.7 Kaitaku tap boost ad cycle APK
+on:
+  push:
+    branches: ["markertap/v1.1617-kaitaku-recorded-full-cycle"]
+    paths:
+      - "markertap/v1.161-cifa/**"
+      - "markertap/code/**"
+      - ".github/workflows/markertap-v1617-kaitaku-recorded-fullcycle.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  make-lab-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          if ! command -v rg >/dev/null; then sudo apt-get update -qq; sudo apt-get install -y -qq ripgrep; fi
+      - name: Check Kaitaku runtime wiring and ad evidence gates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("markertap/code/TapMarker/src/jp/tapmarker")
+          upgrade=(p/"UpgradeEngine.java").read_text()
+          assert 'KaitakuPreset.P+"main-upgrade"' in upgrade
+          assert 'KaitakuPreset.P+"main-auto-upgrade"' in upgrade
+          ad=(p/"AdCloseAutomaton.java").read_text()
+          assert 'kaitaku=KaitakuPreset.APP.equals(app)' in ad
+          policy=(p/"AdRecoveryRuntime.java").read_text()
+          assert '(!KaitakuPreset.APP.equals(pkg)&&!AdExitPolicy.adState(e.current))' in policy
+          print("PASS: Kaitaku runtime side actions, ad exit regions and visual-ad gate are wired")
+          PY
+      - name: Restore sources and isolate CIFA Lab package
+        run: |
+          set -euo pipefail
+          python3 markertap/tools/restore_source.py --extract-to "$RUNNER_TEMP/MarkerTap-restored"
+          python3 markertap/v1.161-cifa/prepare-lab.py "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
+      - name: Build APK with temporary test key
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -noprompt -alias tapmarker -keyalg RSA -keysize 2048 -validity 365 -keystore "$RUNNER_TEMP/ci-cifa-lab.jks" -storepass android -keypass android -dname "CN=CIFA daily get unique test app"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export TAPMARKER_KEYSTORE="$RUNNER_TEMP/ci-cifa-lab.jks"
+          export TAPMARKER_OUTPUT="$RUNNER_TEMP/CIFA-v1.1617-recorded-fullcycle-signed.apk"
+          cd "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
+          bash build.sh > "$RUNNER_TEMP/build.log" 2>&1 || { tail -150 "$RUNNER_TEMP/build.log"; exit 1; }
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$RUNNER_TEMP/CIFA-v1.1617-recorded-fullcycle-signed.apk" > "$RUNNER_TEMP/signature-verification.txt"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 "$RUNNER_TEMP/CIFA-v1.1617-recorded-fullcycle-signed.apk"
+          PKG=$("$ANDROID_HOME/build-tools/35.0.0/aapt2" dump packagename "$RUNNER_TEMP/CIFA-v1.1617-recorded-fullcycle-signed.apk")
+          echo "$PKG" | tee "$RUNNER_TEMP/package-name.txt"
+          test "$PKG" = "jp.tapmarker.cifa.getfix1617"
+          python3 - <<'PY'
+          import zipfile,os
+          from pathlib import Path
+          apk=Path(os.environ["RUNNER_TEMP"])/"CIFA-v1.1617-recorded-fullcycle-signed.apk"
+          with zipfile.ZipFile(apk) as z:
+              assert z.testzip() is None
+              assert "classes.dex" in z.namelist()
+              assert "AndroidManifest.xml" in z.namelist()
+          print("PASS: standalone CIFA APK ZIP and DEX structure validated")
+
+          PY
+      - name: Host regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          cd "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
+          mkdir -p build/test-classes
+          java -jar toolchain/ecj.jar -nowarn -source 8 -target 8 -encoding UTF-8 -classpath build/classes:libs/bcprov-jdk15to18-1.81.jar -d build/test-classes tests/CifaDenseSelectorTest.java tests/CifaAutonomyTest.java tests/CifaKnowHowTest.java tests/CifaGraphMigrationTest.java tests/KaitakuMissionReacquireTest.java tests/FloatingPanelGeometryTest.java tests/KaitakuAdUpgradeRepairTest.java tests/KaitakuOrangeClaimEvidenceTest.java tests/KaitakuVideoAutonomyRegressionTest.java tests/KaitakuFullCycleRegressionTest.java tests/KaitakuScreenshots20261105RegressionTest.java
+          for test in CifaDenseSelector CifaAutonomy CifaKnowHow CifaGraphMigration KaitakuMissionReacquire FloatingPanelGeometry KaitakuAdUpgradeRepair KaitakuOrangeClaimEvidence KaitakuVideoAutonomyRegression KaitakuFullCycleRegression KaitakuScreenshots20261105Regression; do
+            java -cp build/classes:build/test-classes jp.tapmarker."$test"Test
+          done | tee "$RUNNER_TEMP/tests.log"
+          (cd "$RUNNER_TEMP" && sha256sum CIFA-v1.1617-recorded-fullcycle-signed.apk) | tee "$RUNNER_TEMP/SHA256SUMS.txt"
+          cat > "$RUNNER_TEMP/INSTALL-NOTE.txt" <<'NOTE'
+          CIFA v1.161.7 Kaitaku Recorded Full Cycle lab APK.
+          Package: jp.tapmarker.cifa.getfix1617 (different from installed jp.tapmarker.lite).
+          This APK does NOT update or remove the installed MarkerTap app or earlier CIFA lab apps, and does not import their app data.
+          Built from restored CIFA source with v1.161.7 orange mission claim detection and a temporary test signing key.
+          Android on-device install/recognition/gesture/virtual display validation has NOT been performed.
+          This release uses a UNIQUE application package ID to avoid signature conflicts with previous CIFA lab APKs. A future build with a new temporary key cannot update this same package.
+          Keep the main MarkerTap app installed and unchanged.
+          To minimize: open the floating CIFA control panel, tap 最小化; drag the CIFA bubble; tap it to restore.
+          NOTE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CIFA-v1.1617-recorded-fullcycle-isolated-signed
+          path: |
+            ${{ runner.temp }}/CIFA-v1.1617-recorded-fullcycle-signed.apk
+            ${{ runner.temp }}/INSTALL-NOTE.txt
+            ${{ runner.temp }}/SHA256SUMS.txt
+            ${{ runner.temp }}/tests.log
+            ${{ runner.temp }}/signature-verification.txt
+            ${{ runner.temp }}/package-name.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish installable APK as an experimental GitHub prerelease
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="cifa-v1.1617-recorded-fullcycle-lab"
+          apk="$RUNNER_TEMP/CIFA-v1.1617-recorded-fullcycle-signed.apk"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Existing prerelease remains immutable: $tag"
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" --prerelease \
+              --title "CIFA 1.161.7 Kaitaku Recorded Full Cycle (test only)" \
+              --notes "Experimental, separate-package signed APK. Not an update to MarkerTap or the previous CIFA lab. Package jp.tapmarker.cifa.getfix1617 avoids CI certificate update conflicts. Pixel 10 / Android 17 input and reward collection remain unverified. Do not treat as a stable production release." \
+              "$apk" "$RUNNER_TEMP/SHA256SUMS.txt" "$RUNNER_TEMP/INSTALL-NOTE.txt"
+          fi
+
