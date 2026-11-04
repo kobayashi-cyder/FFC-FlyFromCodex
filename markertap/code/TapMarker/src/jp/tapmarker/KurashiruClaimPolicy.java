@@ -8,6 +8,8 @@ import java.util.Map;
 final class KurashiruClaimPolicy {
   static boolean isClaim(String pkg,String watchId,boolean acceptedCenter){
     if(!acceptedCenter||watchId==null||pkg==null)return false;
+    if(pkg.equals(KaitakuPreset.APP))
+      return watchId.equals("kaitaku-default-missions-get");
     if(pkg.equals("com.kurashiru.fue.usagi"))
       return watchId.equals("usagi-default-ゲットのみタップ")
         ||watchId.equals("usagi-default-通常獲得の中央");
@@ -32,6 +34,11 @@ final class KurashiruClaimPolicy {
    */
   static boolean rewardVisible(String pkg,PhaseEngine engine,Map<String,float[]> samples){
     if(pkg==null||engine==null||samples==null)return false;
+    // Kaitaku exposes text-scoped receipt proof, not a generic close button.
+    if(pkg.equals(KaitakuPreset.APP)){
+      float[] receipt=samples.get("kaitaku-default-receipt-proof");
+      return receipt!=null&&receipt.length==1&&receipt[0]==1f;
+    }
     String[] ids;
     if(pkg.equals("com.kurashiru.fue.usagi"))
       ids=new String[]{"usagi-default-獲得を確認","usagi-default-mission-open-reward"};
