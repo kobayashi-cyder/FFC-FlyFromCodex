@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  * an actual named control and a finite, safe rectangle.
  */
 final class KaitakuVideoModalPolicy {
-  enum Result { NONE, HOLD, DISMISS }
+  enum Result { NONE, HOLD, DISMISS, START_AD }
   static final class Hit {
     final String label;
     final float[] bounds;
@@ -47,8 +47,10 @@ final class KaitakuVideoModalPolicy {
     }
     // A mission row alone cannot satisfy the independent explanatory sentence.
     if(text.contains("タップ2倍")&&text.contains("1タップで進む量が2倍")) {
-      float[] b=find(hits,"キャンセル");
-      return new Decision(b==null?Result.HOLD:Result.DISMISS,"tap-boost",b);
+      float[] b=find(hits,"使用する");
+      // This modal is opened to complete the tap-boost mission. Cancel is not
+      // evidence of successful use. Never infer an ad CTA from a title alone.
+      return new Decision(b==null?Result.HOLD:Result.START_AD,"tap-boost",b);
     }
     return NONE;
   }

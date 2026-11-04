@@ -7,7 +7,7 @@ final class KaitakuActionEvidence {
  static final float[] EFF_TITLE={.163f,.823f,.302f,.840f},EFF_COST={.15f,.845f,.185f,.857f},EFF_AD={.145f,.843f,.303f,.859f};
  static final float[] AUTO_TITLE={.702f,.823f,.86f,.840f},AUTO_COST={.71f,.845f,.745f,.857f},AUTO_AD={.706f,.843f,.864f,.859f};
  static final float[] TAP_BOOST={.05f,.759f,.23f,.778f},AUTO_BOOST={.77f,.759f,.95f,.778f};
- static final String[] KEYS={"mission-open","mission-page","upgrade","auto-upgrade","tap-boost","auto-boost","get","play","back","close","mini-start","mini-live","mini-end"};
+ static final String[] KEYS={"mission-open","mission-page","upgrade","auto-upgrade","tap-boost","auto-boost","tap-ad-start","get","play","back","close","mini-start","mini-live","mini-end"};
  final Map<String,float[]> refs;String state="";long stateAt,firstAt=-1,nextMission,nextUpgrade,nextBoost;int boostTurn,upgradeTurn;
  KaitakuActionEvidence(Map<String,float[]> r){refs=r;}
  static boolean present(Map<String,float[]> out,String key){float[] v=out.get(KaitakuPreset.P+key);return v!=null&&v.length==1&&v[0]==1;}
@@ -59,8 +59,13 @@ final class KaitakuActionEvidence {
    }
    float[] optOut=KaitakuVideoModalVisual.find(w,h,p);
    if(optOut!=null){put(out,"close",optOut);blockHome(out);return;}
+   float[] tapAd=KaitakuTapBoostModalVisual.find(w,h,p);
+   if(tapAd!=null){put(out,"tap-ad-start",tapAd);blockHome(out);return;}
    if(e.current.equals(KaitakuPreset.P+"claim-wait"))return;
    if(!mission(e,w,h,p,out)){
+    if(KaitakuMissionVisual.visible(w,h,p)){
+      put(out,"mission-page",null);blockHome(out);return;
+    }
     float[] orange=KaitakuOrangeClaimEvidence.find(w,h,p);
     if(orange!=null){
      put(out,"mission-page",null);blockHome(out);
