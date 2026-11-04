@@ -20,6 +20,18 @@ public final class BancSelector {
   public final Candidate candidate;public final double activation,signedOutput;public final double[] credit;
   Selection(Candidate c,double value,double[] credit){candidate=c;signedOutput=value;activation=Math.abs(value);this.credit=credit;}
  }
+ private static final boolean[][][] OUTPUT_CONE=new boolean[4][6][6];
+ static {
+  for(int route=0;route<4;route++){
+   boolean[] required=new boolean[6];required[ROUTE_TARGET[route]]=true;
+   for(int tick=5;tick>=0;tick--){
+    OUTPUT_CONE[route][tick]=required.clone();
+    boolean[] prior=required.clone();
+    for(int i=0;i<16;i++)if(required[TO[i]])prior[FROM[i]]=true;
+    required=prior;
+   }
+  }
+ }
  private final double[] weights=new double[16],gains=new double[16];
  private final boolean[] connected=new boolean[16];
  private Selection last;public long propagations;
@@ -29,10 +41,18 @@ public final class BancSelector {
   double drive=Math.min(1.2,c.excitation*c.confidence);if(drive<=0)return null;
   double[] activity=new double[6],next=new double[6],credit=new double[16];propagations++;
   for(int tick=0;tick<6;tick++){
-   for(int i=0;i<6;i++)next[i]=activity[i]*.35;
-   next[ROUTE_SOURCE[c.route]]+=drive;
-   for(int i=0;i<16;i++)if(connected[i]){double flux=activity[FROM[i]]*weights[i]*gains[i];next[TO[i]]+=flux;if(trace)credit[i]+=Math.abs(flux);}
-   for(int i=0;i<6;i++)next[i]=Math.tanh(next[i]);
+   // Trace mode intentionally stays full: reinforcement needs every edge credit.
+   // Scoring mode computes only the backwards-reachable cone for its readout.
+   boolean[] required=trace?null:OUTPUT_CONE[c.route][tick];
+   if(!trace)Arrays.fill(next,0);
+   for(int i=0;i<6;i++)if(trace||required[i])next[i]=activity[i]*.35;
+   if(trace||required[ROUTE_SOURCE[c.route]])next[ROUTE_SOURCE[c.route]]+=drive;
+   for(int i=0;i<16;i++)if(connected[i]&&(trace||required[TO[i]])){
+    double flux=activity[FROM[i]]*weights[i]*gains[i];
+    next[TO[i]]+=flux;
+    if(trace)credit[i]+=Math.abs(flux);
+   }
+   for(int i=0;i<6;i++)if(trace||required[i])next[i]=Math.tanh(next[i]);
    double[] swap=activity;activity=next;next=swap;
   }
   return new Selection(c,activity[ROUTE_TARGET[c.route]],credit);
