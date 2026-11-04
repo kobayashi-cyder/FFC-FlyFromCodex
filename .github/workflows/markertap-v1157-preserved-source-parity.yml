@@ -58,13 +58,19 @@ jobs:
           echo "SOURCE COMPILED; the APK is TEMPORARY-KEY-ONLY and NOT upgradable."
       - name: Fail closed on v1.157 DEX-class and asset preservation
         run: |
-          set -euo pipefail
-          python3 markertap/tools/check_preserved_features.py "$RUNNER_TEMP/test-only-do-not-install.apk" \
-            --report "$RUNNER_TEMP/legacy-required-features.json"
+          set -uo pipefail
           python3 markertap/tools/audit_v157_apk_parity.py \
             --baseline "$RUNNER_TEMP/baseline/MarkerTap-v1.157-integrated-signed.apk" \
             --candidate "$RUNNER_TEMP/test-only-do-not-install.apk" \
             --report "$RUNNER_TEMP/v157-class-and-assets-parity.json"
+          parity_status=$?
+          python3 markertap/tools/check_preserved_features.py "$RUNNER_TEMP/test-only-do-not-install.apk" \
+            --report "$RUNNER_TEMP/legacy-required-features.json"
+          legacy_status=$?
+          if [ "$parity_status" -ne 0 ] || [ "$legacy_status" -ne 0 ]; then
+            echo 'STOP: preserving v1.157 behavior is not proven. No APK may be published.'
+            exit 1
+          fi
       - name: Archive audit reports only (never upload unsafe APK)
         if: always()
         uses: actions/upload-artifact@v4
