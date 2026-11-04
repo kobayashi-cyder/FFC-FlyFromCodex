@@ -8,6 +8,7 @@
 - **従来の制約を保持:** v1.161.6の最大2画面固定を統合。旧設定に3〜4画面が残っていても上限2とし、アプリ選択で3〜4画面オプションを表示せず、過剰数を保存しません。アプリ内表示は「CIFA v1.161.8 (Lab)」です。
 - **署名と回帰検証:** [GitHub Actions build #41929592236](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41929592236) SUCCESS。12系統・**3,413件**のホスト回帰検査に合格。APK v2/v3署名検証、16KB zipalign、ZIP/DEX整合、固有パッケージID検査を通過。
 - **配布APK:** 5,897,116バイト、SHA-256 `d4a0295b0f4ed190856eda94f5bdd9347f5f5100cbce92879b4cf8e0713cb8af`。パッケージ `jp.tapmarker.cifa.getfix1618`。CIテスト鍵の別アプリであり、既存の `jp.tapmarker.lite` と以前の検証版を**上書きしません**。初回設定は必要です。異なる署名鍵を用いた将来ビルドで上書き更新できる保証はありません。
+- **Android 15エミュレーター起動確認:** [公開署名APKの実インストール・起動CI #41930055312](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41930055312) SUCCESS。GitHub Releaseから同じAPKをダウンロード→SHA照合→インストール→MainActivity起動→6秒間生存→クラッシュログ検査に合格。保存されたスクリーンショットに **CIFA v1.161.8 (Lab)** と **最大2画面** の表示を確認。これはゲーム自律操作の実機テストではありません。
 - **未実施の実機合格条件:** Pixel 10 / Android 17での実際の入力、CMの完走・戻り、タップ効率効果、ゲット報酬の入金、および長時間連続自律稼働。現在の成功はソースの実装とCIシミュレーション・パッケージ検査までであり、完全自律を実機実証したものではありません。
 - [GitHub Release](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/cifa-v1.1618-fullcycle-2display-final-lab) / [98秒録画修正 PR #54](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/54) / [2画面安全制限統合 PR #55](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/55) / [SHA256SUMS.txt](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1618-fullcycle-2display-final-lab/SHA256SUMS.txt)
 
