@@ -39,13 +39,17 @@ jobs:
             dist/MarkerTap-v1.158-preserved-original-signed.apk
           printf '56e13b2249fb9ce8c98f498498ea14146ddf4095307707c6911214f2f5463ef8  %s\n' \
             dist/MarkerTap-v1.158-preserved-original-signed.apk | sha256sum --check
-      - uses: android-actions/setup-android@v3
+      - name: Use Android SDK installed on GitHub runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools/16.0/bin/sdkmanager" || command -v sdkmanager
       - name: Verify signatures with Android official apksigner and ZIP alignment
         shell: bash
         run: |
           set -euo pipefail
           sdkmanager "build-tools;35.0.0" "platforms;android-35" >/dev/null
-          sdk="$ANDROID_HOME/build-tools/35.0.0"
+          sdk="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
           apk=dist/MarkerTap-v1.158-preserved-original-signed.apk
           "$sdk/apksigner" verify --min-sdk-version 24 --verbose --print-certs "$apk" | tee dist/apksigner-verification.txt
           grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' dist/apksigner-verification.txt
