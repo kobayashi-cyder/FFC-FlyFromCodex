@@ -47,7 +47,15 @@ final class KaitakuActionEvidence {
   for(String key:KEYS)out.put(KaitakuPreset.P+key,new float[]{0});
   if(firstAt<0){firstAt=now;nextMission=now+10000;nextUpgrade=now+2000;nextBoost=now+20000;}
   if(!state.equals(e.current)){state=e.current;stateAt=now;
-   if(state.equals(KaitakuPreset.P+"mission-opening")||state.equals(KaitakuPreset.P+"missions"))nextMission=now+60000;
+   // Visit again after an observed mission page instead of suppressing the
+   // entire following game cycle for 60s. No speculative Get tap is added.
+   if(state.equals(KaitakuPreset.P+"mission-opening")||
+      state.equals(KaitakuPreset.P+"missions"))nextMission=now+12000;
+   // After a dispatched Get moved us into claim-wait, begin the next
+   // evidence-based mission check sooner. The existing receipt gate still
+   // blocks duplicate claims and no scan occurs outside main gameplay.
+   if(state.equals(KaitakuPreset.P+"claim-wait"))
+     nextMission=Math.min(nextMission,now+6000);
    if(state.equals(KaitakuPreset.P+"upgrade-wait")){nextUpgrade=now+15000;upgradeTurn++;}
    if(state.equals(KaitakuPreset.P+"control-wait")){nextBoost=now+120000;boostTurn++;}
   }
