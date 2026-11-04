@@ -70,7 +70,7 @@ final class RewardV158VirtualHud {
       if(currentId<=0||at<=0||now<at||now-at>=1500)return;
       synchronized(LAST_FRAMES){
         Long previous=LAST_FRAMES.get(lane);
-        if(previous!=null&&previous>=at)return;
+        if(previous!=null&&(previous>=at||at-previous<800))return;
         LAST_FRAMES.put(lane,at);
       }
       Object lock=field(window,"frameLock");
