@@ -1,0 +1,100 @@
+name: MarkerTap v1.157 preserved baseline - reward-gated source & JVM checks
+on:
+  push:
+    branches:
+      - markertap/v1.157-preserved-reward-evaluation
+  pull_request:
+    branches:
+      - markertap/v1.157-ad-home-intent-all-games
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reward-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            markertap/code/TapMarker/src/jp/tapmarker
+            markertap/code/TapMarker/tests/RewardEvaluationConnectomeTest.java
+            markertap/v1.157-evaluation-host-tests/KurashiruPointHudTest.java
+            markertap/v1.157-evaluation-host-tests/KurashiruPointHudRecordedTest.java
+            markertap/v1.157-evaluation-host-tests/KurashiruClaimPolicyTest.java
+            markertap/v1.157-evaluation-host-tests/SharedPointClaimArbiterTest.java
+            markertap/v1.157-evaluation-host-tests/FarmPassiveRewardTest.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Compile and verify reward-gated objective with Java 8 compatibility
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reward-eval
+          javac --release 8 -encoding UTF-8 -d /tmp/reward-eval \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java \
+            markertap/code/TapMarker/tests/RewardEvaluationConnectomeTest.java
+          java -cp /tmp/reward-eval jp.tapmarker.RewardEvaluationConnectomeTest
+      - name: Compile and test common top-left pt HUD parser
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/kurashiru-hud
+          javac --release 8 -encoding UTF-8 -d /tmp/kurashiru-hud \
+            markertap/code/TapMarker/src/jp/tapmarker/KurashiruPointHud.java \
+            markertap/v1.157-evaluation-host-tests/KurashiruPointHudTest.java \
+            markertap/v1.157-evaluation-host-tests/KurashiruPointHudRecordedTest.java
+          java -Djava.awt.headless=true -cp /tmp/kurashiru-hud jp.tapmarker.KurashiruPointHudTest
+          java -Djava.awt.headless=true -cp /tmp/kurashiru-hud jp.tapmarker.KurashiruPointHudRecordedTest
+      - name: Compile and validate claim attribution and cross-game point isolation
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/claim-policy
+          javac --release 8 -encoding UTF-8 -d /tmp/claim-policy \
+            markertap/code/TapMarker/src/jp/tapmarker/KurashiruClaimPolicy.java \
+            markertap/v1.157-evaluation-host-tests/KurashiruClaimPolicyTest.java \
+            markertap/code/TapMarker/src/jp/tapmarker/SharedPointClaimArbiter.java \
+            markertap/v1.157-evaluation-host-tests/SharedPointClaimArbiterTest.java \
+            markertap/code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java \
+            markertap/code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java \
+            markertap/v1.157-evaluation-host-tests/FarmPassiveRewardTest.java
+          java -cp /tmp/claim-policy jp.tapmarker.KurashiruClaimPolicyTest
+          java -cp /tmp/claim-policy jp.tapmarker.SharedPointClaimArbiterTest
+          java -cp /tmp/claim-policy jp.tapmarker.FarmPassiveRewardTest
+      - name: Validate physical and virtual source wiring without claiming APK integration
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('markertap/code/TapMarker/src/jp/tapmarker')
+          a=(root/'AutoPilot.java').read_text()
+          s=(root/'SplitPilot.java').read_text()
+          r=(root/'AdRecoveryRuntime.java').read_text()
+          assert 'final RewardEvaluationConnectome evaluation' in a
+          assert 'final RewardEvaluationConnectome evaluation' in s
+          assert 'p.evaluation.observeAd' in r
+          assert 'slot.evaluation.observeAd' in r
+          assert 'evaluation.invalidatePending()' in r
+          assert 'slot.evaluation.invalidatePending()' in r
+          assert 'claimSent(id,"pt",claimAt)' in a
+          assert 'claimSent(id,"pt",claimAt)' in s
+          assert 'claimAcknowledged(pendingEvaluationReceipt' in a
+          assert 'claimAcknowledged(slot.pendingEvaluationReceipt' in s
+          assert 'KurashiruPointHud.read(pixels::get' in a
+          assert 'KurashiruPointHud.read(framePixels::get' in s
+          assert 'KurashiruPointHud.read(pixels::get' in s
+          assert 'observeBalance("pt"' in a
+          assert 'observeBalance("pt"' in s
+          assert 'KurashiruClaimPolicy.isClaim(target' in a
+          assert 'KurashiruClaimPolicy.isClaim(slot.pkg' in s
+          assert 'KurashiruClaimPolicy.rewardVisible(target' in a
+          assert 'KurashiruClaimPolicy.rewardVisible(slot.pkg' in s
+          assert 'SharedPointClaimArbiter.allowed' in a
+          assert 'SharedPointClaimArbiter.allowed' in s
+          assert 'farmPassive.observe' in a
+          assert 'slot.farmPassive.observe' in s
+          print('Source integration: 10 checks passed; device / signed APK not validated')
+          PY
+
+# Source-only tests: do not sign or publish an APK from the older full-source tree.
+# A release must graft the evaluated runtime into the authenticated v1.157 DEX,
+# audit preservation of preexisting classes/assets and re-sign with the original certificate.
