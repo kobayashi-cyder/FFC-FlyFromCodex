@@ -498,11 +498,18 @@ final class VirtualWindows {
   });
  }
 
- /** Per-display, authorized ADB recovery. The shell reports independent
-  * HOME, force-stop and Intent evidence. Never kill a game if HOME is not shown.
-  */
+ /** Per-display CM response: first verified HOME+Intent, no forced stop. */
+ void returnAd(Window w,java.util.function.BooleanSupplier valid,
+               java.util.function.IntConsumer result){
+  cmRecover(w,false,valid,result);
+ }
+ /** Escalation: verified HOME + target-only force-stop + Intent. */
  void recoverAd(Window w,java.util.function.BooleanSupplier valid,
                 java.util.function.IntConsumer result){
+  cmRecover(w,true,valid,result);
+ }
+ private void cmRecover(Window w,boolean kill,java.util.function.BooleanSupplier valid,
+                        java.util.function.IntConsumer result){
   if(w==null||w.id<=0||w.closed||remote==null||!valid.getAsBoolean()||!checkInput(w)){
    result.accept(0);return;
   }
@@ -512,12 +519,12 @@ final class VirtualWindows {
   final VirtualProtocol service=remote;
   final long epoch=remoteEpoch;
   if(s.progressErrors!=null)s.progressErrors.action(w.pkg,
-     "CM2秒：仮想HOME確認→対象ゲームtask kill→登録Intent",id,Float.NaN,Float.NaN);
+     kill?"CM残留2秒：仮想HOME→対象ゲームtask kill→Intent":"CM検知：仮想HOME→Intent（task killなし）",id,Float.NaN,Float.NaN);
   w.io.execute(()->{
    int bits=0;
    try{
     if(valid.getAsBoolean()&&w.inputLane.valid(lane)&&w.id==id&&!w.closed)
-      bits=service.recoverAd(id,epoch);
+      bits=kill?service.recoverAd(id,epoch):service.returnAd(id,epoch);
    }catch(Exception ignored){/* failure leaves evidence bits at zero */}
    final int evidence=bits;
    s.h.post(()->{
@@ -526,8 +533,9 @@ final class VirtualWindows {
     if(current){
       w.screenInfo=null;
       requestFrameRefresh(w);
-      state(w,evidence==7?"HOME・タスク停止・Intent完了 / 新しい画面を検証中":
-        "広告復帰保留 / HOME・task kill・Intentの実行証拠が不十分 ("+evidence+")");
+      state(w,evidence==(kill?7:5)?
+        (kill?"HOME・タスク停止・Intent完了 / 主画面検証中":"HOME・Intent完了 / 広告残留を2秒監視中"):
+        "CM復帰保留 / "+(kill?"HOME・task kill・Intent":"HOME・Intent")+" 証拠不十分 ("+evidence+")");
       result.accept(evidence);
     }
    });

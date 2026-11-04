@@ -27,7 +27,12 @@ public final class VirtualShell extends Binder {
     }
     case VirtualProtocol.AD_RECOVER:{
       int id=data.readInt();long expected=data.readLong();
-      int result=recoverAdvertisement(id,expected);
+      int result=recoverAdvertisement(id,expected,true);
+      reply.writeNoException();reply.writeInt(result);return true;
+    }
+    case VirtualProtocol.AD_HOME_RETURN:{
+      int id=data.readInt();long expected=data.readLong();
+      int result=recoverAdvertisement(id,expected,false);
       reply.writeNoException();reply.writeInt(result);return true;
     }
     case VirtualProtocol.PAUSE:armed=false;epoch.incrementAndGet();reply.writeNoException();return true;
@@ -138,11 +143,12 @@ public final class VirtualShell extends Binder {
   }
   return false;
  }
- /** The only allowed sequence: own display -> HOME key -> verify launcher ->
-  * force-stop this known game -> explicit registered component Intent on display.
-  * Results are bit flags; callers must never infer 7 from partial success.
+ /** Stage 1: own display -> HOME -> verified launcher -> Intent (bits 1|4).
+  * Stage 2, only after fresh positive ad evidence for >=2 seconds:
+  * own display -> HOME -> verified launcher -> target-only force-stop
+  * -> Intent (bits 1|2|4). Fail closed on partial evidence.
   */
- int recoverAdvertisement(int id,long expected)throws Exception{
+ int recoverAdvertisement(int id,long expected,boolean kill)throws Exception{
   if(id<=0||!armed||closed||epoch.get()!=expected)return 0;
   Entry entry=owned(id);if(!AdRecoveryShell.known(entry.pkg))return 0;
   synchronized(entry){
@@ -157,11 +163,17 @@ public final class VirtualShell extends Binder {
    }while(SystemClock.uptimeMillis()<until);
    if(!shown)return 0;
    int result=1;
-   if(!forceStopRegistered(entry.pkg,id))return result;
-   result|=2;
+   if(kill){
+    if(!forceStopRegistered(entry.pkg,id))return result;
+    result|=2;
+   }
    if(!armed||closed||epoch.get()!=expected||displays.get(id)!=entry)return result;
-   try{launch(id,Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);result|=4;}
-   catch(Exception unavailable){/* leave 1|2 for explicit, inspectable failure */}
+   try{
+    launch(id,Intent.FLAG_ACTIVITY_NEW_TASK|
+      (kill?Intent.FLAG_ACTIVITY_CLEAR_TASK:
+        Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
+    result|=4;
+   }catch(Exception unavailable){/* keep partial evidence for caller */}
    return result;
   }
  }

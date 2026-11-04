@@ -14,9 +14,9 @@ assert manifest.exists() and (root/"src/jp/tapmarker/CifaRuntime.java").exists()
 text=manifest.read_text()
 assert 'package="jp.tapmarker.lite"' in text
 assert 'android:versionCode="126"' in text
-text=text.replace('package="jp.tapmarker.lite"','package="jp.tapmarker.cifa.getfix1618"',1)
-text=text.replace('android:versionCode="126"','android:versionCode="9"',1)
-text=text.replace('android:versionName="1.123"','android:versionName="1.161.8-cifa-tap-boost-cycle"',1)
+text=text.replace('package="jp.tapmarker.lite"','package="jp.tapmarker.cifa.getfix1619"',1)
+text=text.replace('android:versionCode="126"','android:versionCode="10"',1)
+text=text.replace('android:versionName="1.123"','android:versionName="1.161.9-cifa-cm-eval-autonomy"',1)
 manifest.write_text(text)
 
 # Avoid conflicting authorities/intent packages with the installed MarkerTap.
@@ -29,14 +29,14 @@ for prefix in ("src","res","assets"):
             try:body=file.read_text()
             except UnicodeError:continue
             if "jp.tapmarker.lite" in body:
-                file.write_text(body.replace("jp.tapmarker.lite","jp.tapmarker.cifa.getfix1618"))
-manifest.write_text(manifest.read_text().replace("jp.tapmarker.lite","jp.tapmarker.cifa.getfix1618"))
+                file.write_text(body.replace("jp.tapmarker.lite","jp.tapmarker.cifa.getfix1619"))
+manifest.write_text(manifest.read_text().replace("jp.tapmarker.lite","jp.tapmarker.cifa.getfix1619"))
 
 # Distinct launcher name must be obvious even if the original app is installed.
 translations=root/"tools/generate-locales.py"
 src=translations.read_text()
 old="'app_name':('マーカー連打 軽量版','MarkerTap Lite'),"
-new="'app_name':('CIFA 開拓二画面検証版','CIFA Kaitaku Two Display Lab'),"
+new="'app_name':('CIFA CM評価自律検証版','CIFA CM Evaluation Lab'),"
 assert src.count(old)==1
 translations.write_text(src.replace(old,new))
-print("PASS: CIFA lab package is isolated; test versionCode 9 and unique authorities")
+print("PASS: CIFA lab package is isolated; test versionCode 10 and unique authorities")
