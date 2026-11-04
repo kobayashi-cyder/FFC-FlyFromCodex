@@ -35,6 +35,9 @@ final class KurashiruClaimPolicy {
     String[] ids;
     if(pkg.equals("com.kurashiru.fue.usagi"))
       ids=new String[]{"usagi-default-獲得を確認","usagi-default-mission-open-reward"};
+    else if(pkg.equals("com.kurashiru.nouen.usagi"))
+      ids=new String[]{"farm-default-reward-shown","farm-default-check-reward",
+          "farm-default-reward-close-tap","farm-default-verify-reward"};
     else if(pkg.equals("com.kurashiru.coin.drop"))
       ids=new String[]{"coin-default-claim-shown","coin-default-mission-reward-shown"};
     else if(pkg.equals("com.kurashiru.shopping.usagi"))
