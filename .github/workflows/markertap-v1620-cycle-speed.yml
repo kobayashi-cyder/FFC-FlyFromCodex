@@ -7,7 +7,7 @@ on:
       - "markertap/code/**"
       - ".github/workflows/markertap-v1620-cycle-speed.yml"
   pull_request:
-    branches: ["markertap/v1.1618-kaitaku-fullcycle-two-display"]
+    branches: ["markertap/v1.1619-cm-detect-evaluation-autonomy"]
     paths:
       - "markertap/v1.161-cifa/**"
       - "markertap/code/**"
