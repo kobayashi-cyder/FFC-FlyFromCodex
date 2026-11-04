@@ -5,7 +5,7 @@
     "en": "No PC or Shizuku is required. Wi-Fi is needed to start the worker. The worker then disconnects from ADB. Operation after Wi-Fi is turned off still needs device testing. Keep USB debugging enabled; no cable is required. Start again after a restart or force stop.\n\nEnable Wireless debugging and open Pair device with pairing code. Accessibility reads the code and device details to pair, connect, and start the worker.\n\nA saved key can connect without pairing again. If reading fails, use Enter connection details. Stop all also cancels connection setup."
   },
   {
-    "file": "src/jp/tapmarker/BancSettings.java",
+    "file": "src/jp/tapmarker/CifaSettings.java",
     "starts_with": "登録した画面の独立した目印で",
     "en": "Use independent screen anchors to recover the current state. On unregistered screens, use readable controls in the target app and check the result. Outcomes and timing may be reused across games, while screens and coordinates are verified in the target. A step is reused only after at least two successes and a success rate of 66% or higher.\n\nIf controls or results cannot be read, demonstrate the action or create it from a recording. Unreviewed recording actions and daily completion are not assumed.\n\nAfter saving, tap Start to resume."
   },
