@@ -20,8 +20,8 @@ public class MainActivity extends Activity {
   root.setOnApplyWindowInsetsListener((v,insets)->{int top,bottom;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());top=bars.top;bottom=bars.bottom;}else{top=insets.getSystemWindowInsetTop();bottom=insets.getSystemWindowInsetBottom();}root.setPadding(dp(20),top+dp(12),dp(20),bottom+dp(12));return insets;});
   setContentView(root);root.requestApplyInsets();
   LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);root.addView(header);
-  TextView title=UiKit.text(this,"MarkerTap",28,UiKit.INK,true);header.addView(title,new LinearLayout.LayoutParams(0,-2,1));
-  header.addView(UiKit.text(this,"v1.123",13,UiKit.MUTED,false));
+  TextView title=UiKit.text(this,"CIFA",28,UiKit.INK,true);header.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+  header.addView(UiKit.text(this,"v1.161.6 (Lab)",13,UiKit.MUTED,false));
   summary=UiKit.text(this,"",14,UiKit.MUTED,false);summary.setPadding(0,dp(4),0,dp(12));root.addView(summary);
   LinearLayout nav=UiKit.row(this,root);String[] names={"ホーム","設定","作成"};
   for(int i=0;i<names.length;i++){final int p=i;tabs[i]=UiKit.button(this,names[i],false,()->showPage(p));UiKit.cell(this,nav,tabs[i]);}
@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
   run=UiKit.button(this,"自動開始",true,()->service(s->{AutomationRouter.start(s.pilot,true);refreshStatus();}));UiKit.full(this,current,run);
   LinearLayout actions=UiKit.row(this,current);Button stop=UiKit.button(this,"全停止",false,()->service(s->{s.stopAll("ホーム画面の全停止");refreshStatus();}));stop.setTextColor(0xffa52b34);UiKit.cell(this,actions,stop);UiKit.cell(this,actions,UiKit.button(this,"操作パネル",false,()->service(s->{s.showPanel();s.compactPanel(true);moveTaskToBack(true);})));
   LinearLayout diagnostics=UiKit.card(this,content,"進行エラー","進行不良を検出すると、診断文と操作前後の画像を端末に保存します。画像付き診断を共有できます。");UiKit.full(this,diagnostics,UiKit.button(this,"進行エラーを見る",false,()->ProgressErrors.showLatest(this)));UiKit.full(this,diagnostics,UiKit.button(this,"画像付き診断を共有",false,()->ProgressErrors.shareLatest(this)));UiKit.full(this,diagnostics,UiKit.button(this,"エラー通知の設定",false,()->ProgressErrors.notificationSettings(this)));
-  LinearLayout selected=UiKit.card(this,content,"操作するアプリ","同時稼働数は2〜4から選択。CMの待機中も各画面を維持します。");targets=UiKit.text(this,"",15,UiKit.INK,false);selected.addView(targets);UiKit.full(this,selected,UiKit.button(this,"アプリを選んで画面を開く",false,()->service(s->s.pilot.splitLauncher.choose())));
+  LinearLayout selected=UiKit.card(this,content,"操作するアプリ","同時稼働は最大2画面。CMの待機中も各画面を維持します。");targets=UiKit.text(this,"",15,UiKit.INK,false);selected.addView(targets);UiKit.full(this,selected,UiKit.button(this,"アプリを選んで画面を開く",false,()->service(s->s.pilot.splitLauncher.choose())));
   LinearLayout setup=UiKit.card(this,content,"接続と確認","初回はユーザー補助を有効にし、端末内接続を設定します。");
   UiKit.full(this,setup,UiKit.button(this,"ユーザー補助を設定",false,()->startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))));
   LinearLayout checks=UiKit.row(this,setup);UiKit.cell(this,checks,UiKit.button(this,"端末内接続",false,()->service(s->s.pilot.wireless.guide(false))));UiKit.cell(this,checks,UiKit.button(this,"詳しい状況",false,()->service(s->s.pilot.virtualWindows.showStatus())));

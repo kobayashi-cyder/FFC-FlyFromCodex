@@ -1,3 +1,18 @@
+## CIFA v1.161.6 — 開拓うさぎ自律候補・2画面上限・正しいアプリ表示（2026-11-05）
+
+**[▶ CIFA v1.161.6 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1616-two-display-lab/CIFA-v1.1616-two-display-signed.apk)**
+
+- **今回の成果:** 前版v1.161.5の録画に基づく「タップ効率」「オート強化」「コインアップチャンス見送り」認識修正、ミッション「ゲット」候補・受領後重複防止・広告保護を維持。実際のAndroid起動画像で見つかった旧「MarkerTap v1.123」表示を**CIFA v1.161.6 (Lab)**に修正しました。
+- **2画面固定上限:** `VirtualLoadPolicy.MAX_LIMIT=2` に変更。旧設定に3〜4画面が残っていても2画面に制限し、選択画面から3〜4画面オプションを削除。過剰な対象アプリ選択も保存しません。
+- **CI検証:** [署名APKビルド成功 #41925196933](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41925196933)。10系統・**3,374**のJavaテスト（そのうち30件がミッション→ゲット→受領確認→復帰→左右強化の一連の模擬シナリオ）に合格。v2/v3署名検証、16KB zipalign、DEX/ZIPと固有パッケージ検査も合格。
+- **配布APK:** 5,893,020バイト。SHA-256 `239c13caa6624f935cd2ca64fc0f69edc071e680044fbd4a9a733bc8a15f0b59`（GitHub ReleaseとCI出力で一致）。パッケージID `jp.tapmarker.cifa.getfix1616`。元のMarkerTapや旧検証版を上書きしません。
+- **導入:** APKをダウンロードしAndroid「ファイル」から開いてください。必要な場合のみインストール元の許可を設定。初回ユーザー補助・端末内接続設定が必要です。この検証APKはCIの一時鍵による署名のため将来別ビルドを上書きできる保証はありません。
+- **Android 15起動実証:** [公開済みAPKをインストールして撮影したエミュレーター検査 #41925548061](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41925548061) が成功。SHA確認→APKインストール→MainActivity表示→6秒プロセス生存→クラッシュログ空を確認。実画面の見出し **CIFA v1.161.6 (Lab)** と **最大2画面** の説明も撮影画像で確認しました。
+- **未検証:** Pixel 10 / Android 17でのゲーム操作、広告視聴後の報酬加算、ミッション「ゲット」の実受領、長時間無人運転。ホスト検査で処理順が通っただけで**完全自律の実機成功とは主張しません**。
+- [GitHub Release](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/cifa-v1.1616-two-display-lab) / [改修PR #52](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/52) / [SHA256SUMS.txt](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1616-two-display-lab/SHA256SUMS.txt)
+
+---
+
 ## CIFA v1.161.5 — 開拓うさぎ動画に基づく認識修正・署名済み検証APK（2026-11-05）
 
 **[▶ CIFA v1.161.5 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1615-real-video-pixel-lab/CIFA-v1.1615-real-video-pixel-signed.apk)**

@@ -2,7 +2,7 @@ package jp.tapmarker;
 
 /** Scheduling only: all displays and their input lanes remain alive. */
 final class VirtualLoadPolicy {
- static final int DEFAULT_LIMIT=2,MAX_LIMIT=4;
+ static final int DEFAULT_LIMIT=2,MAX_LIMIT=2;
  static int limit(int saved){return saved>=2&&saved<=MAX_LIMIT?saved:DEFAULT_LIMIT;}
  static boolean allows(int count,int saved){return count>0&&count<=limit(saved);}
  static long creationDelay(PerformancePolicy.Profile profile,int index,int count){
