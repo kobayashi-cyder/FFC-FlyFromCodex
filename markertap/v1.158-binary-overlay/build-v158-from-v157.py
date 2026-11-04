@@ -104,16 +104,35 @@ def inject_bridge(out):
        (Map<String,float[]>)get(original,"phaseSamples");
      int[] dimensions=(int[])invoke(original,"displaySize");
      long captured=time(original,"phaseSampleTakenAt"),now=SystemClock.uptimeMillis();
-     RewardV158Observer.observe(original,captured,now,
-         ad(model,samples,dimensions[0],dimensions[1]));
+     String pkg=(String)get(original,"target");
+     if(samePhysical(original,token)&&known(pkg)&&
+         !flag(get(original,"splitPilot"),"active")){
+       RewardV158Observer.observe(original,pkg,model,samples,captured,now,
+           ad(model,samples,dimensions[0],dimensions[1]),
+           home(model,samples));
+       RewardV158Capture.capture(original,
+           (AccessibilityService)get(original,"s"),pkg);
+     }
    }catch(Throwable unavailable){}"""
     virt_hook="""public static void runVirtual(Object original,Object slot,Map<String,float[]> samples,Rect rect,int token){
    try{
      Object phases=get(slot,"phases"),model=get(phases,"engine");
-     RewardV158Observer.observe(slot,time(slot,"observedAt"),
-       SystemClock.uptimeMillis(),ad(model,samples,rect.width(),rect.height()));
+     if(sameVirtual(original,token)&&known((String)get(slot,"pkg")))
+       RewardV158Observer.observe(slot,(String)get(slot,"pkg"),model,samples,
+         time(slot,"observedAt"),SystemClock.uptimeMillis(),
+         ad(model,samples,rect.width(),rect.height()),home(model,samples));
    }catch(Throwable unavailable){}"""
     generated=original.replace(physical,phys_hook).replace(virtual,virt_hook)
+    # On a real HOME/force-stop recovery start, throw away any unconfirmed
+    # attribution. A later balance rise alone must not become a reward.
+    physical_reset="running(p,true);touched=true;"
+    virtual_reset="invoke(p,\"pauseMain\",slot);running(slot,true);touched=true;"
+    if generated.count(physical_reset)!=1 or generated.count(virtual_reset)!=1:
+        raise ValueError("Recovery cancellation sites changed in v1.157 bridge")
+    generated=generated.replace(physical_reset,
+        "RewardV158Observer.invalidate(p);"+physical_reset)
+    generated=generated.replace(virtual_reset,
+        "RewardV158Observer.invalidate(slot);"+virtual_reset)
     p=out/"src/jp/tapmarker/AdV157DexBridge.java"
     p.parent.mkdir(parents=True,exist_ok=True)
     p.write_text(generated,encoding="utf-8")
@@ -139,6 +158,10 @@ def build(base,sdk,jadx):
     sources=[
       bridge,
       HERE/"RewardV158Observer.java",
+      HERE/"RewardV158Capture.java",
+      ROOT/"code/TapMarker/src/jp/tapmarker/KurashiruClaimPolicy.java",
+      ROOT/"code/TapMarker/src/jp/tapmarker/FarmPassiveReward.java",
+      ROOT/"code/TapMarker/src/jp/tapmarker/SharedPointClaimArbiter.java",
       ROOT/"code/TapMarker/src/jp/tapmarker/RewardEvaluationConnectome.java",
       ROOT/"code/TapMarker/src/jp/tapmarker/RewardLanePlanner.java",
       ROOT/"code/TapMarker/src/jp/tapmarker/KurashiruPointHud.java",
@@ -153,8 +176,10 @@ def build(base,sdk,jadx):
         for path in candidates:
             name=path.name
             if not any(name.startswith(x) for x in (
-              "AdV157DexBridge","RewardV158Observer","RewardEvaluationConnectome",
-              "RewardLanePlanner","KurashiruPointHud")):
+              "AdV157DexBridge","RewardV158Observer","RewardV158Capture",
+              "RewardEvaluationConnectome","RewardLanePlanner","KurashiruPointHud",
+              "KurashiruRewardProof","KurashiruClaimPolicy",
+              "FarmPassiveReward","SharedPointClaimArbiter")):
                 continue
             z.write(path,path.relative_to(work/"classes"))
             count+=1
@@ -203,7 +228,7 @@ def build(base,sdk,jadx):
       "preserved_all_original_classes":True,
       "preserved_all_original_assets":True,
       "original_minimized_float_preserved":True,
-      "new_binary_scoring":"CM positive frame time only; reward gate not yet wired to signed DEX",
+      "new_binary_scoring":"Physical frame HUD + completed claim + 2-frame reward evidence + 2 fresh increased balances, and farm passive receipt, fail closed. Virtual frames: CM only until independent HUD is connected.",
       "safe_for_release":False,
       "original_signature":False,
       "pixel10_tested":False,
