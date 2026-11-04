@@ -49,7 +49,17 @@ final class KaitakuActionEvidence {
    if(state.equals(KaitakuPreset.P+"control-wait")){nextBoost=now+120000;boostTurn++;}
   }
   if(home.proceed)return;
-  if(!home.home){if(!reward(w,h,p,out))mission(e,w,h,p,out);return;}
+  if(!home.home){
+   if(!reward(w,h,p,out)&&!mission(e,w,h,p,out)
+       &&!e.current.equals(KaitakuPreset.P+"claim-wait")){
+    float[] orange=KaitakuOrangeClaimEvidence.find(w,h,p);
+    if(orange!=null){
+     put(out,"mission-page",null);blockHome(out);
+     if(e.current.equals(KaitakuPreset.P+"missions"))put(out,"get",orange);
+    }
+   }
+   return;
+  }
   if((state.equals(KaitakuPreset.P+"upgrade-wait")||state.equals(KaitakuPreset.P+"control-wait"))&&now-stateAt<1200){blockHome(out);return;}
   if(!state.equals(KaitakuPreset.P+"main"))return;
   float[] t=home.transform;
