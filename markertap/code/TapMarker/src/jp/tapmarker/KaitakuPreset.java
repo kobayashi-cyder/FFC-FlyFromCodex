@@ -23,17 +23,18 @@ public final class KaitakuPreset {
   e.rule(P+"main-home-lost").fallback=true;
   image(e,"main","main-continue",CONTINUE,PhaseEngine.MATCH,PhaseEngine.CENTER,"verify");
   timer(e,"check",5000,PhaseEngine.WAIT,"ad");
-  timer(e,"ad",30000,PhaseEngine.RETURN_APP,"verify");
+  timer(e,"ad",95000,PhaseEngine.RETURN_APP,"verify");
   timer(e,"verify",6000,PhaseEngine.WAIT,"ad");
   e.initial=P+"check";e.current=e.initial;return true;
  }
  static void match(PhaseEngine e,String state,String key,int action,String next){image(e,state,state+"-"+key,P+key,PhaseEngine.MATCH,action,next);}
  static boolean install(PhaseEngine e){
   if(!installLegacy(e))return false;
-  for(String key:new String[]{"mission-open","mission-page","upgrade","auto-upgrade","tap-boost","auto-boost","get","play","back","close","mini-start","mini-live","mini-end"})region(e,P+key,key,new float[]{.35f,.4f,.65f,.6f});
+  for(String key:new String[]{"mission-open","mission-page","upgrade","auto-upgrade","tap-boost","auto-boost","tap-ad-start","get","play","back","close","mini-start","mini-live","mini-end"})region(e,P+key,key,new float[]{.35f,.4f,.65f,.6f});
   e.regions.get(P+"mission-open").bounds=KaitakuActionEvidence.MISSION.clone();
   e.regions.get(P+"upgrade").bounds=new float[]{.045f,.821f,.34f,.865f};e.regions.get(P+"auto-upgrade").bounds=new float[]{.68f,.821f,.96f,.865f};
-  e.regions.get(P+"tap-boost").bounds=KaitakuActionEvidence.TAP_BOOST.clone();e.regions.get(P+"auto-boost").bounds=KaitakuActionEvidence.AUTO_BOOST.clone();
+  e.regions.get(P+"tap-boost").bounds=KaitakuActionEvidence.TAP_BOOST.clone();
+  e.regions.get(P+"tap-ad-start").bounds=new float[]{.165f,.648f,.835f,.710f};e.regions.get(P+"auto-boost").bounds=KaitakuActionEvidence.AUTO_BOOST.clone();
   e.regions.get(P+"mission-page").bounds=new float[]{.016f,.118f,.883f,.94f};
   e.regions.get(P+"close").bounds=new float[]{.18f,.34f,.82f,.575f};
   for(String[] s:new String[][]{{"mission-opening","ミッション表示待ち"},{"missions","ミッション報酬を確認"},{"claim-wait","報酬の反映・次のゲットを確認"},{"upgrade-wait","タップ効率・オート強化の応答待ち"},{"control-wait","追加ボタンの応答待ち"},{"mini","タップミニゲーム"}})state(e,s[0],s[1]);
@@ -48,6 +49,7 @@ public final class KaitakuPreset {
   match(e,"missions","play",PhaseEngine.CENTER,"verify");
   match(e,"missions","back",PhaseEngine.CENTER,"verify");
   for(String state:new ArrayList<String>(Arrays.asList("check","main","ad","verify","mission-opening","missions","claim-wait","upgrade-wait","control-wait","mini"))){
+   match(e,state,"tap-ad-start",PhaseEngine.CENTER,"ad");
    match(e,state,"close",PhaseEngine.CENTER,"claim-wait");
    match(e,state,"mini-start",PhaseEngine.CENTER,"mini");
    match(e,state,"mini-end",PhaseEngine.CENTER,"verify");
