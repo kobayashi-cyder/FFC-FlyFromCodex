@@ -81,7 +81,7 @@ final class AdRecoveryRuntime {
     return true;
   }
   private static void beginPhysical(AutoPilot p,int token,AdTwoSecondRecovery r){
-    p.actionPending=true;SharedPointClaimArbiter.release(p.evaluation,p.pendingEvaluationReceipt);p.evaluation.invalidatePending();p.rewardEvidence.reset();p.pendingEvaluationReceipt="";p.s.stopMarkers();p.phaseOwnedMarkers=false;
+    p.actionPending=true;SharedPointClaimArbiter.release(p.evaluation,p.pendingEvaluationReceipt);p.evaluation.invalidatePending();p.rewardEvidence.reset();p.farmPassive.reset();p.pendingEvaluationReceipt="";p.s.stopMarkers();p.phaseOwnedMarkers=false;
     p.cancelRegisteredReturn();
     p.phases.record("CM継続2秒を確認 / HOME→ゲーム限定タスク停止→起動Intent");
     if(p.s.busy||p.s.guardDialog()||!p.s.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)){
@@ -148,7 +148,7 @@ final class AdRecoveryRuntime {
     boolean ad=advertisement(e,samples,rect.width(),rect.height(),slot.pkg);
     slot.evaluation.observeAd(slot.observedAt,now,ad);
     if(!r.observe(slot.pkg,slot.observedAt,now,ad,home))return false;
-    SharedPointClaimArbiter.release(slot.evaluation,slot.pendingEvaluationReceipt);slot.evaluation.invalidatePending();slot.rewardEvidence.reset();slot.pendingEvaluationReceipt="";
+    SharedPointClaimArbiter.release(slot.evaluation,slot.pendingEvaluationReceipt);slot.evaluation.invalidatePending();slot.rewardEvidence.reset();slot.farmPassive.reset();slot.pendingEvaluationReceipt="";
     pilot.pauseMain(slot);slot.home=false;
     VirtualWindows.Window w=pilot.s.pilot.virtualWindows.window(slot.pkg);
     if(w==null){r.failed(now);pilot.later(slot,token,500);return true;}
