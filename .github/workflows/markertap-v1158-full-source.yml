@@ -50,6 +50,8 @@ jobs:
           # depend on missing LoopbackRetryPolicy. v1.158 new tests run in
           # markertap-v1158-reward-eval.yml; do not claim legacy-suite success.
           test -f "$TAPMARKER_OUTPUT"
+          python3 "$GITHUB_WORKSPACE/markertap/tools/check_preserved_features.py" "$TAPMARKER_OUTPUT" \
+            --report "$RUNNER_TEMP/markertap-v158-preservation-gate.json"
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2" dump badging "$TAPMARKER_OUTPUT" | grep "versionCode='161' versionName='1.158'"
           echo "Full Android source compile, APK package and ephemeral v2/v3 signature checked. Legacy tests not run here. This is a v1.158 build with an ephemeral CI key, not an update-signed release."
 
