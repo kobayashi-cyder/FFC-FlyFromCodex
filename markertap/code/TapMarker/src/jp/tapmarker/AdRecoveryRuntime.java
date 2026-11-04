@@ -80,14 +80,14 @@ final class AdRecoveryRuntime {
     }
     // Foreign foreground must be stable, and every observation current.
     r.observe(p.target,now,now,true,false);
-    if(now-first<AdTwoSecondRecovery.AD_MS)return true;
+    if(now-first<AdTwoSecondRecovery.requiredAdMs(p.target))return true;
     if(r.step()==AdTwoSecondRecovery.Step.HOME)beginPhysical(p,token,r);
     return true;
   }
   private static void beginPhysical(AutoPilot p,int token,AdTwoSecondRecovery r){
     p.actionPending=true;SharedPointClaimArbiter.release(p.evaluation,p.pendingEvaluationReceipt);p.evaluation.invalidatePending();p.rewardEvidence.reset();p.farmPassive.reset();p.pendingEvaluationReceipt="";p.s.stopMarkers();p.phaseOwnedMarkers=false;
     p.cancelRegisteredReturn();
-    p.phases.record("CM継続2秒を確認 / HOME→ゲーム限定タスク停止→起動Intent");
+    p.phases.record("CM連続監視の既定時間経過 / HOME→ゲーム限定タスク停止→起動Intent（報酬未確定）");
     if(p.s.busy||p.s.guardDialog()||!p.s.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)){
       r.failed(SystemClock.uptimeMillis());finish(p,token,"HOME操作未受理 / タスク停止せず保留");return;
     }

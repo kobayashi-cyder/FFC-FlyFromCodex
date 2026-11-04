@@ -35,7 +35,9 @@ public final class KaitakuOrangeClaimEvidenceTest {
     ok(KaitakuRewardClaimGate.allow(e,bounds),"first named candidate");
     ok(KaitakuRewardClaimGate.allow(e,bounds),"second fresh frame remains eligible");
     KaitakuRewardClaimGate.receipt(e);
-    ok(KaitakuRewardClaimGate.allow(e,bounds),"independent receipt permits another claim");
+    ok(!KaitakuRewardClaimGate.allow(e,bounds),"receipt blocks duplicate tap on unchanged row");
+    KaitakuRewardClaimGate.absent(e);
+    ok(KaitakuRewardClaimGate.allow(e,bounds),"independently visible non-Get row re-arms gate");
     System.out.println("KaitakuOrangeClaimEvidenceTest: "+checks+" checks passed");
   }
 }

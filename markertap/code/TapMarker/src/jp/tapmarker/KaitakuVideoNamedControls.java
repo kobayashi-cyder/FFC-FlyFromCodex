@@ -30,6 +30,11 @@ final class KaitakuVideoNamedControls {
          !(e.current.equals(KaitakuPreset.P+"missions")&&KaitakuActionEvidence.present(out,"get")))
         KaitakuNamedControls.apply(e,context,controls,out,w,h);return;
     }
+    // A known opt-out can be proved by the current screenshot even if
+    // Canvas accessibility exposes the title but not its button. Do not
+    // downgrade this independent visual evidence to a HOLD.
+    if(d.result==KaitakuVideoModalPolicy.Result.HOLD&&
+       KaitakuActionEvidence.present(out,"close"))return;
     // Freeze ordinary-home and mission actions while a modal is present.
     KaitakuNamedControls.clear(out);
     if(d.result==KaitakuVideoModalPolicy.Result.DISMISS &&

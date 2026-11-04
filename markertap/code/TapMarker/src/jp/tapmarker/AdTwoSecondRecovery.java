@@ -9,7 +9,14 @@ package jp.tapmarker;
  */
 final class AdTwoSecondRecovery {
   enum Step { OBSERVE, HOME, KILL, INTENT, VERIFY, HOLD }
-  static final long AD_MS=2000L, MAX_FRAME_AGE_MS=1500L, MAX_GAP_MS=3000L;
+  static final long AD_MS=2000L, KAITAKU_REWARDED_AD_MS=75000L;
+  static final long MAX_FRAME_AGE_MS=1500L, MAX_GAP_MS=3000L;
+  static long requiredAdMs(String pkg){
+    // Killing a normal 30-60s rewarded ad after two seconds loses its payout.
+    // The two-second quorum remains for other games; Kaitaku retries only
+    // after a genuinely persistent 75s ad with fresh positive evidence.
+    return KaitakuPreset.APP.equals(pkg)?KAITAKU_REWARDED_AD_MS:AD_MS;
+  }
   static final long HOME_DEADLINE_MS=2000L, VERIFY_DEADLINE_MS=15000L;
   static final long COOLDOWN_MS=60000L, WINDOW_MS=900000L;
   private Step step=Step.OBSERVE;
@@ -32,7 +39,7 @@ final class AdTwoSecondRecovery {
     if(last>=0&&capturedAt<=last)return false;
     if(first<0||last>=0&&capturedAt-last>MAX_GAP_MS){first=capturedAt;freshFrames=0;}
     last=capturedAt;freshFrames++;
-    if(freshFrames<2||capturedAt-first<AD_MS)return false;
+    if(freshFrames<2||capturedAt-first<requiredAdMs(pkg))return false;
     if(attempts>=2){step=Step.HOLD;cooldownUntil=windowStart+WINDOW_MS;return false;}
     attempts++;step=Step.HOME;entered=now;clearObservation();return true;
   }

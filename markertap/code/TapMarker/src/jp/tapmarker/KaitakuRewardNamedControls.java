@@ -36,7 +36,8 @@ final class KaitakuRewardNamedControls {
         d.kind==KaitakuRewardClaimPolicy.Kind.PAGE||
         d.kind==KaitakuRewardClaimPolicy.Kind.BACK))return true;
     if(d.kind==KaitakuRewardClaimPolicy.Kind.RECEIPT_CLOSE){
-      KaitakuRewardClaimGate.receipt(engine);
+      if(engine.current.equals(KaitakuPreset.P+"claim-wait"))
+        KaitakuRewardClaimGate.receipt(engine);
       KaitakuActionEvidence.put(out,"close",d.rect);
       // Distinct receipt evidence; opt-out/ad-close never sets this flag.
       out.put("kaitaku-default-receipt-proof",new float[]{1});return true;
