@@ -5,7 +5,7 @@ on:
     paths:
       - "markertap/v1.161-cifa/**"
       - "markertap/code/**"
-      - ".github/workflows/markertap-v1615-real-video-pixel.yml"
+      - ".github/workflows/markertap-v1616-two-display.yml"
   workflow_dispatch:
 permissions:
   contents: write
