@@ -26,6 +26,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/host"
           javac -d "$RUNNER_TEMP/host" markertap/code/TapMarker/src/jp/tapmarker/KaitakuMissionReacquire.java markertap/code/TapMarker/tests/KaitakuMissionReacquireTest.java
           java -cp "$RUNNER_TEMP/host" jp.tapmarker.KaitakuMissionReacquireTest | tee "$RUNNER_TEMP/host-test.txt"
+          javac -d "$RUNNER_TEMP/host" markertap/code/TapMarker/src/jp/tapmarker/BancSelector.java markertap/code/TapMarker/tests/BancSelectorWeightSpaceTest.java
+          java -cp "$RUNNER_TEMP/host" jp.tapmarker.BancSelectorWeightSpaceTest | tee "$RUNNER_TEMP/weightspace-test.txt"
           python3 - <<'PY'
           from pathlib import Path
           text=Path("markertap/code/TapMarker/src/jp/tapmarker/AutoPilot.java").read_text()
