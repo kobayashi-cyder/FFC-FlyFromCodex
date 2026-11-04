@@ -1,0 +1,107 @@
+name: Build CIFA v1.161.2 Kaitaku CM and efficiency repair APK
+on:
+  push:
+    branches: ["markertap/v1.1612-kaitaku-ad-upgrade-fix"]
+    paths:
+      - "markertap/v1.161-cifa/**"
+      - "markertap/code/**"
+      - ".github/workflows/markertap-v1612-kaitaku-fix-apk.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  make-lab-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          if ! command -v rg >/dev/null; then sudo apt-get update -qq; sudo apt-get install -y -qq ripgrep; fi
+      - name: Check Kaitaku runtime wiring and ad evidence gates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("markertap/code/TapMarker/src/jp/tapmarker")
+          upgrade=(p/"UpgradeEngine.java").read_text()
+          assert 'KaitakuPreset.P+"main-upgrade"' in upgrade
+          assert 'KaitakuPreset.P+"main-auto-upgrade"' in upgrade
+          ad=(p/"AdCloseAutomaton.java").read_text()
+          assert 'kaitaku=KaitakuPreset.APP.equals(app)' in ad
+          policy=(p/"AdRecoveryRuntime.java").read_text()
+          assert '(!KaitakuPreset.APP.equals(pkg)&&!AdExitPolicy.adState(e.current))' in policy
+          print("PASS: Kaitaku runtime side actions, ad exit regions and visual-ad gate are wired")
+          PY
+      - name: Restore sources and isolate CIFA Lab package
+        run: |
+          set -euo pipefail
+          python3 markertap/tools/restore_source.py --extract-to "$RUNNER_TEMP/MarkerTap-restored"
+          python3 markertap/v1.161-cifa/prepare-lab.py "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
+      - name: Build APK with temporary test key
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -noprompt -alias tapmarker -keyalg RSA -keysize 2048 -validity 365 -keystore "$RUNNER_TEMP/ci-cifa-lab.jks" -storepass android -keypass android -dname "CN=CIFA v1.161 separate test app"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export TAPMARKER_KEYSTORE="$RUNNER_TEMP/ci-cifa-lab.jks"
+          export TAPMARKER_OUTPUT="$RUNNER_TEMP/CIFA-v1.1612-kaitaku-ad-upgrade-lab-signed.apk"
+          cd "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
+          bash build.sh > "$RUNNER_TEMP/build.log" 2>&1 || { tail -150 "$RUNNER_TEMP/build.log"; exit 1; }
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$RUNNER_TEMP/CIFA-v1.1612-kaitaku-ad-upgrade-lab-signed.apk" > "$RUNNER_TEMP/signature-verification.txt"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 "$RUNNER_TEMP/CIFA-v1.1612-kaitaku-ad-upgrade-lab-signed.apk"
+          PKG=$("$ANDROID_HOME/build-tools/35.0.0/aapt2" dump packagename "$RUNNER_TEMP/CIFA-v1.1612-kaitaku-ad-upgrade-lab-signed.apk")
+          echo "$PKG" | tee "$RUNNER_TEMP/package-name.txt"
+          test "$PKG" = "jp.tapmarker.cifa.kaitaku"
+          python3 - <<'PY'
+          import zipfile,os
+          from pathlib import Path
+          apk=Path(os.environ["RUNNER_TEMP"])/"CIFA-v1.1612-kaitaku-ad-upgrade-lab-signed.apk"
+          with zipfile.ZipFile(apk) as z:
+              assert z.testzip() is None
+              assert "classes.dex" in z.namelist()
+              assert "AndroidManifest.xml" in z.namelist()
+          print("PASS: standalone CIFA APK ZIP and DEX structure validated")
+
+          PY
+      - name: Host regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          cd "$RUNNER_TEMP/MarkerTap-restored/TapMarker"
+          mkdir -p build/test-classes
+          java -jar toolchain/ecj.jar -nowarn -source 8 -target 8 -encoding UTF-8 -classpath build/classes:libs/bcprov-jdk15to18-1.81.jar -d build/test-classes tests/CifaDenseSelectorTest.java tests/CifaAutonomyTest.java tests/CifaKnowHowTest.java tests/CifaGraphMigrationTest.java tests/KaitakuMissionReacquireTest.java tests/FloatingPanelGeometryTest.java tests/KaitakuAdUpgradeRepairTest.java tests/UpgradeEngineTest.java
+          for test in CifaDenseSelector CifaAutonomy CifaKnowHow CifaGraphMigration KaitakuMissionReacquire FloatingPanelGeometry KaitakuAdUpgradeRepair UpgradeEngine; do
+            java -cp build/classes:build/test-classes jp.tapmarker."$test"Test
+          done | tee "$RUNNER_TEMP/tests.log"
+          (cd "$RUNNER_TEMP" && sha256sum CIFA-v1.1612-kaitaku-ad-upgrade-lab-signed.apk) | tee "$RUNNER_TEMP/SHA256SUMS.txt"
+          cat > "$RUNNER_TEMP/INSTALL-NOTE.txt" <<'NOTE'
+          CIFA v1.161.2 Kaitaku ad/efficiency side-action repair lab APK.
+          Package: jp.tapmarker.cifa.kaitaku (different from installed jp.tapmarker.lite).
+          This APK does NOT upgrade MarkerTap v1.159, import its app data, or preserve its runtime.
+          Built from a historical source mirror with v1.161 CIFA, v1.161.1 minimize fix, and v1.161.2 Kaitaku ad/upgrade repair and a temporary test signing key.
+          Android on-device install/recognition/gesture/virtual display validation has NOT been performed.
+          The test signing key is not persisted across workflow runs: uninstall this test app before replacing it.
+          Keep the main MarkerTap app installed and unchanged.
+          To minimize: open the floating CIFA control panel, tap 最小化; drag the CIFA bubble; tap it to restore.
+          NOTE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CIFA-v1.1612-kaitaku-ad-upgrade-isolated-lab-signed
+          path: |
+            ${{ runner.temp }}/CIFA-v1.1612-kaitaku-ad-upgrade-lab-signed.apk
+            ${{ runner.temp }}/INSTALL-NOTE.txt
+            ${{ runner.temp }}/SHA256SUMS.txt
+            ${{ runner.temp }}/tests.log
+            ${{ runner.temp }}/signature-verification.txt
+            ${{ runner.temp }}/package-name.txt
+          if-no-files-found: error
+          retention-days: 30
