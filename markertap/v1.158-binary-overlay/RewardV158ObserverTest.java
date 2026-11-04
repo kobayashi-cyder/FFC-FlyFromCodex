@@ -58,10 +58,10 @@ public final class RewardV158ObserverTest {
     Object untrusted=new Object();
     FakeModel untrustedModel=new FakeModel();
     untrustedModel.rules.put("coin-default-claim-shown",new Watch("reward"));
-    sample(untrusted,COIN,1000,empty(),false,true);
+    sample(untrusted,COIN,untrustedModel,1000,empty(),false,true);
     balance(untrusted,COIN,100,1100);
-    sample(untrusted,COIN,1600,proof,false,false);
-    sample(untrusted,COIN,2200,proof,false,false);
+    sample(untrusted,COIN,untrustedModel,1600,proof,false,false);
+    sample(untrusted,COIN,untrustedModel,2200,proof,false,false);
     balance(untrusted,COIN,120,2700);
     balance(untrusted,COIN,120,3200);
     yes(RewardV158Observer.report(untrusted).contains("受領確定0回"),
