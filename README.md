@@ -1,3 +1,16 @@
+## CIFA v1.161.4 — CM・タップ効率・ゲット自律処理の録画対応検証版（2026-11-05）
+
+**[▶ 署名済み検証APKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1614-video-autonomy-lab/CIFA-v1.1614-video-autonomy-signed.apk)**
+
+- **対象:** 開拓うさぎ、2026-11-05提供の48.57秒動画を用いた画面検査。通常ホームのタップ効率／オートタップ強化、ミッション「ゲット」、コインアップチャンスの見送り、CM中断の優先順位を修正。
+- **変更:** 画像枠組みの一致に基づく左右強化ボタンの代替検知、失敗したゲットの8秒後の限定再試行、受領後の同じ行の重複タップ防止、見送りボタンの画像認識。開拓うさぎのCMは継続75秒超の証拠がない限り強制終了せず、視聴完了と報酬付与を優先。
+- **テスト合格:** [GitHub Actions #41919044648](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41919044648) 。独立パッケージ `jp.tapmarker.cifa.getfix1614`、一時テスト鍵によるAPK v2/v3署名、16KB zipalign、Java回帰テスト成功。APK **5,893,020バイト**、GitHub ReleaseアセットSHA-256: `26f3dd7f29bb34ae5d68c100852112f54fa1d60fa7b1f2ea186366742718919b`。
+- **導入:** 上のAPKをダウンロード→端末の「ファイル」から開く。必要に応じてダウンロード元の「不明なアプリのインストール」を許可。以前のCIFA検証版や通常のMarkerTapを削除する必要はありません。独立アプリなので設定・学習内容は引き継ぎません。
+- **制限:** Pixel 10/Android 17上での実操作、視聴報酬の実増加、タップ効率上昇、ゲット成功、長時間安定は**未検証**。旧MarkerTapの正式アップデートではなく、署名が実行ごとに変わり得る独立検証版です。正式版READMEの公開先は未変更です。
+- [リリース詳細](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/cifa-v1.1614-video-autonomy-lab) / [改修PR #50](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/50)
+
+---
+
 ## CIFA v1.161.3 — インストール衝突対策版「ゲット」自動回収候補（2026-11-05）
 
 **[▶ APKを直接ダウンロード（GitHub Release）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1613-dailyget-installfix-lab/CIFA-v1.1613-daily-get-installfix-signed.apk)**
