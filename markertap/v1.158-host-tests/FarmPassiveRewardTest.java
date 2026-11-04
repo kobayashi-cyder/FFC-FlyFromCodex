@@ -21,12 +21,13 @@ public final class FarmPassiveRewardTest {
     yes(!score.observeBalance("pt",110,400,400),"only first post-popup balance");
     eq(0,score.cycles(),"must observe twice");
     yes(gate.observe(false,false,110,500,500,score).equals(first),"claim survives popup close");
-    yes(score.observeBalance("pt",110,500,500),"second stable balance credits farm payout");
+    yes(!score.observeBalance("pt",110,500,500),"first strictly post-UI balance is insufficient");
+    yes(score.observeBalance("pt",110,600,600),"second strictly post-UI stable balance credits farm payout");
     eq(1,score.cycles(),"exactly one farm cycle");
     eq(10,score.quantity(),"only 10 received pt");
     SharedPointClaimArbiter.release(score,first);
     gate.completed();
-    yes(!score.observeBalance("pt",110,600,600),"cannot recount same balance");
+    yes(!score.observeBalance("pt",110,650,650),"cannot recount same balance");
     eq(1,score.cycles(),"no repeated credit");
     // Played again but no additional points deposited.
     yes(gate.observe(true,false,110,700,700,score).isEmpty(),"new playable baseline");
