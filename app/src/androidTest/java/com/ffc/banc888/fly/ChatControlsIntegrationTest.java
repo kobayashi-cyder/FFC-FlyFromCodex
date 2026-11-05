@@ -81,8 +81,11 @@ public class ChatControlsIntegrationTest {
                 "['dadsModeChat','dadsModeCode','dadsModeImage','dadsModeVideo','ffcThreadSend'].every(function(id){"
                 + "var e=document.getElementById(id),r=e.getBoundingClientRect(),p=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);"
                 + "return r.width>=44&&r.height>=44&&r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&(p===e||e.contains(p));})",15000));
+            assertTrue(TestSupport.awaitJs(scenario,"(function(){window.__dadsTapTrace=[];['pointerdown','touchstart','click'].forEach(function(k){document.addEventListener(k,function(e){var t=e.touches?.[0]||e;window.__dadsTapTrace.push({kind:k,id:e.target?.id,x:t.clientX,y:t.clientY});},true)});return true})()",3000));
             tap(scenario,"dadsModeCode");
-            assertTrue(TestSupport.awaitJs(scenario,
+            assertTrue("Touch trace: "+read(scenario,"JSON.stringify(window.__dadsTapTrace)")
+                 +" / Geometry: "+read(scenario,"(function(){var e=document.getElementById('dadsModeCode'),r=e.getBoundingClientRect();return JSON.stringify({rect:[r.x,r.y,r.width,r.height],inner:[innerWidth,innerHeight],dpr:devicePixelRatio,vv:visualViewport?.scale,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id})})()"),
+                TestSupport.awaitJs(scenario,
                 "document.getElementById('ffcThreadText').value.indexOf('Python')>=0&&document.getElementById('dadsModeCode').getAttribute('aria-pressed')==='true'",3000));
             tap(scenario,"dadsModeImage");
             assertTrue(TestSupport.awaitJs(scenario,
