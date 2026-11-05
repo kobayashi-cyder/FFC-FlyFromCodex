@@ -76,6 +76,9 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Verify creative cognition asset digests
+        run: sha256sum app/src/main/assets/{cognition-core.js,cognition-multimodal-core.js,proxy-agent.js,thread-router.js}
+
       - name: Thread router unit tests
         run: |
           node --check app/src/main/assets/thread-router-core.js
