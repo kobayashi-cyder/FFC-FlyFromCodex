@@ -144,12 +144,12 @@
     const id=this.edgeIds[i],eligibility=this.last.eligibility.get(id)||0;
     if(!this.cone[this.dst[i]]||!this.cone[this.src[i]]||eligibility<1e-9)continue;
     const factor=this.gains[i]+.025*Math.max(-1,Math.min(1,reward))*Math.min(1,eligibility);
-    this.gains[i]=Math.max(.75,Math.min(1.25,factor));this.factors.set(id,this.gains[i]);
+    this.gains[i]=this.gains[i]>=.75&&this.gains[i]<=1.25?Math.max(.75,Math.min(1.25,factor)):Math.max(0,Math.min(2,factor));this.factors.set(id,this.gains[i]);
    }
    this.last=null;return true;
   }
   snapshot(){return{schema:1,source:this.source,identity:this.identity,factors:Object.fromEntries(this.factors)}}
-  restore(state){if(!state||state.schema!==1||state.source!==this.source||state.identity!==this.identity)return;for(let i=0;i<this.src.length;i++){const id=this.edgeIds[i],f=state.factors?.[id];if(Number.isFinite(f)&&f>=.75&&f<=1.25){this.factors.set(id,f);this.gains[i]=f}}}
+  restore(state){if(!state||state.schema!==1||state.source!==this.source||state.identity!==this.identity)return;for(let i=0;i<this.src.length;i++){const id=this.edgeIds[i],f=state.factors?.[id];if(Number.isFinite(f)&&f>=0&&f<=2){this.factors.set(id,f);this.gains[i]=f}}}
   stats(){return{engine:'sparse-float64-v1',nodes:this.nodes.length,edges:this.src.length,ticks:this.ticks,propagations:this.runs,traceFrames:this.traceFrames,workspaceBytes:[this.src,this.dst,this.weights,this.gains,this.activity,this.next,this.credit,this.cone,this.queue,this.incomingOffsets,this.incoming].reduce((n,a)=>n+a.byteLength,0)}}
  }
  // Time multiplexing: compile the graph once, share scratch buffers, and keep
@@ -174,7 +174,7 @@
     lane={id,gains,factors:new Map(),last:null};
     for(let i=0;i<k.edgeIds.length;i++){
      const f=this.seedFactors[k.edgeIds[i]];
-     if(Number.isFinite(f)&&f>=.75&&f<=1.25){gains[i]=f;lane.factors.set(k.edgeIds[i],f)}
+     if(Number.isFinite(f)&&f>=0&&f<=2){gains[i]=f;lane.factors.set(k.edgeIds[i],f)}
     }
    }
    if(!lane)return null;
@@ -222,12 +222,69 @@
    if(state.schema!==2||!Array.isArray(state.lanes)||state.lanes.length>this.maxLanes)return;
    if(state.lanes.some(v=>!v||typeof v.id!=='string'||!v.id||v.id.length>256)||new Set(state.lanes.map(v=>v.id)).size!==state.lanes.length)return;
    this.seedFactors={};
-   for(const id of k.edgeIds){const f=state.seedFactors?.[id];if(Number.isFinite(f)&&f>=.75&&f<=1.25)this.seedFactors[id]=f}
+   for(const id of k.edgeIds){const f=state.seedFactors?.[id];if(Number.isFinite(f)&&f>=0&&f<=2)this.seedFactors[id]=f}
    this.lanes.clear();
    for(const saved of state.lanes){
     const lane=this.activate(saved.id);lane.gains.fill(1);lane.factors.clear();
     k.restore({schema:1,source:k.source,identity:k.identity,factors:saved.factors});
    }
+  }
+
+  // Deterministic weight-space programs run on ALL edges in the imported graph.
+  // They are engineering interventions, never claims about biological synapses.
+  weightSpaceRead(laneId='__system__',start=0,limit=64){
+   const id=String(laneId);
+   if(!Number.isInteger(start)||start<0||!Number.isInteger(limit)||limit<1||limit>256)throw new Error('invalid catalog window');
+   const lane=this.activate(id,false),k=this.kernel;
+   const rows=[];
+   for(let i=start;i<Math.min(k.src.length,start+limit);i++){
+    const gain=lane?lane.gains[i]:1;
+    rows.push({edge:i,from:k.nodes[k.src[i]],to:k.nodes[k.dst[i]],baseWeight:k.weights[i],gain,effectiveWeight:k.weights[i]*gain});
+   }
+   return{schema:1,graphIdentity:k.identity,source:k.source,nodeCount:k.nodes.length,edgeCount:k.src.length,lane:id,start,rows};
+  }
+  // JSON-only, bounded, atomic; no eval, JavaScript or arbitrary host actions.
+  weightSpaceApply(program,laneId='__system__',{preview=false}={}){
+   const k=this.kernel,id=String(laneId);
+   if(!program||typeof program!=='object'||Array.isArray(program)||program.schema!==1)throw new Error('invalid weight-space schema');
+   if(program.graphIdentity!==k.identity)throw new Error('graph identity mismatch');
+   if(!Array.isArray(program.ops)||!program.ops.length||program.ops.length>4096)throw new Error('expected 1..4096 operations');
+   if(program.ops.some(x=>!x||typeof x!=='object'||Array.isArray(x)))throw new Error('invalid operation');
+   const existing=this.activate(id,false);
+   if(existing&&existing.last&&!preview)throw new Error('pending reward credit: reinforce or discard before editing');
+   // Never create a new lane for a malformed program.
+   const validate=op=>{
+    if(!['set','add','scale','reset','ablate'].includes(op.op))throw new Error('unsupported weight-space operation');
+    if(op.edges!=='all'&&(!Array.isArray(op.edges)||!op.edges.length))throw new Error('invalid edge selector');
+    if(Array.isArray(op.edges))for(const e of op.edges)if(!Number.isInteger(e)||e<0||e>=k.src.length)throw new Error('edge index out of range');
+    if(['set','add','scale'].includes(op.op)){
+     if(typeof op.value!=='number'||!Number.isFinite(op.value)||Math.abs(op.value)>4)throw new Error('invalid numeric operand');
+    }else if(op.value!==undefined)throw new Error('unexpected operand');
+   };
+   for(const op of program.ops)validate(op);
+   const lane=existing||this.activate(id);
+   if(!lane)throw new Error('lane capacity exceeded');
+   const before=lane.gains,staged=new Float64Array(before);
+   for(const op of program.ops){
+    const apply=i=>{
+     const prior=staged[i];
+     let next=op.op==='set'?op.value:op.op==='add'?prior+op.value:op.op==='scale'?prior*op.value:op.op==='ablate'?0:1;
+     if(!Number.isFinite(next)||next<0||next>2)throw new Error('gain outside [0,2]');
+     staged[i]=next;
+    };
+    if(op.edges==='all'){for(let i=0;i<staged.length;i++)apply(i)}
+    else for(const i of op.edges)apply(i);
+   }
+   let changed=0;const sample=[];
+   for(let i=0;i<staged.length;i++)if(staged[i]!==before[i]){
+    changed++;if(sample.length<32)sample.push({edge:i,before:before[i],after:staged[i]});
+   }
+   if(!preview&&changed){
+    before.set(staged);lane.factors.clear();
+    for(let i=0;i<staged.length;i++)if(staged[i]!==1)lane.factors.set(k.edgeIds[i],staged[i]);
+    lane.last=null;this.kernel.last=null;
+   }
+   return{schema:1,preview:!!preview,graphIdentity:k.identity,lane:id,nodeCount:k.nodes.length,edgeCount:k.src.length,changedEdges:changed,sample};
   }
   stats(){
    const s=this.kernel.stats(),laneBytes=Math.max(0,this.lanes.size-1)*this.kernel.gains.byteLength;
