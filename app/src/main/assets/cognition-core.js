@@ -139,7 +139,7 @@ async function solve(input,adapter={},opts={}){
  const execute=opts.execute===true;
  if(!execute)return{...plan(input,{stats}),executed:false,trace:[],stats};
  const maxSteps=Number.isInteger(opts.maxSteps)?Math.min(LIMIT.steps,Math.max(1,opts.maxSteps)):12;
- const excluded=new Set(),trace=[],base={...task.facts};let failures=0;
+ const excluded=new Set(),trace=[];let base={...task.facts},failures=0;
  if(typeof adapter.authorize!=='function'||typeof adapter.select!=='function'||typeof adapter.invoke!=='function')return{status:'blocked',reason:'missing_execution_adapters',executed:false,trace,stats};
  for(let turn=0;turn<maxSteps;turn++){
   const current={...input,facts:base};
