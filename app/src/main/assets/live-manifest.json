@@ -3,7 +3,7 @@
   "minShellVersion": 76,
   "bridgeSchema": 8,
   "assetSchema": 12,
-  "commit": "464bd7be9294333bf3ac69f19c04c722350920bb",
+  "commit": "e3c51b85dd5a02dc32f1c8167b244e35051d8879",
   "files": {
     "index.html": "7d848da41fa87e1c69a40344e2b734844ed92ad26c7093d363460a4709b9ebf5",
     "native-bridge.js": "8e922e8740186456c6c10197a699c7430993926f3678de1879bb0acfb120f7be",
@@ -39,6 +39,8 @@
     "ai-compat-core.js": "37d1afe30a4effcfdcb08fe1f3d318210aff0f2eb4d819a4b33200f12dc367d9",
     "cognition-core.js": "20e7381e3ac2911205cc19ba387582b1a323f628644fd88a5d7d373a3f233161",
     "cognition-ui.js": "f5761da7900c93f81088ee79c65bb1bea39ebf9221f9ebedf299ed2d8690d19f",
-    "cognition-multimodal-core.js": "44f28162b7bb9b5749c8a840416f7de4983f206c2fcaee1240d250b5ed66debf"
+    "cognition-multimodal-core.js": "44f28162b7bb9b5749c8a840416f7de4983f206c2fcaee1240d250b5ed66debf",
+    "dads-accessible-ui.js": "1610c277164da42a1e57ab5f5a47865433e9c0e960ded5822a7a2d279738164c",
+    "dads-mobile.css": "90f5c0a257324b0f4bb3b5ceedab3d7164abc052fa3aa99ba38a86abf9fb955f"
   }
 }
