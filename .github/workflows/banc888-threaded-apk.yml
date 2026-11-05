@@ -77,7 +77,7 @@ jobs:
           gradle-version: "8.9"
 
       - name: Verify creative cognition asset digests
-        run: sha256sum app/src/main/assets/{cognition-core.js,cognition-multimodal-core.js,proxy-agent.js,thread-router.js}
+        run: sha256sum app/src/main/assets/{index.html,attachments.js,dads-mobile.css,dads-accessible-ui.js,cognition-core.js,cognition-multimodal-core.js,proxy-agent.js,thread-router.js}
 
       - name: Thread router unit tests
         run: |
@@ -148,31 +148,31 @@ jobs:
 
       - name: APK inventory
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.15-accessible-debug.apk
-          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.15-accessible-androidTest.apk
-          ls -lh BANC888-v7.15-accessible-debug.apk BANC888-v7.15-accessible-androidTest.apk
-          sha256sum BANC888-v7.15-accessible-debug.apk > BANC888-v7.15-accessible-debug.apk.sha256
-          sha256sum BANC888-v7.15-accessible-androidTest.apk > BANC888-v7.15-accessible-androidTest.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.15.1-accessible-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.15.1-accessible-androidTest.apk
+          ls -lh BANC888-v7.15.1-accessible-debug.apk BANC888-v7.15.1-accessible-androidTest.apk
+          sha256sum BANC888-v7.15.1-accessible-debug.apk > BANC888-v7.15.1-accessible-debug.apk.sha256
+          sha256sum BANC888-v7.15.1-accessible-androidTest.apk > BANC888-v7.15.1-accessible-androidTest.apk.sha256
 
       - name: Verify APK signatures and packaged assets
         run: |
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.15-accessible-debug.apk | tee BANC888-v7.15-accessible-signing.txt
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.15-accessible-androidTest.apk | tee BANC888-v7.15-accessible-androidTest-signing.txt
-          unzip -t BANC888-v7.15-accessible-debug.apk >/dev/null
-          unzip -l BANC888-v7.15-accessible-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.15.1-accessible-debug.apk | tee BANC888-v7.15.1-accessible-signing.txt
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.15.1-accessible-androidTest.apk | tee BANC888-v7.15.1-accessible-androidTest-signing.txt
+          unzip -t BANC888-v7.15.1-accessible-debug.apk >/dev/null
+          unzip -l BANC888-v7.15.1-accessible-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.15-accessible-debug
+          name: BANC888-v7.15.1-accessible-debug
           path: |
-            BANC888-v7.15-accessible-debug.apk
-            BANC888-v7.15-accessible-debug.apk.sha256
-            BANC888-v7.15-accessible-androidTest.apk
-            BANC888-v7.15-accessible-androidTest.apk.sha256
-            BANC888-v7.15-accessible-signing.txt
-            BANC888-v7.15-accessible-androidTest-signing.txt
+            BANC888-v7.15.1-accessible-debug.apk
+            BANC888-v7.15.1-accessible-debug.apk.sha256
+            BANC888-v7.15.1-accessible-androidTest.apk
+            BANC888-v7.15.1-accessible-androidTest.apk.sha256
+            BANC888-v7.15.1-accessible-signing.txt
+            BANC888-v7.15.1-accessible-androidTest-signing.txt
             connectome-mobile-benchmark.json
             ai-compat-evaluation.json
             cognition-benchmark.json
