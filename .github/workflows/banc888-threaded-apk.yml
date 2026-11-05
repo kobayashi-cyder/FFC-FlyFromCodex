@@ -76,6 +76,9 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Verify creative cognition asset digests
+        run: sha256sum app/src/main/assets/{cognition-core.js,cognition-multimodal-core.js,proxy-agent.js,thread-router.js}
+
       - name: Thread router unit tests
         run: |
           node --check app/src/main/assets/thread-router-core.js
@@ -87,6 +90,7 @@ jobs:
           node --check app/src/main/assets/ir-patch-core.js
           node --check app/src/main/assets/ai-compat-core.js
           node --check app/src/main/assets/cognition-core.js
+          node --check app/src/main/assets/cognition-multimodal-core.js
           node --check app/src/main/assets/cognition-ui.js
           node --check app/src/main/assets/proxy-agent-core.js
           node --check app/src/main/assets/capability-tools.js
@@ -114,6 +118,7 @@ jobs:
           node tests/connectome_multiplex.test.cjs
           node tests/weight_space.test.cjs
           node tests/cognition_core.test.cjs
+          node tests/cognition_multimodal.test.cjs
           node tests/task_review.test.cjs
           node tests/video_export.test.cjs
           node tests/adaptive_quality.test.cjs
@@ -141,31 +146,31 @@ jobs:
 
       - name: APK inventory
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.13-cognition-debug.apk
-          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.13-cognition-androidTest.apk
-          ls -lh BANC888-v7.13-cognition-debug.apk BANC888-v7.13-cognition-androidTest.apk
-          sha256sum BANC888-v7.13-cognition-debug.apk > BANC888-v7.13-cognition-debug.apk.sha256
-          sha256sum BANC888-v7.13-cognition-androidTest.apk > BANC888-v7.13-cognition-androidTest.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.14-unified-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.14-unified-androidTest.apk
+          ls -lh BANC888-v7.14-unified-debug.apk BANC888-v7.14-unified-androidTest.apk
+          sha256sum BANC888-v7.14-unified-debug.apk > BANC888-v7.14-unified-debug.apk.sha256
+          sha256sum BANC888-v7.14-unified-androidTest.apk > BANC888-v7.14-unified-androidTest.apk.sha256
 
       - name: Verify APK signatures and packaged assets
         run: |
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.13-cognition-debug.apk | tee BANC888-v7.13-cognition-signing.txt
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.13-cognition-androidTest.apk | tee BANC888-v7.13-cognition-androidTest-signing.txt
-          unzip -t BANC888-v7.13-cognition-debug.apk >/dev/null
-          unzip -l BANC888-v7.13-cognition-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.14-unified-debug.apk | tee BANC888-v7.14-unified-signing.txt
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.14-unified-androidTest.apk | tee BANC888-v7.14-unified-androidTest-signing.txt
+          unzip -t BANC888-v7.14-unified-debug.apk >/dev/null
+          unzip -l BANC888-v7.14-unified-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.13-cognition-debug
+          name: BANC888-v7.14-unified-debug
           path: |
-            BANC888-v7.13-cognition-debug.apk
-            BANC888-v7.13-cognition-debug.apk.sha256
-            BANC888-v7.13-cognition-androidTest.apk
-            BANC888-v7.13-cognition-androidTest.apk.sha256
-            BANC888-v7.13-cognition-signing.txt
-            BANC888-v7.13-cognition-androidTest-signing.txt
+            BANC888-v7.14-unified-debug.apk
+            BANC888-v7.14-unified-debug.apk.sha256
+            BANC888-v7.14-unified-androidTest.apk
+            BANC888-v7.14-unified-androidTest.apk.sha256
+            BANC888-v7.14-unified-signing.txt
+            BANC888-v7.14-unified-androidTest-signing.txt
             connectome-mobile-benchmark.json
             ai-compat-evaluation.json
             cognition-benchmark.json

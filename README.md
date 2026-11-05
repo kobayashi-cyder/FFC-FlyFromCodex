@@ -1,16 +1,35 @@
-# BANC888 Cognition v7.13 (experimental)
+# BANC888 Unified v7.14 — 4-mode cognition (experimental)
 
-This development branch adds a bounded symbolic cognition engine to BANC888 for Android. It can infer explicitly supplied rules, plan multi-step tasks, require connectome output before calling tools, and replan when observed outcomes differ from expected effects. This is **not artificial general intelligence**; the built-in graph is still the six-aggregate-node, sixteen-edge Figure 3g sample.
+BANC888 Android の会話・コーディング・画像・動画を、同一のBANC認知ループにつなぎました。**万能AI/AGIを達成したという意味ではありません**。現在の回路は6集約ノード・16接続で、意味分類、一般知識の生成と画像モデルの代替は別の工学的機構が担います。
 
-## Android APK
+## Android APKを取得する
 
-- [Latest cognition APK builds (GitHub Actions)](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-cognition-v1)
-- [Verified initial v7.13 APK build](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/41998998786) — select the **BANC888-v7.13-cognition-debug** artifact below the run summary to download the ZIP containing APK, SHA-256 and signature report. GitHub sign-in may be required.
-- [Cognition design, safety and API contract](docs/COGNITION_ENGINE_V1.md)
-- [Weight-space programming](docs/WEIGHT_SPACE_PROGRAMMING.md)
+- **[v7.14 APK ビルド（署名検証合格）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42002425771)** — 画面下の Artifacts から BANC888-v7.14-unified-debug を選び、ZIP内の APK を取り出す。GitHubへのサインインが必要な場合があります。
+- **[このブランチの最新APKビルド一覧](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-unified-multimodal-v1)**
+- [統合四機能の設計・検証・限界](docs/UNIFIED_MULTIMODAL_V714.md)
+- [認知エンジンの設計](docs/COGNITION_ENGINE_V1.md)
+- [重み空間プログラミング](docs/WEIGHT_SPACE_PROGRAMMING.md)
 
-Install the **debug** APK as a separate app named BANC888 Cognition; it is signed by the Android debug certificate and does not overwrite the earlier BANC888 Compat package. Debug signatures are not production release keys and may differ between CI jobs, so upgrading may require uninstalling the previous debug build and exporting conversations first.
+APKはAndroid Debug署名付きの開発用で、アプリIDは従来のBANC888 Cognitionとは異なる com.ffc.banc888.fly.unified です。Playストア公開用の署名ではありません。端末でのアップグレード時はバックアップを保管してください。
 
-Open the **🧠 BANC認知実験** panel to preview a goal/plan JSON without running tools. Execution requires explicit confirmation, an allowed existing tool, nonzero BANC output, and a tool-reported `observedFacts` value. Without observations it stops rather than claiming a task succeeded.
+## チャットから実行する
 
-The 96-case synthetic planning benchmark is available in `tools/cognition_benchmark.cjs`. Passing this benchmark is not evidence of human-equivalent comprehension or open-world generalization.
+普段の会話画面で自然言語で依頼します。
+
+- 会話: 「この内容を説明して」
+- コーディング: 「PythonでCSVを解析するコードを書いて」
+- 画像: 「猫の画像を生成して」
+- 動画: 「猫が走る短い動画を生成して」
+
+複数成果物を明示した一括生成依頼も認知エンジンが計画します。実行後、チャットは空応答でないこと、コードは静的検証・レビューに通ったこと、画像はO2内部品質検証に通ったこと、動画は全フレームが完成してMP4の実バイト数があることを確認します。未完了でも「成功」と表示しないようになっています。
+
+Chat/コードの自由生成はユーザーが設定した言語モデルAPIを利用できます。内蔵の言語モデル重みは付属しません。画像は内蔵O2手続き描画であり、写真級の拡散モデルではありません。動画は内蔵O3→MP4、またはユーザーが設定したA1111。外部サービスを使わずあらゆる内容を高品質生成できる能力は未実装です。
+
+## 回帰検証
+
+- node tests/cognition_core.test.cjs
+- node tests/cognition_multimodal.test.cjs
+- node tests/weight_space.test.cjs
+- node tests/live_manifest_verify.test.cjs
+
+端末実機による全機能の品質検証や未知課題への汎用化評価は引き続き必要です。

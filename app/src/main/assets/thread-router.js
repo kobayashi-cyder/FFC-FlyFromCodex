@@ -63,7 +63,7 @@ async function runThread(t,q){
  t.pending=true;renderChips();if(state.activeId===t.id)renderLog();const rr=routeFor(t,q),showRoute=!!q.switched;
  try{
   const request=visibleText(t,q.text),ctx={threadCode:code(t),context:context(t),source:(q.attachments?.length?q.attachments:t.messages.filter(m=>m.role==='user'&&m.meta?.attachments?.length).at(-1)?.meta.attachments||[]).map(f=>f.text).join('\n\n'),attachedNow:!!q.attachments?.length,priority:50};const proxy=window.FFC_PROXY_AGENT;
-  const cap=proxy?.executeAsync?await proxy.executeAsync(request,ctx):proxy?.execute?.(request,ctx)||window.FFC_CAPABILITIES?.handle?.(request,ctx);
+  const cap=proxy?.cognitionRequest?await proxy.cognitionRequest(request,ctx):proxy?.executeAsync?await proxy.executeAsync(request,ctx):proxy?.execute?.(request,ctx)||window.FFC_CAPABILITIES?.handle?.(request,ctx);
   let ans='',meta={};if(cap?.handled){ans=String(cap.finalText||'').trim();if(cap.status==='failed'&&cap.error)ans+=' '+cap.error;meta={tool:cap.tool||null,compatibility:window.FFCAICompat?.audit(cap.compatibility)||null,capability:cap.plan?.domain||null,generation:window.FFCConversationExport?.captureGeneration?.(cap)||null};capturePreview(meta);}else{const packet=window.BANC888_FLY_AGENT?.execute?.('chat.compose',{goal:request,...ctx});ans=String(packet?.value?.reply||'').trim();meta={tool:'chat.compose'};}
   ans=ensureReply(t,q.text,ans);add(t,'assistant',ans,meta);
   if(state.activeId===t.id){presentReply(t,ans,rr,meta,showRoute);speakReply(t,ans,rr,q,meta,showRoute)}

@@ -3,7 +3,7 @@
   "minShellVersion": 76,
   "bridgeSchema": 8,
   "assetSchema": 12,
-  "commit": "c5caf6c95c953907ee7f8838739ce57e7f903944",
+  "commit": "464bd7be9294333bf3ac69f19c04c722350920bb",
   "files": {
     "index.html": "7d848da41fa87e1c69a40344e2b734844ed92ad26c7093d363460a4709b9ebf5",
     "native-bridge.js": "8e922e8740186456c6c10197a699c7430993926f3678de1879bb0acfb120f7be",
@@ -24,9 +24,9 @@
     "fly-parallel-core.js": "0cadbc7dd11373decf8aad14e2400a31f7753c46edfdb4764416b6e2d2481652",
     "local-model.js": "6a27b56cf625199e9a26bcf425d0725850498d904c84a7d92c46cd3269b81e8d",
     "fly-parallel.js": "6ead0d878d8fecac49af30836f17a44a8bdb84ae0ab0075589a6ffc9828bbad8",
-    "proxy-agent.js": "e1bddb4348e7145a52155063ced39b0627d3d7f9022aa51ec20698fbc9fc5213",
+    "proxy-agent.js": "397b1164ec55cd8bfc636127c4107a6893fd58cf91c3cee7384f22fa96fbf8a6",
     "conversation-output-core.js": "79ecf9c03fb3dbc2a02701442748539fec25c280a3a6cf62558c38552bd8f6a2",
-    "thread-router.js": "04a8eda5b764dadd17e795d12b3674bac1e940d6222e1aba43ac2ae6e2f58dd4",
+    "thread-router.js": "0a49f5a2d10d13e9fa5eacbdab569b47a7afcad89d5c98fc846f3eb61e26fc93",
     "conversation-export.js": "3b829695540ee65d96e90260e327191334e85b6c36e67385d58163b42195a227",
     "dev-live.js": "baabb2c127fe3b0f3e406fbf39b2068392bb0b0bfecec88f7ca577125a856e6b",
     "execution-controls.js": "e7faa4a3837aba649ba26099c90bf4c08ee506026b7adcba8ae617081366bfca",
@@ -37,7 +37,8 @@
     "attachment-core.js": "741e2eff9fb68c6bd974a16a8332fc83af8cd89df04930cca2387d4bdd440455",
     "attachments.js": "56bf9bc453fcd5b10b0c9094d492347089da9dc8f1a427769546b30041d81de7",
     "ai-compat-core.js": "37d1afe30a4effcfdcb08fe1f3d318210aff0f2eb4d819a4b33200f12dc367d9",
-    "cognition-core.js": "86722056fb7b3282c707f2c3eafa583adfb2e9b3d66b32ff874394cbb8dba626",
-    "cognition-ui.js": "f5761da7900c93f81088ee79c65bb1bea39ebf9221f9ebedf299ed2d8690d19f"
+    "cognition-core.js": "20e7381e3ac2911205cc19ba387582b1a323f628644fd88a5d7d373a3f233161",
+    "cognition-ui.js": "f5761da7900c93f81088ee79c65bb1bea39ebf9221f9ebedf299ed2d8690d19f",
+    "cognition-multimodal-core.js": "44f28162b7bb9b5749c8a840416f7de4983f206c2fcaee1240d250b5ed66debf"
   }
 }

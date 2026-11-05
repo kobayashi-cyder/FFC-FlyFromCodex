@@ -39,7 +39,9 @@ public class AICompatibilityIntegrationTest {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             assertTrue(TestSupport.awaitNativeReady(scenario));
             assertTrue(TestSupport.awaitJs(scenario,
-                "!!window.FFCCognitionCore&&typeof FFC_PROXY_AGENT.cognitionPlan==='function'"
+                "!!window.FFCCognitionCore&&!!window.FFCCognitionMultimodal&&typeof FFC_PROXY_AGENT.cognitionPlan==='function'"
+                + "&&typeof FFC_PROXY_AGENT.cognitionRequest==='function'"
+                + "&&FFC_PROXY_AGENT.cognitionCapabilities().domains.length===4"
                 + "&&!!document.getElementById('bancCognitionCard')", 10000));
             assertTrue(TestSupport.awaitJs(scenario,
                 "(function(){if(window.__cognitionTestStarted)return true;window.__cognitionTestStarted=true;"
