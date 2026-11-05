@@ -109,6 +109,7 @@ jobs:
           node tests/connectome_selector.test.cjs
           node tests/connectome_mobile.test.cjs
           node tests/connectome_multiplex.test.cjs
+          node tests/weight_space.test.cjs
           node tests/task_review.test.cjs
           node tests/video_export.test.cjs
           node tests/adaptive_quality.test.cjs
