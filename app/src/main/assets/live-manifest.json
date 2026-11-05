@@ -3,9 +3,9 @@
   "minShellVersion": 76,
   "bridgeSchema": 8,
   "assetSchema": 12,
-  "commit": "464bd7be9294333bf3ac69f19c04c722350920bb",
+  "commit": "67de0561701a22f95857cfdfc85f983364f81470",
   "files": {
-    "index.html": "7d848da41fa87e1c69a40344e2b734844ed92ad26c7093d363460a4709b9ebf5",
+    "index.html": "c2f275269bf507d898d447bb0f8f95c7ac85d402c6f92c78a4fa31645e16240a",
     "native-bridge.js": "8e922e8740186456c6c10197a699c7430993926f3678de1879bb0acfb120f7be",
     "webview-runtime.js": "05c30e25c4779fd9211d9a6ade8a603a9fbc916743080de63fee1af98cdedbd2",
     "thread-router-core.js": "b19931c8f24397ce781bd9408132cefb5addf959f9fa09779f2a9b9d63731cb9",
@@ -35,10 +35,12 @@
     "workspace-productivity.js": "08f442a7d79f981b79607d6402684cb32142a466c8592ef3d8cf0e5e853afd76",
     "fly-task-worker.js": "adbfea2305e7e285ef3631ef743226790936ac3f848e373281316fbcda42142b",
     "attachment-core.js": "741e2eff9fb68c6bd974a16a8332fc83af8cd89df04930cca2387d4bdd440455",
-    "attachments.js": "56bf9bc453fcd5b10b0c9094d492347089da9dc8f1a427769546b30041d81de7",
+    "attachments.js": "87bc2655b38e62f1de3f7bbd5e0a80e5883e47dde85bf408ee7f6d5d932a2ff8",
     "ai-compat-core.js": "37d1afe30a4effcfdcb08fe1f3d318210aff0f2eb4d819a4b33200f12dc367d9",
     "cognition-core.js": "20e7381e3ac2911205cc19ba387582b1a323f628644fd88a5d7d373a3f233161",
     "cognition-ui.js": "f5761da7900c93f81088ee79c65bb1bea39ebf9221f9ebedf299ed2d8690d19f",
-    "cognition-multimodal-core.js": "44f28162b7bb9b5749c8a840416f7de4983f206c2fcaee1240d250b5ed66debf"
+    "cognition-multimodal-core.js": "44f28162b7bb9b5749c8a840416f7de4983f206c2fcaee1240d250b5ed66debf",
+    "dads-accessible-ui.js": "1610c277164da42a1e57ab5f5a47865433e9c0e960ded5822a7a2d279738164c",
+    "dads-mobile.css": "90f5c0a257324b0f4bb3b5ceedab3d7164abc052fa3aa99ba38a86abf9fb955f"
   }
 }

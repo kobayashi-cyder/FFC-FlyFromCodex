@@ -1,35 +1,37 @@
-# BANC888 Unified v7.14 — 4-mode cognition (experimental)
+# BANC888 Accessible v7.15.1 — モバイル操作改善版（開発試験）
 
-BANC888 Android の会話・コーディング・画像・動画を、同一のBANC認知ループにつなぎました。**万能AI/AGIを達成したという意味ではありません**。現在の回路は6集約ノード・16接続で、意味分類、一般知識の生成と画像モデルの代替は別の工学的機構が担います。
+デジタル庁デザインシステムを参考に、Androidで操作が難しかったBANC888の会話・コード・画像・動画のUIを修正した実験版です。**デジタル庁の公式製品・認定製品ではありません。** また、「万能AI（AGI）の完成」ではありません。
 
-## Android APKを取得する
+## APK取得
 
-- **[v7.14 APK ビルド（署名検証合格）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42002425771)** — 画面下の Artifacts から BANC888-v7.14-unified-debug を選び、ZIP内の APK を取り出す。GitHubへのサインインが必要な場合があります。
-- **[このブランチの最新APKビルド一覧](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-unified-multimodal-v1)**
-- [統合四機能の設計・検証・限界](docs/UNIFIED_MULTIMODAL_V714.md)
-- [認知エンジンの設計](docs/COGNITION_ENGINE_V1.md)
-- [重み空間プログラミング](docs/WEIGHT_SPACE_PROGRAMMING.md)
+- **[検証済み v7.15.1 APK / SHA-256 / 署名レポート（GitHub Actions）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42011972127)** — ページ下部の「Artifacts」から「BANC888-v7.15.1-accessible-debug」を選び、ZIPを解凍してAPKを取り出す。GitHubへのログインが必要な場合があります。
+- [このブランチのAPKビルド一覧](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-dads-accessible-ui-v1)
+- [UI改善の設計・公式指針への対応表](docs/DADS_ACCESSIBLE_UI_V715.md)
+- [4機能と認知ループの仕様](docs/UNIFIED_MULTIMODAL_V714.md)
+- [認知エンジン仕様](docs/COGNITION_ENGINE_V1.md)
 
-APKはAndroid Debug署名付きの開発用で、アプリIDは従来のBANC888 Cognitionとは異なる com.ffc.banc888.fly.unified です。Playストア公開用の署名ではありません。端末でのアップグレード時はバックアップを保管してください。
+## 使い方
 
-## チャットから実行する
+1. **会話 / コード / 画像 / 動画** のどれかを上部で選ぶ。
+2. 入力欄で依頼内容を入力・編集する。選択だけでは勝手に送信しない。途中まで書いた文章は切替で消さない。
+3. 大きな青い **「送信」** ボタンを押す。資料を送るときは「添付」、音声入力には「音声」。
+4. 会話履歴は「☰ 会話」、その他の処理設定は「設定」から開く。
 
-普段の会話画面で自然言語で依頼します。
+[Android統合検査 42012447522](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42012447522) では、ChatControlsIntegrationTest 3件がすべてPASSしました。対象は4モードの実タップ・送信、オンライン/オフラインおよび設定操作、Androidのファイル選択・添付・要約です。並列18件中17件は成功、SpeechRecognizer PCMの別テスト1件は不合格です。マイク音声入力まで正常と保証するものではありません。Pixel 10 / Android 17実機での最終試験は未実施です。
 
-- 会話: 「この内容を説明して」
-- コーディング: 「PythonでCSVを解析するコードを書いて」
-- 画像: 「猫の画像を生成して」
-- 動画: 「猫が走る短い動画を生成して」
+## 技術上の扱い
 
-複数成果物を明示した一括生成依頼も認知エンジンが計画します。実行後、チャットは空応答でないこと、コードは静的検証・レビューに通ったこと、画像はO2内部品質検証に通ったこと、動画は全フレームが完成してMP4の実バイト数があることを確認します。未完了でも「成功」と表示しないようになっています。
+- バージョンは7.15.1-accessible、アプリIDは com.ffc.banc888.fly.accessible。前段のUnified v7.14とは別アプリとしてインストール。
+- Android Debug署名による実験用APKであり、正式ストア公開用の署名ではありません。GitHub Actionsの実行ごとにデバッグ署名鍵が異なる場合があるため、既存の「BANC888 Accessible」へ上書きできない場合は**先に会話JSONをエクスポート**してから旧アプリをアンインストールする。削除するとローカルデータが失われるおそれがあります。
+- 内蔵画面にはO2手続き描画とO3動画出力があり、自由な言語・コード生成の高品質化はユーザー設定のモデルAPIに依存。写真級画像・一般動画モデル・AGIは付属しない。
+- CSSは初回描画前に読み込み、タッチ座標のレイアウト変更を抑止。最小44/48 CSS pxのタップ領域、明瞭なラベル、16px入力、フォーカス可視化、端末safe-areaを採用。
 
-Chat/コードの自由生成はユーザーが設定した言語モデルAPIを利用できます。内蔵の言語モデル重みは付属しません。画像は内蔵O2手続き描画であり、写真級の拡散モデルではありません。動画は内蔵O3→MP4、またはユーザーが設定したA1111。外部サービスを使わずあらゆる内容を高品質生成できる能力は未実装です。
+## 検査
 
-## 回帰検証
+- `node tests/dads_ui_contract.test.cjs`
+- `node tests/live_manifest_verify.test.cjs`
+- `node tests/cognition_core.test.cjs`
+- `node tests/cognition_multimodal.test.cjs`
+- [Android画面操作・添付・会話互換性検査](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42011972113)
 
-- node tests/cognition_core.test.cjs
-- node tests/cognition_multimodal.test.cjs
-- node tests/weight_space.test.cjs
-- node tests/live_manifest_verify.test.cjs
-
-端末実機による全機能の品質検証や未知課題への汎用化評価は引き続き必要です。
+未知課題への汎用知能や画像・映像の意味理解は、別途独立評価を要します。

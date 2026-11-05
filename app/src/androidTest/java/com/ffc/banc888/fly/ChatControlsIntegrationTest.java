@@ -38,7 +38,7 @@ public class ChatControlsIntegrationTest {
             tap(scenario,"ffcExecutionMode");
             assertTrue("Mode button did not return offline",TestSupport.awaitJs(scenario,"FFCExecution.status().mode==='offline'",3000));
             tap(scenario,"uiGearButton");
-            assertTrue(TestSupport.awaitJs(scenario,"document.getElementById('uiSettingsDrawer').classList.contains('open')&&document.getElementById('ffcInstalledVersion').textContent.indexOf('7.14')>=0&&document.getElementById('ffcInternalRuntime').hidden",3000));
+            assertTrue(TestSupport.awaitJs(scenario,"document.getElementById('uiSettingsDrawer').classList.contains('open')&&document.getElementById('ffcInstalledVersion').textContent.indexOf('7.15')>=0&&document.getElementById('ffcInternalRuntime').hidden",3000));
             assertTrue(TestSupport.awaitJs(scenario,"(function(){var e=document.getElementById('uiSettingsClose'),r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return r.height>=44&&r.width>=44&&r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&(hit===e||e.contains(hit))})()",3000));
             SystemClock.sleep(250);
             tap(scenario,"uiSettingsClose");
@@ -61,15 +61,50 @@ public class ChatControlsIntegrationTest {
             Intent result=new Intent().setData(selected.get()).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             Instrumentation.ActivityMonitor monitor=instrument.addMonitor(filter,new Instrumentation.ActivityResult(Activity.RESULT_OK,result),true);
             try {
-                tap(scenario,"ffcAttachButton");
+                assertTrue("Attachment button not ready",TestSupport.awaitJs(scenario,
+               "!!(document.getElementById('dadsStyle')?.sheet&&document.getElementById('ffcAttachButton')&&document.getElementById('ffcAttachButton').getBoundingClientRect().width>=44)",12000));
+            tap(scenario,"ffcAttachButton");
                 boolean received=TestSupport.awaitJs(scenario,"FFCAttachments.peek(FFC_THREADS.state.activeId).length===1&&FFCAttachments.peek(FFC_THREADS.state.activeId)[0].text.indexOf('10月10日')>=0",10000);
-                assertTrue("Android FileReader did not receive selected UTF-8 document: "+read(scenario,"document.getElementById('ffcAttachmentStatus').textContent"),received);
+                assertTrue("Android FileReader did not receive selected UTF-8 document: "+read(scenario,"document.getElementById('ffcAttachmentStatus').textContent")
+                    +" pickerHits="+monitor.getHits()
+                    +" clickGeometry="+read(scenario,"(function(){var e=document.getElementById('ffcAttachButton'),r=e.getBoundingClientRect();return JSON.stringify({rect:[r.x,r.y,r.width,r.height],hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id,thread:FFC_THREADS.state.activeId})})()"),received);
                 assertEquals(1,monitor.getHits());
             } finally { instrument.removeMonitor(monitor); }
             assertTrue(TestSupport.awaitJs(scenario,"(function(){var i=document.getElementById('ffcThreadText');i.value='添付資料の内容を要約してください';return true})()",3000));
             tap(scenario,"ffcThreadSend");
             assertTrue("Attached facts were not used in response",TestSupport.awaitJs(scenario,"(function(){var t=FFC_THREADS.state.threads.find(function(t){return t.id===FFC_THREADS.state.activeId});return !t.pending&&t.messages.some(function(m){return m.role==='assistant'&&m.text.indexOf('10月10日')>=0})})()",30000));
             assertTrue(TestSupport.awaitJs(scenario,"FFCAttachments.peek(FFC_THREADS.state.activeId).length===0&&FFCConversationExport.buildPayload().conversations[0].messages[0].metadata.attachments[0].text.indexOf('試作品')>=0",3000));
+        }
+    }
+    @Test public void accessibleModesAreTouchableAndMessageCanBeSent() throws Exception {
+        try (ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)) {
+            assertTrue(TestSupport.awaitNativeReady(scenario));
+            assertTrue("Accessible UI was not mounted",TestSupport.awaitJs(scenario,
+                "!!(window.FFCDadsUI&&FFCDadsUI.statusSnapshot().mounted&&document.getElementById('dadsStyle')?.sheet&&document.getElementById('dadsTaskNav'))",15000));
+            assertTrue("Task buttons and send are too small or occluded",TestSupport.awaitJs(scenario,
+                "['dadsModeChat','dadsModeCode','dadsModeImage','dadsModeVideo','ffcThreadSend'].every(function(id){"
+                + "var e=document.getElementById(id),r=e.getBoundingClientRect(),p=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);"
+                + "return r.width>=44&&r.height>=44&&r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&(p===e||e.contains(p));})",15000));
+            assertTrue(TestSupport.awaitJs(scenario,"(function(){window.__dadsTapTrace=[];['pointerdown','touchstart','click'].forEach(function(k){document.addEventListener(k,function(e){var t=e.touches?.[0]||e;window.__dadsTapTrace.push({kind:k,id:e.target?.id,x:t.clientX,y:t.clientY});},true)});return true})()",3000));
+            tap(scenario,"dadsModeCode");
+            assertTrue("Touch trace: "+read(scenario,"JSON.stringify(window.__dadsTapTrace)")
+                 +" / Geometry: "+read(scenario,"(function(){var e=document.getElementById('dadsModeCode'),r=e.getBoundingClientRect();return JSON.stringify({rect:[r.x,r.y,r.width,r.height],inner:[innerWidth,innerHeight],dpr:devicePixelRatio,vv:visualViewport?.scale,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id})})()"),
+                TestSupport.awaitJs(scenario,
+                "document.getElementById('ffcThreadText').value.indexOf('Python')>=0&&document.getElementById('dadsModeCode').getAttribute('aria-pressed')==='true'",3000));
+            tap(scenario,"dadsModeImage");
+            assertTrue(TestSupport.awaitJs(scenario,
+                "document.getElementById('ffcThreadText').value.indexOf('画像を生成')>=0",3000));
+            tap(scenario,"dadsModeVideo");
+            assertTrue(TestSupport.awaitJs(scenario,
+                "document.getElementById('ffcThreadText').value.indexOf('動画を生成')>=0",3000));
+            tap(scenario,"dadsModeChat");
+            assertTrue(TestSupport.awaitJs(scenario,
+                "document.getElementById('ffcThreadText').value===''&&document.getElementById('ffcThreadSend').textContent==='送信'",3000));
+            assertTrue(TestSupport.awaitJs(scenario,
+                "(function(){var e=document.getElementById('ffcThreadText');e.value='こんにちは';e.dispatchEvent(new Event('input',{bubbles:true}));return true})()",3000));
+            tap(scenario,"ffcThreadSend");
+            assertTrue("Send did not register a conversation message",TestSupport.awaitJs(scenario,
+                "FFC_THREADS.state.threads.some(function(t){return t.messages.some(function(m){return m.role==='user'&&m.text.indexOf('こんにちは')>=0})})",8000));
         }
     }
     private static String read(ActivityScenario<MainActivity> scenario,String expression) throws Exception {

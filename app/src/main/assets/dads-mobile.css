@@ -1,0 +1,127 @@
+/* BANC888 mobile UI adapted from the Digital Agency design system (not affiliated) */
+html.chat-root{overflow:hidden}
+body.chat-layout,body.chat-layout[data-theme="light"]{
+ --bg:#f7f9fc;--panel:#fff;--sidebar:#edf4fb;--surface:#fff;--composer:#fff;
+ --user:#e8f2ff;--line:#b9c9da;--text:#182b49;--muted:#435872;--accent:#005bac;
+ background:var(--bg);color:var(--text);color-scheme:light;
+ font-size:16px;line-height:1.6}
+body.chat-layout[data-theme="dark"]{
+ --bg:#122031;--panel:#192b40;--sidebar:#14263a;--surface:#21374f;--composer:#1c3046;
+ --user:#274660;--line:#6986a7;--text:#f4f8ff;--muted:#cad8e9;--accent:#b4d6ff;
+ color-scheme:dark}
+body.chat-layout,body.chat-layout input,body.chat-layout textarea,body.chat-layout button{
+ font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+body.chat-layout button,body.chat-layout [role="button"],body.chat-layout summary,
+body.chat-layout .ffcThreadChip{min-height:44px;cursor:pointer;touch-action:manipulation}
+body.chat-layout button,body.chat-layout input,body.chat-layout textarea,body.chat-layout select{font-size:16px}
+body.chat-layout button:focus-visible,body.chat-layout a:focus-visible,
+body.chat-layout input:focus-visible,body.chat-layout textarea:focus-visible,
+body.chat-layout select:focus-visible,body.chat-layout [tabindex]:focus-visible{
+ outline:3px solid #ffdf4d!important;outline-offset:3px!important;box-shadow:0 0 0 5px #111!important}
+body.chat-layout button:disabled{opacity:.55;cursor:not-allowed}
+body.chat-layout #uiHub{border-bottom:1px solid var(--line);background:var(--panel)}
+body.chat-layout .conversationSidebar{border-right:1px solid var(--line);background:var(--sidebar)}
+body.chat-layout .conversationSidebar button,body.chat-layout .conversationHeaderActions button{
+ min-width:44px;min-height:48px;color:var(--text)}
+body.chat-layout .conversationHeaderActions button{
+ background:var(--surface)!important;border:1px solid var(--line);border-radius:9px;padding:8px 11px}
+body.chat-layout .conversationHeaderTitle{font-weight:700;color:var(--text)}
+body.chat-layout .conversationComposerWrap{
+ background:var(--bg);padding-top:8px;
+ padding-bottom:max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+body.chat-layout .ffcThreadInput{
+ background:var(--composer);border:1px solid var(--line);border-radius:12px;
+ box-shadow:0 2px 10px #1a477715;display:grid;grid-template-columns:minmax(0,1fr) auto;
+ gap:8px 10px;padding:10px}
+body.chat-layout .ffcThreadInput:focus-within{border-color:var(--accent)}
+body.chat-layout #ffcThreadText{
+ grid-column:1/3;grid-row:1;min-height:72px;max-height:min(32dvh,240px);
+ resize:vertical;border:1px solid var(--line)!important;
+ background:var(--surface);border-radius:8px;padding:12px;
+ line-height:1.5;color:var(--text)}
+body.chat-layout #ffcThreadText:focus-visible{outline:3px solid #ffdf4d!important}
+body.chat-layout .conversationComposerTools{
+ grid-column:1;grid-row:2;display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-width:0}
+body.chat-layout .conversationComposerTools button{
+ min-height:48px!important;min-width:48px!important;
+ border:1px solid var(--line)!important;background:var(--surface)!important;
+ color:var(--text)!important;border-radius:9px!important;
+ font-size:14px!important;padding:8px 10px!important;white-space:nowrap}
+body.chat-layout #ffcThreadSend{
+ grid-column:2;grid-row:2;width:auto!important;height:auto!important;
+ min-width:88px!important;min-height:48px!important;border-radius:9px!important;
+ padding:10px 17px!important;background:#005bac!important;color:#fff!important;
+ border:2px solid #005bac!important;font-size:16px!important;font-weight:700;line-height:1.3}
+body.chat-layout #ffcThreadSend:hover{background:#00477f!important}
+body.chat-layout #ffcThreadSend:active{background:#003b6f!important}
+body.chat-layout .conversationComposerNote{
+ color:var(--muted);font-size:12px;line-height:1.5;margin:6px 0 0}
+body.chat-layout #ffcThreadLog{scroll-behavior:auto;overscroll-behavior:contain}
+body.chat-layout .ffcMsg.assistant::before{background:#005bac;color:#fff;border:0}
+body.chat-layout .ffcMsg.user{background:var(--user);border:1px solid var(--line)}
+body.chat-layout .ffcEmpty{padding:10px}
+body.chat-layout .conversationStarters button{
+ background:var(--surface);border:1px solid var(--line);color:var(--text);min-height:48px;font-size:14px}
+body.chat-layout .conversationSidebarShade,body.chat-layout .uiSettingsShade{background:#071b3473}
+body.chat-layout .uiSettingsDrawer{background:var(--panel);color:var(--text)}
+body.chat-layout #uiSettingsClose{min-width:48px;min-height:48px}
+body.chat-layout #ffcThreadHub>.dadsTaskNav{
+ display:block;flex:none;background:var(--panel);border-bottom:1px solid var(--line);
+ padding:10px max(14px,calc((100% - 760px)/2))}
+.dadsTaskNav>p{margin:0 0 7px;color:var(--muted);font-size:13px}
+.dadsTaskNav .dadsTaskButtons{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+body.chat-layout .dadsTaskButtons button{
+ display:flex;align-items:center;justify-content:center;min-width:0;min-height:48px;
+ border:2px solid #005bac;border-radius:9px;color:#005bac;background:#fff;
+ font-size:15px;font-weight:700;padding:9px 3px}
+body.chat-layout .dadsTaskButtons button[aria-pressed="true"]{
+ background:#005bac;color:#fff;border-color:#005bac}
+body.chat-layout[data-theme="dark"] .dadsTaskButtons button{
+ background:var(--surface);border-color:#b4d6ff;color:#f2f7ff}
+body.chat-layout[data-theme="dark"] .dadsTaskButtons button[aria-pressed="true"]{
+ background:#005bac;color:#fff}
+.dadsTaskNav .dadsTaskHint{
+ margin:8px 0 0;min-height:1.4em;color:var(--muted);font-size:13px;line-height:1.5}
+body.chat-layout .dadsStatus{
+ font-size:13px;line-height:1.55;color:var(--muted);padding:0 2px;margin:0}
+body.chat-layout .dadsStatus[data-kind="error"]{color:#a51023;font-weight:700}
+body.chat-layout[data-theme="dark"] .dadsStatus[data-kind="error"]{color:#ffb8bf}
+body.chat-layout .conversationHistory .ffcThreadChip.active{
+ border:2px solid var(--accent);border-radius:9px}
+body.chat-layout .conversationSideFoot>button{min-height:44px;border-radius:7px}
+body.chat-layout .conversationSideFoot>button:hover{background:var(--surface)!important}
+body.chat-layout .uiSettingsDrawer :is(button,select,input,summary){min-height:44px}
+@media(max-width:700px){
+ body.chat-layout main{height:100dvh;min-height:0;max-height:100dvh}
+ body.chat-layout #uiHub{padding:calc(7px + env(safe-area-inset-top)) 10px 7px}
+ body.chat-layout .conversationHeaderActions{min-width:0;gap:5px}
+ body.chat-layout #ffcThreadHub>.dadsTaskNav{padding:9px 12px}
+ body.chat-layout #ffcThreadLog{padding:12px 14px 18px}
+ body.chat-layout .conversationComposerWrap{padding:8px 10px max(10px,env(safe-area-inset-bottom))}
+ body.chat-layout #ffcThreadText{min-height:62px;max-height:30dvh}
+ body.chat-layout .ffcThreadInput{padding:9px;gap:7px}
+ body.chat-layout .dadsTaskButtons{gap:6px}
+ body.chat-layout .dadsTaskButtons button{min-height:48px;padding:8px 3px;font-size:14px}
+ body.chat-layout .conversationComposerNote{font-size:11px}
+ body.chat-layout .conversationHeaderTitle{font-size:15px}
+}
+@media(max-width:360px){
+ body.chat-layout .conversationHeaderTitle{font-size:13px}
+ body.chat-layout .conversationHeaderActions button{padding:7px 8px}
+ body.chat-layout .conversationComposerTools button{font-size:12px!important;padding:7px!important}
+ body.chat-layout #ffcThreadSend{min-width:76px!important;padding:8px 12px!important}
+}
+@media(max-height:590px){
+ body.chat-layout #uiHub{padding-top:4px;padding-bottom:4px}
+ body.chat-layout #ffcThreadHub>.dadsTaskNav{padding-top:5px;padding-bottom:5px}
+ body.chat-layout #ffcThreadText{min-height:46px;max-height:20dvh}
+ body.chat-layout .conversationComposerWrap{padding-top:5px}
+}
+@media(prefers-reduced-motion:reduce){
+ body.chat-layout button,body.chat-layout .conversationSidebar{transition:none!important}
+}
+@media(forced-colors:active){
+ body.chat-layout .dadsTaskButtons button[aria-pressed="true"]{
+ border:3px solid Highlight;color:HighlightText;background:Highlight}
+}
