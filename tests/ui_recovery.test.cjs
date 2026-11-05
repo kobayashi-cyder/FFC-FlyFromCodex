@@ -39,7 +39,7 @@ const localStorage={getItem:key=>store.get(key)||null,setItem:(k,v)=>store.set(k
 let stubCall=null;
 const window={FFC_PROXY_AGENT:{cognitionRequest:async text=>{stubCall=text;return{status:'done',finalText:'応答: '+text}}},addEventListener:()=>{}};
 const sandbox={window,document:doc,localStorage,location:{href:'https://appassets.androidplatform.net/assets/index.html',origin:'https://appassets.androidplatform.net'},
- URL,innerHeight:800,setTimeout:()=>0,setInterval:()=>0,clearInterval:()=>{},console};
+ URL,innerHeight:800,setTimeout:()=>0,clearTimeout:()=>{},setInterval:()=>0,clearInterval:()=>{},console};
 vm.runInNewContext(core,sandbox);
 const api=window.FFC_UI_RECOVERY;
 assert.equal(api.version,'1.0');
@@ -48,6 +48,10 @@ const panel=doc.getElementById('bancRescueUI');assert.ok(panel,'missing thread U
 assert.equal(api.diagnostics().fallbackVisible,true);
 const box=doc.getElementById('bancRescueText'),send=doc.getElementById('bancRescueSend');
 assert.ok(box);assert.ok(send);assert.equal(send.textContent,'送信');
+const diag=doc.getElementById('bancRescueDiagnose');assert.ok(diag,'diagnostic control must be present');
+diag.onclick();
+assert.ok(doc.getElementById('bancRescueLog').children.length>0);
+assert.match(api.diagnostics().lastStatus,/診断結果/);
 assert.equal(api.setMode('image'),true);
 assert.ok(box.value.includes('画像を生成'));
 box.value='利用者の編集した本文';box.oninput();
@@ -66,10 +70,11 @@ assert.equal(box.value,'利用者の編集した本文','switch should never ove
  assert.ok(doc.getElementById('bancRescueStatus').dataset.error==='true');
  const nodes={ffcThreadHub:new Element('div'),ffcThreadText:new Element('textarea'),
   ffcThreadSend:new Element('button'),ffcThreadLog:new Element('div')};
+ nodes.ffcThreadSend.onclick=()=>{};
  for(const [id,n] of Object.entries(nodes)){n.id=id;doc.body.appendChild(n)}
  window.FFC_THREADS={route:()=>({}),repairUI:()=>true};
  assert.equal(api.healthy(),true);
  api.repair();
  assert.equal(panel.hidden,true,'fallback must disappear once normal input becomes usable');
- console.log('ui-recovery: PASS (independent fallback, mode switching, real send, error retention, automatic restoration)');
+ console.log('ui-recovery: PASS (independent fallback, diagnostic, mode switching, real send, error retention, automatic restoration)');
 })().catch(e=>{console.error(e);process.exitCode=1});
