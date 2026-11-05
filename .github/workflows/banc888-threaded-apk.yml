@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "banc888-apk-*"
+      - "banc888-selfhealing-ui-v1"
     paths:
       - "app/**"
       - "tests/thread_router_core.test.cjs"
