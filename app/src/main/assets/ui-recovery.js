@@ -11,7 +11,7 @@ const modes=[
  {id:'video',name:'動画',prompt:'猫が走る短い動画を生成して。'}
 ];
 const get=id=>document.getElementById(id);
-let mode='chat',inflight=false,attempting=false,attempts=0,recovered=0,lastError='',timer=null;
+let mode='chat',inflight=false,attempting=false,attempts=0,recovered=0,lastError='',timer=null,lastStatus='';
 const node=(tag,cls,value)=>{
  const e=document.createElement(tag);
  if(cls)e.className=cls;
@@ -19,13 +19,14 @@ const node=(tag,cls,value)=>{
  return e;
 };
 function status(message,isError=false){
+ lastStatus=String(message);
  const e=get('bancRescueStatus');
  if(e){e.textContent=String(message);e.dataset.error=String(!!isError)}
 }
 function healthy(){
  const hub=get('ffcThreadHub'),input=get('ffcThreadText'),send=get('ffcThreadSend'),log=get('ffcThreadLog');
  if(!hub||!input||!send||!log||typeof window.FFC_THREADS?.route!=='function')return false;
- if(!hub.isConnected||!input.isConnected||!send.isConnected)return false;
+ if(!hub.isConnected||!input.isConnected||!send.isConnected||typeof send.onclick!=='function')return false;
  const a=input.getBoundingClientRect(),b=send.getBoundingClientRect();
  return a.width>=90&&a.height>=30&&b.width>=44&&b.height>=44&&a.top<innerHeight&&b.top<innerHeight
   &&a.bottom>0&&b.bottom>0;
@@ -67,6 +68,24 @@ async function recover(){
  }catch(e){lastError=String(e?.message||e).slice(0,220)}
  finally{attempting=false}
  return false;
+}
+function diagnose(){
+ const present=id=>!!get(id);
+ const deps={
+  threadCore:!!window.FFCThreadCore,
+  threadRouter:typeof window.FFC_THREADS?.route==='function',
+  normalInput:present('ffcThreadText'),
+  normalSend:present('ffcThreadSend'),
+  proxy:typeof window.FFC_PROXY_AGENT?.cognitionRequest==='function'
+    ||typeof window.FFC_PROXY_AGENT?.executeAsync==='function',
+  localChat:typeof window.BANC888_FLY_AGENT?.execute==='function'
+ };
+ const missing=Object.entries(deps).filter(([,ready])=>!ready).map(([key])=>key);
+ return '標準UI='+ (healthy()?'正常':'復旧未完了')+
+  ' / AI実行先='+ (deps.proxy?'接続':'未接続')+
+  ' / 未準備='+ (missing.join(', ')||'なし')+
+  ' / 復旧試行='+attempts+'/3'+
+  (lastError?' / 復旧エラー='+lastError:'');
 }
 function loadEntries(){
  try{
@@ -123,7 +142,7 @@ async function execute(text){
   const body=String(r?.value?.reply||'');
   if(r?.ok&&body.trim())return{status:'done',finalText:body};
  }
- return{status:'blocked',finalText:'生成エンジンが利用できません。自動復旧の再試行を押してください。'};
+ return{status:'blocked',finalText:'生成エンジンが利用できません。'+diagnose()+'。自動復旧を再試行してください。'};
 }
 async function send(){
  if(inflight)return false;
@@ -135,12 +154,22 @@ async function send(){
  const prompt=normalized(raw);
  put('user',prompt);status('実行中です。結果を確認しています。');
  try{
-  const result=await execute(prompt);
+  let deadline=null,slowNotice=null;
+  const timeoutMs=mode==='video'?120000:mode==='image'?60000:45000;
+  const timeout=new Promise((_,reject)=>{
+   deadline=setTimeout(()=>reject(Error('AI処理が制限時間を超えました。'+diagnose())),timeoutMs);
+  });
+  slowNotice=setTimeout(()=>status('AI処理を継続中です。応答がない場合は診断を開いてください。'),8000);
+  let result;
+  try{result=await Promise.race([Promise.resolve().then(()=>execute(prompt)),timeout])}
+  finally{if(deadline!==null)clearTimeout(deadline);if(slowNotice!==null)clearTimeout(slowNotice);}
+  if(!result||!['done','completed','blocked','failed'].includes(result.status))
+   throw Error('AI実行先が正常な結果状態を返しませんでした。');
   const ok=['done','completed'].includes(result?.status);
   const msg=String(result?.finalText||result?.error||'結果が返りませんでした。');
   put('assistant',(ok?'':'未完了: ')+msg);
   status(ok?'結果を表示しました。次の依頼を入力できます。':'未完了です。入力文は保持しています。',!ok);
-  if(ok){box.value='';saveDraft('')}
+  if(ok&&box.value.trim()===raw){box.value='';saveDraft('')}
   if(ok&&mode==='video'&&window.FFCVideoExport?.share){
    const video=result?.outputs?.find(x=>x.mode==='video')?.value?.exported;
    if(video?.status==='complete'&&video.ok){
@@ -190,9 +219,11 @@ function mount(){
  box.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send()}};
  const row=node('div','bancRescueAction');
  const retry=node('button','','自動復旧を再試行');retry.type='button';retry.id='bancRescueRetry';
- retry.onclick=()=>{attempts=0;maintain(true)};
+ retry.onclick=()=>{attempts=0;status('復旧を再試行しています。'+diagnose());maintain(true)};
+ const diagnostic=node('button','','診断');diagnostic.type='button';diagnostic.id='bancRescueDiagnose';
+ diagnostic.onclick=()=>{put('system',diagnose());status('診断結果を上の履歴欄に表示しました。')};
  const sendBtn=node('button','','送信');sendBtn.type='button';sendBtn.id='bancRescueSend';sendBtn.onclick=send;
- row.append(retry,sendBtn);
+ row.append(retry,diagnostic,sendBtn);
  const state=node('p');state.id='bancRescueStatus';state.setAttribute('role','status');
  state.setAttribute('aria-live','polite');
  form.append(label,box,row,state);panel.append(head,nav,log,form);document.body.appendChild(panel);
@@ -202,7 +233,7 @@ function mount(){
   log.append(msg);
  }
  try{box.value=localStorage.getItem(KEY)||''}catch{}
- status('標準画面を自動復旧中です。この画面から操作できます。');
+ status('標準画面を自動復旧中です。'+diagnose());
 }
 function hide(){const p=get(ID);if(p)p.hidden=true}
 function maintain(force=false){
@@ -219,7 +250,7 @@ function maintain(force=false){
 window.FFC_UI_RECOVERY={
  version:'1.0',repair:()=>maintain(true),healthy,send,setMode,
  diagnostics:()=>({healthy:healthy(),fallbackVisible:!!get(ID)&&!get(ID).hidden,
- attempts,recovered,lastError,threads:!!window.FFC_THREADS,proxy:!!window.FFC_PROXY_AGENT})
+ attempts,recovered,lastError,lastStatus,threads:!!window.FFC_THREADS,proxy:!!window.FFC_PROXY_AGENT})
 };
 const begin=()=>{
  maintain();
