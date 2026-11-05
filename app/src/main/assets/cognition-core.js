@@ -13,7 +13,7 @@ const LIMIT={bytes:64000,facts:64,actions:96,rules:48,states:1800,depth:16,steps
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 const scalar=x=>x===null||typeof x==='string'&&x.length<=240||typeof x==='boolean'||typeof x==='number'&&Number.isFinite(x);
 const same=(a,b)=>a===b;
-const plain=x=>x&&typeof x==='object'&&!Array.isArray(x)&&(Object.getPrototypeOf(x)===Object.prototype||Object.getPrototypeOf(x)===null);
+const plain=x=>{if(!x||typeof x!=='object'||Array.isArray(x)||Object.prototype.toString.call(x)!=='[object Object]')return false;const p=Object.getPrototypeOf(x);return p===null||p===Object.prototype||Object.getPrototypeOf(p)===null;};
 function fail(code,detail){const e=new Error(detail||code);e.code=code;throw e}
 function keyOk(k){return typeof k==='string'&&k.length>0&&k.length<=96&&!/[\u0000-\u001f]/.test(k)&&!['__proto__','prototype','constructor'].includes(k)}
 function facts(value,label,{empty=true}={}){
