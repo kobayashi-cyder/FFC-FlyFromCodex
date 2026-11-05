@@ -227,8 +227,22 @@ async function request(input){
 function retry(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||![C.Status.BLOCKED,C.Status.FAILED,C.Status.WAITING].includes(g.status))return false;g.status=C.Status.QUEUED;g.lastError=null;g.updatedAt=now();save();return true}
 function cancel(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||[C.Status.DONE,C.Status.CANCELLED].includes(g.status))return false;g.status=C.Status.CANCELLED;g.updatedAt=now();save();return true}
 function status(){return{schema:state.schema,connectome:connectome?connectome.snapshot():null,connectomeError:state.connectomeError||null,connectomeRuntime:connectome?connectome.stats():null,compatibility:lastCompatibility,recovered:!!state.recovered,goals:state.goals.slice(-80),events:state.events.slice(-40),body:arbiter.snapshot(),allowed:[...policy.allowed],autonomy:Caps.autonomyStatus?Caps.autonomyStatus():null}}
+
+function weightSpaceRead(opts={}){
+ if(!connectome)return{ok:false,error:state.connectomeError||'connectome unavailable'};
+ try{return{ok:true,...connectome.weightSpaceRead(opts.lane||'__system__',opts.start??0,opts.limit??64)}}
+ catch(e){return{ok:false,error:String(e.message||e)}}
+}
+function weightSpaceApply(program,opts={}){
+ if(!connectome)return{ok:false,error:state.connectomeError||'connectome unavailable'};
+ try{
+  const result=connectome.weightSpaceApply(program,opts.lane||'__system__',{preview:!!opts.preview});
+  if(!opts.preview&&result.changedEdges)save();
+  return{ok:true,...result};
+ }catch(e){return{ok:false,error:String(e.message||e)}}
+}
 function patchIr(ir,ops,scope){return P.apply(ir,ops,scope)}
-window.FFC_PROXY_AGENT={version:'2.2-compat',execute,executeAsync,request,proposal,status,retry,cancel,patchIr,policy,body:arbiter,executive};
+window.FFC_PROXY_AGENT={version:'2.2-compat',execute,executeAsync,request,proposal,status,retry,cancel,patchIr,weightSpaceRead,weightSpaceApply,policy,body:arbiter,executive};
 setTimeout(()=>{const b=document.getElementById('ffcCapabilityBar');if(b&&!document.getElementById('ffcProxyBadge')){const x=document.createElement('span');x.id='ffcProxyBadge';x.textContent='🪰 PROXY EXEC + IR PATCH';b.appendChild(x)}},200);
 if(state.recovered)emit('recovery','checkpoint restored from backup');
 })();
