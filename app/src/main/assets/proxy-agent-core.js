@@ -250,7 +250,7 @@
    if(program.graphIdentity!==k.identity)throw new Error('graph identity mismatch');
    if(!Array.isArray(program.ops)||!program.ops.length||program.ops.length>4096)throw new Error('expected 1..4096 operations');
    if(program.ops.some(x=>!x||typeof x!=='object'||Array.isArray(x)))throw new Error('invalid operation');
-   const existing=this.activate(id,false);
+   const existing=preview?(this.lanes.get(id)||null):this.activate(id,false);
    if(existing&&existing.last&&!preview)throw new Error('pending reward credit: reinforce or discard before editing');
    // Never create a new lane for a malformed program.
    const validate=op=>{
@@ -262,7 +262,7 @@
     }else if(op.value!==undefined)throw new Error('unexpected operand');
    };
    for(const op of program.ops)validate(op);
-   const lane=existing||this.activate(id);
+   const lane=existing||(preview?{gains:new Float64Array(k.src.length).fill(1),last:null,factors:new Map()}:this.activate(id));
    if(!lane)throw new Error('lane capacity exceeded');
    const before=lane.gains,staged=new Float64Array(before);
    for(const op of program.ops){
