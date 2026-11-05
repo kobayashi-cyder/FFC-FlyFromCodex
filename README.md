@@ -6,6 +6,8 @@
 
 ## 最新のAPK取得
 
+- **[v7.16 自律復旧APK（署名・パッケージ照合合格）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42014264789)** — Artifacts > BANC888-v7.16-selfheal-debug
+- **[Android 34上の自律復旧操作テスト合格（1件）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42014264697)** — 入力欄消失→簡易画面から送信→標準画面復帰
 - [v7.16 自律復旧APKビルド一覧（GitHub Actions）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-selfhealing-ui-v1)
 - [v7.16 Android画面操作テスト](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-selfhealing-android.yml?query=branch%3Abanc888-selfhealing-ui-v1)
 - [実装と差分（PR #63）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/63)
