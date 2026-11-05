@@ -10,7 +10,7 @@ import java.util.Set;
 final class AppConfig {
     static final String APP_ORIGIN = "https://appassets.androidplatform.net";
     static final String APP_HOST = "appassets.androidplatform.net";
-    static final String DEV_REF = "banc888-apk-ai-compat-stage1";
+    static final String DEV_REF = "banc888-cognition-v1";
     static final String REPO = "kobayashi-cyder/FFC-FlyFromCodex";
     static final int SHELL_VERSION = 76;
     static final int WEB_RUNTIME_VERSION = 8;
@@ -29,6 +29,7 @@ final class AppConfig {
             "ir-patch-core.js",
             "proxy-agent-core.js",
             "ai-compat-core.js",
+            "cognition-core.js",
             "capability-tools.js",
             "video-quality-core.js",
             "video-export.js",
@@ -38,6 +39,7 @@ final class AppConfig {
             "local-model.js",
             "fly-parallel.js",
             "proxy-agent.js",
+            "cognition-ui.js",
             "conversation-output-core.js",
             "thread-router.js",
             "conversation-export.js",
@@ -63,6 +65,7 @@ final class AppConfig {
             "ir-patch-core.js",
             "proxy-agent-core.js",
             "ai-compat-core.js",
+            "cognition-core.js",
             "capability-tools.js",
             "video-quality-core.js",
             "video-export.js",
@@ -72,6 +75,7 @@ final class AppConfig {
             "local-model.js",
             "fly-parallel.js",
             "proxy-agent.js",
+            "cognition-ui.js",
             "conversation-output-core.js",
             "thread-router.js",
             "conversation-export.js",

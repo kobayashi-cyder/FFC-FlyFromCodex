@@ -35,4 +35,28 @@ public class AICompatibilityIntegrationTest {
                 "window.__compatMath&&__compatMath.status==='done'&&__compatMath.choices[0].message.content==='計算結果: 5'", 5000));
         }
     }
+    @Test public void cognitionIsMountedAndUnknownActionsStayBlocked() throws Exception {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            assertTrue(TestSupport.awaitNativeReady(scenario));
+            assertTrue(TestSupport.awaitJs(scenario,
+                "!!window.FFCCognitionCore&&typeof FFC_PROXY_AGENT.cognitionPlan==='function'"
+                + "&&!!document.getElementById('bancCognitionCard')", 10000));
+            assertTrue(TestSupport.awaitJs(scenario,
+                "(function(){if(window.__cognitionTestStarted)return true;window.__cognitionTestStarted=true;"
+                + "var task={schema:1,facts:{stage:0},goal:{stage:2},actions:["
+                + "{id:'first',tool:'unregistered.action',requires:{stage:0},effects:{stage:1},args:{}},"
+                + "{id:'second',tool:'unregistered.action',requires:{stage:1},effects:{stage:2},args:{}}]};"
+                + "window.__cognitionPreview=FFC_PROXY_AGENT.cognitionPlan(task);"
+                + "FFC_PROXY_AGENT.cognitionSolve(task,{execute:true,threadCode:'COGNITION_TEST'})"
+                + ".then(function(r){window.__cognitionActual=r});return true})()", 5000));
+            assertTrue(TestSupport.awaitJs(scenario,
+                "window.__cognitionPreview&&__cognitionPreview.status==='planned'"
+                + "&&__cognitionPreview.steps.length===2", 5000));
+            assertTrue(TestSupport.awaitJs(scenario,
+                "window.__cognitionActual&&__cognitionActual.status==='blocked'"
+                + "&&__cognitionActual.reason==='permission_denied'"
+                + "&&__cognitionActual.trace.length===0", 5000));
+        }
+    }
+
 }

@@ -12,14 +12,14 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 89
-        versionName '7.12.0-compat'
+        versionCode 90
+        versionName '7.13.0-cognition'
     }
 
     buildTypes {
         debug {
             debuggable true
-            applicationIdSuffix '.compat'
+            applicationIdSuffix '.cognition'
         }
         release {
             minifyEnabled false
