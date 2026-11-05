@@ -32,8 +32,14 @@ public final class CmDetectionFunctionTest {
     yes(p.step()==CmDetectionFunction.Step.VERIFY,"fresh main screen is still required");
     yes(p.observe("com.kurashiru.kaitaku.usagi",2820,2820,false,true)==CmDetectionFunction.Action.NONE,
         "verified game home does not restart recovery");
-    yes(p.step()==CmDetectionFunction.Step.HOLD,"episode cooldown");
-    yes(ad(p,3000,3000)==CmDetectionFunction.Action.NONE,"cooldown suppresses loops");
+    yes(p.step()==CmDetectionFunction.Step.OBSERVE,"verified game re-arms detection");
+    yes(ad(p,3000,3000)==CmDetectionFunction.Action.NONE,"next CM still needs two frames");
+    yes(ad(p,3150,3150)==CmDetectionFunction.Action.HOME_INTENT,"next CM inside the old 60s hold recovers");
+    yes(p.confirmedRemote(3250,5),"second independent recovery");
+    p.observe("com.kurashiru.kaitaku.usagi",3300,3300,false,true);
+    ad(p,3500,3500);
+    yes(ad(p,3650,3650)==CmDetectionFunction.Action.HOME_INTENT,"third confirmed episode is allowed");
+    yes(p.confirmedRemote(3750,5),"third independent recovery");
 
     CmDetectionFunction noKill=new CmDetectionFunction();
     ad(noKill,100,100);ad(noKill,250,250);
@@ -42,7 +48,19 @@ public final class CmDetectionFunctionTest {
     noKill.reset();ad(noKill,100,100);ad(noKill,300,300);
     noKill.confirmedHome(350,true);noKill.confirmedIntent(360,true);
     noKill.observe("com.kurashiru.kaitaku.usagi",400,400,false,true);
-    yes(noKill.step()==CmDetectionFunction.Step.HOLD,"resolved ad never escalates");
+    yes(noKill.step()==CmDetectionFunction.Step.OBSERVE,"resolved ad never escalates");
+
+    CmDetectionFunction interrupted=new CmDetectionFunction();
+    ad(interrupted,100,100);ad(interrupted,200,200);
+    yes(interrupted.confirmedRemote(300,5),"relaunch before residual detection");
+    ad(interrupted,500,500);
+    interrupted.changedForeground();
+    yes(ad(interrupted,2600,2600)==CmDetectionFunction.Action.NONE,
+        "foreign foreground interrupts residual evidence");
+    yes(ad(interrupted,4700,4700)==CmDetectionFunction.Action.HOME_KILL,
+        "two seconds of verified residual CM after returning to the app");
+    interrupted.failed(4800);
+    yes(ad(interrupted,5100,5100)==CmDetectionFunction.Action.NONE,"failed episode still cools down");
 
     CmDetectionFunction stale=new CmDetectionFunction();
     stale.observe("com.kurashiru.kaitaku.usagi",100,2100,true,false);

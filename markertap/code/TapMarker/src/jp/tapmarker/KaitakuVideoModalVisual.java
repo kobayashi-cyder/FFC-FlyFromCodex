@@ -37,9 +37,20 @@ final class KaitakuVideoModalVisual {
     // Below the rewarded-ad CTA, on the separate "このままはじめる" line.
     return new float[]{.29f,.620f,.71f,.652f};
   }
+  private static float[] recordedCreamDialog(int w,int h,RegionSampler.Pixels p){
+    if(!cream(pixel(w,h,p,.17f,.312f))||!cream(pixel(w,h,p,.83f,.312f))||
+       !white(pixel(w,h,p,.17f,.375f))||!white(pixel(w,h,p,.83f,.375f))||
+       !white(pixel(w,h,p,.17f,.43f))||!white(pixel(w,h,p,.83f,.43f))||
+       !white(pixel(w,h,p,.17f,.58f))||!white(pixel(w,h,p,.83f,.58f))||
+       !yellow(pixel(w,h,p,.23f,.658f))||!yellow(pixel(w,h,p,.77f,.658f))||
+       !dark(pixel(w,h,p,.29f,.715f))||!dark(pixel(w,h,p,.71f,.715f))||
+       !white(pixel(w,h,p,.20f,.746f))||!white(pixel(w,h,p,.80f,.746f)))return null;
+    return new float[]{.26f,.727f,.74f,.759f};
+  }
   static float[] find(int w,int h,RegionSampler.Pixels p){
     if(p==null||w<200||h<400)return null;
     float[] recorded=recordedCoinDialog(w,h,p);if(recorded!=null)return recorded;
+    recorded=recordedCreamDialog(w,h,p);if(recorded!=null)return recorded;
     // Probe undecorated strips, not text glyphs. Independent horizontal
     // strips reject mission cards, ordinary game frames and full-screen ads.
     if(!cream(pixel(w,h,p,.10f,.29f))||!cream(pixel(w,h,p,.90f,.29f))||

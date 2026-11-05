@@ -7,12 +7,16 @@ final class KaitakuActionEvidence {
  static final float[] EFF_TITLE={.163f,.823f,.302f,.840f},EFF_COST={.15f,.845f,.185f,.857f},EFF_AD={.145f,.843f,.303f,.859f};
  static final float[] AUTO_TITLE={.702f,.823f,.86f,.840f},AUTO_COST={.71f,.845f,.745f,.857f},AUTO_AD={.706f,.843f,.864f,.859f};
  static final float[] TAP_BOOST={.05f,.759f,.23f,.778f},AUTO_BOOST={.77f,.759f,.95f,.778f};
- static final String[] KEYS={"mission-open","mission-page","upgrade","auto-upgrade","tap-boost","auto-boost","tap-ad-start","get","play","back","close","mini-start","mini-live","mini-end"};
+ static final String[] KEYS={"mission-open","mission-page","mission-scan","upgrade","auto-upgrade","tap-boost","auto-boost","tap-ad-start","get","play","back","close","mini-start","mini-live","mini-end"};
  final Map<String,float[]> refs;String state="";long stateAt,firstAt=-1,nextMission,nextUpgrade,nextBoost;int boostTurn,upgradeTurn;
  KaitakuActionEvidence(Map<String,float[]> r){refs=r;}
  static boolean present(Map<String,float[]> out,String key){float[] v=out.get(KaitakuPreset.P+key);return v!=null&&v.length==1&&v[0]==1;}
  static boolean gamePage(Map<String,float[]> out){return present(out,"mission-page")||present(out,"close")||present(out,"mini-start")||present(out,"mini-live")||present(out,"mini-end");}
  static void put(Map<String,float[]> out,String key,float[] bounds){out.put(KaitakuPreset.P+key,new float[]{1});if(bounds!=null)out.put(KaitakuPreset.P+key+AdaptiveLayout.BOUNDS,bounds.clone());}
+ static boolean waitingForReceipt(PhaseEngine e){
+  return e.current.equals(KaitakuPreset.P+"claim-wait")&&
+    !e.lastCompletedRule.endsWith("-close");
+ }
  static void blockHome(Map<String,float[]> out){out.put(KaitakuPreset.HOME,new float[]{0});out.remove(AdaptiveLayout.MAIN);}
  float distance(String key,float[] bounds,float[] t,int w,int h,RegionSampler.Pixels p){float[] r=refs.get(key),b=KaitakuEvidence.map(bounds,t);return r==null||!KaitakuEvidence.inside(b)?Float.POSITIVE_INFINITY:PhaseEngine.blockDistance(r,RegionSampler.sample(w,h,b,p));}
  boolean match(String key,float[] bounds,float[] t,int w,int h,RegionSampler.Pixels p){for(String suffix:new String[]{"","-dim","-bright"})if(distance(key+suffix,bounds,t,w,h,p)<=.004f)return true;return false;}
@@ -40,7 +44,7 @@ final class KaitakuActionEvidence {
  boolean reward(int w,int h,RegionSampler.Pixels p,Map<String,float[]> out){
   float[] a=refs.get("shared-reward-title"),b=refs.get("shared-reward-close");if(a==null||b==null)return false;
   for(float[] t:new float[][]{{1,1,0,0},{1,.9101813f,0,.07460955f}}){float[] title=KaitakuEvidence.map(new float[]{.18f,.34f,.82f,.368f},t),close=KaitakuEvidence.map(new float[]{.36f,.548f,.62f,.575f},t);
-   if(PhaseEngine.blockDistance(a,RegionSampler.sample(w,h,title,p))<=.004f&&PhaseEngine.blockDistance(b,RegionSampler.sample(w,h,close,p))<=.004f){put(out,"close",close);blockHome(out);return true;}
+   if(PhaseEngine.blockDistance(a,RegionSampler.sample(w,h,title,p))<=.004f&&PhaseEngine.blockDistance(b,RegionSampler.sample(w,h,close,p))<=.004f){put(out,"close",close);out.put(KaitakuRewardClaimPolicy.RECEIPT_PROOF,new float[]{1});blockHome(out);return true;}
   }return false;
  }
  void sample(PhaseEngine e,KaitakuEvidence.Result home,int w,int h,RegionSampler.Pixels p,long now,Map<String,float[]> out){
@@ -63,17 +67,26 @@ final class KaitakuActionEvidence {
    if(optOut!=null){put(out,"close",optOut);blockHome(out);return;}
    float[] tapAd=KaitakuTapBoostModalVisual.find(w,h,p);
    if(tapAd!=null){put(out,"tap-ad-start",tapAd);blockHome(out);return;}
-   if(e.current.equals(KaitakuPreset.P+"claim-wait"))return;
-   if(!mission(e,w,h,p,out)){
-    // Claim evidence MUST precede generic page detection. An early page
-    // return used to swallow the actual orange "ゲット" candidate.
-    float[] orange=KaitakuOrangeClaimEvidence.find(w,h,p);
-    if(orange!=null){
-      put(out,"mission-page",null);blockHome(out);
-      if(e.current.equals(KaitakuPreset.P+"missions")&&
-         KaitakuRewardClaimGate.allow(e,orange))put(out,"get",orange);
-      return;
+   if(waitingForReceipt(e))return;
+   float[] orange=KaitakuOrangeClaimEvidence.find(w,h,p);
+   if(orange!=null){
+    put(out,"mission-page",null);blockHome(out);
+    if(e.current.equals(KaitakuPreset.P+"missions")&&
+       KaitakuRewardClaimGate.allow(e,orange))put(out,"get",orange);
+    return;
+   }
+   float[] back=KaitakuMissionVisual.legacyBack(w,h,p);
+   if(back!=null){
+    KaitakuRewardClaimGate.absent(e);
+    put(out,"mission-page",null);blockHome(out);
+    if(e.current.equals(KaitakuPreset.P+"missions")){
+     if(e.rule(KaitakuMissionScroll.RULE)!=null&&!KaitakuMissionScroll.scanned(e))
+      put(out,"mission-scan",null);
+     else put(out,"back",back);
     }
+    return;
+   }
+   if(!mission(e,w,h,p,out)){
     float[] stage=KaitakuMissionVisual.firstStagePlay(w,h,p);
     if(stage!=null){
       KaitakuRewardClaimGate.absent(e);

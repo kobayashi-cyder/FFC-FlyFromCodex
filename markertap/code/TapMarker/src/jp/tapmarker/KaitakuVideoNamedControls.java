@@ -15,7 +15,7 @@ final class KaitakuVideoNamedControls {
        context.contains("タップ")||context.contains("ﾀｯﾌﾟ"))) {
       KaitakuActionPacer.reset(e);
       if(!KaitakuRewardNamedControls.tryApply(e,context,controls,out,w,h)&&
-         !(e.current.equals(KaitakuPreset.P+"missions")&&KaitakuActionEvidence.present(out,"get")))
+         !(e.current.equals(KaitakuPreset.P+"missions")&&visualMissionAction(out)))
         KaitakuNamedControls.apply(e,context,controls,out,w,h);
       return;
     }
@@ -27,7 +27,7 @@ final class KaitakuVideoNamedControls {
       // A genuinely changed screen must make the next opt-out immediately tappable.
       KaitakuActionPacer.reset(e);
       if(!KaitakuRewardNamedControls.tryApply(e,context,controls,out,w,h)&&
-         !(e.current.equals(KaitakuPreset.P+"missions")&&KaitakuActionEvidence.present(out,"get")))
+         !(e.current.equals(KaitakuPreset.P+"missions")&&visualMissionAction(out)))
         KaitakuNamedControls.apply(e,context,controls,out,w,h);return;
     }
     // A known opt-out can be proved by the current screenshot even if
@@ -50,6 +50,10 @@ final class KaitakuVideoNamedControls {
     }
     // HOLD never fabricates coordinates. A named CTA or strictly verified
     // pixel geometry is required before any rewarded-ad start candidate.
+  }
+  private static boolean visualMissionAction(Map<String,float[]> out){
+    return KaitakuActionEvidence.present(out,"get")||KaitakuActionEvidence.present(out,"mission-scan")||
+           KaitakuActionEvidence.present(out,"back");
   }
   private KaitakuVideoNamedControls() {}
 }

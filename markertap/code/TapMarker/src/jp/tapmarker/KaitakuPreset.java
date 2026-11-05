@@ -64,6 +64,11 @@ public final class KaitakuPreset {
   timer(e,"missions",10000,PhaseEngine.WAIT,"check");timer(e,"mini",45000,PhaseEngine.WAIT,"check");
   return true;
  }
+ static void installRuntime(PhaseEngine e){
+  KaitakuMissionScroll.install(e);
+  if(e.rule(P+"missions-continue")==null)
+   image(e,"missions","missions-continue",CONTINUE,PhaseEngine.MATCH,PhaseEngine.CENTER,"verify");
+ }
  static boolean isLegacy(PhaseEngine e){
   PhaseEngine old=new PhaseEngine();installLegacy(old);
   if(AutomatonGraph.sameConfiguration(e,old))return true;

@@ -6,7 +6,7 @@ import java.util.*;
 final class KaitakuLayout extends AdaptiveLayout {
  final KaitakuEvidence evidence;
  final KaitakuActionEvidence actions;
- KaitakuLayout(PhaseEngine e,Map<String,float[]> refs){super(e,new VirtualPresetProfile(KaitakuPreset.HOME,KaitakuEvidence.LEFT,KaitakuEvidence.RIGHT,refs.get("home-left")),false,refs.get("home-left"),KaitakuEvidence.HOME_TOLERANCE);evidence=new KaitakuEvidence(refs);actions=new KaitakuActionEvidence(refs);relocator.enabled=true;}
+ KaitakuLayout(PhaseEngine e,Map<String,float[]> refs){super(e,new VirtualPresetProfile(KaitakuPreset.HOME,KaitakuEvidence.LEFT,KaitakuEvidence.RIGHT,refs.get("home-left")),false,refs.get("home-left"),KaitakuEvidence.HOME_TOLERANCE);evidence=new KaitakuEvidence(refs);actions=new KaitakuActionEvidence(refs);KaitakuPreset.installRuntime(e);relocator.enabled=true;}
  static AdaptiveLayout choose(PhaseEngine e,String app,Map<String,float[]> refs){
   if(!KaitakuPreset.APP.equals(app)||e.windowRelative||!KaitakuPreset.owns(e))return null;
   PhaseEngine defaults=new PhaseEngine();KaitakuPreset.install(defaults);
@@ -15,7 +15,15 @@ final class KaitakuLayout extends AdaptiveLayout {
  @Override void configureTargets(String app,Map<String,float[]> refs){relocator.enabled=true;playableAds=new PlayableAdEvidence(refs);}
  @Override Map<String,float[]> sample(List<PhaseEngine.Region> regions,int w,int h,RegionSampler.Pixels p,long now){return collect(regions,w,h,p,now,null);}
  Map<String,float[]> collect(List<PhaseEngine.Region> regions,int w,int h,RegionSampler.Pixels p,long now,float[] nativeTransform){
-  Map<String,float[]> out=new HashMap<>();KaitakuEvidence.Result r=evidence.read(w,h,p,nativeTransform);
+  Map<String,float[]> out=new HashMap<>();
+  if(KaitakuFullScreenAd.visible(w,h,p)){
+   out.put(KaitakuFullScreenAd.KEY,new float[]{1});
+   out.put(KaitakuPreset.HOME,new float[]{0});
+   for(PhaseEngine.Region region:regions)
+    if(AdCloseAutomaton.handles(region.id))AdCloseAutomaton.sample(region,w,h,p,out);
+   status="開拓うさぎの全画面CMを確認";return out;
+  }
+  KaitakuEvidence.Result r=evidence.read(w,h,p,nativeTransform);
   out.put(KaitakuPreset.HOME,new float[]{r.home?1:0});out.put(KaitakuPreset.CONTINUE,new float[]{r.proceed?1:0});
   if(r.home){float[] b=KaitakuEvidence.map(new float[]{.49f,.73f,.51f,.75f},r.transform);out.put(MAIN,RegionMath.center(b,w,h));}
   if(r.proceed)out.put(KaitakuPreset.CONTINUE+BOUNDS,KaitakuEvidence.map(KaitakuEvidence.CONTROL,r.transform));
@@ -29,6 +37,7 @@ final class KaitakuLayout extends AdaptiveLayout {
   float[] nativeTransform={w/(float)v.width,h/(float)v.height,-v.left/(float)v.width,-v.top/(float)v.height};
   Map<String,float[]> out=collect(regions,v.width,v.height,local,now,nativeTransform);out.put(VIEWPORT,v.metadata());
   if(window!=null)out.put(WINDOW,new float[]{window[0],window[1],window[2],window[3]});
+  if(out.containsKey(KaitakuFullScreenAd.KEY))return out;
   KaitakuUiEvidence.sample(engine,out,w,h,v,now);
   if(playableAds!=null)playableAds.sample(engine,out,v.width,v.height,local,w,h);return out;
  }

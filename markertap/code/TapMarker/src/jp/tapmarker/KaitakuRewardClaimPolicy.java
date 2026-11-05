@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
  * It cannot establish that coins actually reached the account.
  */
 final class KaitakuRewardClaimPolicy {
+  static final String RECEIPT_PROOF=KaitakuPreset.P+"receipt-proof";
   enum Kind { NONE, PAGE, CLAIM, BACK, RECEIPT_CLOSE, HOLD }
   static final class Hit {
     final String label; final float[] rect;

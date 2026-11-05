@@ -48,14 +48,16 @@ final class CmDetectionFunction {
     if(windowStart<0||now<windowStart||now-windowStart>=WINDOW_MS){
       windowStart=now;episodes=0;
     }
+    boolean returnedToGame=fresh(capturedAt,now)&&capturedAt>entered&&gameHome&&!ad;
+    if((step==Step.HOLD||step==Step.VERIFY)&&returnedToGame){
+      step=Step.OBSERVE;episodes=0;escalation=killUsed=false;clearFrames();
+      return Action.NONE;
+    }
     if(step==Step.HOLD){
       if(now>=cooldownUntil&&episodes<2){step=Step.OBSERVE;clearFrames();}
       else return Action.NONE;
     }
     if(step==Step.VERIFY){
-      if(fresh(capturedAt,now)&&capturedAt>returnedAt&&gameHome){
-        hold(now);return Action.NONE;
-      }
       if(now-entered>VERIFY_DEADLINE_MS){hold(now);return Action.NONE;}
       if(killUsed)return Action.NONE;
       if(!fresh(capturedAt,now)||capturedAt<=returnedAt)return Action.NONE;
@@ -81,7 +83,7 @@ final class CmDetectionFunction {
   }
   /** Fresh foreign-app foreground evidence may start observation, but is not
    * a substitute for verified HOME/registered Intent on the target display. */
-  synchronized void changedForeground(){if(step==Step.OBSERVE)clearFrames();}
+  synchronized void changedForeground(){if(step==Step.OBSERVE||step==Step.VERIFY)clearFrames();}
   synchronized boolean confirmedHome(long now,boolean visible){
     if(step!=Step.HOME)return false;
     if(!visible||now<entered||now-entered>HOME_DEADLINE_MS){hold(now);return false;}

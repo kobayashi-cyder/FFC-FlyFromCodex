@@ -18,6 +18,38 @@ final class KaitakuMissionVisual {
       Math.abs(r(c)-g(c))<12&&Math.abs(g(c)-b(c))<12;}
   private static boolean white(int c){return r(c)>235&&g(c)>235&&b(c)>235;}
   private static boolean yellow(int c){return r(c)>213&&g(c)>120&&g(c)<215&&b(c)<80;}
+  static boolean legacyHeader(int w,int h,RegionSampler.Pixels p){
+    if(p==null||w<200||h<400)return false;
+    return beige(px(w,h,p,.15f,.08f))&&beige(px(w,h,p,.62f,.08f))&&
+           dark(px(w,h,p,.15f,.22f));
+  }
+  private static boolean beige(int c){
+    return r(c)>=185&&r(c)<=244&&g(c)>=165&&g(c)<=232&&b(c)>=110&&b(c)<=207&&r(c)>=g(c)&&g(c)>=b(c);
+  }
+  private static boolean dark(int c){return Math.max(r(c),Math.max(g(c),b(c)))<90;}
+  static boolean legacyRows(int w,int h,RegionSampler.Pixels p){
+    if(!legacyHeader(w,h,p))return false;
+    int rows=0;
+    // Independently verify a gray progress bar and its gold action in two
+    // cards. The scroll offset can change both vertical positions.
+    for(int y=28;y<=83;y++){
+      float bar=y/100f,button=bar+.056f;
+      if(gray(px(w,h,p,.24f,bar))&&gray(px(w,h,p,.68f,bar))&&
+         white(px(w,h,p,.49f,button))&&playGold(px(w,h,p,.71f,button))&&
+         playGold(px(w,h,p,.87f,button))){
+        if(++rows==2)return true;
+        y+=9;
+      }
+    }
+    return false;
+  }
+  static float[] legacyBack(int w,int h,RegionSampler.Pixels p){
+    if(!legacyRows(w,h,p))return null;
+    int ink=0;
+    for(int y=162;y<=192;y+=2)for(int x=24;x<=62;x+=3)
+      if(dark(px(w,h,p,x/1000f,y/1000f)))ink++;
+    return ink>=4?new float[]{.015f,.150f,.072f,.206f}:null;
+  }
   // Stronger, independent evidence from the full-resolution 98s video:
   // the pink daily-mission title and its first, gray-progress STAGE row.
   // Never press a later yellow "開く" external-link button.
