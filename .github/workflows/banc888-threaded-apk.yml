@@ -85,6 +85,8 @@ jobs:
           node --check app/src/main/assets/research-physics-core.js
           node --check app/src/main/assets/ir-patch-core.js
           node --check app/src/main/assets/ai-compat-core.js
+          node --check app/src/main/assets/cognition-core.js
+          node --check app/src/main/assets/cognition-ui.js
           node --check app/src/main/assets/proxy-agent-core.js
           node --check app/src/main/assets/capability-tools.js
           node --check app/src/main/assets/research-physics-tools.js
@@ -110,6 +112,7 @@ jobs:
           node tests/connectome_mobile.test.cjs
           node tests/connectome_multiplex.test.cjs
           node tests/weight_space.test.cjs
+          node tests/cognition_core.test.cjs
           node tests/task_review.test.cjs
           node tests/video_export.test.cjs
           node tests/adaptive_quality.test.cjs
@@ -134,31 +137,31 @@ jobs:
 
       - name: APK inventory
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.12-compat-debug.apk
-          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.12-compat-androidTest.apk
-          ls -lh BANC888-v7.12-compat-debug.apk BANC888-v7.12-compat-androidTest.apk
-          sha256sum BANC888-v7.12-compat-debug.apk > BANC888-v7.12-compat-debug.apk.sha256
-          sha256sum BANC888-v7.12-compat-androidTest.apk > BANC888-v7.12-compat-androidTest.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.13-cognition-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.13-cognition-androidTest.apk
+          ls -lh BANC888-v7.13-cognition-debug.apk BANC888-v7.13-cognition-androidTest.apk
+          sha256sum BANC888-v7.13-cognition-debug.apk > BANC888-v7.13-cognition-debug.apk.sha256
+          sha256sum BANC888-v7.13-cognition-androidTest.apk > BANC888-v7.13-cognition-androidTest.apk.sha256
 
       - name: Verify APK signatures and packaged assets
         run: |
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.12-compat-debug.apk | tee BANC888-v7.12-compat-signing.txt
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.12-compat-androidTest.apk | tee BANC888-v7.12-compat-androidTest-signing.txt
-          unzip -t BANC888-v7.12-compat-debug.apk >/dev/null
-          unzip -l BANC888-v7.12-compat-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.13-cognition-debug.apk | tee BANC888-v7.13-cognition-signing.txt
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.13-cognition-androidTest.apk | tee BANC888-v7.13-cognition-androidTest-signing.txt
+          unzip -t BANC888-v7.13-cognition-debug.apk >/dev/null
+          unzip -l BANC888-v7.13-cognition-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.12-compat-debug
+          name: BANC888-v7.13-cognition-debug
           path: |
-            BANC888-v7.12-compat-debug.apk
-            BANC888-v7.12-compat-debug.apk.sha256
-            BANC888-v7.12-compat-androidTest.apk
-            BANC888-v7.12-compat-androidTest.apk.sha256
-            BANC888-v7.12-compat-signing.txt
-            BANC888-v7.12-compat-androidTest-signing.txt
+            BANC888-v7.13-cognition-debug.apk
+            BANC888-v7.13-cognition-debug.apk.sha256
+            BANC888-v7.13-cognition-androidTest.apk
+            BANC888-v7.13-cognition-androidTest.apk.sha256
+            BANC888-v7.13-cognition-signing.txt
+            BANC888-v7.13-cognition-androidTest-signing.txt
             connectome-mobile-benchmark.json
             ai-compat-evaluation.json
           if-no-files-found: error
