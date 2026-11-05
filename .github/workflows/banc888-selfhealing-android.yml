@@ -1,0 +1,67 @@
+name: BANC888 Self-Healing UI Android
+
+on:
+  push:
+    branches:
+      - "banc888-selfhealing-ui-v1"
+    paths:
+      - "app/**"
+      - "tests/ui_recovery.test.cjs"
+      - ".github/workflows/banc888-selfhealing-android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: banc888-selfhealing-ui
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android_ui_recovery:
+    name: UI lost composer - rescue - normal UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Validate self-healing runtime
+        run: |
+          node --check app/src/main/assets/ui-recovery.js
+          node tests/ui_recovery.test.cjs
+          node tests/live_manifest_verify.test.cjs
+      - name: Compile app and Android UI tests
+        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+      - name: Exercise UI recovery with Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          TEST_NAME: UI Self-Healing
+          TEST_CLASS: com.ffc.banc888.fly.UiRecoveryIntegrationTest
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
+          script: bash .github/scripts/banc888-voice-ci.sh
+      - name: Save regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: UI-selfhealing-diagnostics
+          path: |
+            /tmp/instrumentation-result.txt
+            /tmp/device-logcat.txt
+          if-no-files-found: warn
