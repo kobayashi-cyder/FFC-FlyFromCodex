@@ -62,3 +62,7 @@ await FFC_PROXY_AGENT.cognitionSolve(task,{execute:true,threadCode:'A'}); // 実
 - \`live-manifest.json\` : SHA-256で内容を固定
 
 PRは既存のweight-space開発ブランチを起点として追加する。既存安定版に自動マージしない。
+
+## 合成問題のホールドアウト検査
+
+`node tools/cognition_benchmark.cjs` は固定生成器から96件の未学習タスクを作り、ゴール到達・ツール観測による検証・観測なし成功の排除を計測する。最安値の一手だけを選ぶ貪欲ベースラインを併記する。ただし設計者が作った合成状態空間の評価であり、自然言語の未知課題や実環境でのAGI性能を立証しない。
