@@ -12,14 +12,14 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 92
-        versionName '7.15.0-accessible'
+        versionCode 93
+        versionName '7.16.0-selfheal'
     }
 
     buildTypes {
         debug {
             debuggable true
-            applicationIdSuffix '.accessible'
+            applicationIdSuffix '.selfheal'
         }
         release {
             minifyEnabled false
