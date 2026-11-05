@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const C=window.FFCProxyCore,P=window.FFCIrPatch,V=window.FFCCapabilityVocabulary,RP=window.FFCResearchPhysics,FB=window.FFCFeedback,Agent=window.BANC888_FLY_AGENT,Caps=window.FFC_CAPABILITIES;
+const C=window.FFCProxyCore,P=window.FFCIrPatch,V=window.FFCCapabilityVocabulary,RP=window.FFCResearchPhysics,FB=window.FFCFeedback,CG=window.FFCCognitionCore,Agent=window.BANC888_FLY_AGENT,Caps=window.FFC_CAPABILITIES;
 if(!C||!P||!V||!FB||!Agent||!Caps||window.FFC_PROXY_AGENT)return;
 const KEY='FFC_PROXY_CHECKPOINT_V2',BAK=KEY+'_BAK',TMP=KEY+'_TMP';
 const policy=new C.ToolPolicy(new Set([...(Agent.state?.capabilities||[]),'compute','read_state','write_state','human_output','code.write','image.write','voice.input','document.write','network.read']));
@@ -226,7 +226,7 @@ async function request(input){
 }
 function retry(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||![C.Status.BLOCKED,C.Status.FAILED,C.Status.WAITING].includes(g.status))return false;g.status=C.Status.QUEUED;g.lastError=null;g.updatedAt=now();save();return true}
 function cancel(goalId){const g=state.goals.find(x=>x.id===goalId);if(!g||[C.Status.DONE,C.Status.CANCELLED].includes(g.status))return false;g.status=C.Status.CANCELLED;g.updatedAt=now();save();return true}
-function status(){return{schema:state.schema,connectome:connectome?connectome.snapshot():null,connectomeError:state.connectomeError||null,connectomeRuntime:connectome?connectome.stats():null,compatibility:lastCompatibility,recovered:!!state.recovered,goals:state.goals.slice(-80),events:state.events.slice(-40),body:arbiter.snapshot(),allowed:[...policy.allowed],autonomy:Caps.autonomyStatus?Caps.autonomyStatus():null}}
+function status(){return{schema:state.schema,connectome:connectome?connectome.snapshot():null,connectomeError:state.connectomeError||null,connectomeRuntime:connectome?connectome.stats():null,compatibility:lastCompatibility,recovered:!!state.recovered,goals:state.goals.slice(-80),events:state.events.slice(-40),body:arbiter.snapshot(),allowed:[...policy.allowed],cognition:state.lastCognition||null,autonomy:Caps.autonomyStatus?Caps.autonomyStatus():null}}
 
 function weightSpaceRead(opts={}){
  if(!connectome)return{ok:false,error:state.connectomeError||'connectome unavailable'};
@@ -241,8 +241,50 @@ function weightSpaceApply(program,opts={}){
   return{ok:true,...result};
  }catch(e){return{ok:false,error:String(e.message||e)}}
 }
+
+function cognitionPlan(task,opts={}){
+ if(!CG)return{status:'unsupported',reason:'cognition_core_unavailable'};
+ try{return CG.plan(task,{stats:state.cognitionStats||{}})}
+ catch(e){return{status:'blocked',reason:e.code||'invalid_task',detail:String(e.message||e)}}
+}
+async function cognitionSolve(task,opts={}){
+ if(!CG)return{status:'unsupported',reason:'cognition_core_unavailable'};
+ const lane=String(opts.threadCode||'COGNITION').slice(0,256),execution=opts.execute===true,allowEffects=opts.allowSideEffects===true;
+ if(!execution)return cognitionPlan(task,opts);
+ const adapters={
+  authorize:action=>{
+   const s=spec(action.tool);
+   return !!s&&policy.allows(s.capability)&&(!s.sideEffect||allowEffects);
+  },
+  select:action=>selectThroughConnectome([{tool:action.tool,excitation:1,confidence:1}],{threadCode:lane},true),
+  invoke:async action=>{
+   const lease=arbiter.acquire(C.resourceForTool(action.tool),lane);
+   if(!lease)return{ok:false,error:'body resource busy'};
+   try{
+    const args={...action.args,threadCode:lane};
+    return await Promise.resolve(Agent.execute(action.tool,args));
+   }catch(e){return{ok:false,error:String(e&&e.message||e)}}
+   finally{arbiter.release(lease)}
+  },
+  onOutcome:(action,verified)=>{
+   if(!connectome)return;
+   try{
+    if(verified==null)connectome.discard(lane);
+    else connectome.reinforce(action.tool,verified?.4:-.6,{learnable:true,tier:'training',lane});
+   }catch(e){state.connectomeError=String(e.message||e)}
+  }
+ };
+ try{
+  const result=await CG.solve(task,adapters,{execute:true,stats:state.cognitionStats||{},maxSteps:opts.maxSteps});
+  // Store only aggregate operation statistics; no raw user task or observations.
+  state.cognitionStats=Object.fromEntries(Object.entries(result.stats||{}).slice(-128));
+  state.lastCognition={status:result.status,reason:result.reason||null,steps:result.trace?.length||0,verification:result.verification||null,time:now()};
+  save();
+  return result;
+ }catch(e){return{status:'blocked',reason:e.code||'cognition_error',detail:String(e.message||e),executed:false}}
+}
 function patchIr(ir,ops,scope){return P.apply(ir,ops,scope)}
-window.FFC_PROXY_AGENT={version:'2.2-compat',execute,executeAsync,request,proposal,status,retry,cancel,patchIr,weightSpaceRead,weightSpaceApply,policy,body:arbiter,executive};
+window.FFC_PROXY_AGENT={version:'2.2-compat',execute,executeAsync,request,proposal,status,retry,cancel,patchIr,weightSpaceRead,weightSpaceApply,cognitionPlan,cognitionSolve,policy,body:arbiter,executive};
 setTimeout(()=>{const b=document.getElementById('ffcCapabilityBar');if(b&&!document.getElementById('ffcProxyBadge')){const x=document.createElement('span');x.id='ffcProxyBadge';x.textContent='🪰 PROXY EXEC + IR PATCH';b.appendChild(x)}},200);
 if(state.recovered)emit('recovery','checkpoint restored from backup');
 })();
