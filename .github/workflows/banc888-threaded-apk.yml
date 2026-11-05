@@ -33,6 +33,7 @@ on:
       - "app/**"
       - "tests/**"
       - "tools/connectome_mobile_benchmark.cjs"
+      - "tools/cognition_benchmark.cjs"
       - ".github/workflows/banc888-threaded-apk.yml"
   workflow_dispatch:
 
@@ -132,6 +133,9 @@ jobs:
       - name: Connectome CPU benchmark
         run: node --expose-gc tools/connectome_mobile_benchmark.cjs > connectome-mobile-benchmark.json
 
+      - name: Cognition synthetic holdout benchmark
+        run: node tools/cognition_benchmark.cjs > cognition-benchmark.json
+
       - name: Build debug APKs
         run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
 
@@ -164,5 +168,6 @@ jobs:
             BANC888-v7.13-cognition-androidTest-signing.txt
             connectome-mobile-benchmark.json
             ai-compat-evaluation.json
+            cognition-benchmark.json
           if-no-files-found: error
           retention-days: 30
