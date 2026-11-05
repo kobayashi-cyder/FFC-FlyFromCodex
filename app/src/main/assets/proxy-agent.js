@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const C=window.FFCProxyCore,P=window.FFCIrPatch,V=window.FFCCapabilityVocabulary,RP=window.FFCResearchPhysics,FB=window.FFCFeedback,CG=window.FFCCognitionCore,Agent=window.BANC888_FLY_AGENT,Caps=window.FFC_CAPABILITIES;
+const C=window.FFCProxyCore,P=window.FFCIrPatch,V=window.FFCCapabilityVocabulary,RP=window.FFCResearchPhysics,FB=window.FFCFeedback,CG=window.FFCCognitionCore,MM=window.FFCCognitionMultimodal,Agent=window.BANC888_FLY_AGENT,Caps=window.FFC_CAPABILITIES;
 if(!C||!P||!V||!FB||!Agent||!Caps||window.FFC_PROXY_AGENT)return;
 const KEY='FFC_PROXY_CHECKPOINT_V2',BAK=KEY+'_BAK',TMP=KEY+'_TMP';
 const policy=new C.ToolPolicy(new Set([...(Agent.state?.capabilities||[]),'compute','read_state','write_state','human_output','code.write','image.write','voice.input','document.write','network.read']));
@@ -283,8 +283,86 @@ async function cognitionSolve(task,opts={}){
   return result;
  }catch(e){return{status:'blocked',reason:e.code||'cognition_error',detail:String(e.message||e),executed:false}}
 }
+
+// Unified four-domain interface for the ordinary conversation surface.
+// Use the same BANC circuit, tool permission and verified-observation planner.
+async function cognitionRequest(text,ctx={}){
+ if(!CG||!MM)return executeAsync(text,ctx);
+ const requestText=String(text||'').trim();
+ if(!requestText||requestText.length>12000)return{handled:true,status:C.Status.BLOCKED,error:'invalid request',finalText:'入力が空、または長すぎます。'};
+ let selected,original=null;
+ const multi=MM.composite(requestText);
+ if(multi.length)selected={modes:multi,source:'explicit_multipart_request'};
+ else{
+  original=proposal(requestText,ctx);
+  if(original?.compatBlocked)return{handled:true,status:C.Status.BLOCKED,error:original.compatBlocked,plan:original.plan,compatibility:original.compatibility,finalText:'コネクトームの処理経路を選択できませんでした。'};
+  selected=MM.classify(requestText,original?.proposal?.steps?.[0]?.tool||original?.plan?.tool);
+ }
+ if(!selected.modes.length)return executeAsync(requestText,ctx);
+ let task;
+ try{task=MM.task(requestText,selected,{ctx,ir:original?.plan?.ir||original?.proposal?.steps?.[0]?.args?.ir||null})}
+ catch(e){return{handled:true,status:C.Status.BLOCKED,error:String(e.message||e),finalText:'認知計画の入力が不正です。'};}
+ const preliminary=CG.plan(task,{stats:state.cognitionStats||{}});
+ if(preliminary.status!=='planned'&&preliminary.status!=='satisfied_assumed')
+  return{handled:true,status:C.Status.BLOCKED,error:preliminary.reason||'planning failed',finalText:'生成計画を作成できませんでした。'};
+ const lane=String(ctx.threadCode||'__system__').slice(0,256);
+ const produced=[],traceOutput=[];
+ const adapters={
+  authorize:action=>{
+   const s=spec(action.tool);
+   // Scope to the four explicitly requested generators only. No other
+   // device/network commands can be introduced through a text prompt.
+   return !!s&&policy.allows(s.capability)&&MM.kind(action.tool)!==null;
+  },
+  select:action=>selectThroughConnectome([{tool:action.tool,excitation:1,confidence:1}],{threadCode:lane},true),
+  invoke:async action=>{
+   const resource=(window.FFCFlyParallel?.supported?.(action.tool)||action.tool==='chat.compose')?'compute:'+lane:C.resourceForTool(action.tool);
+   const lease=arbiter.acquire(resource,lane);
+   if(!lease)return{ok:false,error:'resource busy: '+resource};
+   let raw;
+   try{
+    const args={...action.args,threadCode:lane};
+    raw=await (window.FFCFlyParallel?.execute?window.FFCFlyParallel.execute(action.tool,args):Promise.resolve(Agent.execute(action.tool,args)));
+    const checked=await MM.finish(action.tool,raw,{videoExport:window.FFCVideoExport,a1111Video:window.FFCA1111Video});
+    const found={mode:MM.kind(action.tool),tool:action.tool,verification:checked.audit,value:checked.result?.value||null};
+    produced.push(found);
+    if(!checked.audit.pass)return{ok:false,error:checked.audit.code+': '+checked.audit.reason};
+    return{ok:true,observedFacts:{[found.mode]:'done'},value:checked.result?.value};
+   }catch(e){produced.push({mode:MM.kind(action.tool),tool:action.tool,verification:{pass:false,reason:String(e.message||e)}});return{ok:false,error:String(e.message||e)}}
+   finally{arbiter.release(lease)}
+  },
+  onOutcome:(action,verified)=>{
+   try{
+    if(!connectome)return;
+    if(verified==null)connectome.discard(lane);
+    else connectome.reinforce(action.tool,verified?.4:-.6,{learnable:true,tier:'training',lane});
+    const s=Caps.autonomy;
+    if(verified!==null&&s?.observeTool)s.observeTool(action.tool,{ok:!!verified,reward:verified?.4:-.6,learnable:true});
+    if(verified!==null&&Caps.persistAutonomy)Caps.persistAutonomy();
+   }catch(e){state.connectomeError=String(e.message||e)}
+  }
+ };
+ let solved;
+ try{solved=await CG.solve(task,adapters,{execute:true,stats:state.cognitionStats||{},maxSteps:Math.max(4,selected.modes.length*2)})}
+ catch(e){return{handled:true,status:C.Status.FAILED,error:String(e.message||e),finalText:'認知実行に失敗しました。'};}
+ state.cognitionStats=Object.fromEntries(Object.entries(solved.stats||{}).slice(-128));
+ const allVerified=selected.modes.every(m=>produced.some(x=>x.mode===m&&x.verification?.pass));
+ const status=solved.status==='done'&&allVerified?C.Status.DONE:C.Status.FAILED;
+ state.lastCognition={status,reason:solved.reason||null,modes:[...selected.modes],steps:solved.trace?.length||0,verification:'tool_reported_artifact_checks',time:now()};
+ save();
+ const last=produced[produced.length-1]||null;
+ const report=MM.report(produced,solved.trace||[]);
+ return{handled:true,status,tool:last?.tool||null,plan:original?.plan||{domain:selected.modes.join('+'),source:selected.source},value:last?.value||null,
+   outputs:produced,steps:produced.map(p=>({tool:p.tool,result:{ok:!!p.verification?.pass,value:p.value},audit:p.verification})),
+   evidence:{status:solved.status,reason:solved.reason||null,trace:solved.trace,verification:'tool_reported_artifact_checks'},
+   error:status===C.Status.DONE?null:solved.reason||produced.find(x=>!x.verification?.pass)?.verification?.reason||'unverified outcome',
+   finalText:report};
+}
+function cognitionCapabilities(){
+ return{schema:1,domains:['chat','code','image','video'].map(mode=>({mode,tool:MM?.TOOL?.[mode],available:!!spec(MM?.TOOL?.[mode]),verification:mode==='chat'?'nonempty-reply':mode==='code'?'static-review':mode==='image'?'procedural-scene-quality':'encoded-MP4'})),engine:CG?.VERSION||null,scope:'tool-reported evidence; no AGI or independent truth checking'};
+}
 function patchIr(ir,ops,scope){return P.apply(ir,ops,scope)}
-window.FFC_PROXY_AGENT={version:'2.2-compat',execute,executeAsync,request,proposal,status,retry,cancel,patchIr,weightSpaceRead,weightSpaceApply,cognitionPlan,cognitionSolve,policy,body:arbiter,executive};
+window.FFC_PROXY_AGENT={version:'2.2-compat',execute,executeAsync,request,proposal,status,retry,cancel,patchIr,weightSpaceRead,weightSpaceApply,cognitionPlan,cognitionSolve,cognitionRequest,cognitionCapabilities,policy,body:arbiter,executive};
 setTimeout(()=>{const b=document.getElementById('ffcCapabilityBar');if(b&&!document.getElementById('ffcProxyBadge')){const x=document.createElement('span');x.id='ffcProxyBadge';x.textContent='🪰 PROXY EXEC + IR PATCH';b.appendChild(x)}},200);
 if(state.recovered)emit('recovery','checkpoint restored from backup');
 })();
