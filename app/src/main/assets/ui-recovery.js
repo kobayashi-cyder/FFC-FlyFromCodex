@@ -178,7 +178,7 @@ function mount(){
  setting.onclick=()=>get('uiGearButton')?.click();head.appendChild(setting);
  const nav=node('nav','bancRescueModes');nav.id='bancRescueModes';nav.setAttribute('aria-label','生成機能');
  for(const item of modes){
-  const button=node('button','',item.name);button.type='button';button.dataset.mode=item.id;
+  const button=node('button','',item.name);button.type='button';button.id='bancRescueMode'+item.id[0].toUpperCase()+item.id.slice(1);button.dataset.mode=item.id;
   button.setAttribute('aria-pressed',String(mode===item.id));
   button.onclick=()=>setMode(item.id);nav.appendChild(button);
  }
