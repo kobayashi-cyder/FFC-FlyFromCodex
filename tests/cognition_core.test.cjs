@@ -52,10 +52,10 @@ const gate=connection();
 assert.ok(gate({tool:'tool.run'}));
 (async()=>{
  const pre=await solve(chain,{},{});assert.equal(pre.status,'planned');assert.equal(pre.executed,false);
- let calls=0;
- const dummy={authorize:()=>true,select:gate,invoke:a=>{calls++;return{ok:true,value:{observedFacts:{result:a.effects.result}}}}};
+ let runCalls=0;
+ const dummy={authorize:()=>true,select:gate,invoke:a=>{runCalls++;return{ok:true,value:{observedFacts:{result:a.effects.result}}}}};
  const success=await solve(chain,dummy,{execute:true});
- assert.equal(success.status,'done');assert.equal(success.verification,'tool_reported_observations');assert.equal(calls,2);
+ assert.equal(success.status,'done');assert.equal(success.verification,'tool_reported_observations');assert.equal(runCalls,2);
  assert.equal(success.trace.every(x=>x.ok),true);
  assert.ok(Object.keys(success.stats).includes('tool.run|prepare'));
  const blind=await solve(chain,{...dummy,invoke:()=>({ok:true,value:{reply:'success'}})},{execute:true});
