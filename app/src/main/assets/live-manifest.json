@@ -3,7 +3,7 @@
   "minShellVersion": 76,
   "bridgeSchema": 8,
   "assetSchema": 12,
-  "commit": "3e9892b864fd6c83d289915336b2e2cd757a6081",
+  "commit": "ddd93c924021a53b0ae691efc72a7bff9151d471",
   "files": {
     "index.html": "7d848da41fa87e1c69a40344e2b734844ed92ad26c7093d363460a4709b9ebf5",
     "native-bridge.js": "8e922e8740186456c6c10197a699c7430993926f3678de1879bb0acfb120f7be",
@@ -24,7 +24,7 @@
     "fly-parallel-core.js": "0cadbc7dd11373decf8aad14e2400a31f7753c46edfdb4764416b6e2d2481652",
     "local-model.js": "6a27b56cf625199e9a26bcf425d0725850498d904c84a7d92c46cd3269b81e8d",
     "fly-parallel.js": "6ead0d878d8fecac49af30836f17a44a8bdb84ae0ab0075589a6ffc9828bbad8",
-    "proxy-agent.js": "a02d19e7020411225664e255864015bfc51aae9c3ac0451eb3277d66bbeca0ea",
+    "proxy-agent.js": "e1bddb4348e7145a52155063ced39b0627d3d7f9022aa51ec20698fbc9fc5213",
     "conversation-output-core.js": "79ecf9c03fb3dbc2a02701442748539fec25c280a3a6cf62558c38552bd8f6a2",
     "thread-router.js": "04a8eda5b764dadd17e795d12b3674bac1e940d6222e1aba43ac2ae6e2f58dd4",
     "conversation-export.js": "3b829695540ee65d96e90260e327191334e85b6c36e67385d58163b42195a227",
@@ -36,6 +36,8 @@
     "fly-task-worker.js": "adbfea2305e7e285ef3631ef743226790936ac3f848e373281316fbcda42142b",
     "attachment-core.js": "741e2eff9fb68c6bd974a16a8332fc83af8cd89df04930cca2387d4bdd440455",
     "attachments.js": "56bf9bc453fcd5b10b0c9094d492347089da9dc8f1a427769546b30041d81de7",
-    "ai-compat-core.js": "37d1afe30a4effcfdcb08fe1f3d318210aff0f2eb4d819a4b33200f12dc367d9"
+    "ai-compat-core.js": "37d1afe30a4effcfdcb08fe1f3d318210aff0f2eb4d819a4b33200f12dc367d9",
+    "cognition-core.js": "67a098a71b754e1aa7a83d3230a6ce1b3588fad3148c66cd60ce1c62de74e3e7",
+    "cognition-ui.js": "f5761da7900c93f81088ee79c65bb1bea39ebf9221f9ebedf299ed2d8690d19f"
   }
 }
