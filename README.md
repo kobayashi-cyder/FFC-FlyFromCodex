@@ -1,35 +1,43 @@
-# BANC888 Unified v7.14 — 4-mode cognition (experimental)
+# BANC888 v7.16 — 自律復旧型の操作画面（実験版）
 
-BANC888 Android の会話・コーディング・画像・動画を、同一のBANC認知ループにつなぎました。**万能AI/AGIを達成したという意味ではありません**。現在の回路は6集約ノード・16接続で、意味分類、一般知識の生成と画像モデルの代替は別の工学的機構が担います。
+このブランチはv7.15で発生した「上部の会話操作は見えるのに、本文入力欄・送信ボタン・会話履歴が見えない」問題を優先して改修しています。
 
-## Android APKを取得する
+**画面が欠けても操作できる状態への自律復旧**が目的であり、人工汎用知能（AGI）の達成を意味しません。
 
-- **[v7.14 APK ビルド（署名検証合格）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42002425771)** — 画面下の Artifacts から BANC888-v7.14-unified-debug を選び、ZIP内の APK を取り出す。GitHubへのサインインが必要な場合があります。
-- **[このブランチの最新APKビルド一覧](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-unified-multimodal-v1)**
-- [統合四機能の設計・検証・限界](docs/UNIFIED_MULTIMODAL_V714.md)
-- [認知エンジンの設計](docs/COGNITION_ENGINE_V1.md)
-- [重み空間プログラミング](docs/WEIGHT_SPACE_PROGRAMMING.md)
+## 最新のAPK取得
 
-APKはAndroid Debug署名付きの開発用で、アプリIDは従来のBANC888 Cognitionとは異なる com.ffc.banc888.fly.unified です。Playストア公開用の署名ではありません。端末でのアップグレード時はバックアップを保管してください。
+- [v7.16 自律復旧APKビルド一覧（GitHub Actions）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-selfhealing-ui-v1)
+- [v7.16 Android画面操作テスト](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-selfhealing-android.yml?query=branch%3Abanc888-selfhealing-ui-v1)
+- [実装と差分（PR #63）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/63)
+- [四機能の能力範囲](docs/UNIFIED_MULTIMODAL_V714.md)
+- [デジタル庁デザインシステムに基づくUI設計](docs/DADS_ACCESSIBLE_UI_V715.md)
 
-## チャットから実行する
+**APKの取得方法**：成功したActionsの実行を開き、画面下部の Artifacts から BANC888-v7.16-selfheal-debug を選択。ZIPを展開し、APKをインストールしてください。GitHubへのサインインが必要な場合があります。
 
-普段の会話画面で自然言語で依頼します。
+このAPKは開発用Debug署名。アプリIDは com.ffc.banc888.fly.selfheal で、v7.15とは別アプリとして共存します。既存の会話データを自動移行しません。旧アプリの会話は必要に応じてJSON保存してください。
 
-- 会話: 「この内容を説明して」
-- コーディング: 「PythonでCSVを解析するコードを書いて」
-- 画像: 「猫の画像を生成して」
-- 動画: 「猫が走る短い動画を生成して」
+## 操作方法
 
-複数成果物を明示した一括生成依頼も認知エンジンが計画します。実行後、チャットは空応答でないこと、コードは静的検証・レビューに通ったこと、画像はO2内部品質検証に通ったこと、動画は全フレームが完成してMP4の実バイト数があることを確認します。未完了でも「成功」と表示しないようになっています。
+正常な場合は従来どおり上部の会話・コード・画像・動画を選択し、入力欄に依頼を書いて「送信」を押します。
 
-Chat/コードの自由生成はユーザーが設定した言語モデルAPIを利用できます。内蔵の言語モデル重みは付属しません。画像は内蔵O2手続き描画であり、写真級の拡散モデルではありません。動画は内蔵O3→MP4、またはユーザーが設定したA1111。外部サービスを使わずあらゆる内容を高品質生成できる能力は未実装です。
+通常の会話画面が欠けた場合は、**画面全体にBANC888操作画面（簡易操作モード）が自動表示**されます。上部で会話・コード・画像・動画を選び、テキスト欄に記入して「送信」。これは実際に既存の認知・ツール経路へ送信する操作です。処理できない場合は「未完了」と表示し、入力を保持します。外部モデル未設定の生成機能を成功扱いしません。
 
-## 回帰検証
+簡易操作モードの「自動復旧を再試行」は、再読込せずに画面と必要モジュールの再接続を試みます。アプリは裏側でも定期的にUIを確認します。正常な画面が復帰したら、簡易画面を自動で閉じます。
 
-- node tests/cognition_core.test.cjs
-- node tests/cognition_multimodal.test.cjs
-- node tests/weight_space.test.cjs
+## 自律復旧の実装
+
+1. チャット入力・送信・ログのDOMの存在と実表示サイズを検証。
+2. 欠損を検知したら既存のFFC_THREADSにUI再構築を依頼。会話ログを初期化しない。
+3. 必須モジュールが欠けていればAPKに同梱されたローカル資産から最大3回再読込。
+4. 復旧できなければ別実装の画面を表示し、利用者の入力と簡易モードの会話履歴をローカル保存。
+5. 標準UIが正常に戻ったら簡易画面を自動的に非表示。無限リロード・全データ消去を行わない。
+
+復旧画面は既存の本来の会話履歴とは**別の一時保存領域**を使います。完全な会話統合はまだ実装していません。長期運用前には履歴の移行・共有の追加が必要です。
+
+## テスト
+
+- node tests/ui_recovery.test.cjs
+- node tests/dads_ui_contract.test.cjs
 - node tests/live_manifest_verify.test.cjs
-
-端末実機による全機能の品質検証や未知課題への汎用化評価は引き続き必要です。
+- Android UiRecoveryIntegrationTest：入力画面を強制的に外す→簡易画面でボタン操作・送信→通常画面へ自律復帰
+- 実機Pixel 10/Android 17の確認は別途必要。CIのエミュレータ成功は実機の保証ではありません。
