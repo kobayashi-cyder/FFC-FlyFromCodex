@@ -66,7 +66,7 @@ assert.equal(MM.audit('o3.generate',videoInitial).code,'mp4_not_complete');
  assert.equal(typeof api.cognitionRequest,'function');
  assert.equal(api.cognitionCapabilities().domains.length,4);
  let r=await api.cognitionRequest('こんにちは',{threadCode:'A'});
- assert.equal(r.status,'done');assert.ok(r.finalText.includes('こんにちは'));assert.equal(r.outputs[0].verification.level,'nonempty_reply_only');
+ assert.equal(r.status,'done',JSON.stringify(r));assert.ok(r.finalText.includes('こんにちは'));assert.equal(r.outputs[0].verification.level,'nonempty_reply_only');
  r=await api.cognitionRequest('Pythonコードを生成して',{threadCode:'B'});
  assert.equal(r.status,'done');assert.ok(r.finalText.includes('print("ok")'));
  r=await api.cognitionRequest('猫の画像を生成して',{threadCode:'C'});
