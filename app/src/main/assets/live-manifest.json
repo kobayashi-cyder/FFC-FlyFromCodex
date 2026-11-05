@@ -3,7 +3,7 @@
   "minShellVersion": 76,
   "bridgeSchema": 8,
   "assetSchema": 12,
-  "commit": "cedc9e7943b2571b12272f6009b94b1eeaf9bcc6",
+  "commit": "db07763fecd122bb420979261951b4fb7c9184da",
   "files": {
     "index.html": "7d848da41fa87e1c69a40344e2b734844ed92ad26c7093d363460a4709b9ebf5",
     "native-bridge.js": "8e922e8740186456c6c10197a699c7430993926f3678de1879bb0acfb120f7be",
@@ -42,7 +42,7 @@
     "cognition-multimodal-core.js": "44f28162b7bb9b5749c8a840416f7de4983f206c2fcaee1240d250b5ed66debf",
     "dads-accessible-ui.js": "04b0e2b0ccd08d9000a7e20faa3031e064dd3f723fc378d4f9065aff60b80ae6",
     "dads-mobile.css": "90f5c0a257324b0f4bb3b5ceedab3d7164abc052fa3aa99ba38a86abf9fb955f",
-    "ui-recovery.js": "cd343d2c0e8deda21eb8459f79663bd67e43c8c124f31d03338df5494fbcbca4",
+    "ui-recovery.js": "fac5579af71bb35e9b9ae91c4c6772b48397de25cc8928d5ef11cbf93852f17f",
     "ui-recovery.css": "1abb6d81386ce170b889475e563f8a1022de19a0c904542131e3a45ea80ddff3"
   }
 }
