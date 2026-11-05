@@ -121,7 +121,8 @@ function overlay(){
  }
 }
 function mount(){
- if(ready)return true;
+ // Re-apply controls after an autonomous thread UI reconstruction.
+ if(ready)return controls();
  if(!document.body?.classList.contains('chat-layout'))return false;
  if(!controls())return false;
  ready=true;loadStyles();
