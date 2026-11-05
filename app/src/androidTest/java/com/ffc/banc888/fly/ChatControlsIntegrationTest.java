@@ -38,7 +38,7 @@ public class ChatControlsIntegrationTest {
             tap(scenario,"ffcExecutionMode");
             assertTrue("Mode button did not return offline",TestSupport.awaitJs(scenario,"FFCExecution.status().mode==='offline'",3000));
             tap(scenario,"uiGearButton");
-            assertTrue(TestSupport.awaitJs(scenario,"document.getElementById('uiSettingsDrawer').classList.contains('open')&&document.getElementById('ffcInstalledVersion').textContent.indexOf('7.14')>=0&&document.getElementById('ffcInternalRuntime').hidden",3000));
+            assertTrue(TestSupport.awaitJs(scenario,"document.getElementById('uiSettingsDrawer').classList.contains('open')&&document.getElementById('ffcInstalledVersion').textContent.indexOf('7.15')>=0&&document.getElementById('ffcInternalRuntime').hidden",3000));
             assertTrue(TestSupport.awaitJs(scenario,"(function(){var e=document.getElementById('uiSettingsClose'),r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return r.height>=44&&r.width>=44&&r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&(hit===e||e.contains(hit))})()",3000));
             SystemClock.sleep(250);
             tap(scenario,"uiSettingsClose");
@@ -70,6 +70,34 @@ public class ChatControlsIntegrationTest {
             tap(scenario,"ffcThreadSend");
             assertTrue("Attached facts were not used in response",TestSupport.awaitJs(scenario,"(function(){var t=FFC_THREADS.state.threads.find(function(t){return t.id===FFC_THREADS.state.activeId});return !t.pending&&t.messages.some(function(m){return m.role==='assistant'&&m.text.indexOf('10月10日')>=0})})()",30000));
             assertTrue(TestSupport.awaitJs(scenario,"FFCAttachments.peek(FFC_THREADS.state.activeId).length===0&&FFCConversationExport.buildPayload().conversations[0].messages[0].metadata.attachments[0].text.indexOf('試作品')>=0",3000));
+        }
+    }
+    @Test public void accessibleModesAreTouchableAndMessageCanBeSent() throws Exception {
+        try (ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)) {
+            assertTrue(TestSupport.awaitNativeReady(scenario));
+            assertTrue("Accessible UI was not mounted",TestSupport.awaitJs(scenario,
+                "!!(window.FFCDadsUI&&FFCDadsUI.statusSnapshot().mounted&&document.getElementById('dadsStyle')?.sheet&&document.getElementById('dadsTaskNav'))",15000));
+            assertTrue("Task buttons and send are too small or occluded",TestSupport.awaitJs(scenario,
+                "['dadsModeChat','dadsModeCode','dadsModeImage','dadsModeVideo','ffcThreadSend'].every(function(id){"
+                + "var e=document.getElementById(id),r=e.getBoundingClientRect(),p=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);"
+                + "return r.width>=44&&r.height>=44&&r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&(p===e||e.contains(p));})",15000));
+            tap(scenario,"dadsModeCode");
+            assertTrue(TestSupport.awaitJs(scenario,
+                "document.getElementById('ffcThreadText').value.indexOf('Python')>=0&&document.getElementById('dadsModeCode').getAttribute('aria-pressed')==='true'",3000));
+            tap(scenario,"dadsModeImage");
+            assertTrue(TestSupport.awaitJs(scenario,
+                "document.getElementById('ffcThreadText').value.indexOf('画像を生成')>=0",3000));
+            tap(scenario,"dadsModeVideo");
+            assertTrue(TestSupport.awaitJs(scenario,
+                "document.getElementById('ffcThreadText').value.indexOf('動画を生成')>=0",3000));
+            tap(scenario,"dadsModeChat");
+            assertTrue(TestSupport.awaitJs(scenario,
+                "document.getElementById('ffcThreadText').value===''&&document.getElementById('ffcThreadSend').textContent==='送信'",3000));
+            assertTrue(TestSupport.awaitJs(scenario,
+                "(function(){var e=document.getElementById('ffcThreadText');e.value='こんにちは';e.dispatchEvent(new Event('input',{bubbles:true}));return true})()",3000));
+            tap(scenario,"ffcThreadSend");
+            assertTrue("Send did not register a conversation message",TestSupport.awaitJs(scenario,
+                "FFC_THREADS.state.threads.some(function(t){return t.messages.some(function(m){return m.role==='user'&&m.text.indexOf('こんにちは')>=0})})",8000));
         }
     }
     private static String read(ActivityScenario<MainActivity> scenario,String expression) throws Exception {
