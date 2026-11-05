@@ -1,0 +1,37 @@
+/* Independent rescue surface. Displays even when the normal thread UI cannot mount. */
+#bancRescueUI{position:fixed;inset:0;z-index:35;display:flex;flex-direction:column;
+ box-sizing:border-box;min-height:0;max-height:100dvh;overflow:hidden;background:#f8faff;
+ color:#14283e;font:16px/1.5 system-ui,sans-serif;padding:
+ calc(10px + env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))}
+#bancRescueUI *{box-sizing:border-box}
+#bancRescueUI[hidden]{display:none!important}
+#bancRescueUI button{min-height:48px;min-width:48px;padding:8px 12px;font:600 15px system-ui,sans-serif;
+ border:2px solid #005bac;border-radius:9px;background:#fff;color:#005bac;touch-action:manipulation}
+#bancRescueUI button:focus-visible,#bancRescueUI textarea:focus-visible{
+ outline:3px solid #ffdb4d;outline-offset:3px;box-shadow:0 0 0 5px #151e2a}
+#bancRescueUI button[aria-pressed=true],#bancRescueSend{background:#005bac!important;color:#fff!important}
+#bancRescueUI button:disabled{opacity:.6}
+#bancRescueUI .bancRescueHeader{display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+ justify-content:space-between;margin-bottom:10px}
+#bancRescueUI .bancRescueHeader strong{font-size:18px}
+#bancRescueUI .bancRescueHeader span{font-size:12px;color:#385576}
+#bancRescueUI .bancRescueModes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px}
+#bancRescueUI .bancRescueModes button{min-width:0;padding:7px 2px;font-size:14px}
+#bancRescueLog{background:#fff;border:1px solid #b3c6dd;border-radius:10px;flex:1;min-height:70px;
+ padding:12px;overflow:auto;overscroll-behavior:contain}
+#bancRescueUI .bancRescueMessage{border-bottom:1px solid #d3e2ef;padding:7px 2px}
+#bancRescueUI .bancRescueMessage strong{font-size:13px;color:#254d78}
+#bancRescueUI .bancRescueMessage p{margin:3px 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
+#bancRescueUI .bancRescue-user{background:#f1f6fe}
+#bancRescueUI .bancRescueComposer{flex:none;display:flex;flex-direction:column;gap:8px;margin-top:10px}
+#bancRescueUI label{font-weight:700;font-size:14px}
+#bancRescueText{display:block;width:100%;min-height:68px;max-height:24dvh;
+ border:2px solid #7491ae;border-radius:9px;padding:10px;background:#fff;color:#122744;font:16px/1.5 system-ui}
+#bancRescueUI .bancRescueAction{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+#bancRescueUI .bancRescueAction button{min-width:100px}
+#bancRescueStatus{font-size:12px;line-height:1.6;margin:4px 0 0;color:#314f6e;min-height:1.5em}
+#bancRescueStatus[data-error=true]{color:#a41827;font-weight:700}
+@media(max-width:360px){#bancRescueUI{padding-left:8px;padding-right:8px}
+ #bancRescueUI .bancRescueModes{gap:3px}#bancRescueUI .bancRescueModes button{font-size:12px}}
+@media(max-height:560px){#bancRescueText{min-height:44px}#bancRescueUI .bancRescueHeader{margin-bottom:4px}}
+@media(prefers-reduced-motion:reduce){#bancRescueUI{scroll-behavior:auto}}
