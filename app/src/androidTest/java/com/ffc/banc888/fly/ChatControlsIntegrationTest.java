@@ -61,9 +61,13 @@ public class ChatControlsIntegrationTest {
             Intent result=new Intent().setData(selected.get()).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             Instrumentation.ActivityMonitor monitor=instrument.addMonitor(filter,new Instrumentation.ActivityResult(Activity.RESULT_OK,result),true);
             try {
-                tap(scenario,"ffcAttachButton");
+                assertTrue("Attachment button not ready",TestSupport.awaitJs(scenario,
+               "!!(document.getElementById('dadsStyle')?.sheet&&document.getElementById('ffcAttachButton')&&document.getElementById('ffcAttachButton').getBoundingClientRect().width>=44)",12000));
+            tap(scenario,"ffcAttachButton");
                 boolean received=TestSupport.awaitJs(scenario,"FFCAttachments.peek(FFC_THREADS.state.activeId).length===1&&FFCAttachments.peek(FFC_THREADS.state.activeId)[0].text.indexOf('10月10日')>=0",10000);
-                assertTrue("Android FileReader did not receive selected UTF-8 document: "+read(scenario,"document.getElementById('ffcAttachmentStatus').textContent"),received);
+                assertTrue("Android FileReader did not receive selected UTF-8 document: "+read(scenario,"document.getElementById('ffcAttachmentStatus').textContent")
+                    +" pickerHits="+monitor.getHits()
+                    +" clickGeometry="+read(scenario,"(function(){var e=document.getElementById('ffcAttachButton'),r=e.getBoundingClientRect();return JSON.stringify({rect:[r.x,r.y,r.width,r.height],hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id,thread:FFC_THREADS.state.activeId})})()"),received);
                 assertEquals(1,monitor.getHits());
             } finally { instrument.removeMonitor(monitor); }
             assertTrue(TestSupport.awaitJs(scenario,"(function(){var i=document.getElementById('ffcThreadText');i.value='添付資料の内容を要約してください';return true})()",3000));
