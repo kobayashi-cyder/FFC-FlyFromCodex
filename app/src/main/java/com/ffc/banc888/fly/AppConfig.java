@@ -10,7 +10,7 @@ import java.util.Set;
 final class AppConfig {
     static final String APP_ORIGIN = "https://appassets.androidplatform.net";
     static final String APP_HOST = "appassets.androidplatform.net";
-    static final String DEV_REF = "banc888-unified-multimodal-v1";
+    static final String DEV_REF = "banc888-dads-accessible-ui-v1";
     static final String REPO = "kobayashi-cyder/FFC-FlyFromCodex";
     static final int SHELL_VERSION = 76;
     static final int WEB_RUNTIME_VERSION = 8;
@@ -50,7 +50,8 @@ final class AppConfig {
             "attachments.js",
             "settings-organizer.js",
             "artifact-workspace.js",
-            "workspace-productivity.js"
+            "workspace-productivity.js",
+            "dads-accessible-ui.js"
     };
 
     static final String[] LIVE_ASSETS = new String[]{
@@ -88,7 +89,9 @@ final class AppConfig {
             "settings-organizer.js",
             "artifact-workspace.js",
             "workspace-productivity.js",
-            "fly-task-worker.js"
+            "fly-task-worker.js",
+            "dads-accessible-ui.js",
+            "dads-mobile.css"
     };
 
     static final Set<String> LIVE_ASSET_SET =
