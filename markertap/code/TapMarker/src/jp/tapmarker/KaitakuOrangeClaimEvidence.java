@@ -15,8 +15,6 @@ final class KaitakuOrangeClaimEvidence {
   private static int r(int c){return (c>>>16)&255;}
   private static int g(int c){return (c>>>8)&255;}
   private static int b(int c){return c&255;}
-  private static boolean beige(int c){return r(c)>=185&&r(c)<=244&&g(c)>=165&&g(c)<=232&&b(c)>=110&&b(c)<=207&&r(c)>=g(c)&&g(c)>=b(c);}
-  private static boolean dark(int c){return r(c)<90&&g(c)<90&&b(c)<90;}
   private static boolean white(int c){return r(c)>230&&g(c)>230&&b(c)>230;}
   private static boolean yellow(int c){return r(c)>190&&g(c)>140&&b(c)<90&&r(c)>=g(c);}
   private static boolean orange(int c){return r(c)>185&&g(c)>=75&&g(c)<=170&&b(c)<115&&r(c)-g(c)>60&&g(c)-b(c)>30;}
@@ -44,9 +42,7 @@ final class KaitakuOrangeClaimEvidence {
   static float[] find(int w,int h,RegionSampler.Pixels pixels){
     if(pixels==null||w<200||h<400)return null;
     // Independent page-layout anchors. Reject orange advertisements and game overlays.
-    boolean legacy=beige(rgb(w,h,pixels,.15f,.08f))&&
-       beige(rgb(w,h,pixels,.62f,.08f))&&dark(rgb(w,h,pixels,.15f,.22f))&&
-       white(rgb(w,h,pixels,.15f,.28f))&&white(rgb(w,h,pixels,.83f,.28f));
+    boolean legacy=KaitakuMissionVisual.legacyHeader(w,h,pixels);
     // The supplied recording has an OS/fullscreen pink mission header;
     // older cropped evidence used a beige header. Retain both.
     if(!legacy&&!KaitakuMissionVisual.modernHeader(w,h,pixels))return null;

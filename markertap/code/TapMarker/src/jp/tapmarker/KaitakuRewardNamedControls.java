@@ -27,11 +27,15 @@ final class KaitakuRewardNamedControls {
     // evidence against a freshly verified on-screen orange Get control.
     if((d.kind==KaitakuRewardClaimPolicy.Kind.PAGE||
         d.kind==KaitakuRewardClaimPolicy.Kind.BACK)&&
-       KaitakuActionEvidence.present(out,"get")&&
+       (KaitakuActionEvidence.present(out,"get")||
+        KaitakuActionEvidence.present(out,"mission-scan")||
+        KaitakuActionEvidence.present(out,"back"))&&
        engine.current.equals(KaitakuPreset.P+"missions"))return true;
+    if(d.kind==KaitakuRewardClaimPolicy.Kind.HOLD&&
+       out.containsKey(KaitakuRewardClaimPolicy.RECEIPT_PROOF))return true;
     KaitakuNamedControls.clear(out);
     // Keep claim-wait as a real outcome-checking phase, not an instant replay.
-    if(engine.current.equals(KaitakuPreset.P+"claim-wait")&&
+    if(KaitakuActionEvidence.waitingForReceipt(engine)&&
        (d.kind==KaitakuRewardClaimPolicy.Kind.CLAIM||
         d.kind==KaitakuRewardClaimPolicy.Kind.PAGE||
         d.kind==KaitakuRewardClaimPolicy.Kind.BACK))return true;
@@ -40,7 +44,7 @@ final class KaitakuRewardNamedControls {
         KaitakuRewardClaimGate.receipt(engine);
       KaitakuActionEvidence.put(out,"close",d.rect);
       // Distinct receipt evidence; opt-out/ad-close never sets this flag.
-      out.put("kaitaku-default-receipt-proof",new float[]{1});return true;
+      out.put(KaitakuRewardClaimPolicy.RECEIPT_PROOF,new float[]{1});return true;
     }
     if(d.kind==KaitakuRewardClaimPolicy.Kind.HOLD)return true;
     KaitakuActionEvidence.put(out,"mission-page",null);

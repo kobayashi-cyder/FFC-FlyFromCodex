@@ -38,19 +38,16 @@ final class AdRecoveryRuntime {
            step==CmDetectionFunction.Step.KILL||
            step==CmDetectionFunction.Step.INTENT;
   }
-  private static boolean hasKaitakuHome(Map<String,float[]> samples){
-    if(samples==null)return false;
-    float[] mark=samples.get("kaitaku-default-home");
-    return mark!=null&&mark.length==1&&mark[0]==1;
-  }
   static boolean gameHome(String pkg,PhaseEngine e,Map<String,float[]> samples){
-    return RecoveryEvidence.home(e,samples)||
-      KaitakuPreset.APP.equals(pkg)&&hasKaitakuHome(samples);
+    return RecoveryEvidence.home(e,samples)||KaitakuPreset.APP.equals(pkg)&&
+      (KaitakuPreset.home(samples)||KaitakuActionEvidence.gamePage(samples)||
+       KaitakuActionEvidence.present(samples,"tap-ad-start"));
   }
   static boolean advertisement(PhaseEngine e,Map<String,float[]> samples,
                                int width,int height,String pkg){
     if(e==null||samples==null||e.windowRelative||!AdRecoveryShell.known(pkg))
       return false;
+    if(KaitakuPreset.APP.equals(pkg)&&samples.containsKey(KaitakuFullScreenAd.KEY))return true;
     if(gameHome(pkg,e,samples))return false;
     // Named states and timeouts alone are not proof. Full-screen CM may
     // interrupt main/verify/upgrade/claim, so inspect positive evidence there.
@@ -75,7 +72,10 @@ final class AdRecoveryRuntime {
     p.evaluation.observeAd(p.phaseSampleTakenAt,now,ad);
     CmDetectionFunction.Action action=
       cm.observe(p.target,p.phaseSampleTakenAt,now,ad,home);
-    if(action==CmDetectionFunction.Action.NONE)return false;
+    if(action==CmDetectionFunction.Action.NONE){
+      if(!waitingOnFullScreenAd(cm,samples))return false;
+      p.s.stopMarkers();p.phaseOwnedMarkers=false;p.schedulePhase(token,120);return true;
+    }
     beginPhysical(p,token,cm,action);return true;
   }
 
@@ -90,10 +90,16 @@ final class AdRecoveryRuntime {
     if(p.target.equals(foreground)){
       st.externalPkg="";st.externalSince=-1;return false;
     }
+    if(cm.step()==CmDetectionFunction.Step.VERIFY){
+      // The launcher or a foreign app is not a post-Intent image of this CM.
+      cm.changedForeground();return false;
+    }
     if(foreground==null||foreground.isEmpty()||foreground.equals("com.android.systemui")||
-       foreground.startsWith("jp.tapmarker."))return false;
+       foreground.startsWith("jp.tapmarker.")||p.homeVisible()){
+      st.externalPkg="";st.externalSince=-1;cm.changedForeground();return false;
+    }
     boolean witnessed=AdExitPolicy.adState(p.phases.engine.current);
-    if(!witnessed&&cm.step()!=CmDetectionFunction.Step.VERIFY)return false;
+    if(!witnessed)return false;
     if(!foreground.equals(st.externalPkg)||now<st.externalSince){
       st.externalPkg=foreground;st.externalSince=now;cm.changedForeground();
     }
@@ -101,10 +107,7 @@ final class AdRecoveryRuntime {
     CmDetectionFunction.Action action=cm.observe(
       p.target,now,now,true,false);
     if(action!=CmDetectionFunction.Action.NONE)beginPhysical(p,token,cm,action);
-    return witnessed||cm.step()==CmDetectionFunction.Step.VERIFY||
-           cm.step()==CmDetectionFunction.Step.HOME||
-           cm.step()==CmDetectionFunction.Step.KILL||
-           cm.step()==CmDetectionFunction.Step.INTENT;
+    return witnessed;
   }
 
   private static void invalidateReward(AutoPilot p){
@@ -215,7 +218,10 @@ final class AdRecoveryRuntime {
     slot.evaluation.observeAd(slot.observedAt,now,ad);
     CmDetectionFunction.Action action=
       cm.observe(slot.pkg,slot.observedAt,now,ad,home);
-    if(action==CmDetectionFunction.Action.NONE)return false;
+    if(action==CmDetectionFunction.Action.NONE){
+      if(!waitingOnFullScreenAd(cm,samples))return false;
+      pilot.pauseMain(slot);slot.home=false;pilot.later(slot,token,150);return true;
+    }
     SharedPointClaimArbiter.release(slot.evaluation,slot.pendingEvaluationReceipt);
     slot.evaluation.invalidatePending();slot.rewardEvidence.reset();
     slot.farmPassive.reset();slot.pendingEvaluationReceipt="";
@@ -241,6 +247,10 @@ final class AdRecoveryRuntime {
       pilot.s.pilot.virtualWindows.recoverAd(w,valid,finished);
     else pilot.s.pilot.virtualWindows.returnAd(w,valid,finished);
     return true;
+  }
+  private static boolean waitingOnFullScreenAd(CmDetectionFunction cm,Map<String,float[]> samples){
+    return samples.containsKey(KaitakuFullScreenAd.KEY)&&
+      (cm.step()==CmDetectionFunction.Step.OBSERVE||cm.step()==CmDetectionFunction.Step.VERIFY);
   }
   private AdRecoveryRuntime(){}
 }
