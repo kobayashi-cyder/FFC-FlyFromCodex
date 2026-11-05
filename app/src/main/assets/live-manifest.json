@@ -3,7 +3,7 @@
   "minShellVersion": 76,
   "bridgeSchema": 8,
   "assetSchema": 12,
-  "commit": "ddd93c924021a53b0ae691efc72a7bff9151d471",
+  "commit": "c5caf6c95c953907ee7f8838739ce57e7f903944",
   "files": {
     "index.html": "7d848da41fa87e1c69a40344e2b734844ed92ad26c7093d363460a4709b9ebf5",
     "native-bridge.js": "8e922e8740186456c6c10197a699c7430993926f3678de1879bb0acfb120f7be",
@@ -37,7 +37,7 @@
     "attachment-core.js": "741e2eff9fb68c6bd974a16a8332fc83af8cd89df04930cca2387d4bdd440455",
     "attachments.js": "56bf9bc453fcd5b10b0c9094d492347089da9dc8f1a427769546b30041d81de7",
     "ai-compat-core.js": "37d1afe30a4effcfdcb08fe1f3d318210aff0f2eb4d819a4b33200f12dc367d9",
-    "cognition-core.js": "67a098a71b754e1aa7a83d3230a6ce1b3588fad3148c66cd60ce1c62de74e3e7",
+    "cognition-core.js": "86722056fb7b3282c707f2c3eafa583adfb2e9b3d66b32ff874394cbb8dba626",
     "cognition-ui.js": "f5761da7900c93f81088ee79c65bb1bea39ebf9221f9ebedf299ed2d8690d19f"
   }
 }
