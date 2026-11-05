@@ -12,14 +12,14 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 91
-        versionName '7.14.0-unified'
+        versionCode 92
+        versionName '7.15.0-accessible'
     }
 
     buildTypes {
         debug {
             debuggable true
-            applicationIdSuffix '.unified'
+            applicationIdSuffix '.accessible'
         }
         release {
             minifyEnabled false
