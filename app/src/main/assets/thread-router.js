@@ -148,6 +148,35 @@ window.addEventListener('ffc-video-export',event=>{
 });
 function bindNative(){const n=window.BANC888_NATIVE_VOICE;if(!n||n.__ffcThreadBound)return false;n.__ffcThreadBound=true;const op=n.onPartial?.bind(n);n.onPartial=t=>{op?.(t);preview(String(t||''))};n.onAlternatives=list=>{n.__ffcAlternatives=Array.isArray(list)?list.slice(0,3):[]};n.onResult=(text,confidence)=>{const raw=[{text:String(text||''),confidence:+confidence||-1},...(n.__ffcAlternatives||[])],seen=new Set(),alts=[];for(const a of raw){const q=String(a?.text||'').trim();if(!q||seen.has(q))continue;seen.add(q);const rr=Core.route(state,q,now()),stt=+a?.confidence>=0?+a.confidence:.5,score=.58*stt+.42*(+rr.confidence||0);alts.push({text:q,confidence:stt,routeConfidence:+rr.confidence||0,score})}alts.sort((a,b)=>b.score-a.score);const best=alts[0]||{text:String(text||'').trim(),confidence:+confidence||-1},q=best.text,v=window.BANC888_FLY_AGENT?.voice;n.__ffcAlternatives=[];if(v){v.listening=false;v.interim='';v.lastHeard=q;v.alternatives=alts}const tr=document.getElementById('flyVoiceTranscript');if(tr)tr.textContent=q||'—';if(q)routeText(q,{voice:true,confidence:best.confidence,alternatives:alts})};return true}
 function init(){ui();clearRouteDisplay();if(!bindNative()){let n=0,t=setInterval(()=>{if(bindNative()||++n>30)clearInterval(t)},200)}render()}
-window.FFC_THREADS={state,repairUI:()=>{ui();render();return !!document.getElementById('ffcThreadHub')},create:createThread,createMany,imagePreview:key=>PREVIEWS.get(key)||null,persist:save,setActive,setListener,route:routeText,preview,render,core:Core,snapshot:logSnapshot,json:logJson,ndjson:logNdjson,exportJSON:exportJson,exportNDJSON:exportNdjson,copyJSON:copyLog,status:()=>({maxThreads:MAX_THREADS,parallel:window.FFCFlyParallel?.status(),active:code(active()),threads:state.threads.map(t=>({id:t.id,code:code(t),listener:t.listenerEnabled,pending:t.pending,messages:t.messages.length,unread:t.unread})),lastRoute:state.lastRoute})};window.BANC888_CONVERSATION_LOGS={format:LOG_FORMAT,snapshot:logSnapshot,json:logJson,ndjson:logNdjson,exportJSON:exportJson,exportNDJSON:exportNdjson,copyJSON:copyLog};
+function repairThreadView(){
+ let existing=document.getElementById('ffcThreadHub');
+ if(existing&&(!existing.querySelector('#ffcThreadText')||!existing.querySelector('#ffcThreadSend'))){
+  existing.remove();existing=null;
+ }
+ ui();
+ const hub=document.getElementById('ffcThreadHub');
+ if(!hub)return false;
+ const agent=document.getElementById('flyAgentCard');
+ if(agent&&hub.parentElement!==agent&&document.body.classList.contains('chat-layout'))agent.appendChild(hub);
+ const composer=hub.querySelector('.ffcThreadInput');
+ if(composer&&document.body.classList.contains('chat-layout')&&!hub.querySelector('.conversationComposerWrap')){
+  const wrapper=document.createElement('div');wrapper.className='conversationComposerWrap';
+  hub.appendChild(wrapper);wrapper.appendChild(composer);
+  let tools=composer.querySelector('.conversationComposerTools');
+  if(!tools){tools=document.createElement('div');tools.className='conversationComposerTools';composer.appendChild(tools)}
+  for(const id of ['ffcQuickListen','ffcQuickStop','ffcAttachButton']){
+   const button=document.getElementById(id);
+   if(button)tools.appendChild(button);
+  }
+  const note=document.createElement('div');note.className='conversationComposerNote';
+  note.textContent='生成内容を確認してからご利用ください。';
+  wrapper.appendChild(note);
+ }
+ try{render()}catch(e){console.error('repair render failed',e)}
+ try{window.FFCDadsUI?.mount?.()}catch(e){}
+ try{window.dispatchEvent(new Event('ffc:conversation-ui-ready'))}catch(e){}
+ return !!hub.querySelector('#ffcThreadText')&&!!hub.querySelector('#ffcThreadSend');
+}
+window.FFC_THREADS={state,repairUI:repairThreadView,create:createThread,createMany,imagePreview:key=>PREVIEWS.get(key)||null,persist:save,setActive,setListener,route:routeText,preview,render,core:Core,snapshot:logSnapshot,json:logJson,ndjson:logNdjson,exportJSON:exportJson,exportNDJSON:exportNdjson,copyJSON:copyLog,status:()=>({maxThreads:MAX_THREADS,parallel:window.FFCFlyParallel?.status(),active:code(active()),threads:state.threads.map(t=>({id:t.id,code:code(t),listener:t.listenerEnabled,pending:t.pending,messages:t.messages.length,unread:t.unread})),lastRoute:state.lastRoute})};window.BANC888_CONVERSATION_LOGS={format:LOG_FORMAT,snapshot:logSnapshot,json:logJson,ndjson:logNdjson,exportJSON:exportJson,exportNDJSON:exportNdjson,copyJSON:copyLog};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else setTimeout(init,0);
 })();
