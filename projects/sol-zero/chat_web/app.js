@@ -6,18 +6,20 @@ import {AUTO_DEMO,AUTO_FLOW_DEMO,designAndVerify,validateTask,evaluate,promoteVe
 import {WSPGraph,inspectGraph,compileTruthTable,denseTemplate,GRAPH_DEMO_XOR,GRAPH_DEMO_NUMERIC,GRAPH_DEMO_PARITY,GRAPH_LIMITS} from './wsp_graph.js';
 import {INDUCTION_DEMO,induceAndVerify,promoteInduction} from './wsp_induction.js';
 import {MediaStudio} from './media_ui.js';
+import {CodeWSP,generateCode} from './code_wsp.js';
 import {FACTORY_FAMILIES,FACTORY_LIMITS,buildFactory,verifyFactory,auditFactory,composeFactories} from './wsp_factory.js';
 const engine=new SolZeroEngine();
 const generator=new ScratchBigram();
 const studio=new MediaStudio();
+const codeWsp=new CodeWSP();
 engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();
 engine.graph=new WSPGraph();
-const DB_KEY='solzero_chat_v012_local',V011_KEY='solzero_chat_v011_local',V010_KEY='solzero_chat_v010_local',V09_KEY='solzero_chat_v09_local',V08_KEY='solzero_chat_v08_local',V07_KEY='solzero_chat_v07_local',PREV_KEY='solzero_chat_v06_local',OLD_KEY='solzero_chat_v05_local',OLDER_KEY='solzero_chat_v04_local',ANCIENT_KEY='solzero_chat_v03_local';
+const DB_KEY='solzero_chat_v013_local',V012_KEY='solzero_chat_v012_local',V011_KEY='solzero_chat_v011_local',V010_KEY='solzero_chat_v010_local',V09_KEY='solzero_chat_v09_local',V08_KEY='solzero_chat_v08_local',V07_KEY='solzero_chat_v07_local',PREV_KEY='solzero_chat_v06_local',OLD_KEY='solzero_chat_v05_local',OLDER_KEY='solzero_chat_v04_local',ANCIENT_KEY='solzero_chat_v03_local';
 const MAX_CHATS=40,MAX_MESSAGES=400,MAX_DOCS=8,MAX_DOC_CHARS=450000;
 const byId=id=>document.getElementById(id);
 const $messages=byId('messages'),$input=byId('input'),$history=byId('history'),$sidebar=byId('sidebar');
-let db,priorFocus=null,toastTimer=null;
+let db,priorFocus=null,toastTimer=null,sending=false;
 const el=(tag,props={},...children)=>{
   const node=document.createElement(tag);
   for(const [k,v] of Object.entries(props)) {
@@ -52,14 +54,14 @@ function schemaRead(raw){
     const documents=Array.isArray(data.documents)?data.documents.filter(d=>d&&typeof d.text==='string'&&typeof d.title==='string').slice(0,MAX_DOCS).map(d=>({id:String(d.id||id()).slice(0,100),title:d.title.slice(0,100),text:d.text.slice(0,100000),added:typeof d.added==='string'?d.added.slice(0,48):''})):[];
     if(documents.reduce((s,d)=>s+d.text.length,0)>MAX_DOC_CHARS)return null;
     const theme=data.theme==='dark'?'dark':'light';
-    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null};
+    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null,codeWsp:data.codeWsp||null};
   }catch{return null;}
 }
 function notify(message){const node=byId('toast');node.textContent=message;node.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.add('hidden'),2800);}
-function save(){db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
+function save(){db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;db.codeWsp=codeWsp.snapshot();try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
 function init(){
-  let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V011_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
-  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null};
+  let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V012_KEY));if(!read)read=schemaRead(localStorage.getItem(V011_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
+  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null,codeWsp:null};
   db.current ||= db.chats[0].id;
   if(db.wsp)engine.router.restore(db.wsp);
   if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP一括回路のデータが不正なため復元しませんでした。');
@@ -69,6 +71,7 @@ function init(){
   if(db.graph&&!engine.graph.restore(db.graph))notify('グラフ重みの保存内容が不正です。初期回路を使います。');
   if(Array.isArray(db.graphHistory))engine.graph.history=db.graphHistory.slice(-8).filter(h=>{try{inspectGraph(h);return true;}catch{return false;}});
   engine.autoAudit=db.autoAudit;
+  if(db.codeWsp&&!codeWsp.restore(db.codeWsp))notify('コードWSPの保存内容を検証できず、初期値を使用します。');
   document.documentElement.dataset.theme=db.theme;
   draw();
   studio.ensureLoaded().catch(()=>{});
@@ -123,14 +126,27 @@ function draw(){drawHistory();drawMessages();$input.value=current().draft||'';re
 function resize(){$input.style.height='auto';$input.style.height=Math.min(145,$input.scrollHeight)+'px';}
 async function send(event){
   event?.preventDefault();
-  const text=$input.value.trim();if(!text)return;
-  const c=current();let answer;
+  const text=$input.value.trim();if(!text||sending)return;
+  sending=true;byId('send').disabled=true;
+  const c=current();c.draft='';$input.value='';resize();save();
+  let answer;
   if(/^\/(?:image|audio|video|gif|webm)(?:\s|$)/i.test(text)){
     const cmd=text.slice(1).split(/\s+/)[0].toLowerCase(),p=text.slice(cmd.length+1).trim();
     try{await studio.ensureLoaded();const kind=cmd==='video'?'gif':cmd;
       const asset=await studio.generate(kind,p?{prompt:p,text:p}:null);
       answer=`${asset.name} を生成しました（${asset.bytes.length.toLocaleString('ja-JP')}バイト）。上部「メディア工房」で再生・保存・一括ZIP出力できます。\n※学習済みモデルではなく手続き的な生成です。`;
     }catch(err){answer='メディア生成エラー：'+err.message;}
+  }else if(/^\/codewsp(?:\s|$)/i.test(text)){
+    const args=text.trim().split(/\s+/);
+    try{
+      if(args[1]==='undo'){answer=codeWsp.rollback()?'コードWSPの直前の変更を戻しました。':'戻せる変更はありません。';save();}
+      else if(args[1]==='edit'&&args.length===5){codeWsp.edit(args[2],args[3],Number(args[4]));save();answer='コードWSP重みを更新しました：'+JSON.stringify(codeWsp.snapshot().weights);}
+      else answer='コードWSP対応タスク：sum / sort / unique / search / fibonacci。使い方：/code js sort、/code python 合計、/codewsp edit sum sort 5、/codewsp undo。\n現在の重み：'+JSON.stringify(codeWsp.snapshot().weights);
+    }catch(e){answer='コードWSP入力エラー：'+e.message;}
+  }else if(/^\/code(?:\s|$)/i.test(text)){
+    const m=/^\/code\s+(js|javascript|py|python)\s+(.+)$/is.exec(text);
+    if(!m)answer='使い方：/code js sort または /code python フィボナッチ。対応タスク：合計・ソート・重複排除・検索・フィボナッチ。';
+    else{try{const v=generateCode(m[1],m[2],codeWsp);answer=v?'生成したコード（定型テンプレート、未実行）：'+v.filename+'\n```'+v.language+'\n'+v.code+'\n```':'未対応または曖昧な要求です。/codewsp で対象機能を確認してください。';}catch(e){answer='コード生成エラー：'+e.message;}}
   }else if(/^\/factory(?:\s|$)/i.test(text)){
     try{const args=text.trim().split(/\s+/);
       if(args.length===1||args[1]==='list')answer='WSP回路工房：30種の数値・論理・比較・非線形・統計・ベクトル回路。4bit論理関数65536通り。例 /factory xor2 0 1 0、/factory lut4 13 1 0 1 1。上部の「回路工房」で一括テストできます。';
@@ -148,7 +164,7 @@ async function send(event){
   c.messages.push({role:'user',text,at:new Date().toISOString()},{role:'assistant',text:answer,at:new Date().toISOString()});
   if(c.messages.length>MAX_MESSAGES)c.messages.splice(0,c.messages.length-MAX_MESSAGES);
   if(c.title==='新しい会話')c.title=text.replace(/\s+/g,' ').slice(0,36);
-  c.draft='';$input.value='';resize();save();draw();$input.focus();
+  save();drawHistory();if(current().id===c.id)drawMessages();byId('send').disabled=false;sending=false;$input.focus();
 }
 function newChat(){const c=createChat();db.chats.unshift(c);if(db.chats.length>MAX_CHATS)db.chats.pop();db.current=c.id;save();draw();$input.value='';resize();sidebarClose();$input.focus();}
 function deleteChat(){const c=current();if(c.messages.length && !confirm(`「${c.title}」を削除しますか？ 会話内のメモ・タスク・学習も削除されます。`))return;
@@ -157,7 +173,7 @@ function togglePin(){const c=current();c.pinned=!c.pinned;save();drawHistory();b
 function rename(){const c=current(),name=prompt('会話名を入力してください（最大80文字）',c.title);if(name===null)return;
   if(!name.trim())return notify('会話名を入力してください。');c.title=name.trim().slice(0,80);save();drawHistory();sidebarClose();}
 function download(content,name,type){const blob=new Blob([content],{type});const href=URL.createObjectURL(blob);const a=el('a');a.href=href;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),3000);}
-function exportJson(){save();download(JSON.stringify({...db,exported_at:new Date().toISOString(),app_version:ENGINE_VERSION},null,2),'solzero_v012_backup.json','application/json;charset=utf-8');sidebarClose();}
+function exportJson(){save();download(JSON.stringify({...db,exported_at:new Date().toISOString(),app_version:ENGINE_VERSION},null,2),'solzero_v013_backup.json','application/json;charset=utf-8');sidebarClose();}
 function exportMd(){const c=current();const out=[`# ${c.title}`,'','Sol-Zero チャット記録',...c.messages.flatMap(m=>[`## ${m.role==='user'?'ユーザー':'Sol-Zero'}`,'',m.text,''])];download(out.join('\n'),'solzero_chat.md','text/markdown;charset=utf-8');sidebarClose();}
 async function importJson(event){const file=event.target.files?.[0];event.target.value='';if(!file)return;
   if(file.size>4000000)return notify('JSONは4MB以下にしてください。');
@@ -168,6 +184,7 @@ async function importJson(event){const file=event.target.files?.[0];event.target
 engine.flow=new WSPFlow();if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP回路を検証できず読み込みを中止しました。');
   if(db.flow&&!engine.flow.restore(db.flow))notify('状態機械を復元できませんでした。');
   engine.autoAudit=db.autoAudit;
+  if(db.codeWsp&&!codeWsp.restore(db.codeWsp))notify('コードWSPの保存内容を検証できず、初期値を使用します。');
   generator.vocab=[];generator.weights=[];generator.steps=0;generator.events=[];if(db.generator)generator.restore(db.generator);
   engine.graph=new WSPGraph();if(db.graph&&!engine.graph.restore(db.graph))notify('グラフ回路データの形式が不正です。');
   if(Array.isArray(db.graphHistory))engine.graph.history=db.graphHistory.slice(-8).filter(h=>{try{inspectGraph(h);return true;}catch{return false;}});
@@ -177,11 +194,11 @@ function changeTheme(){db.theme=db.theme==='light'?'dark':'light';document.docum
 function openPanel(which){
   priorFocus=document.activeElement;
   byId('scrim').classList.remove('hidden');byId('panel').classList.remove('hidden');
-  byId('panelBody').replaceChildren();
+  studio.releasePreviewUrls();byId('panelBody').replaceChildren();
   if(which==='knowledge')renderKnowledge();else if(which==='documents')renderDocuments();else if(which==='circuit')renderCircuit();else if(which==='generator')renderGenerator();else if(which==='bulk')renderBulk();else if(which==='auto')renderAutoDesign();else if(which==='graph')renderGraph();else if(which==='factory')renderFactory();else if(which==='induce')renderInduction();else if(which==='studio'){panelIntro('メディア工房','画像・音声・動画をゼロから生成し、作品ZIPに統合。WSP重みで生成を調整できます。');studio.ensureLoaded().then(()=>{if(!byId('panel').classList.contains('hidden')&&byId('panelTitle').textContent==='メディア工房')studio.render(byId('panelBody'),{notify});}).catch(e=>notify(e.message));}
   byId('closePanel').focus();
 }
-function closePanel(){byId('panel').classList.add('hidden');byId('scrim').classList.add('hidden');priorFocus?.focus?.();}
+function closePanel(){studio.releasePreviewUrls();byId('panel').classList.add('hidden');byId('scrim').classList.add('hidden');priorFocus?.focus?.();}
 function panelIntro(title,subtitle){byId('panelTitle').textContent=title;byId('panelFoot').textContent=subtitle;}
 function field(label,type='text',placeholder=''){
   const id='field_'+Math.random().toString(16).slice(2);
@@ -466,13 +483,15 @@ function renderAutoDesign(){
         lastReport=report;lastText=specText.input.value;
         const errors=report.validation.errors.slice(0,5).map(e=>`・「${e.input}」 期待:${e.expected??'回答なし'} / 実際:${e.actual??'回答なし'}`).join('\n');
         result.textContent=`${report.accepted?'合格（採用可能）':'不合格（採用不可）'}\n目標：${report.goal}\n生成回路：${report.rules.length}ルール、${report.stats.neurons}ニューロン、${report.stats.edges}数値接続\n訓練：${report.training.correct}/${report.training.total} / 独立検証：${report.validation.correct}/${report.validation.total} (${(report.validation.accuracy*100).toFixed(1)}%)\n現行回路：${baseline.correct}/${baseline.total} / 新規誤発火：${report.validation.falsePositive}件\n回路の例：${report.rules.slice(0,8).map(r=>`${r.all.join('&')} → ${r.response}`).join('、')||'なし'}\n${report.reasons.join(' ')}\n${errors}`;
-        db.autoAudit={date:new Date().toISOString(),decision:report.accepted?'合格・未適用':'不合格',goal:report.goal.slice(0,180),rules:report.rules.length,validCorrect:report.validation.correct,validTotal:report.validation.total};engine.autoAudit=db.autoAudit;save();
+        db.autoAudit={date:new Date().toISOString(),decision:report.accepted?'合格・未適用':'不合格',goal:report.goal.slice(0,180),rules:report.rules.length,validCorrect:report.validation.correct,validTotal:report.validation.total};engine.autoAudit=db.autoAudit;
+  if(db.codeWsp&&!codeWsp.restore(db.codeWsp))notify('コードWSPの保存内容を検証できず、初期値を使用します。');save();
       }catch(e){lastReport=null;lastText=null;result.textContent='設計拒否：'+e.message;}
     }}),
     el('button',{class:'btn primary',text:'② 合格した回路を採用',onClick:()=>{
       if(!lastReport?.accepted || lastText!==specText.input.value){result.textContent='採用不可：最新の仕様に対する合格検証が必要です。';return;}
       if(!confirm(`合格した${lastReport.rules.length}ルールで現在のWSP一括回路を置き換えますか？直前の変更はWSP拡張で戻せます。`))return;
-      try{const x=promoteVerified(lastReport,engine.bulk);db.autoAudit={date:new Date().toISOString(),decision:'採用',goal:lastReport.goal.slice(0,180),rules:x.rules,validCorrect:lastReport.validation.correct,validTotal:lastReport.validation.total};engine.autoAudit=db.autoAudit;const ok=save();result.textContent=`${ok?'採用しました':'回路は動作中ですが保存に失敗しました'}：${x.rules}ルール、${x.neurons}ニューロン、${x.edges}接続\nチャットで「/wsp trace 計算して」を試せます。`;lastReport=null;lastText=null;}
+      try{const x=promoteVerified(lastReport,engine.bulk);db.autoAudit={date:new Date().toISOString(),decision:'採用',goal:lastReport.goal.slice(0,180),rules:x.rules,validCorrect:lastReport.validation.correct,validTotal:lastReport.validation.total};engine.autoAudit=db.autoAudit;
+  if(db.codeWsp&&!codeWsp.restore(db.codeWsp))notify('コードWSPの保存内容を検証できず、初期値を使用します。');const ok=save();result.textContent=`${ok?'採用しました':'回路は動作中ですが保存に失敗しました'}：${x.rules}ルール、${x.neurons}ニューロン、${x.edges}接続\nチャットで「/wsp trace 計算して」を試せます。`;lastReport=null;lastText=null;}
       catch(e){result.textContent='採用失敗：'+e.message;}
     }}),
     el('button',{class:'btn',text:'直前のルール採用を戻す',onClick:()=>{
