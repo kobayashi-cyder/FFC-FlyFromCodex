@@ -106,3 +106,34 @@ jobs:
             adb shell screencap -p /sdcard/solzero-android.png
             adb pull /sdcard/solzero-android.png /tmp/solzero-android.png
             echo 'PASS: Android 15 offline WebView boot, chat, CSV task, PNG, native Downloads'
+
+  publish-lab-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build-apk, emulator-smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: SolZero-v016-Android-offline-debug-signed-APK
+          path: android-apk
+      - name: Publish immutable experimental APK with SHA256SUMS
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=sol-zero-v016-offline-lab
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release exists; preserving its original signing identity."
+            exit 0
+          fi
+          mv android-apk/app-debug.apk android-apk/SolZero-v016-Android-offline-debug-signed.apk
+          (cd android-apk && sha256sum SolZero-v016-Android-offline-debug-signed.apk > SHA256SUMS.txt)
+          gh release create "$TAG" \
+            android-apk/SolZero-v016-Android-offline-debug-signed.apk \
+            android-apk/SHA256SUMS.txt \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "Sol-Zero v0.16 Android Offline Lab (debug signed)" \
+            --notes "Verified Android offline lab APK. Contains Sol-Zero v0.15 features. No INTERNET permission. CI checks JUnit, APK signing, 16KB alignment, identical offline HTML and Android 15 emulator UI + downloads. Debug signature is not stable across builds: back up and uninstall before future versions if certificates differ. Android 17 physical-device test and AGI are NOT claimed."
