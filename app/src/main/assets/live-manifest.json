@@ -3,7 +3,7 @@
   "minShellVersion": 76,
   "bridgeSchema": 8,
   "assetSchema": 12,
-  "commit": "db07763fecd122bb420979261951b4fb7c9184da",
+  "commit": "3f61055b1767947173cdc3c4010d7ae7bec6d803",
   "files": {
     "index.html": "7d848da41fa87e1c69a40344e2b734844ed92ad26c7093d363460a4709b9ebf5",
     "native-bridge.js": "8e922e8740186456c6c10197a699c7430993926f3678de1879bb0acfb120f7be",
@@ -43,6 +43,9 @@
     "dads-accessible-ui.js": "04b0e2b0ccd08d9000a7e20faa3031e064dd3f723fc378d4f9065aff60b80ae6",
     "dads-mobile.css": "90f5c0a257324b0f4bb3b5ceedab3d7164abc052fa3aa99ba38a86abf9fb955f",
     "ui-recovery.js": "fac5579af71bb35e9b9ae91c4c6772b48397de25cc8928d5ef11cbf93852f17f",
-    "ui-recovery.css": "1abb6d81386ce170b889475e563f8a1022de19a0c904542131e3a45ea80ddff3"
+    "ui-recovery.css": "1abb6d81386ce170b889475e563f8a1022de19a0c904542131e3a45ea80ddff3",
+    "solzero-chat.html": "70586f30ad523efdbf1f77a18150747daa61b2320a400f561b67605ccc4aa85a",
+    "solzero-workspace.js": "46a1147a43fd362a76c719a34ac57f7015f1bcce7d0999669e4de150d84eaef3",
+    "solzero-workspace.css": "251cda622bb5d7470eabbb78b570516a6f4717d21e8aee770924af86df1e8bda"
   }
 }
