@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#153e56"><title>Sol-Zero | Chat v0.11</title>
+<meta name="theme-color" content="#153e56"><title>Sol-Zero | Chat v0.12</title>
 <style>
 :root{color-scheme:light;--bg:#f4f8fa;--surface:#fff;--side:#12374d;--side-ink:#e3f1f6;--ink:#152f3e;--sub:#587180;--line:#d5e2e8;--accent:#126e82;--accent-2:#e2f4f6;--user:#dbedf3;--shadow:0 16px 45px #16344324;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
 :root[data-theme=dark]{color-scheme:dark;--bg:#101e28;--surface:#192c38;--side:#0d1b25;--side-ink:#dbe8ef;--ink:#e6f2f6;--sub:#a4bcc7;--line:#35505e;--accent:#58c3d2;--accent-2:#194350;--user:#1f4c5a;--shadow:0 16px 45px #0007}
@@ -29,16 +29,18 @@
   .head-actions{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;width:100%;max-width:100%;gap:6px;padding-bottom:3px;scrollbar-width:thin}
   .head-actions .top-btn{flex:0 0 auto;white-space:nowrap}
 }
+.media-preview{display:block;max-width:100%;height:auto;object-fit:contain}.media-actions{display:flex;flex-wrap:wrap;gap:8px}
 </style></head><body>
 <div id="app">
 <aside id="sidebar" class="sidebar" aria-label="会話一覧">
-  <div class="brand"><div class="logo">S0</div><div><strong>Sol-Zero</strong><small>from scratch · Chat v0.11</small></div></div>
+  <div class="brand"><div class="logo">S0</div><div><strong>Sol-Zero</strong><small>from scratch · Chat v0.12</small></div></div>
   <button id="newSidebar" class="side-btn">＋ 新しい会話</button>
   <input id="historySearch" class="searchbox" type="search" placeholder="会話とメッセージを検索" aria-label="会話履歴を検索">
   <div class="section-caption">会話履歴 <span id="chatCount"></span></div>
   <nav class="history" id="history" aria-label="チャット履歴"></nav>
   <div class="side-footer">
     <button id="factorySide" class="side-btn">🧰 WSP回路工房</button><button id="graphSide" class="side-btn">🧠 WSP汎用グラフ</button><button id="induceSide" class="side-btn">🔬 帰納WSP・規則を発見</button><button id="autoSide" class="side-btn">✦ WSP回路を自動設計</button><button id="bulkSide" class="side-btn">⚙ WSP大量回路</button>
+    <button id="studioSide" class="side-btn">🎬 メディア工房・作品管理</button>
     <button id="pinChat" class="side-btn">📌 会話を固定</button>
     <div class="side-actions"><button id="rename" class="side-btn">✎ 会話の名前を変更</button><button id="exportJson" class="side-btn">↓ JSONバックアップ</button><button id="exportMd" class="side-btn">↓ Markdown書き出し</button><button id="importJson" class="side-btn">↑ JSONから復元</button></div>
     <div class="row2"><button id="deleteChat" class="side-btn">現在の会話を削除</button><button id="themeSide" class="side-btn">◐ 配色</button></div>
@@ -46,13 +48,13 @@
 </aside>
 <main class="main">
 <header class="topbar"><div><h1>Sol-Zero Chat</h1><p>学習済みモデルなし・端末内で実行</p></div><div class="head-actions">
-  <span class="status">ローカル v0.11</span>
+  <span class="status">ローカル v0.12</span>
   <button class="top-btn mobile-only" id="menu" title="会話履歴" aria-label="会話履歴">☰</button>
-  <button class="top-btn" id="knowledgeBtn">知識</button><button class="top-btn" id="docsBtn">資料</button><button class="top-btn" id="generatorBtn">生成実験</button><button class="top-btn" id="factoryBtn">回路工房</button><button class="top-btn" id="graphBtn">汎用WSP</button><button class="top-btn" id="induceBtn">帰納WSP</button><button class="top-btn" id="autoBtn">自動設計</button><button class="top-btn desktop-optional" id="bulkBtn">WSP拡張</button><button class="top-btn desktop-optional" id="circuitBtn">回路</button>
+  <button class="top-btn" id="studioBtn">🎨 メディア工房</button><button class="top-btn" id="knowledgeBtn">知識</button><button class="top-btn" id="docsBtn">資料</button><button class="top-btn" id="generatorBtn">生成実験</button><button class="top-btn" id="factoryBtn">回路工房</button><button class="top-btn" id="graphBtn">汎用WSP</button><button class="top-btn" id="induceBtn">帰納WSP</button><button class="top-btn" id="autoBtn">自動設計</button><button class="top-btn desktop-optional" id="bulkBtn">WSP拡張</button><button class="top-btn desktop-optional" id="circuitBtn">回路</button>
   <button class="top-btn" id="newTop" title="新しい会話" aria-label="新しい会話">＋</button>
 </div></header>
 <section id="messages" class="messages" role="log" aria-label="チャットメッセージ"></section>
-<footer class="composer-wrap"><form id="chatForm" class="composer"><textarea id="input" rows="1" maxlength="3000" placeholder="質問、/intent、/help、計算など…" aria-label="メッセージを入力"></textarea><button id="send" class="send" type="submit">送信</button></form><div class="disclaimer">ルール・保存知識・WSP回路・ゼロから学習した6分類器を使用。汎用的な言語推論は未搭載。</div></footer>
+<footer class="composer-wrap"><form id="chatForm" class="composer"><textarea id="input" rows="1" maxlength="3000" placeholder="チャット、/image 海、/audio こんにちは、/video 星空 など…" aria-label="メッセージを入力"></textarea><button id="send" class="send" type="submit">送信</button></form><div class="disclaimer">ルール・WSP・スクラッチ分類器と手続き的メディア生成に対応。高度な汎用生成AIではありません。</div></footer>
 </main></div>
 <div id="scrim" class="scrim hidden"></div>
 <section id="panel" class="panel hidden" role="dialog" aria-modal="true" aria-labelledby="panelTitle"><header class="panel-head"><h2 id="panelTitle">設定</h2><button id="closePanel" class="top-btn" aria-label="閉じる">× 閉じる</button></header><div id="panelBody" class="panel-body"></div><footer id="panelFoot" class="panel-foot">すべて端末内で処理します。</footer></section>

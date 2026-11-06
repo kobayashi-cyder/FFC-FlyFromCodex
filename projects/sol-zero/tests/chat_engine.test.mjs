@@ -92,7 +92,7 @@ test('plain transcript excerpt does not claim model summarization',()=>{
 });
 test('engine version and help reflect available operations',()=>{
   const e=new SolZeroEngine();
-  assert.equal(ENGINE_VERSION,'0.11.0');
+  assert.equal(ENGINE_VERSION,'0.12.0');
   assert.match(e.reply('/help'),/\/teach/);
   assert.match(e.reply('/help'),/一般推論・画像理解は未搭載/);
 });

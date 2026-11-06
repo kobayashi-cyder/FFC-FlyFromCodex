@@ -2,7 +2,7 @@
  * No pretrained weights, no network calls, no arbitrary code execution.
  */
 import {predictLearnedIntent, LEARNED_ROUTER_META} from './learned_router.js';
-export const ENGINE_VERSION = '0.11.0';
+export const ENGINE_VERSION = '0.12.0';
 export const FEATURE_SETS = Object.freeze({
   greeting: ['こんにちは','こんばんは','おはよう','はじめまして','やあ','hello','hi'],
   identity: ['あなたは','君は','誰ですか','名前は','sol-zero','solzero','何者'],
@@ -329,7 +329,7 @@ export class SolZeroEngine {
     const {intent}=this.router.predict(raw);
     switch(intent){
       case 'greeting':return 'こんにちは。Sol-Zeroです。既存の学習済みAIを使わないチャット試作版です。質問を教えると、次回から検索して回答できます。';
-      case 'identity':return '私はSol-Zero v0.11です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
+      case 'identity':return '私はSol-Zero v0.12です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
       case 'help':return this.help();
       case 'gratitude':return 'どういたしまして。';
       case 'code':return 'コードを自由生成する学習済み機能はまだありません。既存の質問と回答を知識パネルに登録して再利用できます。';

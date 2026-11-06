@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#153e56"><title>Sol-Zero | Chat v0.11</title>
+<meta name="theme-color" content="#153e56"><title>Sol-Zero | Chat v0.12</title>
 <style>
 :root{color-scheme:light;--bg:#f4f8fa;--surface:#fff;--side:#12374d;--side-ink:#e3f1f6;--ink:#152f3e;--sub:#587180;--line:#d5e2e8;--accent:#126e82;--accent-2:#e2f4f6;--user:#dbedf3;--shadow:0 16px 45px #16344324;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
 :root[data-theme=dark]{color-scheme:dark;--bg:#101e28;--surface:#192c38;--side:#0d1b25;--side-ink:#dbe8ef;--ink:#e6f2f6;--sub:#a4bcc7;--line:#35505e;--accent:#58c3d2;--accent-2:#194350;--user:#1f4c5a;--shadow:0 16px 45px #0007}
@@ -29,16 +29,18 @@
   .head-actions{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;width:100%;max-width:100%;gap:6px;padding-bottom:3px;scrollbar-width:thin}
   .head-actions .top-btn{flex:0 0 auto;white-space:nowrap}
 }
+.media-preview{display:block;max-width:100%;height:auto;object-fit:contain}.media-actions{display:flex;flex-wrap:wrap;gap:8px}
 </style></head><body>
 <div id="app">
 <aside id="sidebar" class="sidebar" aria-label="会話一覧">
-  <div class="brand"><div class="logo">S0</div><div><strong>Sol-Zero</strong><small>from scratch · Chat v0.11</small></div></div>
+  <div class="brand"><div class="logo">S0</div><div><strong>Sol-Zero</strong><small>from scratch · Chat v0.12</small></div></div>
   <button id="newSidebar" class="side-btn">＋ 新しい会話</button>
   <input id="historySearch" class="searchbox" type="search" placeholder="会話とメッセージを検索" aria-label="会話履歴を検索">
   <div class="section-caption">会話履歴 <span id="chatCount"></span></div>
   <nav class="history" id="history" aria-label="チャット履歴"></nav>
   <div class="side-footer">
     <button id="factorySide" class="side-btn">🧰 WSP回路工房</button><button id="graphSide" class="side-btn">🧠 WSP汎用グラフ</button><button id="induceSide" class="side-btn">🔬 帰納WSP・規則を発見</button><button id="autoSide" class="side-btn">✦ WSP回路を自動設計</button><button id="bulkSide" class="side-btn">⚙ WSP大量回路</button>
+    <button id="studioSide" class="side-btn">🎬 メディア工房・作品管理</button>
     <button id="pinChat" class="side-btn">📌 会話を固定</button>
     <div class="side-actions"><button id="rename" class="side-btn">✎ 会話の名前を変更</button><button id="exportJson" class="side-btn">↓ JSONバックアップ</button><button id="exportMd" class="side-btn">↓ Markdown書き出し</button><button id="importJson" class="side-btn">↑ JSONから復元</button></div>
     <div class="row2"><button id="deleteChat" class="side-btn">現在の会話を削除</button><button id="themeSide" class="side-btn">◐ 配色</button></div>
@@ -46,13 +48,13 @@
 </aside>
 <main class="main">
 <header class="topbar"><div><h1>Sol-Zero Chat</h1><p>学習済みモデルなし・端末内で実行</p></div><div class="head-actions">
-  <span class="status">ローカル v0.11</span>
+  <span class="status">ローカル v0.12</span>
   <button class="top-btn mobile-only" id="menu" title="会話履歴" aria-label="会話履歴">☰</button>
-  <button class="top-btn" id="knowledgeBtn">知識</button><button class="top-btn" id="docsBtn">資料</button><button class="top-btn" id="generatorBtn">生成実験</button><button class="top-btn" id="factoryBtn">回路工房</button><button class="top-btn" id="graphBtn">汎用WSP</button><button class="top-btn" id="induceBtn">帰納WSP</button><button class="top-btn" id="autoBtn">自動設計</button><button class="top-btn desktop-optional" id="bulkBtn">WSP拡張</button><button class="top-btn desktop-optional" id="circuitBtn">回路</button>
+  <button class="top-btn" id="studioBtn">🎨 メディア工房</button><button class="top-btn" id="knowledgeBtn">知識</button><button class="top-btn" id="docsBtn">資料</button><button class="top-btn" id="generatorBtn">生成実験</button><button class="top-btn" id="factoryBtn">回路工房</button><button class="top-btn" id="graphBtn">汎用WSP</button><button class="top-btn" id="induceBtn">帰納WSP</button><button class="top-btn" id="autoBtn">自動設計</button><button class="top-btn desktop-optional" id="bulkBtn">WSP拡張</button><button class="top-btn desktop-optional" id="circuitBtn">回路</button>
   <button class="top-btn" id="newTop" title="新しい会話" aria-label="新しい会話">＋</button>
 </div></header>
 <section id="messages" class="messages" role="log" aria-label="チャットメッセージ"></section>
-<footer class="composer-wrap"><form id="chatForm" class="composer"><textarea id="input" rows="1" maxlength="3000" placeholder="質問、/intent、/help、計算など…" aria-label="メッセージを入力"></textarea><button id="send" class="send" type="submit">送信</button></form><div class="disclaimer">ルール・保存知識・WSP回路・ゼロから学習した6分類器を使用。汎用的な言語推論は未搭載。</div></footer>
+<footer class="composer-wrap"><form id="chatForm" class="composer"><textarea id="input" rows="1" maxlength="3000" placeholder="チャット、/image 海、/audio こんにちは、/video 星空 など…" aria-label="メッセージを入力"></textarea><button id="send" class="send" type="submit">送信</button></form><div class="disclaimer">ルール・WSP・スクラッチ分類器と手続き的メディア生成に対応。高度な汎用生成AIではありません。</div></footer>
 </main></div>
 <div id="scrim" class="scrim hidden"></div>
 <section id="panel" class="panel hidden" role="dialog" aria-modal="true" aria-labelledby="panelTitle"><header class="panel-head"><h2 id="panelTitle">設定</h2><button id="closePanel" class="top-btn" aria-label="閉じる">× 閉じる</button></header><div id="panelBody" class="panel-body"></div><footer id="panelFoot" class="panel-foot">すべて端末内で処理します。</footer></section>
@@ -96,7 +98,7 @@ const LEARNED_ROUTER_META=Object.freeze({labels:[...MODEL.labels],parameters:245
  * No pretrained weights, no network calls, no arbitrary code execution.
  */
 
-const ENGINE_VERSION = '0.11.0';
+const ENGINE_VERSION = '0.12.0';
 const FEATURE_SETS = Object.freeze({
   greeting: ['こんにちは','こんばんは','おはよう','はじめまして','やあ','hello','hi'],
   identity: ['あなたは','君は','誰ですか','名前は','sol-zero','solzero','何者'],
@@ -423,7 +425,7 @@ class SolZeroEngine {
     const {intent}=this.router.predict(raw);
     switch(intent){
       case 'greeting':return 'こんにちは。Sol-Zeroです。既存の学習済みAIを使わないチャット試作版です。質問を教えると、次回から検索して回答できます。';
-      case 'identity':return '私はSol-Zero v0.11です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
+      case 'identity':return '私はSol-Zero v0.12です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
       case 'help':return this.help();
       case 'gratitude':return 'どういたしまして。';
       case 'code':return 'コードを自由生成する学習済み機能はまだありません。既存の質問と回答を知識パネルに登録して再利用できます。';
@@ -1470,6 +1472,253 @@ const INDUCTION_DEMO=Object.freeze({
 return { INDUCTION_DEMO, induceAndVerify, promoteInduction };
 })();
 
+/** Sol-Zero Media Studio v0.12. Procedural synthesis only: NO pretrained weights,
+ * network, content APIs, hidden model, eval/Function, or external libraries.
+ * The authored scene description is a recipe, NOT semantic image generation.
+ */
+const MEDIA_LIMITS=Object.freeze({width:1024,height:1024,videoWidth:320,videoHeight:180,frames:60,duration:8,sampleRate:16000,assets:16,projectBytes:55_000_000});
+const enc=new TextEncoder();
+const themes=[['宇宙','space'],['星','space'],['星空','space'],['space','space'],['海','sea'],['波','sea'],['sea','sea'],['山','mountain'],['mountain','mountain'],['森','forest'],['木','forest'],['forest','forest'],['街','city'],['都市','city'],['city','city'],['花','flowers'],['flower','flowers'],['雨','rain'],['rain','rain'],['雪','snow'],['snow','snow'],['夕焼','sunset'],['夕日','sunset'],['sunset','sunset']];
+function themeOf(text){const t=String(text||'').toLowerCase();return themes.find(([k])=>t.includes(k))?.[1]||'abstract';}
+function validateMediaSpec(raw={}){
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('仕様が不正です');
+ const text=String(raw.prompt??'抽象模様').slice(0,180);if(!text.trim())throw Error('説明文を入力してください');
+ const width=Number(raw.width??512),height=Number(raw.height??288),seed=Number(raw.seed??2026),frames=Number(raw.frames??24),fps=Number(raw.fps??8);
+ if(!Number.isInteger(width)||width<96||width>MEDIA_LIMITS.width||!Number.isInteger(height)||height<72||height>MEDIA_LIMITS.height)throw Error('画像の寸法が範囲外です');
+ if(!Number.isInteger(seed)||seed<0||seed>0xffffffff)throw Error('シードが不正です');
+ if(!Number.isInteger(frames)||frames<2||frames>MEDIA_LIMITS.frames||!Number.isInteger(fps)||fps<2||fps>20||frames/fps>MEDIA_LIMITS.duration)throw Error('フレーム数・速度の制約を超えました');
+ const theme=raw.theme??themeOf(text);if(!['space','sea','mountain','forest','city','flowers','rain','snow','sunset','abstract'].includes(theme))throw Error('画風が不正です');
+ const controls=raw.controls??{density:1,motion:1,pitch:1};if(!controls||typeof controls!=='object'||!['density','motion','pitch'].every(k=>Number.isFinite(Number(controls[k]))&&Number(controls[k])>=.2&&Number(controls[k])<=3))throw Error('WSP生成制御値が不正です');
+ return {prompt:text,width,height,seed,frames,fps,theme,controls:{density:Number(controls.density),motion:Number(controls.motion),pitch:Number(controls.pitch)}};
+}
+function seeded(seed){let x=(seed>>>0)||0x6d2b79f5;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;};}
+const palettes={space:['#080c29','#4d2b77','#ef82bb','#ffffff'],sea:['#84c5e9','#0c5683','#16a4b0','#fae6b6'],mountain:['#9cd3f2','#486a82','#2b6772','#e7d69c'],forest:['#b4d8b4','#286850','#133e39','#dcb46f'],city:['#263451','#f9b875','#6c659b','#ecddaf'],flowers:['#eef8f0','#6caaa0','#d96d96','#ffd45d'],rain:['#445870','#687f96','#b3d1d9','#cad8ef'],snow:['#92b7cf','#bfdde8','#f4faff','#c4d3ef'],sunset:['#fa9b79','#ba517e','#4b3c72','#ffd7a6'],abstract:['#202d5f','#537cbb','#72d6ce','#ffc77e']};
+function fill(ctx,color){ctx.fillStyle=color;}
+function circle(ctx,x,y,r,color){fill(ctx,color);ctx.beginPath();ctx.arc(x,y,Math.max(.1,r),0,Math.PI*2);ctx.fill();}
+function line(ctx,x1,y1,x2,y2,width,color){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+/** Render every frame from recipe + deterministic seed. Canvas2D interface. */
+function renderMediaScene(ctx,raw,time=0){
+ const s=validateMediaSpec(raw),{width:w,height:h,theme,seed}=s,r=seeded(seed),p=palettes[theme];
+ fill(ctx,p[0]);ctx.fillRect(0,0,w,h);
+ const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,p[0]);sky.addColorStop(1,p[1]);fill(ctx,sky);ctx.fillRect(0,0,w,h);
+ const t=Math.max(0,Math.min(10,Number(time)||0)),u=t*2*Math.PI*s.controls.motion/Math.max(.25,s.frames/s.fps),density=s.controls.density;
+ if(theme==='space'){
+  for(let i=0;i<Math.round(130*density);i++){const x=r()*w,y=r()*h*.88,rad=.5+r()*2.2;circle(ctx,x,y,rad*(.85+.15*Math.cos(u+i)),i%7===0?p[2]:p[3]);}
+  for(let j=0;j<5;j++){const x=r()*w,y=r()*h,rad=8+r()*40;circle(ctx,x,y,rad,p[j%3]);circle(ctx,x-rad*.25,y-rad*.28,rad*.44,p[1]);}
+ } else if(['mountain','sunset','forest','snow','rain'].includes(theme)){
+  circle(ctx,w*.75,h*.27,h*.11,p[3]);
+  for(let m=0;m<3;m++){const base=h*(.52+m*.19),amp=h*(.13+m*.05),n=7;
+   fill(ctx,p[(m+1)%3]);ctx.beginPath();ctx.moveTo(0,h);for(let i=0;i<=n;i++)ctx.lineTo(i*w/n,base-(r()-.2)*amp);ctx.lineTo(w,h);ctx.closePath();ctx.fill();}
+  if(theme==='forest'){for(let i=0;i<Math.round(55*density);i++){const x=r()*w,y=h*(.56+r()*.48),size=6+r()*h*.12;line(ctx,x,y,x,y-size,2,p[2]);for(let k=0;k<3;k++)circle(ctx,x,y-size*(.9-k*.16),size*(.18+k*.06),k%2?p[1]:p[2]);}}
+  if(theme==='snow'||theme==='rain'){for(let i=0;i<Math.round(155*density);i++){const x=(r()*w+(theme==='snow'?Math.sin(u)*14:t*32))%w,y=(r()*h+t*(theme==='snow'?12:67))%h;if(theme==='rain')line(ctx,x,y,x-2,y+11,1,p[3]);else circle(ctx,x,y,1+r()*2,p[2]);}}
+ } else if(theme==='sea'){
+  circle(ctx,w*.7,h*.23,h*.13,p[3]);fill(ctx,p[1]);ctx.fillRect(0,h*.51,w,h*.49);
+  for(let j=0;j<16;j++){const y=h*(.53+j*.032),phase=j*.73+u*.6;ctx.strokeStyle=j%2===0?p[2]:p[3];ctx.lineWidth=1+j*.04;ctx.beginPath();for(let x=0;x<=w;x+=4){const yy=y+Math.sin(x*.036+phase)*h*.009;if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy);}ctx.stroke();}
+ } else if(theme==='city'){
+  circle(ctx,w*.79,h*.21,h*.11,p[3]);fill(ctx,p[1]);ctx.fillRect(0,h*.8,w,h*.2);
+  for(let x=0;x<w;){const bw=10+r()*43,bh=h*(.17+r()*.58),y=h*.8-bh;fill(ctx,p[2]);ctx.fillRect(x,y,bw,bh);fill(ctx,p[3]);for(let wy=y+9;wy<y+bh-5;wy+=12)for(let wx=x+5;wx<x+bw-4;wx+=10)if(r()>.36)ctx.fillRect(wx,wy,3,4);x+=bw+2;}
+ } else if(theme==='flowers'){
+  for(let i=0;i<Math.round(42*density);i++){const x=r()*w,y=h*(.24+r()*.71),rad=3+r()*17;line(ctx,x,y+rad*3,x,y,1.5,p[1]);for(let j=0;j<7;j++){const a=j*2*Math.PI/7+u*.04;circle(ctx,x+Math.cos(a)*rad*.72,y+Math.sin(a)*rad*.72,rad*.5,i%3?p[2]:p[3]);}circle(ctx,x,y,rad*.4,p[3]);}
+ } else {
+  for(let i=0;i<Math.round(115*density);i++){const x=r()*w,y=r()*h,rad=4+r()*h*.16,phase=u*(i%4?1:-1);circle(ctx,x+Math.sin(phase+i)*4,y+Math.cos(phase)*3,rad,p[1+i%3]);}
+ }
+ return {theme,width:w,height:h,seed};
+}
+function audioSpec(raw={}){
+ const kind=String(raw.kind??'ambient');if(!['ambient','waves','wind','tones','robot'].includes(kind))throw Error('音声種別が不正です');
+ const seconds=Number(raw.seconds??4),seed=Number(raw.seed??2026),pitch=Number(raw.pitch??1);
+ if(!Number.isFinite(seconds)||seconds<.5||seconds>MEDIA_LIMITS.duration||!Number.isInteger(seed)||seed<0||seed>0xffffffff||!Number.isFinite(pitch)||pitch<.2||pitch>3)throw Error('音声時間・シードが範囲外です');
+ return {kind,seconds,seed,pitch,text:String(raw.text??'こんにちは').slice(0,200),sampleRate:MEDIA_LIMITS.sampleRate};
+}
+const vowelMap={あ:'a',い:'i',う:'u',え:'e',お:'o',か:'a',き:'i',く:'u',け:'e',こ:'o',さ:'a',し:'i',す:'u',せ:'e',そ:'o',た:'a',ち:'i',つ:'u',て:'e',と:'o',な:'a',に:'i',ぬ:'u',ね:'e',の:'o',は:'a',ひ:'i',ふ:'u',へ:'e',ほ:'o',ま:'a',み:'i',む:'u',め:'e',も:'o',や:'a',ゆ:'u',よ:'o',ら:'a',り:'i',る:'u',れ:'e',ろ:'o',わ:'a',を:'o',ん:'n',ア:'a',イ:'i',ウ:'u',エ:'e',オ:'o',カ:'a',キ:'i',ク:'u',ケ:'e',コ:'o'};
+const fTable={a:[790,1250],i:[300,2300],u:[350,1250],e:[550,1850],o:[480,930],n:[260,1100]};
+function synthSamples(raw){
+ const s=audioSpec(raw),rate=s.sampleRate,count=Math.round(rate*s.seconds),data=new Float32Array(count),random=seeded(s.seed);let filter=0;
+ const kana=[...s.text].filter(x=>vowelMap[x]);
+ for(let i=0;i<count;i++){
+  const t=i/rate,fade=Math.min(1,t/.06,(s.seconds-t)/.12),noise=(random()-.5)*2;
+  let v=0;
+  if(s.kind==='ambient'){filter=filter*.76+noise*.24;v=filter*.36+Math.sin(2*Math.PI*110*s.pitch*t)*.10;}
+  if(s.kind==='wind'){filter=filter*.97+noise*.03;v=filter*.68;}
+  if(s.kind==='waves'){filter=filter*.94+noise*.06;v=filter*(.1+.9*Math.pow(Math.sin(t*1.8),2))*.85+Math.sin(2*Math.PI*75*s.pitch*t)*.03;}
+  if(s.kind==='tones'){const n=[0,2,4,7,9,7,4,2][Math.floor(t*4)%8],hz=220*s.pitch*Math.pow(2,n/12),env=Math.exp(-(t*4%1)*2.8);v=(Math.sin(2*Math.PI*hz*t)+.23*Math.sin(2*Math.PI*2*hz*t))*env*.27;}
+  if(s.kind==='robot'){
+   const segments=Math.max(1,kana.length),idx=Math.min(segments-1,Math.floor(t/s.seconds*segments)),seg=(t/s.seconds*segments)%1;
+   const vowel=vowelMap[kana[idx]]||'a',[f1,f2]=fTable[vowel],f0=(120+8*Math.sin(t*1.7))*s.pitch;let sum=0;
+   for(let k=1;k<=25;k++){const fq=f0*k,amp=Math.exp(-(((fq-f1)/125)**2))*.9+Math.exp(-(((fq-f2)/170)**2))*.55;sum+=Math.sin(2*Math.PI*fq*t)*amp;}
+   const syllable=Math.min(1,seg*12,(1-seg)*12);v=(sum*.22+noise*(seg<.08?.08:0))*syllable;
+  }
+  data[i]=Math.max(-1,Math.min(1,v*Math.max(0,fade)));
+ }
+ return {samples:data,rate};
+}
+function wavBytes(raw){const {samples,rate}=synthSamples(raw);const b=new Uint8Array(44+samples.length*2),v=new DataView(b.buffer);const put=(off,s)=>{for(let i=0;i<s.length;i++)b[off+i]=s.charCodeAt(i);};put(0,'RIFF');v.setUint32(4,b.length-8,true);put(8,'WAVE');put(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);put(36,'data');v.setUint32(40,samples.length*2,true);for(let i=0;i<samples.length;i++)v.setInt16(44+i*2,Math.round(Math.max(-1,Math.min(1,samples[i]))*32767),true);return b;}
+/** Fixed 256 RGB332 colour table (deterministic, no model). */
+function gifPalette(){const p=new Uint8Array(256*3);for(let i=0;i<256;i++){p[i*3]=Math.round(((i>>5)&7)*255/7);p[i*3+1]=Math.round(((i>>2)&7)*255/7);p[i*3+2]=Math.round((i&3)*255/3);}return p;}
+function rgbaToIndex(rgba,w,h){if(!rgba||rgba.length!==w*h*4)throw Error('RGBA長が一致しません');const o=new Uint8Array(w*h);for(let i=0;i<o.length;i++){o[i]=((rgba[i*4]>>5)<<5)|((rgba[i*4+1]>>5)<<2)|(rgba[i*4+2]>>6);}return o;}
+function gifLzw(pixels){const clear=256,end=257,dict=new Map();let next=258,width=9,acc=0,bits=0,output=[];
+ const put=c=>{acc|=c<<bits;bits+=width;while(bits>=8){output.push(acc&255);acc>>>=8;bits-=8;}};
+ const reset=()=>{dict.clear();next=258;width=9;};reset();put(clear);
+ if(!pixels.length){put(end);}else{let prefix=pixels[0];for(let i=1;i<pixels.length;i++){
+  const c=pixels[i],key=prefix*256+c,found=dict.get(key);
+  if(found!==undefined){prefix=found;continue;}
+  put(prefix);
+  if(next<4096){dict.set(key,next++);if(next>(1<<width)&&width<12)width++;}
+  else{put(clear);reset();}
+  prefix=c;
+ }put(prefix);put(end);}
+ if(bits)output.push(acc&255);
+ const blocks=[];for(let i=0;i<output.length;i+=255){const chunk=output.slice(i,i+255);blocks.push(chunk.length,...chunk);}blocks.push(0);return blocks;
+}
+/** Encode GIF89a animation; pixels are palette indices for each frame. */
+function gifBytes(frames,w,h,fps=8){
+ if(!Array.isArray(frames)||frames.length<2||frames.length>MEDIA_LIMITS.frames||!Number.isInteger(w)||!Number.isInteger(h)||w<1||h<1||w>MEDIA_LIMITS.videoWidth||h>MEDIA_LIMITS.videoHeight||!Number.isInteger(fps)||fps<2||fps>20)throw Error('GIF制限超過');
+ const out=[],byte=n=>out.push(n&255),word=n=>{byte(n);byte(n>>8);},str=s=>{for(let i=0;i<s.length;i++)byte(s.charCodeAt(i));};
+ str('GIF89a');word(w);word(h);byte(0xf7);byte(0);byte(0);out.push(...gifPalette());
+ // Netscape infinite loop
+ out.push(0x21,0xff,11);str('NETSCAPE2.0');out.push(3,1,0,0,0);
+ for(const frame of frames){if(!(frame instanceof Uint8Array)||frame.length!==w*h)throw Error('GIF画像データ長が不正です');
+  const delay=Math.max(1,Math.round(100/fps));out.push(0x21,0xf9,4,4,delay&255,delay>>8,0,0,0x2c);word(0);word(0);word(w);word(h);byte(0);byte(8);for(const n of gifLzw(frame))out.push(n);}
+ byte(0x3b);return Uint8Array.from(out);
+}
+let crcTable;
+function crc32(data){if(!crcTable){crcTable=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;crcTable[i]=c>>>0;}}let c=0xffffffff;for(const b of data)c=crcTable[(c^b)&255]^(c>>>8);return(c^0xffffffff)>>>0;}
+/** Noncompressed ZIP so it works without APIs or internet. Caller must enforce asset limits. */
+function zipBytes(entries){if(!Array.isArray(entries)||!entries.length||entries.length>MEDIA_LIMITS.assets+3)throw Error('ZIPエントリ数不正');let size=0;const parts=[],index=[];const u16=n=>[n&255,(n>>>8)&255],u32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];let offset=0;
+ for(const entry of entries){const name=String(entry.name||''),filename=enc.encode(name),buf=entry.bytes instanceof Uint8Array?entry.bytes:enc.encode(String(entry.bytes??''));
+  if(!/^[a-zA-Z0-9_./-]{1,120}$/.test(name)||name.startsWith('/')||name.includes('..')||name.includes('//'))throw Error('ZIPパス不正');
+  size+=buf.length;if(size>MEDIA_LIMITS.projectBytes)throw Error('ZIP総量を超過');const crc=crc32(buf);
+  const local=Uint8Array.from([...u32(0x04034b50),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(buf.length),...u32(buf.length),...u16(filename.length),...u16(0)]);
+  parts.push(local,filename,buf);const central=Uint8Array.from([...u32(0x02014b50),...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(buf.length),...u32(buf.length),...u16(filename.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(offset)]);index.push(central,filename);offset+=local.length+filename.length+buf.length;
+ }
+ const cdsize=index.reduce((s,b)=>s+b.length,0),end=Uint8Array.from([...u32(0x06054b50),...u16(0),...u16(0),...u16(entries.length),...u16(entries.length),...u32(cdsize),...u32(offset),...u16(0)]),result=new Uint8Array(offset+cdsize+end.length);let pos=0;for(const part of [...parts,...index,end]){result.set(part,pos);pos+=part.length;}return result;
+}
+/** Import ZIPs produced by Sol-Zero's store writer only. Reject compressed data,
+ * encrypted/data-descriptor archives and path traversal rather than guessing. */
+function unzipStored(bytes){
+ if(!(bytes instanceof Uint8Array)||bytes.length>MEDIA_LIMITS.projectBytes+100_000)throw Error('ZIP容量超過');
+ const d=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),u16=o=>d.getUint16(o,true),u32=o=>d.getUint32(o,true),files=[];let pos=0;
+ while(pos+4<=bytes.length&&u32(pos)===0x04034b50){
+  if(files.length>=MEDIA_LIMITS.assets+3)throw Error('ZIP項目数が多すぎます');if(pos+30>bytes.length)throw Error('ZIPヘッダー破損');
+  const flags=u16(pos+6),method=u16(pos+8),checksum=u32(pos+14),len=u32(pos+18),original=u32(pos+22),nameLen=u16(pos+26),extraLen=u16(pos+28);
+  if(method!==0||len!==original||!(flags&0x0800)||(flags&0x0009))throw Error('ZIP形式は非圧縮UTF-8のみ対応');
+  const begin=pos+30+nameLen+extraLen,end=begin+len;if(end>bytes.length)throw Error('ZIP長が不正');
+  const name=new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(pos+30,pos+30+nameLen));
+  if(!/^[a-zA-Z0-9_./-]{1,120}$/.test(name)||name.startsWith('/')||name.includes('..')||name.includes('//')||files.some(f=>f.name===name))throw Error('ZIPパス・重複が不正');
+  const payload=bytes.slice(begin,end);if(crc32(payload)!==checksum)throw Error('ZIP CRC不一致');files.push({name,bytes:payload});pos=end;
+ }
+ if(!files.length||pos+4>bytes.length||u32(pos)!==0x02014b50)throw Error('ZIP中央ディレクトリがありません');
+ return files;
+}
+
+/** WSP directly programs 4x3 media-control weights; not a learned generator. */
+class MediaWSP{
+ constructor(){this.weights=[[.5,.1,.1],[.4,.25,-.1],[.15,0,0],[.2,.15,.2]];this.history=[];}
+ group(theme){if(theme==='space')return 0;if(theme==='sea'||theme==='sunset')return 1;if(['mountain','forest','flowers','snow','rain'].includes(theme))return 2;return 3;}
+ controls(theme){const row=this.weights[this.group(theme)];return {density:Math.max(.2,Math.min(2.5,1+row[0])),motion:Math.max(.2,Math.min(2.5,1+row[1])),pitch:Math.max(.2,Math.min(2.5,1+row[2]))};}
+ edit(row,col,value){if(!Number.isInteger(row)||row<0||row>3||!Number.isInteger(col)||col<0||col>2||!Number.isFinite(value)||Math.abs(value)>1.5)throw Error('WSP重み範囲外');this.history.push({row,col,old:this.weights[row][col]});if(this.history.length>40)this.history.shift();this.weights[row][col]=value;}
+ rollback(){const v=this.history.pop();if(!v)return false;this.weights[v.row][v.col]=v.old;return true;}
+ snapshot(){return {version:1,weights:this.weights.map(x=>[...x])};}
+ restore(s){if(!s||s.version!==1||!Array.isArray(s.weights)||s.weights.length!==4||!s.weights.every(x=>Array.isArray(x)&&x.length===3&&x.every(n=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<=1.5)))return false;this.weights=s.weights.map(x=>[...x]);this.history=[];return true;}
+}
+
+/** Unified offline media workspace for Sol-Zero. No external AI/services. */
+
+const STORE='solzero_studio_v012_recipe',DB_NAME='solzero_media_v012';
+function element(tag,txt){const x=document.createElement(tag);if(txt!==undefined)x.textContent=txt;return x;}
+function mimeFor(name){const ext=name.toLowerCase().split('.').pop();return ({png:'image/png',gif:'image/gif',jpg:'image/jpeg',jpeg:'image/jpeg',wav:'audio/wav',mp3:'audio/mpeg',webm:'video/webm',mp4:'video/mp4'})[ext]||null;}
+function fileDownload(data,name,type){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=element('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10_000);}
+function makeCanvas(w,h){const c=element('canvas');c.width=w;c.height=h;return c;}
+function toPng(canvas){return new Promise((resolve,reject)=>canvas.toBlob(async blob=>{if(!blob)return reject(Error('PNG変換に失敗'));resolve(new Uint8Array(await blob.arrayBuffer()));},'image/png'));}
+async function studioDB(){if(typeof indexedDB==='undefined')return null;return new Promise((res)=>{let r;try{r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('assets'))r.result.createObjectStore('assets',{keyPath:'id'});};r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null);}catch{res(null);}});}
+async function dbOp(op,value){const db=await studioDB();if(!db)return null;return new Promise(resolve=>{let req;try{const tx=db.transaction('assets',op==='getAll'?'readonly':'readwrite'),s=tx.objectStore('assets');req=op==='getAll'?s.getAll():op==='put'?s.put(value):op==='clear'?s.clear():s.delete(value);req.onsuccess=()=>resolve(req.result??true);req.onerror=()=>resolve(null);tx.oncomplete=()=>db.close();tx.onerror=()=>db.close();}catch{db.close();resolve(null);}});}
+class MediaStudio {
+ constructor(){this.assets=[];this.loaded=false;this.busy=false;this.wsp=new MediaWSP();this.project={name:'Sol-Zero作品',prompt:'夕焼けの海に浮かぶ星',seed:2026,theme:'auto',width:512,height:288,frames:24,fps:8,kind:'waves',text:'こんにちは'};
+  try{const raw=JSON.parse(localStorage.getItem(STORE)||'null');if(raw&&typeof raw==='object'){Object.assign(this.project,raw);if(raw.wsp)this.wsp.restore(raw.wsp);}}catch{}
+ }
+ async ensureLoaded(){if(this.loaded)return;this.loaded=true;const rows=await dbOp('getAll');if(Array.isArray(rows)){for(const a of rows){if(a?.id&&a?.name&&a?.bytes instanceof Uint8Array&&a.bytes.length<=MEDIA_LIMITS.projectBytes&&this.assets.length<MEDIA_LIMITS.assets)this.assets.push(a);}}}
+ saveRecipe(){try{localStorage.setItem(STORE,JSON.stringify({...this.project,wsp:this.wsp.snapshot()}));return true;}catch{return false;}}
+ buildSpec(p=this.project){const theme=p.theme==='auto'?undefined:p.theme;const result=validateMediaSpec({prompt:p.prompt,seed:Number(p.seed),width:Number(p.width),height:Number(p.height),frames:Number(p.frames),fps:Number(p.fps),theme});return validateMediaSpec({...result,controls:this.wsp.controls(result.theme)});}
+ async add(name,type,bytes,kind,spec){if(!(bytes instanceof Uint8Array)||bytes.length>22_000_000||bytes.length===0)throw Error('素材サイズが範囲外です');if(this.assets.length>=MEDIA_LIMITS.assets||this.assets.reduce((n,a)=>n+a.bytes.length,0)+bytes.length>MEDIA_LIMITS.projectBytes)throw Error('素材の個数または合計容量が上限です');const id=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+'_'+Math.random().toString(16).slice(2);
+  const asset={id,name,type,bytes,kind,spec,created:new Date().toISOString()};this.assets.push(asset);await dbOp('put',asset);return asset;
+ }
+ async remove(id){this.assets=this.assets.filter(a=>a.id!==id);await dbOp('delete',id);}
+ async clear(){this.assets=[];await dbOp('clear');}
+ async makeImage(p=this.project){const s=this.buildSpec(p),canvas=makeCanvas(s.width,s.height);renderMediaScene(canvas.getContext('2d'),s,0);const bytes=await toPng(canvas);return this.add(`media_${Date.now()}.png`,'image/png',bytes,'image',s);}
+ async makeAudio(p=this.project){const spec=audioSpec({kind:p.kind,seconds:Number(p.frames)/Number(p.fps),seed:Number(p.seed),text:p.text,pitch:this.buildSpec(p).controls.pitch}),bytes=wavBytes(spec);return this.add(`audio_${Date.now()}.wav`,'audio/wav',bytes,'audio',spec);}
+ async makeGif(p=this.project){const origin=this.buildSpec(p),s={...origin,width:Math.min(320,origin.width),height:Math.min(180,origin.height)},frames=[],canvas=makeCanvas(s.width,s.height),ctx=canvas.getContext('2d',{willReadFrequently:true});
+  for(let i=0;i<s.frames;i++){renderMediaScene(ctx,s,i/s.fps);frames.push(rgbaToIndex(ctx.getImageData(0,0,s.width,s.height).data,s.width,s.height));if(i%5===0)await new Promise(resolve=>setTimeout(resolve,0));}
+  const bytes=gifBytes(frames,s.width,s.height,s.fps);return this.add(`animation_${Date.now()}.gif`,'image/gif',bytes,'animation',s);
+ }
+ async makeWebm(p=this.project){
+  const origin=this.buildSpec(p),s={...origin,width:Math.min(320,origin.width),height:Math.min(180,origin.height)};
+  if(typeof MediaRecorder==='undefined'||typeof AudioContext==='undefined')throw Error('このブラウザはWebM録画・音声合成に対応しません。GIFとWAVは利用可能です。');
+  const type=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));if(!type)throw Error('WebMエンコーダがありません。GIFで書き出してください。');
+  const canvas=makeCanvas(s.width,s.height),ctx=canvas.getContext('2d'),ac=new AudioContext(),stream=canvas.captureStream(s.fps),dest=ac.createMediaStreamDestination();let rec=null;
+  try{
+   const spec=audioSpec({kind:p.kind,seconds:s.frames/s.fps,seed:s.seed,text:p.text,pitch:s.controls.pitch}),a=synthSamples(spec),audio=ac.createBuffer(1,a.samples.length,a.rate);audio.copyToChannel(a.samples,0);const source=ac.createBufferSource();source.buffer=audio;source.connect(dest);
+   const joined=new MediaStream([...stream.getVideoTracks(),...dest.stream.getAudioTracks()]);rec=new MediaRecorder(joined,{mimeType:type,videoBitsPerSecond:500_000,audioBitsPerSecond:64_000});let chunks=[];
+   const finished=new Promise((resolve,reject)=>{rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};rec.onerror=e=>reject(Error(e.error?.message||'録画エラー'));rec.onstop=async()=>{try{resolve(new Uint8Array(await new Blob(chunks,{type}).arrayBuffer()));}catch(err){reject(err);}};});
+   renderMediaScene(ctx,s,0);await ac.resume();rec.start(200);source.start();
+   for(let i=0;i<s.frames;i++){renderMediaScene(ctx,s,i/s.fps);await new Promise(resolve=>setTimeout(resolve,1000/s.fps));}
+   if(rec.state!=='inactive')rec.stop();const bytes=await Promise.race([finished,new Promise((_,reject)=>setTimeout(()=>reject(Error('WebM保存タイムアウト')),3500))]);
+   if(bytes.length<100)throw Error('WebMが空です');return await this.add(`movie_${Date.now()}.webm`,'video/webm',bytes,'video',s);
+  }finally{try{if(rec&&rec.state!=='inactive')rec.stop();}catch{}stream.getTracks().forEach(x=>x.stop());dest.stream.getTracks().forEach(x=>x.stop());await ac.close();}
+ }
+ async generate(kind,override=null){if(this.busy)throw Error('すでに生成中です');this.busy=true;try{const p=override?{...this.project,...override}:this.project;switch(kind){case'image':return await this.makeImage(p);case'audio':return await this.makeAudio(p);case'gif':return await this.makeGif(p);case'webm':return await this.makeWebm(p);default:throw Error('生成種別が不正です');}}finally{this.busy=false;}}
+ download(asset){fileDownload(asset.bytes,asset.name,asset.type);}
+ exportZip(){const manifest={format:'solzero-media-v012',version:1,project:{...this.project,wsp:this.wsp.snapshot()},assets:this.assets.map((a,i)=>({file:`assets/a${String(i).padStart(2,'0')}.${a.name.split('.').at(-1)}`,kind:a.kind,mime:a.type,originalName:a.name,spec:a.spec,created:a.created}))};const entries=[{name:'project.json',bytes:JSON.stringify(manifest,null,2)},...manifest.assets.map((a,i)=>({name:a.file,bytes:this.assets[i].bytes}))];const bytes=zipBytes(entries);fileDownload(bytes,'SolZero_media_project.zip','application/zip');return bytes.length;}
+ async importZip(file){if(file.size>MEDIA_LIMITS.projectBytes+100_000)throw Error('ZIP上限超過');const entries=unzipStored(new Uint8Array(await file.arrayBuffer())),manifestFile=entries.find(x=>x.name==='project.json');if(!manifestFile)throw Error('project.jsonなし');const m=JSON.parse(new TextDecoder().decode(manifestFile.bytes));if(m.format!=='solzero-media-v012'||m.version!==1||!Array.isArray(m.assets)||m.assets.length>MEDIA_LIMITS.assets)throw Error('プロジェクト形式不正');
+  const next=[];for(const a of m.assets){if(typeof a.file!=='string'||!/^assets\/a\d{2}\.(png|gif|jpg|jpeg|wav|mp3|webm|mp4)$/.test(a.file))throw Error('素材名が不正');const f=entries.find(x=>x.name===a.file),type=mimeFor(a.file);if(!f||f.bytes.length>22_000_000||a.mime!==type)throw Error('素材と説明が不一致');next.push({id:(crypto.randomUUID?crypto.randomUUID():String(Date.now()+next.length)),name:String(a.originalName||a.file).slice(0,120),type,bytes:f.bytes,kind:String(a.kind||'import'),spec:a.spec||{},created:a.created||new Date().toISOString()});}
+  if(next.reduce((n,a)=>n+a.bytes.length,0)>MEDIA_LIMITS.projectBytes)throw Error('総容量が多すぎます');const p=m.project;if(!p||typeof p!=='object'||!validateMediaSpec({...p,theme:p.theme==='auto'?undefined:p.theme}))throw Error('作品仕様が不正');
+  await this.clear();for(const a of next){this.assets.push(a);await dbOp('put',a);}this.project={...this.project,...p};if(p.wsp)this.wsp.restore(p.wsp);this.saveRecipe();return next.length;
+ }
+ async importMedia(files){let added=0;for(const f of [...files]){const type=mimeFor(f.name);if(!type||f.type && type!==f.type||f.size>22_000_000)continue;await this.add(`imported_${Date.now()}_${added}.${f.name.split('.').at(-1).toLowerCase()}`,type,new Uint8Array(await f.arrayBuffer()),'import',{originalName:f.name.slice(0,100)});added++;}return added;}
+ render(root,helpers){const {notify}=helpers;root.replaceChildren();const notice=element('p','生成AIではなく、コードから直接画像・波形・フレームを作る独自エンジンです。学習済みモデル・通信・外部APIなし。WebMはブラウザ対応時のみ音声入りで生成します。');notice.className='muted';root.append(notice);
+  const setRow=(label,type,value,options=null)=>{const row=element('div');row.className='field';const caption=element('label',label),input=options?element('select'):element(type==='textarea'?'textarea':'input');if(!options&&type!=='textarea')input.type=type;if(options)for(const [val,text] of options){const option=element('option',text);option.value=val;input.append(option);}input.value=String(value);caption.append(input);row.append(caption);root.append(row);return input;};
+  const name=setRow('作品名','text',this.project.name),prompt=setRow('生成指示（対応テーマ：宇宙・海・山・森・街・花・雨・雪・夕焼け・抽象）','textarea',this.project.prompt);
+  const seed=setRow('乱数シード','number',this.project.seed),theme=setRow('画風','text',this.project.theme,[['auto','指示から自動選択'],...['space','sea','mountain','forest','city','flowers','rain','snow','sunset','abstract'].map(x=>[x,x])]);
+  const dims=setRow('画像サイズ','text',`${this.project.width}x${this.project.height}`,[['512x288','512×288'],['768x432','768×432'],['320x180','320×180'],['1024x576','1024×576']]);
+  const duration=setRow('動画長（フレーム数）','text',`${this.project.frames}`,[['16','2秒'],['24','3秒'],['32','4秒'],['48','6秒']]);
+  const sound=setRow('音の種類','text',this.project.kind,[['ambient','アンビエント'],['waves','波音'],['wind','風音'],['tones','オリジナル電子音'],['robot','簡易ロボット声（音素風）']]);
+  const speech=setRow('ロボット声の文字','text',this.project.text);
+  const log=element('div','準備完了。生成結果は端末に保存されます（対応ブラウザのIndexedDB）。');log.className='listentry';root.append(log);
+  const btnrow=element('div');btnrow.className='buttons';root.append(btnrow);
+  const collect=()=>{const [w,h]=dims.value.split('x').map(Number);const p={name:name.value.slice(0,60),prompt:prompt.value,seed:Number(seed.value),theme:theme.value,width:w,height:h,frames:Number(duration.value),fps:8,kind:sound.value,text:speech.value};this.buildSpec(p);audioSpec({kind:p.kind,seconds:p.frames/p.fps,seed:p.seed,text:p.text});this.project=p;this.saveRecipe();return p;};
+  const action=(label,fn)=>{const b=element('button',label);b.className='btn primary';b.addEventListener('click',async()=>{if(this.busy)return;try{const p=collect();b.disabled=true;log.textContent='処理中：'+label;const result=await fn(p);log.textContent=typeof result==='string'?result:`生成完了：${result.name}（${result.bytes.length.toLocaleString('ja-JP')}バイト）`;this.drawAssets(list,notify);}catch(err){log.textContent='エラー：'+err.message;}finally{b.disabled=false;}});btnrow.append(b);};
+  action('画像 PNG',p=>this.generate('image',p));action('音声 WAV',p=>this.generate('audio',p));action('動画 GIF',p=>this.generate('gif',p));action('音声付き動画 WebM',p=>this.generate('webm',p));
+  action('画像＋音声＋GIF一括',async p=>{let count=0;for(const kind of ['image','audio','gif']){await this.generate(kind,p);count++;}return `${count}種類の素材を生成しました。作品ZIPで一括取得できます。`;});
+  const extras=element('div');extras.className='buttons';root.append(extras);
+  const extra=(label,fn)=>{const b=element('button',label);b.className='btn';b.addEventListener('click',fn);extras.append(b);};
+  extra('全素材をZIPで書き出し',()=>{try{log.textContent='作品ZIP保存：'+this.exportZip().toLocaleString('ja-JP')+'バイト';}catch(e){log.textContent='ZIPエラー：'+e.message;}});
+  const inp=element('input');inp.type='file';inp.accept='.zip,application/zip';inp.className='hidden';root.append(inp);
+  extra('作品ZIPを復元',()=>inp.click());inp.addEventListener('change',async()=>{const file=inp.files?.[0];inp.value='';if(!file)return;if(!confirm('現在のメディア作品と素材を、ZIPの内容で置き換えます。続けますか？'))return;try{const count=await this.importZip(file);log.textContent=`作品復元完了：${count}素材`;this.render(root,helpers);}catch(e){log.textContent='ZIP復元拒否：'+e.message;}});
+  const importInput=element('input');importInput.type='file';importInput.accept='image/png,image/jpeg,image/gif,audio/wav,audio/mpeg,video/mp4,video/webm';importInput.multiple=true;importInput.className='hidden';root.append(importInput);
+  extra('端末の素材を取り込む',()=>importInput.click());importInput.addEventListener('change',async()=>{const files=[...importInput.files];importInput.value='';try{const count=await this.importMedia(files);log.textContent=`端末素材 ${count}件を取り込みました。ZIPに統合できます。`;this.drawAssets(list,notify);}catch(e){log.textContent='取込制限：'+e.message;}});
+  extra('全部削除',async()=>{if(!confirm('生成素材・取り込んだ素材をすべて削除しますか？'))return;await this.clear();this.drawAssets(list,notify);});
+  const preview=makeCanvas(320,180);preview.style.cssText='max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:8px 0';root.append(preview);
+  extra('指定からプレビュー',()=>{try{const s=this.buildSpec(collect());renderMediaScene(preview.getContext('2d'),{...s,width:320,height:180},0);notify('プレビュー更新');}catch(e){log.textContent='プレビュー失敗：'+e.message;}});
+  try{renderMediaScene(preview.getContext('2d'),{...this.buildSpec(),width:320,height:180},0);}catch{}
+  root.append(element('h3','メディアWSP：生成制御重み 4×3'));
+  root.append(element('p','テーマ特徴を入力とする4行×3列の重みを直接編集します。出力は描画密度・動作速度・音程へ反映されます。自然言語理解や学習済み画像生成ではありません。'));
+  const ww=element('div');ww.className='buttons';root.append(ww);
+  const rows=[['0','宇宙'],['1','海・夕焼'],['2','自然・天候'],['3','都市・抽象']];
+  const cols=[['0','描画密度'],['1','動作速度'],['2','音程']];
+  const mkSelect=(data)=>{const x=element('select');for(const [v,label] of data){const o=element('option',label);o.value=v;x.append(o);}return x;};
+  const wr=mkSelect(rows),wc=mkSelect(cols),wv=element('input');wv.type='number';wv.min='-1.5';wv.max='1.5';wv.step='0.05';wv.value='0.5';wv.style.maxWidth='90px';ww.append(wr,wc,wv);
+  const report=element('div');report.className='listentry';const reportRefresh=()=>{report.textContent=`直接設定した重み：${JSON.stringify(this.wsp.weights)}\n現在の画風への出力：${JSON.stringify(this.wsp.controls(this.buildSpec().theme))}`;};
+  const edit=element('button','重みを設定'),undo=element('button','戻す');edit.className='btn primary';undo.className='btn';edit.addEventListener('click',()=>{try{this.wsp.edit(Number(wr.value),Number(wc.value),Number(wv.value));this.saveRecipe();reportRefresh();notify('生成制御の重みを更新');}catch(e){report.textContent=e.message;}});undo.addEventListener('click',()=>{this.wsp.rollback();this.saveRecipe();reportRefresh();});ww.append(edit,undo);root.append(report);reportRefresh();
+  root.append(element('h3','作品に含まれる素材（最大16件／合計55MB）'));const list=element('div');root.append(list);this.drawAssets(list,notify);
+ }
+ drawAssets(root,notify){root.replaceChildren();const total=this.assets.reduce((s,a)=>s+a.bytes.length,0);root.append(element('p',`${this.assets.length}件・${(total/1024/1024).toFixed(2)} MiB。画像・音声・動画を同じプロジェクトとしてZIPに保存できます。`));
+  for(const a of this.assets){const entry=element('div');entry.className='listentry';entry.append(element('b',`${a.kind}: ${a.name} (${Math.round(a.bytes.length/1024)}KB)`));const blob=new Blob([a.bytes],{type:a.type}),url=URL.createObjectURL(blob);const media=a.type.startsWith('image/')?element('img'):a.type.startsWith('audio/')?element('audio'):a.type.startsWith('video/')?element('video'):null;
+   if(media){media.src=url;media.style.cssText='display:block;max-width:100%;max-height:190px;object-fit:contain;margin:8px 0;border-radius:8px';if(media.tagName!=='IMG'){media.controls=true;if(media.tagName==='VIDEO')media.muted=false;}entry.append(media);}else URL.revokeObjectURL(url);
+   const buttons=element('div');buttons.className='buttons';const dl=element('button','保存');dl.className='btn';dl.addEventListener('click',()=>this.download(a));const del=element('button','削除');del.className='btn danger';del.addEventListener('click',async()=>{await this.remove(a.id);URL.revokeObjectURL(url);this.drawAssets(root,notify);});buttons.append(dl,del);entry.append(buttons);root.append(entry);
+  }
+ }
+}
+
+
 
 
 
@@ -1479,10 +1728,11 @@ return { INDUCTION_DEMO, induceAndVerify, promoteInduction };
 
 const engine=new SolZeroEngine();
 const generator=new ScratchBigram();
+const studio=new MediaStudio();
 engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();
 engine.graph=new WSPGraph();
-const DB_KEY='solzero_chat_v011_local',V010_KEY='solzero_chat_v010_local',V09_KEY='solzero_chat_v09_local',V08_KEY='solzero_chat_v08_local',V07_KEY='solzero_chat_v07_local',PREV_KEY='solzero_chat_v06_local',OLD_KEY='solzero_chat_v05_local',OLDER_KEY='solzero_chat_v04_local',ANCIENT_KEY='solzero_chat_v03_local';
+const DB_KEY='solzero_chat_v012_local',V011_KEY='solzero_chat_v011_local',V010_KEY='solzero_chat_v010_local',V09_KEY='solzero_chat_v09_local',V08_KEY='solzero_chat_v08_local',V07_KEY='solzero_chat_v07_local',PREV_KEY='solzero_chat_v06_local',OLD_KEY='solzero_chat_v05_local',OLDER_KEY='solzero_chat_v04_local',ANCIENT_KEY='solzero_chat_v03_local';
 const MAX_CHATS=40,MAX_MESSAGES=400,MAX_DOCS=8,MAX_DOC_CHARS=450000;
 const byId=id=>document.getElementById(id);
 const $messages=byId('messages'),$input=byId('input'),$history=byId('history'),$sidebar=byId('sidebar');
@@ -1527,7 +1777,7 @@ function schemaRead(raw){
 function notify(message){const node=byId('toast');node.textContent=message;node.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.add('hidden'),2800);}
 function save(){db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
 function init(){
-  let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
+  let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V011_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
   db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null};
   db.current ||= db.chats[0].id;
   if(db.wsp)engine.router.restore(db.wsp);
@@ -1540,6 +1790,7 @@ function init(){
   engine.autoAudit=db.autoAudit;
   document.documentElement.dataset.theme=db.theme;
   draw();
+  studio.ensureLoaded().catch(()=>{});
   if(read)save();
 }
 function current(){return db.chats.find(c=>c.id===db.current)||db.chats[0];}
@@ -1589,11 +1840,17 @@ function drawMessages(){
 }
 function draw(){drawHistory();drawMessages();$input.value=current().draft||'';resize();byId('pinChat').textContent=current().pinned?'📌 固定を解除':'📌 会話を固定';}
 function resize(){$input.style.height='auto';$input.style.height=Math.min(145,$input.scrollHeight)+'px';}
-function send(event){
+async function send(event){
   event?.preventDefault();
   const text=$input.value.trim();if(!text)return;
   const c=current();let answer;
-  if(/^\/factory(?:\s|$)/i.test(text)){
+  if(/^\/(?:image|audio|video|gif|webm)(?:\s|$)/i.test(text)){
+    const cmd=text.slice(1).split(/\s+/)[0].toLowerCase(),p=text.slice(cmd.length+1).trim();
+    try{await studio.ensureLoaded();const kind=cmd==='video'?'gif':cmd;
+      const asset=await studio.generate(kind,p?{prompt:p,text:p}:null);
+      answer=`${asset.name} を生成しました（${asset.bytes.length.toLocaleString('ja-JP')}バイト）。上部「メディア工房」で再生・保存・一括ZIP出力できます。\n※学習済みモデルではなく手続き的な生成です。`;
+    }catch(err){answer='メディア生成エラー：'+err.message;}
+  }else if(/^\/factory(?:\s|$)/i.test(text)){
     try{const args=text.trim().split(/\s+/);
       if(args.length===1||args[1]==='list')answer='WSP回路工房：30種の数値・論理・比較・非線形・統計・ベクトル回路。4bit論理関数65536通り。例 /factory xor2 0 1 0、/factory lut4 13 1 0 1 1。上部の「回路工房」で一括テストできます。';
       else if(args[1]==='audit'){const fam=args[2],start=Number(args[3]??0),count=Number(args[4]??32),r=auditFactory(fam,start,count);answer=`WSP回路検証：${r.family} ${r.passed}/${r.count} 成功、${r.verifiedCases}入力試験。`;}
@@ -1619,7 +1876,7 @@ function togglePin(){const c=current();c.pinned=!c.pinned;save();drawHistory();b
 function rename(){const c=current(),name=prompt('会話名を入力してください（最大80文字）',c.title);if(name===null)return;
   if(!name.trim())return notify('会話名を入力してください。');c.title=name.trim().slice(0,80);save();drawHistory();sidebarClose();}
 function download(content,name,type){const blob=new Blob([content],{type});const href=URL.createObjectURL(blob);const a=el('a');a.href=href;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),3000);}
-function exportJson(){save();download(JSON.stringify({...db,exported_at:new Date().toISOString(),app_version:ENGINE_VERSION},null,2),'solzero_v011_backup.json','application/json;charset=utf-8');sidebarClose();}
+function exportJson(){save();download(JSON.stringify({...db,exported_at:new Date().toISOString(),app_version:ENGINE_VERSION},null,2),'solzero_v012_backup.json','application/json;charset=utf-8');sidebarClose();}
 function exportMd(){const c=current();const out=[`# ${c.title}`,'','Sol-Zero チャット記録',...c.messages.flatMap(m=>[`## ${m.role==='user'?'ユーザー':'Sol-Zero'}`,'',m.text,''])];download(out.join('\n'),'solzero_chat.md','text/markdown;charset=utf-8');sidebarClose();}
 async function importJson(event){const file=event.target.files?.[0];event.target.value='';if(!file)return;
   if(file.size>4000000)return notify('JSONは4MB以下にしてください。');
@@ -1640,7 +1897,7 @@ function openPanel(which){
   priorFocus=document.activeElement;
   byId('scrim').classList.remove('hidden');byId('panel').classList.remove('hidden');
   byId('panelBody').replaceChildren();
-  if(which==='knowledge')renderKnowledge();else if(which==='documents')renderDocuments();else if(which==='circuit')renderCircuit();else if(which==='generator')renderGenerator();else if(which==='bulk')renderBulk();else if(which==='auto')renderAutoDesign();else if(which==='graph')renderGraph();else if(which==='factory')renderFactory();else if(which==='induce')renderInduction();
+  if(which==='knowledge')renderKnowledge();else if(which==='documents')renderDocuments();else if(which==='circuit')renderCircuit();else if(which==='generator')renderGenerator();else if(which==='bulk')renderBulk();else if(which==='auto')renderAutoDesign();else if(which==='graph')renderGraph();else if(which==='factory')renderFactory();else if(which==='induce')renderInduction();else if(which==='studio'){panelIntro('メディア工房','画像・音声・動画をゼロから生成し、作品ZIPに統合。WSP重みで生成を調整できます。');studio.ensureLoaded().then(()=>{if(!byId('panel').classList.contains('hidden')&&byId('panelTitle').textContent==='メディア工房')studio.render(byId('panelBody'),{notify});}).catch(e=>notify(e.message));}
   byId('closePanel').focus();
 }
 function closePanel(){byId('panel').classList.add('hidden');byId('scrim').classList.add('hidden');priorFocus?.focus?.();}
@@ -2044,7 +2301,7 @@ byId('exportMd').addEventListener('click',exportMd);
 byId('importJson').addEventListener('click',()=>byId('jsonPicker').click());
 byId('jsonPicker').addEventListener('change',importJson);
 byId('themeSide').addEventListener('click',changeTheme);
-for(const [btn,section] of [['knowledgeBtn','knowledge'],['docsBtn','documents'],['circuitBtn','circuit'],['generatorBtn','generator'],['bulkBtn','bulk'],['bulkSide','bulk'],['autoBtn','auto'],['autoSide','auto'],['graphBtn','graph'],['graphSide','graph'],['factoryBtn','factory'],['factorySide','factory'],['induceBtn','induce'],['induceSide','induce']])byId(btn).addEventListener('click',()=>openPanel(section));
+for(const [btn,section] of [['knowledgeBtn','knowledge'],['docsBtn','documents'],['circuitBtn','circuit'],['generatorBtn','generator'],['bulkBtn','bulk'],['bulkSide','bulk'],['autoBtn','auto'],['autoSide','auto'],['graphBtn','graph'],['graphSide','graph'],['factoryBtn','factory'],['factorySide','factory'],['induceBtn','induce'],['induceSide','induce'],['studioBtn','studio'],['studioSide','studio']])byId(btn).addEventListener('click',()=>openPanel(section));
 byId('docPicker').addEventListener('change',addDocuments);
 byId('closePanel').addEventListener('click',closePanel);
 byId('scrim').addEventListener('click',closePanel);
