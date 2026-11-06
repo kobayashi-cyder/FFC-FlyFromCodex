@@ -165,6 +165,10 @@ async function handleQueueCommand(args,c){
     try{const ok=agenda.cancel(parts[0]);save();return ok?'目標を取消しました。\n'+agenda.status():'取消可能な未処理目標がありません。';}
     catch(e){return '取消エラー: '+e.message;}
   }
+  if(verb==='ack'||verb==='acknowledge'){
+    try{agenda.acknowledge(personaAgent);save();return '中断した目標は再実行しません。未処理の次の目標だけ実行可能になりました。\n'+agenda.status();}
+    catch(e){return '中断確認エラー: '+e.message;}
+  }
   if(verb==='cleanup'){
     try{const count=agenda.clearCompleted();save();return String(count)+'件の終了済み目標を整理しました。';}
     catch(e){return '整理エラー: '+e.message;}
@@ -172,7 +176,7 @@ async function handleQueueCommand(args,c){
   if(verb==='history'){
     return '最新の実行履歴\n'+(agenda.history.length?agenda.history.slice(-15).map(x=>x.at+' '+x.action+' '+x.detail).join('\n'):'まだ履歴がありません。');
   }
-  return '/agent queue add [high|normal|low] 目標\n/agent queue list\n/agent queue suggest\n/agent queue run [2]\n/agent queue pause|resume\n/agent queue cancel ID\n/agent queue cleanup|history\n※runを明示したときだけ、最大2件・各3手を実行します。';
+  return '/agent queue add [high|normal|low] 目標\n/agent queue list\n/agent queue suggest\n/agent queue run [2]\n/agent queue pause|resume|ack\n/agent queue cancel ID\n/agent queue cleanup|history\n※runを明示したときだけ、最大2件・各3手を実行します。';
 }
 
 async function handleAgentCommand(text,c){
@@ -241,6 +245,10 @@ function renderPersonaAgent(){
     el('button',{class:'btn',text:'再開',onClick:()=>{agenda.resume();personaAgent.resume();refreshQueue();}}),
     el('button',{class:'btn',text:'未完了タスクから提案',onClick:()=>{queueLog.textContent=agenda.suggest(current());}}),
     el('button',{class:'btn',text:'実行ログを表示',onClick:()=>{queueLog.textContent=agenda.history.slice(-15).map(h=>h.at+' '+h.action+' '+h.detail).join('\n')||'履歴がありません。';}}),
+    el('button',{class:'btn',text:'中断を確認して後続へ',onClick:()=>{
+      if(!confirm('失敗・中断した目標を自動再実行せず、未処理の目標だけ続行できるようにします。元の操作結果は確認しましたか？'))return;
+      try{agenda.acknowledge(personaAgent);queueLog.textContent='中断を確認しました。後続の実行には改めて承認が必要です。';refreshQueue();}catch(e){notify(e.message);}
+    }}),
     el('button',{class:'btn',text:'終了済みを整理',onClick:()=>{try{queueLog.textContent=String(agenda.clearCompleted())+'件を整理しました。';refreshQueue();}catch(e){notify(e.message);}}})
   );
   box.append(queuedGoal.wrapper,level,queueActions,queueStatus,queueLog,
