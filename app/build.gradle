@@ -12,14 +12,14 @@ android {
         minSdk 26
         targetSdk 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        versionCode 93
-        versionName '7.16.0-selfheal'
+        versionCode 94
+        versionName '7.17.0-solzero'
     }
 
     buildTypes {
         debug {
             debuggable true
-            applicationIdSuffix '.selfheal'
+            applicationIdSuffix '.solzero'
         }
         release {
             minifyEnabled false
