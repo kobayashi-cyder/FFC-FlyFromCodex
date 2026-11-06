@@ -4,6 +4,7 @@ const MAX_GOALS=24, MAX_HISTORY=60, MAX_BATCH=2;
 const PRIORITY=Object.freeze({high:3,normal:2,low:1});
 const clip=(value,length)=>String(value??'').trim().slice(0,length);
 const ISO=()=>new Date().toISOString();
+const supportedGoal=goal=>/(画像|イラスト|絵|写真|image|png|動画|アニメ|gif|video|音声|音|効果音|audio|wav)/iu.test(goal)||/^(タスク|予定|todo|メモ)\s+\S/iu.test(goal);
 let sequence=0;
 export class SolZeroAgenda {
   constructor(){this.queue=[];this.history=[];this.paused=false;this.running=false;}
@@ -14,6 +15,7 @@ export class SolZeroAgenda {
   add(goal,priority='normal',chatId=null){
     goal=clip(goal,180);
     if(!goal)throw Error('目標を入力してください。');
+    if(!supportedGoal(goal))throw Error('未対応の目標です。画像・音声・動画生成、または「タスク ...」「メモ ...」を指定してください。');
     if(!Object.hasOwn(PRIORITY,priority))throw Error('優先度は high、normal、low のいずれかです。');
     if(chatId!==null&&(typeof chatId!=='string'||chatId.length>100))throw Error('会話IDが不正です。');
     if(this.queue.length>=MAX_GOALS)throw Error('目標の上限です。完了済みを整理してください。');
@@ -77,6 +79,11 @@ export class SolZeroAgenda {
     if(this.running)return {ok:false,message:'既に実行中です。'};
     const item=this.pending()[0];
     if(!item)return {ok:false,message:'実行可能な目標がありません。'};
+    if(!supportedGoal(item.goal)){
+      item.status='failed';item.detail='この目標は実行可能なローカル操作に対応していません。';item.finished=ISO();
+      this.record('unsupported',item.goal);checkpoint();
+      return {ok:false,itemId:item.id,message:item.detail,status:item.status};
+    }
     if(agent?.active&&agent.active.status!=='completed'&&agent.active.cursor<agent.active.steps.length){
       return {ok:false,message:'未完了の単独エージェント計画があります。/agent status で確認してください。'};
     }
