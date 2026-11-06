@@ -15,7 +15,7 @@
 
 ## ブラウザの継続的なE2E検証
 
-追加の `browser-smoke` CIジョブは Chromium で画面幅390pxの操作、チャット/WSP帰納の採用と復元、PNG・WAV・GIF・WebMの操作、ZIP書き出し、JavaScript実行エラー不在を確認する。これは **PC上のヘッドレスブラウザでのエンドツーエンド検証** であり、Android実機やIndexedDBの永続性を実証するものではない。
+追加の `browser-smoke` CIジョブは Chromium で画面幅390pxの操作、チャット/WSP帰納の採用と復元、PNG・WAV・GIF・WebMの操作、ZIP書き出し、JavaScript実行エラー不在を確認する。これは **ローカルHTTP起点でのヘッドレスブラウザ検証（実ストレージ利用）** であり、Android実機やIndexedDBの永続性を実証するものではない。
 
 ## 未達・高品質化のための次の独立ゲート
 
