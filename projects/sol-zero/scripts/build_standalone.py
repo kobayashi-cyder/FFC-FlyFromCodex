@@ -9,6 +9,7 @@ code_workshop = (ROOT / 'chat_web' / 'code_workshop.js').read_text(encoding='utf
 learned_router = (ROOT / 'chat_web' / 'learned_router.js').read_text(encoding='utf-8')
 app = (ROOT / 'chat_web' / 'app.js').read_text(encoding='utf-8')
 agent = (ROOT / 'chat_web' / 'character_agent.js').read_text(encoding='utf-8')
+agenda = (ROOT / 'chat_web' / 'agent_agenda.js').read_text(encoding='utf-8')
 bigram = (ROOT / 'chat_web' / 'bigram.js').read_text(encoding='utf-8')
 wsp_bulk = (ROOT / 'chat_web' / 'wsp_bulk.js').read_text(encoding='utf-8')
 wsp_flow = (ROOT / 'chat_web' / 'wsp_flow.js').read_text(encoding='utf-8')
@@ -20,6 +21,8 @@ wsp_induction = (ROOT / 'chat_web' / 'wsp_induction.js').read_text(encoding='utf
 media_studio = (ROOT / 'chat_web' / 'media_studio.js').read_text(encoding='utf-8')
 media_ui = (ROOT / 'chat_web' / 'media_ui.js').read_text(encoding='utf-8')
 agent = re.sub(r'\bexport (const|class|function)\b', r'\1', agent)
+agenda = re.sub(r'\bexport (const|class|function)\b', r'\1', agenda)
+agenda = '\nconst SolZeroAgenda = (() => {\n' + agenda + '\nreturn SolZeroAgenda;\n})();\n'
 bigram = re.sub(r'\bexport (const|class|function)\b', r'\1', bigram)
 wsp_bulk = re.sub(r'\bexport (const|class|function)\b', r'\1', wsp_bulk)
 wsp_flow = re.sub(r'\bexport (const|class|function)\b', r'\1', wsp_flow)
@@ -53,10 +56,11 @@ app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_factory\.js['\"];?\s*$
 app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_induction\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
 app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./media_ui\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
 app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./character_agent\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
+app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./agent_agenda\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
 assert not re.search(r'(?<![a-z])import\s+\{', app)
 assert '</script' not in (code_workshop + wsp_codegen + engine + bigram + wsp_bulk + wsp_flow + wsp_auto + wsp_factory + app).lower()
 bundle = ui.replace('<script type="module" src="./app.js"></script>',
-                    '<script type="module">\n' + learned_router + '\n' + code_workshop + '\n' + engine + '\n' + bigram + '\n' + wsp_bulk + '\n' + wsp_flow + '\n' + wsp_auto + '\n' + wsp_graph + '\n' + wsp_codegen + '\n' + wsp_factory + '\n' + wsp_induction + '\n' + media_studio + '\n' + media_ui + '\n' + agent + '\n' + app + '\n</script>')
+                    '<script type="module">\n' + learned_router + '\n' + code_workshop + '\n' + engine + '\n' + bigram + '\n' + wsp_bulk + '\n' + wsp_flow + '\n' + wsp_auto + '\n' + wsp_graph + '\n' + wsp_codegen + '\n' + wsp_factory + '\n' + wsp_induction + '\n' + media_studio + '\n' + media_ui + '\n' + agent + '\n' + agenda + '\n' + app + '\n</script>')
 assert 'src="./app.js"' not in bundle
 path = ROOT / 'SolZero_Chat_Offline.html'
 path.write_text(bundle, encoding='utf-8')
