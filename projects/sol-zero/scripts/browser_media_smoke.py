@@ -77,12 +77,12 @@ def run():
         assert send_box and send_box['height']>=44,send_box
         # Recover all offline-only assets once storage becomes available.
         temporary=browser.new_context(viewport={'width':390,'height':820},is_mobile=True,has_touch=True)
-        temporary.add_init_script("""() => {
+        temporary.add_init_script("""(() => {
           if(localStorage.getItem('__idb_available')!=='1'){
             window.__savedIDB=window.indexedDB;
             Object.defineProperty(window,'indexedDB',{configurable:true,value:undefined});
           }
-        }""")
+        })()""")
         session_page=temporary.new_page()
         session_page.on('pageerror',lambda error:errors.append(str(error)))
         session_page.goto(origin+'SolZero_Chat_Offline.html',wait_until='load')
