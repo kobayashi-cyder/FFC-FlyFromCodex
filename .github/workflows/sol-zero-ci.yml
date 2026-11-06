@@ -71,3 +71,5 @@ jobs:
         run: python scripts/browser_induction_smoke.py
       - name: Mobile-size PNG/WAV/GIF/WebM and ZIP regression
         run: python scripts/browser_media_smoke.py
+      - name: Persona agent mobile UI and opt-in voice regression
+        run: python scripts/browser_persona_smoke.py
