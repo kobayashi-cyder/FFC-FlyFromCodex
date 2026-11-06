@@ -40,7 +40,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           s = Path('SolZero_Chat_Offline.html').read_text(encoding='utf-8')
-          for token in ('function generateWSPCode(', 'function generateCode(', 'class MediaStudio', 'class SolZeroEngine', 'v0.14'):
+          for token in ('function runTaskPlan(', 'function generateWSPCode(', 'function generateCode(', 'class MediaStudio', 'class SolZeroEngine', 'v0.15'):
               assert token in s, token
           assert '<script type="module" src="./app.js"></script>' not in s
           print('Standalone offline bundle verified:', len(s.encode('utf-8')), 'bytes')
@@ -49,7 +49,7 @@ jobs:
         run: git diff --exit-code -- projects/sol-zero/SolZero_Chat_Offline.html
       - uses: actions/upload-artifact@v4
         with:
-          name: SolZero-v014-offline-HTML
+          name: SolZero-v015-offline-HTML
           path: projects/sol-zero/SolZero_Chat_Offline.html
           if-no-files-found: error
  
@@ -71,3 +71,5 @@ jobs:
         run: python scripts/browser_induction_smoke.py
       - name: Mobile-size PNG/WAV/GIF/WebM and ZIP regression
         run: python scripts/browser_media_smoke.py
+      - name: Mobile-size multi-step task workbench and media consent regression
+        run: python scripts/browser_task_agent_smoke.py
