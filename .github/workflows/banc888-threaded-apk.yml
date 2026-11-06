@@ -5,6 +5,7 @@ on:
     branches:
       - "banc888-apk-*"
       - "banc888-selfhealing-ui-v1"
+      - "banc888-solzero-workspace-v1"
     paths:
       - "app/**"
       - "tests/thread_router_core.test.cjs"
@@ -95,6 +96,7 @@ jobs:
           node --check app/src/main/assets/cognition-ui.js
           node --check app/src/main/assets/dads-accessible-ui.js
           node --check app/src/main/assets/ui-recovery.js
+          node --check app/src/main/assets/solzero-workspace.js
           node --check app/src/main/assets/proxy-agent-core.js
           node --check app/src/main/assets/capability-tools.js
           node --check app/src/main/assets/research-physics-tools.js
@@ -124,6 +126,7 @@ jobs:
           node tests/cognition_multimodal.test.cjs
           node tests/dads_ui_contract.test.cjs
           node tests/ui_recovery.test.cjs
+          node tests/solzero_workspace.test.cjs
           node tests/task_review.test.cjs
           node tests/video_export.test.cjs
           node tests/adaptive_quality.test.cjs
@@ -151,31 +154,31 @@ jobs:
 
       - name: APK inventory
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.16-selfheal-debug.apk
-          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.16-selfheal-androidTest.apk
-          ls -lh BANC888-v7.16-selfheal-debug.apk BANC888-v7.16-selfheal-androidTest.apk
-          sha256sum BANC888-v7.16-selfheal-debug.apk > BANC888-v7.16-selfheal-debug.apk.sha256
-          sha256sum BANC888-v7.16-selfheal-androidTest.apk > BANC888-v7.16-selfheal-androidTest.apk.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk BANC888-v7.17-solzero-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk BANC888-v7.17-solzero-androidTest.apk
+          ls -lh BANC888-v7.17-solzero-debug.apk BANC888-v7.17-solzero-androidTest.apk
+          sha256sum BANC888-v7.17-solzero-debug.apk > BANC888-v7.17-solzero-debug.apk.sha256
+          sha256sum BANC888-v7.17-solzero-androidTest.apk > BANC888-v7.17-solzero-androidTest.apk.sha256
 
       - name: Verify APK signatures and packaged assets
         run: |
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.16-selfheal-debug.apk | tee BANC888-v7.16-selfheal-signing.txt
-          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.16-selfheal-androidTest.apk | tee BANC888-v7.16-selfheal-androidTest-signing.txt
-          unzip -t BANC888-v7.16-selfheal-debug.apk >/dev/null
-          unzip -l BANC888-v7.16-selfheal-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.17-solzero-debug.apk | tee BANC888-v7.17-solzero-signing.txt
+          "$APKSIGNER" verify --verbose --print-certs BANC888-v7.17-solzero-androidTest.apk | tee BANC888-v7.17-solzero-androidTest-signing.txt
+          unzip -t BANC888-v7.17-solzero-debug.apk >/dev/null
+          unzip -l BANC888-v7.17-solzero-debug.apk | grep -E 'assets/(live-manifest.json|workspace-productivity.js|attachments.js|settings-organizer.js)'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BANC888-v7.16-selfheal-debug
+          name: BANC888-v7.17-solzero-debug
           path: |
-            BANC888-v7.16-selfheal-debug.apk
-            BANC888-v7.16-selfheal-debug.apk.sha256
-            BANC888-v7.16-selfheal-androidTest.apk
-            BANC888-v7.16-selfheal-androidTest.apk.sha256
-            BANC888-v7.16-selfheal-signing.txt
-            BANC888-v7.16-selfheal-androidTest-signing.txt
+            BANC888-v7.17-solzero-debug.apk
+            BANC888-v7.17-solzero-debug.apk.sha256
+            BANC888-v7.17-solzero-androidTest.apk
+            BANC888-v7.17-solzero-androidTest.apk.sha256
+            BANC888-v7.17-solzero-signing.txt
+            BANC888-v7.17-solzero-androidTest-signing.txt
             connectome-mobile-benchmark.json
             ai-compat-evaluation.json
             cognition-benchmark.json
