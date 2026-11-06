@@ -82,6 +82,17 @@ def main():
         }""")
         assert '最大3000文字' in page.locator('#toast').inner_text()
         assert len(page.locator('#input').input_value())==3001
+        # Train numerical mappings in real WSP weights, then persist and reload.
+        page.locator('#input').fill('/net demo')
+        page.locator('#chatForm button[type="submit"]').click()
+        assert '独立未使用評価 4/4' in page.locator('.message.assistant .bubble').last.inner_text()
+        page.locator('#input').fill('/net run [1.3]')
+        page.locator('#chatForm button[type="submit"]').click()
+        assert '学習済みWSP重み行列の推論出力' in page.locator('.message.assistant .bubble').last.inner_text()
+        page.reload(wait_until='load')
+        page.locator('#input').fill('/net status')
+        page.locator('#chatForm button[type="submit"]').click()
+        assert '37パラメータ' in page.locator('.message.assistant .bubble').last.inner_text()
         assert not errors,errors
         print('PASS: v0.10 HTTP migration; WSP induction 5/5; save/reload; chat; rollback; no JS errors')
         browser.close()
