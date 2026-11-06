@@ -53,5 +53,5 @@ test('ZIP refuses directory forgery, appended content and duplicated names',()=>
  for(const at of [central+16,central+42,eocd+12,eocd+8,30])broken(at);
  assert.throws(()=>unzipStored(Uint8Array.from([...original,0])));
  assert.throws(()=>zipBytes([{name:'project.json',bytes:'a'},{name:'project.json',bytes:'b'}]));
- const forged=original.slice();forged[central+8]=0;assert.throws(()=>unzipStored(forged));
+ const forged=original.slice();forged[central+9]=0;assert.throws(()=>unzipStored(forged));
 });
