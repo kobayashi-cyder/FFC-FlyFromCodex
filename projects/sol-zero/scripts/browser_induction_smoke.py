@@ -82,6 +82,20 @@ def main():
         }""")
         assert '最大3000文字' in page.locator('#toast').inner_text()
         assert len(page.locator('#input').input_value())==3001
+        # Independent execution and verification of a workflow that was never templated.
+        workflow={'inputs':{'prices':[100,200],'rate':1.1},
+                  'steps':[{'id':'sub','op':'sum','args':['$prices']},
+                           {'id':'total','op':'mul','args':['$sub','$rate']}],
+                  'result':'$total',
+                  'tests':[{'inputs':{'prices':[200,300],'rate':1.2},'expected':600}]}
+        import json
+        page.locator('#input').fill('/solve '+json.dumps(workflow,ensure_ascii=False))
+        page.locator('#chatForm button[type="submit"]').click()
+        assert '最終結果：330' in page.locator('.message.assistant .bubble').last.inner_text()
+        assert '1/1 合格' in page.locator('.message.assistant .bubble').last.inner_text()
+        page.locator('#input').fill('/solve help')
+        page.locator('#chatForm button[type="submit"]').click()
+        assert 'map_affine' in page.locator('.message.assistant .bubble').last.inner_text()
         assert not errors,errors
         print('PASS: v0.10 HTTP migration; WSP induction 5/5; save/reload; chat; rollback; no JS errors')
         browser.close()
