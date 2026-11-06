@@ -1,5 +1,17 @@
 # FFC — FlyFromCodex
 
+## Sol-Zero v0.16 — Androidオフライン検証APK（2026-11-06）
+
+**[▶ Sol-Zero v0.16 署名済み検証APKを直接取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/sol-zero-v016-offline-lab/SolZero-v016-Android-offline-debug-signed.apk)** / [GitHub Release（実験版）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/sol-zero-v016-offline-lab) / [Androidビルド仕様](projects/sol-zero/android/README.md)
+
+- **アプリの内容:** Sol-Zero v0.15のチャット・WSP・コード生成・タスク工房・PNG/WAV/GIF/WebM制作を端末内の安全なWebViewに収録。Android 10（API 29）以上が対象。パッケージ `jp.solzero.offline`。
+- **完全ローカル:** `INTERNET`権限・アクセシビリティ権限・広域ストレージ権限は不要。外部URLはWebViewで遮断し、保存はAndroid標準の `Downloads/SolZero`、取込はシステムファイル選択を利用します。
+- **検査:** [Android APK CI](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/sol-zero-android.yml) でAPK署名・16KB配置・内蔵HTMLのSHA-256一致・Java単体テストを実施。**Android 15エミュレーターによる起動/操作試験が成功した場合のみ**同じCIから検証版をGitHub Releaseへ初回公開します。
+- **署名と更新:** CIのdebug鍵で署名された**試験用APK**です。将来のAPKと証明書が異なると上書き更新できません。端末データのバックアップ後に必要に応じてアンインストールしてください。
+- **未保証:** Android 17 / Pixel 10実機、長時間の安定性、WebMの全WebView互換、自由学習による万能AI。通常のAndroid操作自動化機能はありません。
+
+---
+
 ## Sol-Zero v0.15 — オフライン汎用タスク工房（2026-11-06）
 
 **[▶ Sol-Zero v0.15 単体HTMLを取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/raw/refs/heads/main/projects/sol-zero/SolZero_Chat_Offline.html)** / **[ソースと使い方](projects/sol-zero/README.md)** / [GitHub上でファイルを確認](projects/sol-zero/SolZero_Chat_Offline.html)
