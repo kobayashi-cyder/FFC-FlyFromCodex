@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#153e56"><title>Sol-Zero | Chat v0.12</title>
+<meta name="theme-color" content="#153e56"><title>Sol-Zero | Chat v0.13</title>
 <style>
 :root{color-scheme:light;--bg:#f4f8fa;--surface:#fff;--side:#12374d;--side-ink:#e3f1f6;--ink:#152f3e;--sub:#587180;--line:#d5e2e8;--accent:#126e82;--accent-2:#e2f4f6;--user:#dbedf3;--shadow:0 16px 45px #16344324;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
 :root[data-theme=dark]{color-scheme:dark;--bg:#101e28;--surface:#192c38;--side:#0d1b25;--side-ink:#dbe8ef;--ink:#e6f2f6;--sub:#a4bcc7;--line:#35505e;--accent:#58c3d2;--accent-2:#194350;--user:#1f4c5a;--shadow:0 16px 45px #0007}
@@ -33,7 +33,7 @@
 </style></head><body>
 <div id="app">
 <aside id="sidebar" class="sidebar" aria-label="会話一覧">
-  <div class="brand"><div class="logo">S0</div><div><strong>Sol-Zero</strong><small>from scratch · Chat v0.12</small></div></div>
+  <div class="brand"><div class="logo">S0</div><div><strong>Sol-Zero</strong><small>from scratch · Chat v0.13</small></div></div>
   <button id="newSidebar" class="side-btn">＋ 新しい会話</button>
   <input id="historySearch" class="searchbox" type="search" placeholder="会話とメッセージを検索" aria-label="会話履歴を検索">
   <div class="section-caption">会話履歴 <span id="chatCount"></span></div>
@@ -48,7 +48,7 @@
 </aside>
 <main class="main">
 <header class="topbar"><div><h1>Sol-Zero Chat</h1><p>学習済みモデルなし・端末内で実行</p></div><div class="head-actions">
-  <span class="status">ローカル v0.12</span>
+  <span class="status">ローカル v0.13</span>
   <button class="top-btn mobile-only" id="menu" title="会話履歴" aria-label="会話履歴">☰</button>
   <button class="top-btn" id="studioBtn">🎨 メディア工房</button><button class="top-btn" id="knowledgeBtn">知識</button><button class="top-btn" id="docsBtn">資料</button><button class="top-btn" id="generatorBtn">生成実験</button><button class="top-btn" id="factoryBtn">回路工房</button><button class="top-btn" id="graphBtn">汎用WSP</button><button class="top-btn" id="induceBtn">帰納WSP</button><button class="top-btn" id="autoBtn">自動設計</button><button class="top-btn desktop-optional" id="bulkBtn">WSP拡張</button><button class="top-btn desktop-optional" id="circuitBtn">回路</button>
   <button class="top-btn" id="newTop" title="新しい会話" aria-label="新しい会話">＋</button>
@@ -72,7 +72,9 @@ const _raw=atob(MODEL.weights_b64);
 const TABLE=Int8Array.from(_raw, ch => ch.charCodeAt(0)>127?ch.charCodeAt(0)-256:ch.charCodeAt(0));
 if (TABLE.length !== MODEL.buckets * MODEL.labels.length) throw new Error('Invalid learned router');
 function learnedNgrams(text){
-  const chars=Array.from('^'+String(text).normalize('NFKC').trim().toLowerCase()+'$'),out=[];
+  const chars=Array.from('^'+String(text).normalize('NFKC').trim().toLowerCase()+'
+</body></html>
+),out=[];
   for (const n of [2,3,4]) for(let i=0;i<=chars.length-n;i++){
     let h=2166136261>>>0;
     for(let j=i;j<i+n;j++)h=Math.imul((h^chars[j].codePointAt(0))>>>0,16777619)>>>0;
@@ -94,11 +96,157 @@ function predictLearnedIntent(text){
 }
 const LEARNED_ROUTER_META=Object.freeze({labels:[...MODEL.labels],parameters:24582,format:MODEL.format,weightsSha256:MODEL.weights_sha256});
 
+/** Sol-Zero Code Workshop v0.13.
+ * Deterministic, offline, auditable algorithm emitters; no pretrained models,
+ * network, dynamic compilation, eval, Function, or execution of user code.
+ * It deliberately refuses tasks outside the supported catalogue.
+ */
+const CATALOGUE = Object.freeze({
+  factorial: {label:'階乗', aliases:['factorial','階乗','かいじょう'],fn:'factorial',args:['5'],value:'120',
+    python:`def factorial(n):
+    """Return n! for a nonnegative integer."""
+    if type(n) is not int or n < 0:
+        raise ValueError("n must be a nonnegative integer")
+    result = 1
+    for i in range(2, n + 1):
+        result *= i
+    return result`,
+    javascript:`function factorial(n) {
+  if (!Number.isSafeInteger(n) || n < 0 || n > 18) {
+    throw new RangeError('n must be an integer from 0 to 18');
+  }
+  let result = 1;
+  for (let i = 2; i <= n; i++) result *= i;
+  return result;
+}`},
+  fibonacci: {label:'フィボナッチ数',aliases:['fibonacci','フィボナッチ','fib'],fn:'fibonacci',args:['10'],value:'55',
+    python:`def fibonacci(n):
+    """Return the zero-indexed nth Fibonacci number."""
+    if type(n) is not int or n < 0:
+        raise ValueError("n must be a nonnegative integer")
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a`,
+    javascript:`function fibonacci(n) {
+  if (!Number.isSafeInteger(n) || n < 0 || n > 78) {
+    throw new RangeError('n must be an integer from 0 to 78');
+  }
+  let a = 0, b = 1;
+  for (let i = 0; i < n; i++) [a, b] = [b, a + b];
+  return a;
+}`},
+  binary_search:{label:'昇順配列の二分探索',aliases:['binary_search','binary search','二分探索'],fn:'binary_search',args:['[1, 2, 2, 3]','2'],value:'1',
+    python:`def binary_search(items, target):
+    """Return the first index of target in a sorted ascending sequence, or -1."""
+    left, right = 0, len(items)
+    while left < right:
+        mid = (left + right) // 2
+        if items[mid] < target:
+            left = mid + 1
+        else:
+            right = mid
+    return left if left < len(items) and items[left] == target else -1`,
+    javascript:`function binary_search(items, target) {
+  let left = 0, right = items.length;
+  while (left < right) {
+    const mid = Math.floor((left + right) / 2);
+    if (items[mid] < target) left = mid + 1;
+    else right = mid;
+  }
+  return left < items.length && items[left] === target ? left : -1;
+}`},
+  unique:{label:'重複除去（順序維持）',aliases:['dedupe','deduplicate','unique','重複除去','重複削除'],fn:'unique',args:['[2, 1, 2, 3, 1]'],value:'[2,1,3]',
+    python:`def unique(items):
+    """Keep first occurrences in order, including unhashable values."""
+    result = []
+    for item in items:
+        if item not in result:
+            result.append(item)
+    return result`,
+    javascript:`function unique(items) {
+  const result = [];
+  for (const item of items) {
+    if (!result.some(v => Object.is(v, item))) result.push(item);
+  }
+  return result;
+}`},
+  palindrome:{label:'回文判定',aliases:['palindrome','回文'],fn:'palindrome',args:['"RaceCar"'],value:'true',
+    python:`def palindrome(text):
+    """Check whether alphanumeric characters form a case-insensitive palindrome."""
+    cleaned = ''.join(c.casefold() for c in text if c.isalnum())
+    return cleaned == cleaned[::-1]`,
+    javascript:`function palindrome(text) {
+  const cleaned = Array.from(String(text).toLowerCase())
+    .filter(c => /[\\p{L}\\p{N}]/u.test(c)).join('');
+  return cleaned === Array.from(cleaned).reverse().join('');
+}`},
+  mean:{label:'算術平均',aliases:['average','mean','平均'],fn:'mean',args:['[2, 4, 6]'],value:'4',
+    python:`def mean(values):
+    """Return the arithmetic mean of a nonempty numeric sequence."""
+    if not values:
+        raise ValueError("values must not be empty")
+    return sum(values) / len(values)`,
+    javascript:`function mean(values) {
+  if (!Array.isArray(values) || values.length === 0 ||
+      !values.every(x => typeof x === 'number' && Number.isFinite(x))) {
+    throw new TypeError('values must be a nonempty numeric array');
+  }
+  return values.reduce((sum, x) => sum + x, 0) / values.length;
+}`},
+  csv_escape:{label:'CSVフィールド引用',aliases:['csv_escape','csv escape','csvエスケープ','csv引用','csv'],fn:'csv_escape',args:['"a,b"'],value:'"\\\"a,b\\\""',
+    python:`def csv_escape(value):
+    """Quote one RFC 4180 CSV field if it contains a delimiter, quote or newline."""
+    text = str(value)
+    if any(c in text for c in ',"\\r\\n'):
+        return '"' + text.replace('"', '""') + '"'
+    return text`,
+    javascript:`function csv_escape(value) {
+  const text = String(value);
+  return /[,"\\r\\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+}`},
+  clamp:{label:'数値を範囲に制限',aliases:['clamp','範囲制限','クリップ'],fn:'clamp',args:['12','0','10'],value:'10',
+    python:`def clamp(value, low, high):
+    """Constrain a number to an inclusive interval."""
+    if low > high:
+        raise ValueError("low must not exceed high")
+    return max(low, min(value, high))`,
+    javascript:`function clamp(value, low, high) {
+  if (![value, low, high].every(Number.isFinite) || low > high) {
+    throw new RangeError('invalid numeric interval');
+  }
+  return Math.max(low, Math.min(value, high));
+}`}
+});
+const CODE_TASKS = Object.freeze(Object.keys(CATALOGUE));
+function codeHelp() {
+  return '利用可能なコード生成：' + CODE_TASKS.map(k=>CATALOGUE[k].label + '(' + k + ')').join('、') +
+    '\n使い方：/code python fibonacci または /code javascript binary_search\n' +
+    '固定済みアルゴリズムのソースを端末内で生成・コピーします。自由なコーディングAIや実行環境ではありません。';
+}
+function generateCode(request) {
+  const raw=String(request||'').normalize('NFKC').trim();
+  const match=raw.match(/^(?:\/code|コード生成|コード作成)(?:\s+|$)(.*)$/iu);
+  if(!match)return null;
+  const query=match[1].trim().toLowerCase();
+  if(!query || /^(?:help|list|一覧|ヘルプ)$/u.test(query))return {ok:false,message:codeHelp()};
+  const langHits=[/\b(?:python|py)\b/u.test(query),/\b(?:javascript|js)\b/u.test(query)];
+  if(langHits.filter(Boolean).length!==1)return {ok:false,message:'言語を python または javascript のどちらか1つ指定してください。\n'+codeHelp()};
+  const language=langHits[0]?'python':'javascript';
+  const hits=Object.entries(CATALOGUE).filter(([,t])=>t.aliases.some(alias=>query.includes(alias)));
+  if(hits.length!==1)return {ok:false,message:(hits.length?'複数のアルゴリズム候補を検出しました。1つに絞ってください。':'対応アルゴリズムが見つかりません。')+'\n'+codeHelp()};
+  const [task,def]=hits[0];
+  const code=def[language];
+  const ext=language==='python'?'py':'js';
+  const runHint=language==='python'?`python ${task}.py`:`node ${task}.js`;
+  return {ok:true,task,language,label:def.label,filename:`${task}.${ext}`,code,
+    example:`${def.fn}(${def.args.join(', ')})`,runHint,
+    message:`［Sol-Zero固定アルゴリズム生成：${def.label} / ${language}］\nファイル名：${task}.${ext}\n\n${code}\n\n使用例：${def.fn}(${def.args.join(', ')})\n※コードは端末で実行せず、コピー用テキストとして出力します。`};
+}
 /* Sol-Zero Chat v0.6 — entirely local, explicit rules and WSP circuit.
  * No pretrained weights, no network calls, no arbitrary code execution.
  */
-
-const ENGINE_VERSION = '0.12.0';
+const ENGINE_VERSION = '0.13.0';
 const FEATURE_SETS = Object.freeze({
   greeting: ['こんにちは','こんばんは','おはよう','はじめまして','やあ','hello','hi'],
   identity: ['あなたは','君は','誰ですか','名前は','sol-zero','solzero','何者'],
@@ -292,6 +440,8 @@ class SolZeroEngine {
     const global=Array.isArray(context.knowledge)?context.knowledge:[];
     const documents=Array.isArray(context.documents)?context.documents:[];
     const generator=context.generator;
+    const codeArtifact=generateCode(raw);
+    if(codeArtifact)return codeArtifact.message;
     if(/^\/induce(?:\s|$)/iu.test(raw)){
       if(!this.graph)return '帰納WSPは未接続です。';
       const arg=raw.replace(/^\/induce\s*/iu,'').trim();
@@ -428,9 +578,9 @@ class SolZeroEngine {
       case 'identity':return '私はSol-Zero v0.12です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
       case 'help':return this.help();
       case 'gratitude':return 'どういたしまして。';
-      case 'code':return 'コードを自由生成する学習済み機能はまだありません。既存の質問と回答を知識パネルに登録して再利用できます。';
+      case 'code':return codeHelp();
       case 'reasoning':return '未知の問題に対する一般推論は未実装です。式の計算や、登録した資料の文字列検索なら実行できます。';
-      case 'multimodal':return '画像・音声・動画の理解は未実装です。現在は .txt/.md を追加して文字列を検索できます。';
+      case 'multimodal':return '画像・音声・GIF・WebMの手続き的生成は「メディア工房」または /image、/audio、/video、/webm から使えます。画像や動画の内容理解、高品質な学習生成モデルは未実装です。';
       case 'casual':return '会話履歴、タスク、メモ、登録した回答を使えます。一般的な自由回答能力はまだ学習されていません。';
       default:
         if(raw.length>=5){const p=predictLearnedIntent(raw);
@@ -441,7 +591,7 @@ class SolZeroEngine {
   }
   help(){return `Sol-Zero v${ENGINE_VERSION}（ローカル試作）\n・計算：「計算して (12+8)/4」\n・覚える：「覚えて：内容」／「覚えていること」\n・会話内Q&A：「教える：質問 => 回答」\n・全会話共通Q&A：「/teach 質問 => 回答」\n・直前の回答を訂正：「修正：正しい回答」\n・共有知識：「/knowledge」\n・タスク：「/todo 内容」→「/tasks」→「/done 1」\n・資料：「/docs」「/search 検索語」（文字列一致）
 ・関連する資料の行を抜粋：「/ask 質問」（根拠候補）
-・数値例からWSP回路を帰納合成：「/induce」「/induce 2,3」（画面「帰納WSP」）\n・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
+・数値例からWSP回路を帰納合成：「/induce」「/induce 2,3」（画面「帰納WSP」）\n・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・コード生成：「/code python fibonacci」「/code javascript binary_search」（検証済み固定アルゴリズム）\n・画像/音声/動画：「/image 海」「/audio 波」「/video 星」「/webm 街」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
 }
 
 /* Tiny scratch-trained character-to-character softmax predictor.
@@ -761,7 +911,6 @@ class WSPFlow {
  * circuits -> sealed, separate validation -> explicit promotion / rollback.
  * "Goal" is documentation, not natural-language comprehension.
  */
-
 const AUTO_MAX_TRAIN=256, AUTO_MAX_VALIDATION=128;
 const norm=x=>String(x).normalize('NFKC').trim().toLowerCase();
 const key=x=>norm(x).replace(/[\s\p{P}\p{S}]+/gu,'');
@@ -1623,7 +1772,6 @@ class MediaWSP{
 }
 
 /** Unified offline media workspace for Sol-Zero. No external AI/services. */
-
 const STORE='solzero_studio_v012_recipe',DB_NAME='solzero_media_v012';
 function element(tag,txt){const x=document.createElement(tag);if(txt!==undefined)x.textContent=txt;return x;}
 function mimeFor(name){const ext=name.toLowerCase().split('.').pop();return ({png:'image/png',gif:'image/gif',jpg:'image/jpeg',jpeg:'image/jpeg',wav:'audio/wav',mp3:'audio/mpeg',webm:'video/webm',mp4:'video/mp4'})[ext]||null;}
@@ -1717,14 +1865,6 @@ class MediaStudio {
   }
  }
 }
-
-
-
-
-
-
-
-
 
 const engine=new SolZeroEngine();
 const generator=new ScratchBigram();
