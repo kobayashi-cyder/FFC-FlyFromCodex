@@ -77,6 +77,10 @@ jobs:
           path: android-apk
       - name: Install WebView debug test driver
         run: python -m pip install --disable-pip-version-check websocket-client==1.8.0
+      - name: Validate emulator runner and browser smoke syntax
+        run: |
+          bash -n projects/sol-zero/android/tests/emulator_runner.sh
+          python -m py_compile projects/sol-zero/android/tests/emulator_smoke.py
       - name: Boot Android 15 and test real offline app behavior
         uses: reactivecircus/android-emulator-runner@v2
         with:
