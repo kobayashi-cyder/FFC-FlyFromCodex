@@ -4,7 +4,7 @@ import {SolZeroEngine,ENGINE_VERSION} from '../chat_web/engine.js';
 import {WSPGraph,GRAPH_DEMO_NUMERIC} from '../chat_web/wsp_graph.js';
 test('chat exposes validated deterministic coding and accurate media status',()=>{
  const e=new SolZeroEngine();
- assert.equal(ENGINE_VERSION,'0.14.0');
+ assert.equal(ENGINE_VERSION,'0.15.0');
  const js=e.reply('/code javascript factorial');
  assert.match(js,/function factorial/);
  assert.match(js,/factorial\.js/);
