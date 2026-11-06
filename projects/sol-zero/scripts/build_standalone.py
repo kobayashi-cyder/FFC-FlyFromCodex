@@ -37,7 +37,8 @@ media_ui = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./media_studio\.js['\"]
 code_workshop = re.sub(r'\bexport (const|class|function)\b', r'\1', code_workshop)
 learned_router = re.sub(r'\bexport (const|class|function)\b', r'\1', learned_router)
 engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./learned_router\.js[\"\'];?\s*$', '', engine, flags=re.MULTILINE)
-engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./code_workshop\.js[\"\'];?\s*
+engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./code_workshop\.js[\"\'];?\s*$', '', engine, flags=re.MULTILINE)
+engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./wsp_codegen\.js[\"\'];?\s*$', '', engine, flags=re.MULTILINE)
 engine = re.sub(r'\bexport (const|class|function)\b', r'\1', engine)
 app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./engine\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
 app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./bigram\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
@@ -53,45 +54,6 @@ assert not re.search(r'(?<![a-z])import\s+\{', app)
 assert '</script' not in (code_workshop + wsp_codegen + engine + bigram + wsp_bulk + wsp_flow + wsp_auto + wsp_factory + app).lower()
 bundle = ui.replace('<script type="module" src="./app.js"></script>',
                     '<script type="module">\n' + learned_router + '\n' + code_workshop + '\n' + engine + '\n' + bigram + '\n' + wsp_bulk + '\n' + wsp_flow + '\n' + wsp_auto + '\n' + wsp_graph + '\n' + wsp_codegen + '\n' + wsp_factory + '\n' + wsp_induction + '\n' + media_studio + '\n' + media_ui + '\n' + app + '\n</script>')
-assert 'src="./app.js"' not in bundle
-path = ROOT / 'SolZero_Chat_Offline.html'
-path.write_text(bundle, encoding='utf-8')
-print(f'Created {path}: {path.stat().st_size} bytes')
-, '', engine, flags=re.MULTILINE)
-engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./wsp_codegen\.js[\"\'];?\s*
-engine = re.sub(r'\bexport (const|class|function)\b', r'\1', engine)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./engine\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./bigram\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_bulk\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_flow\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_autodesign\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_graph\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_factory\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_induction\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./media_ui\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-assert not re.search(r'(?<![a-z])import\s+\{', app)
-assert '</script' not in (code_workshop + engine + bigram + wsp_bulk + wsp_flow + wsp_auto + wsp_factory + app).lower()
-bundle = ui.replace('<script type="module" src="./app.js"></script>',
-                    '<script type="module">\n' + learned_router + '\n' + code_workshop + '\n' + engine + '\n' + bigram + '\n' + wsp_bulk + '\n' + wsp_flow + '\n' + wsp_auto + '\n' + wsp_graph + '\n' + wsp_factory + '\n' + wsp_induction + '\n' + media_studio + '\n' + media_ui + '\n' + app + '\n</script>')
-assert 'src="./app.js"' not in bundle
-path = ROOT / 'SolZero_Chat_Offline.html'
-path.write_text(bundle, encoding='utf-8')
-print(f'Created {path}: {path.stat().st_size} bytes')
-, '', engine, flags=re.MULTILINE)
-engine = re.sub(r'\bexport (const|class|function)\b', r'\1', engine)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./engine\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./bigram\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_bulk\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_flow\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_autodesign\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_graph\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_factory\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_induction\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./media_ui\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
-assert not re.search(r'(?<![a-z])import\s+\{', app)
-assert '</script' not in (code_workshop + engine + bigram + wsp_bulk + wsp_flow + wsp_auto + wsp_factory + app).lower()
-bundle = ui.replace('<script type="module" src="./app.js"></script>',
-                    '<script type="module">\n' + learned_router + '\n' + code_workshop + '\n' + engine + '\n' + bigram + '\n' + wsp_bulk + '\n' + wsp_flow + '\n' + wsp_auto + '\n' + wsp_graph + '\n' + wsp_factory + '\n' + wsp_induction + '\n' + media_studio + '\n' + media_ui + '\n' + app + '\n</script>')
 assert 'src="./app.js"' not in bundle
 path = ROOT / 'SolZero_Chat_Offline.html'
 path.write_text(bundle, encoding='utf-8')
