@@ -251,9 +251,165 @@ function generateCode(request) {
     example:`${def.fn}(${def.args.join(', ')})`,runHint,
     message:`［Sol-Zero固定アルゴリズム生成：${def.label} / ${language}］\nファイル名：${task}.${ext}\n\n${code}\n\n使用例：${def.fn}(${def.args.join(', ')})\n※コードは端末で実行せず、コピー用テキストとして出力します。`};
 }
+
+const { WeightSpaceNetwork, NEURAL_DEMO, trainAndVerifyNeural, promoteNeural } = (() => {
+/** Trainable WSP network: learned dense weights, not a catalogue of procedures.
+ * No pretrained weights, network, eval or arbitrary user-supplied code execution.
+ */
+const NEURAL_LIMITS=Object.freeze({inputs:8,outputs:4,hidden:24,minTrain:6,maxTrain:64,minHoldout:3,maxHoldout:32,epochs:1600,maxInput:1000,maxOutput:10000});
+const verified=new WeakMap();
+const safe=x=>typeof x==='number'&&Number.isFinite(x);
+const copy=x=>JSON.parse(JSON.stringify(x));
+function fail(s){throw Error('WSP学習拒否：'+s);}
+function checkRows(rows,n,m,label,min,max){
+ if(!Array.isArray(rows)||rows.length<min||rows.length>max)fail(label+'の件数が範囲外');
+ return rows.map((r,i)=>{
+  if(!r||!Array.isArray(r.input)||r.input.length!==n||!r.input.every(x=>safe(x)&&Math.abs(x)<=NEURAL_LIMITS.maxInput)||
+     !Array.isArray(r.output)||r.output.length!==m||!r.output.every(x=>safe(x)&&Math.abs(x)<=NEURAL_LIMITS.maxOutput))
+   fail(label+(i+1)+'は次元内の有限数値にしてください');
+  return {input:[...r.input],output:[...r.output]};
+ });
+}
+function validateNeuralTask(task){
+ if(!task||typeof task!=='object'||Array.isArray(task))fail('学習タスクはJSONオブジェクトです');
+ const {inputs,outputs,hidden=12,seed=2026,epochs=1000,tolerance=0.15}=task;
+ if(!Number.isInteger(inputs)||inputs<1||inputs>NEURAL_LIMITS.inputs||
+    !Number.isInteger(outputs)||outputs<1||outputs>NEURAL_LIMITS.outputs||
+    !Number.isInteger(hidden)||hidden<4||hidden>NEURAL_LIMITS.hidden||
+    !Number.isInteger(seed)||seed<0||seed>0xffffffff||
+    !Number.isInteger(epochs)||epochs<50||epochs>NEURAL_LIMITS.epochs||
+    !safe(tolerance)||tolerance<=0||tolerance>10)fail('入出力次元・隠れ数・種・学習回数・許容誤差が不正');
+ const train=checkRows(task.train,inputs,outputs,'訓練',NEURAL_LIMITS.minTrain,NEURAL_LIMITS.maxTrain);
+ const holdout=checkRows(task.holdout,inputs,outputs,'未使用評価',NEURAL_LIMITS.minHoldout,NEURAL_LIMITS.maxHoldout);
+ const seen=new Set();for(const group of [train,holdout])for(const r of group){
+  const key=JSON.stringify(r.input);if(seen.has(key))fail('訓練と未使用評価の入力が重複');seen.add(key);
+ }
+ if(epochs*train.length*(hidden*(inputs+1)+(hidden+1)*outputs)>8_000_000)fail('学習演算上限を超えました');
+ return {inputs,outputs,hidden,seed,epochs,tolerance,train,holdout};
+}
+function rng(seed){let x=(seed>>>0)||0x517cc1b7;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;};}
+function meanStd(rows,key,dim){
+ const mean=Array(dim).fill(0),scale=Array(dim).fill(0);
+ for(const r of rows)for(let i=0;i<dim;i++)mean[i]+=r[key][i]/rows.length;
+ for(const r of rows)for(let i=0;i<dim;i++)scale[i]+=(r[key][i]-mean[i])**2/rows.length;
+ return {mean,scale:scale.map(x=>Math.max(Math.sqrt(x),0.1))};
+}
+function checkModel(m){
+ if(!m||typeof m!=='object'||Array.isArray(m)||m.version!==1||
+    !Number.isInteger(m.inputs)||m.inputs<1||m.inputs>NEURAL_LIMITS.inputs||
+    !Number.isInteger(m.outputs)||m.outputs<1||m.outputs>NEURAL_LIMITS.outputs||
+    !Number.isInteger(m.hidden)||m.hidden<4||m.hidden>NEURAL_LIMITS.hidden)fail('学習モデルの構造が不正');
+ const {inputs:n,outputs:o,hidden:h}=m;
+ for(const [k,length] of [['w1',h*(n+1)],['w2',o*(h+1)],['inMean',n],['inScale',n],['outMean',o],['outScale',o]]){
+  const v=m[k];if(!Array.isArray(v)||v.length!==length||!v.every(x=>safe(x)&&Math.abs(x)<=1e6))fail(k+'に破損または容量超過');
+ }
+ if(m.inScale.some(x=>x<=0)||m.outScale.some(x=>x<=0))fail('正規化尺度が不正');
+ return copy(m);
+}
+class WeightSpaceNetwork {
+ constructor(){this.model=null;this.history=[];}
+ get parameters(){return this.model?this.model.w1.length+this.model.w2.length:0;}
+ snapshot(){return this.model?copy(this.model):null;}
+ restore(data){try{this.model=checkModel(data);this.history=[];return true;}catch{return false;}}
+ install(data){const next=checkModel(data);if(this.model){this.history.push(this.snapshot());if(this.history.length>4)this.history.shift();}this.model=next;return this.parameters;}
+ rollback(){const old=this.history.pop();if(!old)return false;this.model=old;return true;}
+ run(input){if(!this.model)fail('学習済みWSPがありません');return forward(this.model,input);}
+}
+function forward(model,input){
+ const {inputs:n,outputs:o,hidden:h,w1,w2}=model;
+ if(!Array.isArray(input)||input.length!==n||!input.every(x=>safe(x)&&Math.abs(x)<=NEURAL_LIMITS.maxInput))fail('推論入力の次元か値が不正');
+ const x=input.map((v,i)=>(v-model.inMean[i])/model.inScale[i]),layer=new Array(h);
+ for(let j=0;j<h;j++){
+  let v=w1[j*(n+1)+n];for(let i=0;i<n;i++)v+=w1[j*(n+1)+i]*x[i];layer[j]=Math.tanh(v);
+ }
+ const result=[];for(let k=0;k<o;k++){
+  let y=w2[k*(h+1)+h];for(let j=0;j<h;j++)y+=w2[k*(h+1)+j]*layer[j];
+  const value=model.outMean[k]+model.outScale[k]*y;
+  if(!safe(value)||Math.abs(value)>1e9)fail('推論数値が範囲外');result.push(value);
+ }
+ return result;
+}
+function fit(t){
+ const n=t.inputs,o=t.outputs,h=t.hidden,r=rng(t.seed);
+ const ins=meanStd(t.train,'input',n),outs=meanStd(t.train,'output',o);
+ const w1=Array.from({length:h*(n+1)},()=> (r()*2-1)*Math.sqrt(2/(n+1)));
+ const w2=Array.from({length:o*(h+1)},()=> (r()*2-1)*Math.sqrt(2/(h+1)));
+ const model={version:1,inputs:n,outputs:o,hidden:h,w1,w2,inMean:ins.mean,inScale:ins.scale,outMean:outs.mean,outScale:outs.scale};
+ const m1=new Float64Array(w1.length),v1=new Float64Array(w1.length),m2=new Float64Array(w2.length),v2=new Float64Array(w2.length);
+ const xTrain=t.train.map(row=>row.input.map((v,i)=>(v-ins.mean[i])/ins.scale[i]));
+ const yTrain=t.train.map(row=>row.output.map((v,i)=>(v-outs.mean[i])/outs.scale[i]));
+ // Only training labels affect updates. Holdout is excluded from selection/fitting.
+ for(let epoch=1;epoch<=t.epochs;epoch++){
+  const d1=new Float64Array(w1.length),d2=new Float64Array(w2.length);
+  for(let z=0;z<t.train.length;z++){
+   const x=xTrain[z],target=yTrain[z],a=new Float64Array(h),delta=new Float64Array(o);
+   for(let j=0;j<h;j++){
+    const base=j*(n+1);let v=w1[base+n];for(let i=0;i<n;i++)v+=w1[base+i]*x[i];a[j]=Math.tanh(v);
+   }
+   for(let k=0;k<o;k++){
+    const base=k*(h+1);let y=w2[base+h];for(let j=0;j<h;j++)y+=w2[base+j]*a[j];
+    delta[k]=Math.max(-20,Math.min(20,y-target[k]));
+    for(let j=0;j<h;j++)d2[base+j]+=delta[k]*a[j];d2[base+h]+=delta[k];
+   }
+   for(let j=0;j<h;j++){
+    let back=0;for(let k=0;k<o;k++)back+=delta[k]*w2[k*(h+1)+j];
+    back*=(1-a[j]*a[j]);const base=j*(n+1);
+    for(let i=0;i<n;i++)d1[base+i]+=back*x[i];d1[base+n]+=back;
+   }
+  }
+  const rate=.025,den=t.train.length;
+  function update(weights,grad,m,v){
+   const b1=.9,b2=.999;
+   for(let i=0;i<weights.length;i++){
+    const g=Math.max(-10,Math.min(10,grad[i]/den));
+    m[i]=b1*m[i]+(1-b1)*g;v[i]=b2*v[i]+(1-b2)*g*g;
+    weights[i]-=rate*(m[i]/(1-b1**epoch))/(Math.sqrt(v[i]/(1-b2**epoch))+1e-8);
+    if(!safe(weights[i])||Math.abs(weights[i])>1e6)fail('学習中の重みが不正');
+   }
+  }
+  update(w1,d1,m1,v1);update(w2,d2,m2,v2);
+ }
+ return model;
+}
+function evaluate(model,rows,tol){
+ let correct=0,maxError=0,mse=0;
+ const details=rows.map(row=>{
+  const actual=forward(model,row.input),errors=actual.map((x,i)=>Math.abs(x-row.output[i]));
+  maxError=Math.max(maxError,...errors);mse+=errors.reduce((s,x)=>s+x*x,0)/rows.length;
+  const pass=errors.every(x=>x<=tol);if(pass)correct++;
+  return {input:[...row.input],expected:[...row.output],actual,pass};
+ });
+ return {correct,total:rows.length,maxError,mse,details};
+}
+function trainAndVerifyNeural(raw){
+ const t=validateNeuralTask(raw),model=fit(t),training=evaluate(model,t.train,t.tolerance),validation=evaluate(model,t.holdout,t.tolerance);
+ const accepted=training.correct===training.total&&validation.correct===validation.total;
+ const report={accepted,status:accepted?'passed':'failed',training,validation,parameters:model.w1.length+model.w2.length,
+  epochs:t.epochs,hidden:t.hidden,tolerance:t.tolerance,model:copy(model)};
+ if(accepted)verified.set(report,{serialized:JSON.stringify(report.model),holdout:copy(t.holdout),tolerance:t.tolerance});
+ return report;
+}
+function promoteNeural(report,network){
+ const token=verified.get(report);
+ if(!token||!report.accepted||!(network instanceof WeightSpaceNetwork)||JSON.stringify(report.model)!==token.serialized)
+  fail('未検証・改ざん済み・再利用した学習モデルは採用不可');
+ const model=checkModel(report.model),validation=evaluate(model,token.holdout,token.tolerance);
+ if(validation.correct!==validation.total)fail('未使用評価の再検証に不合格');
+ const result=network.install(model);verified.delete(report);return result;
+}
+const NEURAL_DEMO=Object.freeze({
+ inputs:1,outputs:1,hidden:12,seed:2026,epochs:1200,tolerance:0.22,
+ train:[-2,-1.5,-1,-0.5,0,0.5,1,1.5,2].map(x=>({input:[x],output:[x*x]})),
+ holdout:[-1.8,-0.8,0.7,1.8].map(x=>({input:[x],output:[x*x]}))
+});
+
+return { WeightSpaceNetwork, NEURAL_DEMO, trainAndVerifyNeural, promoteNeural };
+})();
+
 /* Sol-Zero Chat v0.6 — entirely local, explicit rules and WSP circuit.
  * No pretrained weights, no network calls, no arbitrary code execution.
  */
+
 
 
 const ENGINE_VERSION = '0.13.0';
@@ -440,7 +596,7 @@ function retrieveEvidence(query, documents, limit=4) {
 }
 
 class SolZeroEngine {
-  constructor(){this.router=new WeightRouter();this.bulk=null;this.flow=null;this.autoAudit=null;}
+  constructor(){this.router=new WeightRouter();this.bulk=null;this.flow=null;this.autoAudit=null;this.neural=new WeightSpaceNetwork();}
   reply(input, conversation={messages:[],notes:[]}, context={}) {
     const raw=String(input).trim(), x=normalized(raw);
     if(!raw)return '文章を入力してください。';
@@ -450,6 +606,35 @@ class SolZeroEngine {
     const global=Array.isArray(context.knowledge)?context.knowledge:[];
     const documents=Array.isArray(context.documents)?context.documents:[];
     const generator=context.generator;
+    if(/^\/(?:net|wspnet)(?:\s|$)/iu.test(raw)){
+      const arg=raw.replace(/^\/(?:net|wspnet)\s*/iu,'').trim();
+      const help='WSPを重みから学習：/net demo、/net train {JSON}、/net run [1.3]、/net status、/net undo。\nJSONのinputs/outputs/train/holdoutを指定。各訓練例は{"input":[数値],"output":[数値]}形式です。\n学習済み重みで推論する数値モデルであり、自由な自然言語理解は未実装です。';
+      if(!arg||/^(help|ヘルプ|list)$/iu.test(arg))return help;
+      if(arg==='status')return this.neural.model?
+        '学習済みWSP重み行列：'+this.neural.parameters+'パラメータ、入力'+this.neural.model.inputs+'次元、隠れ'+this.neural.model.hidden+'、出力'+this.neural.model.outputs+'次元。':
+        '未学習です。/net demo または /net train {JSON} を実行してください。';
+      if(arg==='undo')return this.neural.rollback()?'WSP重みを前の学習結果へ戻しました。':'戻せる学習済み重みはありません。';
+      if(arg.startsWith('run ')){
+        try{return '学習済みWSP重み行列の推論出力：'+JSON.stringify(this.neural.run(JSON.parse(arg.slice(4))))+
+          '\n※重みの積和と活性化による出力です。';}
+        catch(err){return 'WSP推論拒否：'+err.message;}
+      }
+      if(arg==='demo'||arg.startsWith('train ')){
+        try{
+          if(arg.length>3000)throw Error('学習入力は3000文字以内');
+          const report=trainAndVerifyNeural(arg==='demo'?NEURAL_DEMO:JSON.parse(arg.slice(6)));
+          const grades='訓練 '+report.training.correct+'/'+report.training.total+
+            '、独立未使用評価 '+report.validation.correct+'/'+report.validation.total+
+            '、最大絶対誤差 '+report.validation.maxError.toPrecision(4);
+          if(!report.accepted)return 'WSP学習不採用：'+grades+'。前の重みは保持しました。';
+          promoteNeural(report,this.neural);
+          return 'WSP重み学習・採用完了：'+report.parameters+'パラメータ、'+report.epochs+
+            '回の更新。'+grades+' 合格。\n/net run [1.3] で推論できます。'+
+            '\n※限定された数値例での合格であり、汎用知能の証明ではありません。';
+        }catch(err){return 'WSP学習拒否：'+err.message;}
+      }
+      return help;
+    }
     const codeArtifact=generateCode(raw);
     if(codeArtifact)return codeArtifact.message;
     if(/^\/induce(?:\s|$)/iu.test(raw)){
@@ -599,7 +784,7 @@ class SolZeroEngine {
           '入力は受け取りました。ただし、未知の一般質問にはまだ自由回答できません。「/help」で対応機能を確認するか、知識パネルで質問と回答を登録してください。';
     }
   }
-  help(){return `Sol-Zero v${ENGINE_VERSION}（ローカル試作）\n・計算：「計算して (12+8)/4」\n・覚える：「覚えて：内容」／「覚えていること」\n・会話内Q&A：「教える：質問 => 回答」\n・全会話共通Q&A：「/teach 質問 => 回答」\n・直前の回答を訂正：「修正：正しい回答」\n・共有知識：「/knowledge」\n・タスク：「/todo 内容」→「/tasks」→「/done 1」\n・資料：「/docs」「/search 検索語」（文字列一致）
+  help(){return `Sol-Zero v${ENGINE_VERSION}（ローカル試作）\n・WSP新規学習：「/net demo」「/net train {JSON}」「/net run [1.3]」「/net undo」\n・計算：「計算して (12+8)/4」\n・覚える：「覚えて：内容」／「覚えていること」\n・会話内Q&A：「教える：質問 => 回答」\n・全会話共通Q&A：「/teach 質問 => 回答」\n・直前の回答を訂正：「修正：正しい回答」\n・共有知識：「/knowledge」\n・タスク：「/todo 内容」→「/tasks」→「/done 1」\n・資料：「/docs」「/search 検索語」（文字列一致）
 ・関連する資料の行を抜粋：「/ask 質問」（根拠候補）
 ・数値例からWSP回路を帰納合成：「/induce」「/induce 2,3」（画面「帰納WSP」）\n・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・コード生成：「/code python fibonacci」「/code javascript binary_search」（検証済み固定アルゴリズム）\n・画像/音声/動画：「/image 海」「/audio 波」「/video 星」「/webm 街」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
 }
@@ -2162,16 +2347,17 @@ function schemaRead(raw){
     const documents=Array.isArray(data.documents)?data.documents.filter(d=>d&&typeof d.text==='string'&&typeof d.title==='string').slice(0,MAX_DOCS).map(d=>({id:String(d.id||id()).slice(0,100),title:d.title.slice(0,100),text:d.text.slice(0,100000),added:typeof d.added==='string'?d.added.slice(0,48):''})):[];
     if(documents.reduce((s,d)=>s+d.text.length,0)>MAX_DOC_CHARS)return null;
     const theme=data.theme==='dark'?'dark':'light';
-    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null};
+    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null,neural:data.neural||null};
   }catch{return null;}
 }
 function notify(message){const node=byId('toast');node.textContent=message;node.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.add('hidden'),2800);}
-function save(){db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
+function save(){db.neural=engine.neural.snapshot();db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
 function init(){
   let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V011_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
-  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null};
+  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null,neural:null};
   db.current ||= db.chats[0].id;
   if(db.wsp)engine.router.restore(db.wsp);
+  if(db.neural&&!engine.neural.restore(db.neural))notify('保存済みWSPニューラル重みが不正です。');
   if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP一括回路のデータが不正なため復元しませんでした。');
   if(db.bulkPrevious){const old=new WSPBulk();if(old.restore(db.bulkPrevious))engine.bulk.previous=old.snapshot();else notify('旧回路の復元データが不正です。');}
   if(db.flow&&!engine.flow.restore(db.flow))notify('状態機械の保存内容が不正です。');
@@ -2280,6 +2466,7 @@ async function importJson(event){const file=event.target.files?.[0];event.target
   const parsed=schemaRead(await file.text());if(!parsed)return notify('復元できない形式、または上限超過です。');
   if(!confirm('現在の全会話・知識・資料をバックアップの内容で置き換えます。続けますか？'))return;
   db=parsed;engine.router=new engine.router.constructor();if(db.wsp)engine.router.restore(db.wsp);
+  engine.neural=new engine.neural.constructor();if(db.neural&&!engine.neural.restore(db.neural))notify('復元されたWSP重みが不正です。');
   engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP回路を検証できず読み込みを中止しました。');
   if(db.flow&&!engine.flow.restore(db.flow))notify('状態機械を復元できませんでした。');
