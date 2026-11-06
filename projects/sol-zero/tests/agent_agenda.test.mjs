@@ -106,3 +106,21 @@ test('failed goal requires explicit acknowledgement before subsequent goal; neve
  assert.equal(resumed.ok,true);assert.equal(attempts,1);assert.equal(saved,1);
  assert.equal(q.queue[0].status,'failed');
 });
+
+test('unsupported general instruction is rejected instead of falsely reported as a completed memo',()=>{
+ const q=new SolZeroAgenda();
+ assert.throws(()=>q.add('ECサイトから商品を購入して'),/未対応/);
+ assert.throws(()=>q.add('任意のPythonコードを書いて実行して'),/未対応/);
+ assert.equal(q.queue.length,0);
+ assert.equal(q.add('メモ 作業内容を確認').status,'pending');
+});
+test('legacy unsupported goal imported from older data fails without a side effect',async()=>{
+ const q=new SolZeroAgenda(),agent=new SolZeroPersonaAgent(),old=new SolZeroAgenda();
+ old.add('タスク 一旦登録');
+ const v=old.snapshot();v.queue[0].goal='買い物を自動注文する';
+ assert.equal(q.restore(v),true);
+ let called=false;
+ const r=await q.runNext(agent,{reply:()=>{called=true;return '';},addNote:()=>{called=true;return true;}},{approved:true});
+ assert.equal(r.ok,false);assert.equal(called,false);
+ assert.equal(q.queue[0].status,'failed');
+});
