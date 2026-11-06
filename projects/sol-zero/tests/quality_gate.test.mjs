@@ -38,7 +38,7 @@ test('documented aliases still work and small variations are not treated as comm
   ]) assert.equal(generateCode(request)?.task,task,request);
   assert.equal(generateCode('Do not run /code python factorial'),null);
   assert.equal(generateCode('/code python factorial please').ok,false);
-  assert.match(new SolZeroEngine().reply('あなたは誰ですか'),/v0\.13/);
+  assert.match(new SolZeroEngine().reply('あなたは誰ですか'),/v0\.14/);
 });
 test('generated JS algorithms handle boundary and repetition fixtures', () => {
   const generated=(task)=> {
