@@ -99,7 +99,7 @@ function drawHistory(){
 }
 function bubble(message){
   const item=el('article',{class:`message ${message.role}`});
-  if(message.role==='assistant')item.append(el('div',{class:'avatar',text:'S0'}));
+  if(message.role==='assistant')item.append(el('div',{class:'avatar',text:'🐻'}));
   const content=el('div',{class:'content'}),body=el('div',{class:'bubble',text:message.text});
   const stamp=el('div',{class:'meta'});
   const d=new Date(message.at);
@@ -165,7 +165,7 @@ function renderPersonaAgent(){
   panelIntro('🐻 SolZeroエージェント','計画は自動作成。実行は明示承認した範囲のみ、最大3手です。');
   const box=byId('panelBody');
   const goal=field('達成したいこと','text','例：青い海の画像を作成');
-  goal.input.maxLength=180;box.append(goal.row);
+  goal.input.maxLength=180;box.append(goal.wrapper);
   const status=el('div',{class:'listentry',text:personaAgent.describe()});
   const result=el('div',{class:'listentry',text:'音声は初期設定でオフです。'});
   const actions=el('div',{class:'buttons'});
