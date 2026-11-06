@@ -1,5 +1,17 @@
 # FFC — FlyFromCodex
 
+## Sol-Zero v0.15 — オフライン汎用タスク工房（2026-11-06）
+
+**[▶ Sol-Zero v0.15 単体HTMLを取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/raw/refs/heads/main/projects/sol-zero/SolZero_Chat_Offline.html)** / **[ソースと使い方](projects/sol-zero/README.md)** / [GitHub上でファイルを確認](projects/sol-zero/SolZero_Chat_Offline.html)
+
+- **機能:** 会話、数値WSP回路の帰納・実行・Python/JavaScript書き出し、固定8アルゴリズムのコード生成、手続き的なPNG/WAV/GIF/WebM生成・作品ZIP、最大16工程・22操作のCSV/資料/計算/WSP/メディア連結タスク。
+- **回帰検査:** [GitHub Actions #42155012701](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42155012701) でNode **149/149**、Python **7/7**、Chrome画面幅390pxのチャット・WSP・作品生成・ZIP復元・メディア保存・タスク実行が合格。単体HTMLは生成ソースとのバイト一致を確認済み。
+- **始め方:** HTMLを保存してブラウザで開き、上部「🧩 タスク工房」→「CSV集計」→「計画を検証」→「計画を実行」。チャットからは `/agent help`、`/code python fibonacci`、`/image 海`。
+- **データの安全性:** チャットはJSONバックアップ、作品はZIPバックアップを別に保存。破損した作品ZIPは復元前に拒否し、IndexedDBへの作品差し替えを単一トランザクションで行います。ブラウザの保存設定により一時保存になる場合があります。
+- **対象と制約:** HTMLブラウザ版であり**APKではありません**。独自学習の万能AIや自由コード生成・実写級画像動画生成の完成版ではありません。Pixel 10/Android 17での実機動作は未検証です。
+
+---
+
 ## CIFA v1.161.8 — 開拓うさぎ98秒動画対応・2画面固定の署名済み検証版（2026-11-05）
 
 **[▶ CIFA v1.161.8 署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/cifa-v1.1618-fullcycle-2display-final-lab/CIFA-v1.1618-fullcycle-2display-signed.apk)**
