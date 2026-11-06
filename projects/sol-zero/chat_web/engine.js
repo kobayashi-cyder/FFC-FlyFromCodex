@@ -4,6 +4,7 @@
 import {predictLearnedIntent, LEARNED_ROUTER_META} from './learned_router.js';
 import {generateCode,codeHelp} from './code_workshop.js';
 import {WeightSpaceNetwork,NEURAL_DEMO,trainAndVerifyNeural,promoteNeural} from './wsp_neural.js';
+import {BANC_COGNITION} from './banc_cognition.js';
 import {generateWSPCode} from './wsp_codegen.js';
 export const ENGINE_VERSION = '0.15.0';
 export const FEATURE_SETS = Object.freeze({
@@ -189,7 +190,7 @@ export function retrieveEvidence(query, documents, limit=4) {
 }
 
 export class SolZeroEngine {
-  constructor(){this.router=new WeightRouter();this.bulk=null;this.flow=null;this.autoAudit=null;this.neural=new WeightSpaceNetwork();}
+  constructor(){this.router=new WeightRouter();this.bulk=null;this.flow=null;this.autoAudit=null;this.neural=new WeightSpaceNetwork();this.cognition=BANC_COGNITION;}
   reply(input, conversation={messages:[],notes:[]}, context={}) {
     const raw=String(input).trim(), x=normalized(raw);
     if(!raw)return '文章を入力してください。';
@@ -227,6 +228,20 @@ export class SolZeroEngine {
         }catch(err){return 'WSP学習拒否：'+err.message;}
       }
       return help;
+    }
+    if(/^\/cognition(?:\s|$)/iu.test(raw)){
+      const arg=raw.replace(/^\/cognition\s*/iu,'').trim();
+      if(!arg||arg==='help')return 'BANC888認知検証（計画専用）：/cognition demo で例、/cognition {JSON} で計画を表示します。実行や端末の操作は行いません。学習WSPの重みとは別の機能です。';
+      const demo={schema:1,facts:{state:'new'},goal:{state:'ready'},actions:[
+        {id:'prepare',tool:'task.value',requires:{state:'new'},effects:{state:'draft'},args:{}},
+        {id:'verify',tool:'task.value',requires:{state:'draft'},effects:{state:'ready'},args:{}}]};
+      if(arg==='demo')return JSON.stringify(demo,null,2);
+      if(arg.length>64000)return '認知計画拒否：JSONが長すぎます';
+      try{
+        if(!arg.startsWith('{'))return '認知計画拒否：実行せず、/cognition demo または /cognition {JSON} で計画を確認してください。';
+        const report=this.cognition.plan(JSON.parse(arg));
+        return 'BANC888認知計画（予測のみ、未実行）：'+JSON.stringify(report).slice(0,7000);
+      }catch(e){return '認知計画拒否：'+String(e.message||e).slice(0,300);}
     }
     const exportMatch=raw.match(/^\/exportwsp(?:\s+(.+))?$/iu);
     if(exportMatch){
@@ -385,7 +400,7 @@ export class SolZeroEngine {
           '入力は受け取りました。ただし、未知の一般質問にはまだ自由回答できません。「/help」で対応機能を確認するか、知識パネルで質問と回答を登録してください。';
     }
   }
-  help(){return `Sol-Zero v${ENGINE_VERSION}（ローカル試作）\n・WSP新規学習：「/net demo」「/net train {JSON}」「/net run [1.3]」「/net undo」\n・計算：「計算して (12+8)/4」\n・覚える：「覚えて：内容」／「覚えていること」\n・会話内Q&A：「教える：質問 => 回答」\n・全会話共通Q&A：「/teach 質問 => 回答」\n・直前の回答を訂正：「修正：正しい回答」\n・共有知識：「/knowledge」\n・タスク：「/todo 内容」→「/tasks」→「/done 1」\n・資料：「/docs」「/search 検索語」（文字列一致）
+  help(){return `Sol-Zero v${ENGINE_VERSION}（ローカル試作）\n・BANC888認知計画：「/cognition demo」「/cognition {JSON}」（予測のみ）\n・WSP新規学習：「/net demo」「/net train {JSON}」「/net run [1.3]」「/net undo」\n・計算：「計算して (12+8)/4」\n・覚える：「覚えて：内容」／「覚えていること」\n・会話内Q&A：「教える：質問 => 回答」\n・全会話共通Q&A：「/teach 質問 => 回答」\n・直前の回答を訂正：「修正：正しい回答」\n・共有知識：「/knowledge」\n・タスク：「/todo 内容」→「/tasks」→「/done 1」\n・資料：「/docs」「/search 検索語」（文字列一致）
 ・関連する資料の行を抜粋：「/ask 質問」（根拠候補）
 ・数値例からWSP回路を帰納合成：「/induce」「/induce 2,3」（画面「帰納WSP」）\n・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・WSP回路をコードに変換：「/exportwsp python」「/exportwsp javascript」\n・タスク工房：「/agent help」「/agent demo」／上部「タスク工房」で最大16工程を連結\n・コード生成：「/code python fibonacci」「/code javascript binary_search」（検証済み固定アルゴリズム）\n・画像/音声/動画：「/image 海」「/audio 波」「/video 星」「/webm 街」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
 }
