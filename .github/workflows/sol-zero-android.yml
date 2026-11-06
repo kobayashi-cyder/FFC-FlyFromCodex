@@ -88,24 +88,7 @@ jobs:
           disk-size: 4096M
           disable-animations: true
           emulator-boot-timeout: 900
-          script: |
-            set -eu
-            adb install -r android-apk/app-debug.apk
-            adb shell am start -W -n jp.solzero.offline/.MainActivity
-            sleep 8
-            PID="$(adb shell pidof jp.solzero.offline | tr -d '\r')"
-            test -n "$PID"
-            adb forward tcp:9222 "localabstract:webview_devtools_remote_$PID"
-            python projects/sol-zero/android/tests/emulator_smoke.py
-            adb shell ls /sdcard/Download/SolZero/ | grep -F 'solzero_v012_backup.json'
-            adb logcat -d > /tmp/solzero-android-logcat.txt
-            if grep -A8 'FATAL EXCEPTION' /tmp/solzero-android-logcat.txt | grep -F 'jp.solzero.offline'; then
-              echo 'Sol-Zero process crashed'
-              exit 1
-            fi
-            adb shell screencap -p /sdcard/solzero-android.png
-            adb pull /sdcard/solzero-android.png /tmp/solzero-android.png
-            echo 'PASS: Android 15 offline WebView boot, chat, CSV task, PNG, native Downloads'
+          script: bash projects/sol-zero/android/tests/emulator_runner.sh
 
   publish-lab-release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
