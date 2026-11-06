@@ -1,8 +1,18 @@
 # FFC — FlyFromCodex
 
+## 統合開発：Sol-Zero × 学習WSP × Android（PR #79）
+
+[検証用オフラインHTML](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/feature/sol-zero-unified-wsp-apk-20261106/projects/sol-zero/SolZero_Chat_Offline.html) / [統合PR #79](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/79) / [詳細と操作方法](projects/sol-zero/README.md)
+
+- **実装済み:** ゼロから訓練する数値WSP重みをチャットの `/net demo`・`/net train`・`/net run`、タスク工房の `wsp.learned` に統合。学習重みを保存・復元し、最大16工程・23操作のタスク内で使用できます。既存のチャット、固定コード、メディア制作機能を保持しています。
+- **検証:** Node 157件・Python 7件、Chromiumのモバイル表示試験、単体HTML再生成一致が通過。Android版のGradle/署名・エミュレーター結果は別に確認し、未確認のまま本番公開しません。
+- **範囲:** BANCv888旧Android内部実装の統合や、万能知能・高品質生成AIの完成はまだ主張できません。既存の大規模言語モデルやクラウドAPIは不使用です。
+
+---
+
 ## Sol-Zero v0.16 — Androidオフライン検証APK（2026-11-06）
 
-**[▶ Sol-Zero v0.16 署名済み検証APKを直接取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/sol-zero-v016-offline-lab/SolZero-v016-Android-offline-debug-signed.apk)** / [GitHub Release（実験版）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/sol-zero-v016-offline-lab) / [Androidビルド仕様](projects/sol-zero/android/README.md)
+**APKはGitHub Release未公開（Androidエミュレーター検証待ち）** / [Androidビルドと署名済みCIアーティファクト](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/sol-zero-android.yml) / [Androidビルド仕様](projects/sol-zero/android/README.md)
 
 - **アプリの内容:** Sol-Zero v0.15のチャット・WSP・コード生成・タスク工房・PNG/WAV/GIF/WebM制作を端末内の安全なWebViewに収録。Android 10（API 29）以上が対象。パッケージ `jp.solzero.offline`。
 - **完全ローカル:** `INTERNET`権限・アクセシビリティ権限・広域ストレージ権限は不要。外部URLはWebViewで遮断し、保存はAndroid標準の `Downloads/SolZero`、取込はシステムファイル選択を利用します。
