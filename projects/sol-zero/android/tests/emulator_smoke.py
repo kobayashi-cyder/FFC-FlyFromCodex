@@ -122,6 +122,24 @@ def main():
     print('PASS: scratch-trained WSP weights are shared between chat and task workbench')
     dev.evaluate("document.getElementById('closePanel').click(); true")
 
+    dev.evaluate("""(() => {
+      document.getElementById('input').value = '/cognition demo';
+      document.getElementById('chatForm').requestSubmit();return true;
+    })()""")
+    dev.wait_for("""[...document.querySelectorAll('.message.assistant .bubble')]
+       .some(x => x.textContent.includes('"schema": 1'))""")
+    dev.evaluate("""(() => {
+      document.getElementById('input').value = '/cognition ' +
+       JSON.stringify({schema:1,facts:{state:'new'},goal:{state:'ready'},actions:[
+        {id:'ready',tool:'task.value',requires:{state:'new'},effects:{state:'ready'},args:{}}
+       ]});
+      document.getElementById('chatForm').requestSubmit();return true;
+    })()""")
+    dev.wait_for("""[...document.querySelectorAll('.message.assistant .bubble')]
+       .some(x => x.textContent.includes('BANC888認知計画（予測のみ、未実行）'))""")
+    print('PASS: BANC888 cognition planning is inspectable and preview-only')
+
+
     dev.evaluate("document.getElementById('exportJson').click(); true")
     # Native bridge writes to Downloads/SolZero; independently verify on adb.
     time.sleep(3)
