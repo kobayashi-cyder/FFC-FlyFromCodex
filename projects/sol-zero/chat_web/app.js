@@ -1,4 +1,6 @@
-import {SolZeroEngine,ENGINE_VERSION,INTENTS,saveLesson,normalized} from './engine.js';
+import {SolZeroEngine,ENGINE_VERSION,INTENTS,saveLesson,normalized,calculate} from './engine.js';
+import {generateCode} from './code_workshop.js';
+import {runTaskPlan,runTaskPlanAsync,validateTaskPlan,TASK_AGENT_DEMO,TASK_AGENT_TOOLS,taskAgentHelp} from './task_agent.js';
 import {ScratchBigram} from './bigram.js';
 import {WSPBulk,WSP_DEMO_RULES,syntheticRules} from './wsp_bulk.js';
 import {WSPFlow,FLOW_DEMO} from './wsp_flow.js';
@@ -14,6 +16,7 @@ const studio=new MediaStudio();
 engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();
 engine.graph=new WSPGraph();
+const TASK_AGENT_STORE='solzero_task_v015_recipe';
 const DB_KEY='solzero_chat_v012_local',V011_KEY='solzero_chat_v011_local',V010_KEY='solzero_chat_v010_local',V09_KEY='solzero_chat_v09_local',V08_KEY='solzero_chat_v08_local',V07_KEY='solzero_chat_v07_local',PREV_KEY='solzero_chat_v06_local',OLD_KEY='solzero_chat_v05_local',OLDER_KEY='solzero_chat_v04_local',ANCIENT_KEY='solzero_chat_v03_local';
 const MAX_CHATS=40,MAX_MESSAGES=400,MAX_DOCS=8,MAX_DOC_CHARS=450000;
 const byId=id=>document.getElementById(id);
@@ -122,6 +125,8 @@ function drawMessages(){
 }
 function draw(){drawHistory();drawMessages();$input.value=current().draft||'';resize();byId('pinChat').textContent=current().pinned?'📌 固定を解除':'📌 会話を固定';}
 function resize(){$input.style.height='auto';$input.style.height=Math.min(145,$input.scrollHeight)+'px';}
+function taskAdapter(allowMediaWrites=false){return {documents:db.documents,graph:engine.graph,calculate,generateCode,generateWSPCode,allowMediaWrites,generateMedia:async(kind,opts)=>{await studio.ensureLoaded();return studio.generate(kind,opts);}};}
+function taskResultText(r){return (r.ok?'完了':'停止')+'：'+r.trace.length+'工程実行'+(r.ok?'':`。失敗工程：${r.failedAt}（${r.error}）`)+'\n'+JSON.stringify(r.ok?r.output:r.trace,null,2).slice(0,9000)+'\n※計画の実行記録です。自由なAI推論の証明ではありません。';}
 async function send(event){
   event?.preventDefault();
   const text=$input.value.trim();if(!text)return;
@@ -132,6 +137,12 @@ async function send(event){
       const asset=await studio.generate(kind,p?{prompt:p,text:p}:null);
       answer=`${asset.name} を生成しました（${asset.bytes.length.toLocaleString('ja-JP')}バイト）。上部「メディア工房」で再生・保存・一括ZIP出力できます。\n※学習済みモデルではなく手続き的な生成です。`;
     }catch(err){answer='メディア生成エラー：'+err.message;}
+  }else if(/^\/agent(?:\s|$)/i.test(text)){
+    const input=text.replace(/^\/agent\s*/i,'').trim();
+    if(!input||input==='help')answer=taskAgentHelp();
+    else if(input==='demo')answer=JSON.stringify(TASK_AGENT_DEMO);
+    else if(!input.startsWith('{'))answer='タスクJSONを /agent { ... } として入力するか、上部「タスク工房」を開いてください。/agent demo で例を取得できます。';
+    else try{answer=taskResultText(runTaskPlan(input,taskAdapter()));}catch(e){answer='タスク計画を拒否：'+e.message;}
   }else if(/^\/factory(?:\s|$)/i.test(text)){
     try{const args=text.trim().split(/\s+/);
       if(args.length===1||args[1]==='list')answer='WSP回路工房：30種の数値・論理・比較・非線形・統計・ベクトル回路。4bit論理関数65536通り。例 /factory xor2 0 1 0、/factory lut4 13 1 0 1 1。上部の「回路工房」で一括テストできます。';
@@ -179,7 +190,7 @@ function openPanel(which){
   priorFocus=document.activeElement;
   byId('scrim').classList.remove('hidden');byId('panel').classList.remove('hidden');
   byId('panelBody').replaceChildren();
-  if(which==='knowledge')renderKnowledge();else if(which==='documents')renderDocuments();else if(which==='circuit')renderCircuit();else if(which==='generator')renderGenerator();else if(which==='bulk')renderBulk();else if(which==='auto')renderAutoDesign();else if(which==='graph')renderGraph();else if(which==='factory')renderFactory();else if(which==='induce')renderInduction();else if(which==='studio'){panelIntro('メディア工房','画像・音声・動画をゼロから生成し、作品ZIPに統合。WSP重みで生成を調整できます。');studio.ensureLoaded().then(()=>{if(!byId('panel').classList.contains('hidden')&&byId('panelTitle').textContent==='メディア工房')studio.render(byId('panelBody'),{notify});}).catch(e=>notify(e.message));}
+  if(which==='knowledge')renderKnowledge();else if(which==='documents')renderDocuments();else if(which==='circuit')renderCircuit();else if(which==='generator')renderGenerator();else if(which==='bulk')renderBulk();else if(which==='auto')renderAutoDesign();else if(which==='graph')renderGraph();else if(which==='factory')renderFactory();else if(which==='induce')renderInduction();else if(which==='agent')renderTaskAgent();else if(which==='studio'){panelIntro('メディア工房','画像・音声・動画をゼロから生成し、作品ZIPに統合。WSP重みで生成を調整できます。');studio.ensureLoaded().then(()=>{if(!byId('panel').classList.contains('hidden')&&byId('panelTitle').textContent==='メディア工房')studio.render(byId('panelBody'),{notify});}).catch(e=>notify(e.message));}
   byId('closePanel').focus();
 }
 function closePanel(){byId('panel').classList.add('hidden');byId('scrim').classList.add('hidden');priorFocus?.focus?.();}
@@ -188,6 +199,36 @@ function field(label,type='text',placeholder=''){
   const id='field_'+Math.random().toString(16).slice(2);
   const wrapper=el('div',{class:'field'}),input=el(type==='textarea'?'textarea':'input',{type:type==='textarea'?undefined:type,placeholder});
   input.id=id;const caption=el('label',{text:label});caption.setAttribute('for',id);wrapper.append(caption,input);return {wrapper,input};
+}
+function renderTaskAgent(){
+  panelIntro('タスク工房 v0.15','許可された工程を組み合わせるオフライン実行機構。一般推論AIではありません。');
+  const root=byId('panelBody');root.replaceChildren();
+  root.append(el('p',{class:'muted',text:'最大16工程・22種類の操作。JSONの前工程を $ref で参照し、CSV集計・資料検索・WSP回路実行・コード生成・手続き的メディア生成を連結できます。未知の操作は拒否します。'}));
+  const recipe=field('タスク計画JSON（version=1、steps）','textarea');recipe.input.maxLength=48000;recipe.input.style.minHeight='225px';
+  try{recipe.input.value=localStorage.getItem(TASK_AGENT_STORE)||JSON.stringify(TASK_AGENT_DEMO,null,2);}catch{recipe.input.value=JSON.stringify(TASK_AGENT_DEMO,null,2);}
+  const status=el('div',{class:'listentry',text:'計画を確認後に実行してください。メディア生成だけは実行前に書込みを確認します。'});
+  const templates=[
+    ['CSV集計',TASK_AGENT_DEMO],
+    ['資料検索',{version:1,steps:[{id:'hits',op:'documents.search',args:{query:'売上'}}]}],
+    ['WSP計算とコード変換',{version:1,steps:[{id:'result',op:'wsp.run',args:{input:[1,0]}},{id:'source',op:'wsp.export',args:{language:'python'}}],output:'source'}],
+    ['画像・音声の生成',{version:1,steps:[{id:'image',op:'media.generate',args:{kind:'image',prompt:'星空'}},{id:'audio',op:'media.generate',args:{kind:'audio',prompt:'波音',text:'波音'}}],output:'audio'}]
+  ];
+  const choose=document.createElement('select');choose.className='btn';choose.setAttribute('aria-label','タスクの例を選択');for(const [label]of templates){const o=document.createElement('option');o.textContent=label;choose.append(o);}
+  choose.addEventListener('change',()=>{recipe.input.value=JSON.stringify(templates[choose.selectedIndex][1],null,2);status.textContent='例を読み込みました。実行はまだしていません。';});
+  let last=null;
+  const buttons=el('div',{class:'buttons'});
+  const btn=(label,fn,primary=false)=>{const b=el('button',{class:primary?'btn primary':'btn',text:label});b.addEventListener('click',fn);buttons.append(b);return b;};
+  btn('計画の検証',()=>{try{const p=validateTaskPlan(recipe.input.value);status.textContent='計画の形式と参照関係は有効です。工程数：'+p.steps.length+'\n'+p.steps.map(x=>x.id+': '+x.op).join('\n')+'\n※各工程の実行結果は未検証です。';}catch(e){status.textContent='計画拒否：'+e.message;}});
+  const go=btn('計画を実行',async()=>{if(go.disabled)return;go.disabled=true;try{
+    const p=validateTaskPlan(recipe.input.value),writes=p.steps.filter(x=>x.op==='media.generate');
+    if(writes.length&&!confirm('メディア素材を '+writes.length+' 件生成し、この端末の作品領域に保存します。実行しますか？')){status.textContent='メディア生成を中止しました。';return;}
+    status.textContent='現在のタスクを実行しています…';const r=await runTaskPlanAsync(p,taskAdapter(writes.length>0));
+    last=r;status.textContent=taskResultText(r);
+    try{localStorage.setItem(TASK_AGENT_STORE,recipe.input.value);}catch{status.textContent+='\n※計画の永続保存は利用できません。JSONを保存してください。'}
+  }catch(e){status.textContent='計画拒否：'+e.message;}finally{go.disabled=false;}},true);
+  btn('計画JSONを保存',()=>{try{const p=validateTaskPlan(recipe.input.value);download(JSON.stringify(p,null,2),'solzero_agent_plan.json','application/json;charset=utf-8');status.textContent='計画JSONを書き出しました。';}catch(e){status.textContent=e.message;}});
+  btn('実行記録を保存',()=>{if(!last)return status.textContent='まだ実行記録はありません。';download(JSON.stringify(last,null,2),'solzero_agent_report.json','application/json;charset=utf-8');});
+  root.append(choose,recipe.wrapper,buttons,status,el('p',{class:'muted',text:'使える工程：'+TASK_AGENT_TOOLS.join(' / ')}));
 }
 function renderKnowledge(){
   panelIntro('共有知識を教える','回答は保存したQ&Aの文字列・類似検索です。モデル重みの学習ではありません。');
@@ -589,7 +630,7 @@ byId('exportMd').addEventListener('click',exportMd);
 byId('importJson').addEventListener('click',()=>byId('jsonPicker').click());
 byId('jsonPicker').addEventListener('change',importJson);
 byId('themeSide').addEventListener('click',changeTheme);
-for(const [btn,section] of [['knowledgeBtn','knowledge'],['docsBtn','documents'],['circuitBtn','circuit'],['generatorBtn','generator'],['bulkBtn','bulk'],['bulkSide','bulk'],['autoBtn','auto'],['autoSide','auto'],['graphBtn','graph'],['graphSide','graph'],['factoryBtn','factory'],['factorySide','factory'],['induceBtn','induce'],['induceSide','induce'],['studioBtn','studio'],['studioSide','studio']])byId(btn).addEventListener('click',()=>openPanel(section));
+for(const [btn,section] of [['knowledgeBtn','knowledge'],['docsBtn','documents'],['circuitBtn','circuit'],['generatorBtn','generator'],['bulkBtn','bulk'],['bulkSide','bulk'],['autoBtn','auto'],['autoSide','auto'],['graphBtn','graph'],['graphSide','graph'],['factoryBtn','factory'],['factorySide','factory'],['induceBtn','induce'],['induceSide','induce'],['studioBtn','studio'],['studioSide','studio'],['agentBtn','agent'],['agentSide','agent']])byId(btn).addEventListener('click',()=>openPanel(section));
 byId('docPicker').addEventListener('change',addDocuments);
 byId('closePanel').addEventListener('click',closePanel);
 byId('scrim').addEventListener('click',closePanel);
