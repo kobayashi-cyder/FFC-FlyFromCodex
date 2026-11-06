@@ -4,6 +4,7 @@ import {WSPBulk,WSP_DEMO_RULES,syntheticRules} from './wsp_bulk.js';
 import {WSPFlow,FLOW_DEMO} from './wsp_flow.js';
 import {AUTO_DEMO,AUTO_FLOW_DEMO,designAndVerify,validateTask,evaluate,promoteVerified,planFlow} from './wsp_autodesign.js';
 import {WSPGraph,inspectGraph,compileTruthTable,denseTemplate,GRAPH_DEMO_XOR,GRAPH_DEMO_NUMERIC,GRAPH_DEMO_PARITY,GRAPH_LIMITS} from './wsp_graph.js';
+import {generateWSPCode} from './wsp_codegen.js';
 import {INDUCTION_DEMO,induceAndVerify,promoteInduction} from './wsp_induction.js';
 import {MediaStudio} from './media_ui.js';
 import {FACTORY_FAMILIES,FACTORY_LIMITS,buildFactory,verifyFactory,auditFactory,composeFactories} from './wsp_factory.js';
@@ -390,7 +391,13 @@ function renderGraph(){
         test.input.value=JSON.stringify([{input:spec.inputs.map(()=>1),expected:Array(meta.stats.outputWidths[0]).fill(0)}]);
         result.textContent=`未学習の密行列 ${meta.stats.weights.toLocaleString()} 重みを生成。実際の出力は乱数に依存し、期待値テストを合格するとは限りません。自動採用・自動保存はしません。`;
       }catch(e){result.textContent='生成拒否：'+e.message;}
-    }}),el('button',{class:'btn',text:'現在の回路をJSONで出力',onClick:()=>download(JSON.stringify(engine.graph.snapshot()),'solzero_wsp_graph.json','application/json;charset=utf-8')})));
+    }}),el('button',{class:'btn',text:'現在の回路をJSONで出力',onClick:()=>download(JSON.stringify(engine.graph.snapshot()),'solzero_wsp_graph.json','application/json;charset=utf-8')}),
+    ...['python','javascript'].map(language=>el('button',{class:'btn',text:language==='python'?'現在の回路→Python':'現在の回路→JavaScript',onClick:()=>{
+      try{const compiled=generateWSPCode(engine.graph.snapshot(),language);
+        download(compiled.code,compiled.filename,'text/plain;charset=utf-8');
+        result.textContent=`数値WSP回路の${compiled.language}コードを出力しました（${compiled.nodes}ノード・${compiled.weights}重み）。コードの実行は端末上で行いません。`;
+      }catch(err){result.textContent='コード出力拒否：'+err.message;}
+    }}))));
   root.append(el('h3',{text:'重みを指定座標へ直接書き込む'}));
   const target=field('linearノードID','text');target.input.value='hidden';
   const row=field('重みの行番号（0開始）','number');row.input.value='0';
