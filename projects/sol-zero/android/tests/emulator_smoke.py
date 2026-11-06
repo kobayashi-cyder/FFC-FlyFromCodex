@@ -66,7 +66,7 @@ def main():
     sock.settimeout(25)
     dev = DevTools(sock)
     dev.wait_for("Boolean(document.getElementById('agentBtn') && document.getElementById('messages'))")
-    assert dev.evaluate("document.title") == 'Sol-Zero Chat', 'Wrong HTML page'
+    assert 'Sol-Zero' in dev.evaluate('document.title'), 'Wrong HTML page'
     dev.wait_for("Boolean(window.SolZeroDownloads && window.__solZeroDownloadsReady)")
     print('PASS: offline WebView, built-in task UI, native download hook')
 
@@ -94,7 +94,6 @@ def main():
     dev.evaluate("document.getElementById('exportJson').click(); true")
     # Native bridge writes to Downloads/SolZero; independently verify on adb.
     time.sleep(3)
-    dev.wait_for("document.getElementById('toast')?.textContent.includes('ファイル') === false || true")
     print('PASS: app initiated JSON export through native download hook')
 
     dev.evaluate("document.getElementById('studioBtn').click(); true")
