@@ -61,6 +61,27 @@ def main():
         page.locator('#input').fill('/induce 1,0')
         page.locator('#chatForm button[type="submit"]').click()
         assert '数値出力：1' in page.locator('.message.assistant .bubble').last.inner_text()
+        # Two synchronous submits for an async media command must produce one reply.
+        page.locator('#input').fill('/image 海')
+        page.evaluate("""() => {
+          const form=document.querySelector('#chatForm');
+          for(let i=0;i<2;i++)form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+        }""")
+        page.wait_for_function("() => Array.from(document.querySelectorAll('.message.assistant .bubble')).some(x=>x.textContent.includes('を生成しました'))",timeout=15000)
+        assert page.locator('.message.user .bubble').filter(has_text='/image 海').count()==1
+        assert page.locator('#send').is_enabled()
+        assert not page.locator('#input').evaluate('(element) => element.readOnly')
+        page.locator('#input').fill('こんにちは')
+        page.locator('#chatForm button[type="submit"]').click()
+        assert page.locator('.message.user .bubble').filter(has_text='こんにちは').count()==1
+        # Oversized message is rejected without disappearing from the draft.
+        # textarea has maxlength=3000; test programmatic/DOM over-limit input too.
+        page.evaluate("""() => {
+          const input=document.querySelector('#input');input.value='あ'.repeat(3001);
+          document.querySelector('#chatForm').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+        }""")
+        assert '最大3000文字' in page.locator('#toast').inner_text()
+        assert len(page.locator('#input').input_value())==3001
         assert not errors,errors
         print('PASS: v0.10 HTTP migration; WSP induction 5/5; save/reload; chat; rollback; no JS errors')
         browser.close()

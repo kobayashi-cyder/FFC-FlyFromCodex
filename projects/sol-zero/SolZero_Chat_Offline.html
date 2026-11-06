@@ -1744,9 +1744,10 @@ function gifBytes(frames,w,h,fps=8){
 let crcTable;
 function crc32(data){if(!crcTable){crcTable=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;crcTable[i]=c>>>0;}}let c=0xffffffff;for(const b of data)c=crcTable[(c^b)&255]^(c>>>8);return(c^0xffffffff)>>>0;}
 /** Noncompressed ZIP so it works without APIs or internet. Caller must enforce asset limits. */
-function zipBytes(entries){if(!Array.isArray(entries)||!entries.length||entries.length>MEDIA_LIMITS.assets+3)throw Error('ZIPエントリ数不正');let size=0;const parts=[],index=[];const u16=n=>[n&255,(n>>>8)&255],u32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];let offset=0;
+function zipBytes(entries){if(!Array.isArray(entries)||!entries.length||entries.length>MEDIA_LIMITS.assets+3)throw Error('ZIPエントリ数不正');let size=0;const parts=[],index=[],used=new Set();const u16=n=>[n&255,(n>>>8)&255],u32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];let offset=0;
  for(const entry of entries){const name=String(entry.name||''),filename=enc.encode(name),buf=entry.bytes instanceof Uint8Array?entry.bytes:enc.encode(String(entry.bytes??''));
   if(!/^[a-zA-Z0-9_./-]{1,120}$/.test(name)||name.startsWith('/')||name.includes('..')||name.includes('//'))throw Error('ZIPパス不正');
+  if(used.has(name))throw Error('ZIP同名ファイルは追加できません');used.add(name);
   size+=buf.length;if(size>MEDIA_LIMITS.projectBytes)throw Error('ZIP総量を超過');const crc=crc32(buf);
   const local=Uint8Array.from([...u32(0x04034b50),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(buf.length),...u32(buf.length),...u16(filename.length),...u16(0)]);
   parts.push(local,filename,buf);const central=Uint8Array.from([...u32(0x02014b50),...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(buf.length),...u32(buf.length),...u16(filename.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(offset)]);index.push(central,filename);offset+=local.length+filename.length+buf.length;
@@ -1756,18 +1757,45 @@ function zipBytes(entries){if(!Array.isArray(entries)||!entries.length||entries.
 /** Import ZIPs produced by Sol-Zero's store writer only. Reject compressed data,
  * encrypted/data-descriptor archives and path traversal rather than guessing. */
 function unzipStored(bytes){
- if(!(bytes instanceof Uint8Array)||bytes.length>MEDIA_LIMITS.projectBytes+100_000)throw Error('ZIP容量超過');
- const d=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),u16=o=>d.getUint16(o,true),u32=o=>d.getUint32(o,true),files=[];let pos=0;
- while(pos+4<=bytes.length&&u32(pos)===0x04034b50){
-  if(files.length>=MEDIA_LIMITS.assets+3)throw Error('ZIP項目数が多すぎます');if(pos+30>bytes.length)throw Error('ZIPヘッダー破損');
-  const flags=u16(pos+6),method=u16(pos+8),checksum=u32(pos+14),len=u32(pos+18),original=u32(pos+22),nameLen=u16(pos+26),extraLen=u16(pos+28);
-  if(method!==0||len!==original||!(flags&0x0800)||(flags&0x0009))throw Error('ZIP形式は非圧縮UTF-8のみ対応');
-  const begin=pos+30+nameLen+extraLen,end=begin+len;if(end>bytes.length)throw Error('ZIP長が不正');
-  const name=new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(pos+30,pos+30+nameLen));
-  if(!/^[a-zA-Z0-9_./-]{1,120}$/.test(name)||name.startsWith('/')||name.includes('..')||name.includes('//')||files.some(f=>f.name===name))throw Error('ZIPパス・重複が不正');
-  const payload=bytes.slice(begin,end);if(crc32(payload)!==checksum)throw Error('ZIP CRC不一致');files.push({name,bytes:payload});pos=end;
+ if(!(bytes instanceof Uint8Array)||bytes.length<22||bytes.length>MEDIA_LIMITS.projectBytes+100_000)throw Error('ZIP容量または形式が不正です');
+ const d=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+ const u16=o=>d.getUint16(o,true),u32=o=>d.getUint32(o,true),eocd=bytes.length-22;
+ if(u32(eocd)!==0x06054b50||u16(eocd+4)!==0||u16(eocd+6)!==0||
+   u16(eocd+8)!==u16(eocd+10)||u16(eocd+20)!==0)throw Error('ZIP終端またはディスク構成が不正です');
+ const count=u16(eocd+10),dirSize=u32(eocd+12),dirOffset=u32(eocd+16);
+ if(!count||count>MEDIA_LIMITS.assets+3||dirOffset>eocd||dirOffset+dirSize!==eocd)
+  throw Error('ZIP中央ディレクトリの個数・長さが不正です');
+ const files=[],names=new Set(),decoder=new TextDecoder('utf-8',{fatal:true});
+ let dir=dirOffset,dataCursor=0,total=0;
+ for(let i=0;i<count;i++){
+  if(dir+46>eocd||u32(dir)!==0x02014b50)throw Error('ZIP中央エントリ破損');
+  const flags=u16(dir+8),method=u16(dir+10),crc=u32(dir+16),packed=u32(dir+20),
+        original=u32(dir+24),nlen=u16(dir+28),extra=u16(dir+30),
+        comment=u16(dir+32),disk=u16(dir+34),local=u32(dir+42);
+  if(flags!==0x0800||method!==0||packed!==original||extra||comment||disk||
+     !nlen||nlen>120||dir+46+nlen>eocd)
+   throw Error('ZIPは自己生成した非圧縮UTF-8形式のみ対応です');
+  const nameBytes=bytes.subarray(dir+46,dir+46+nlen),name=decoder.decode(nameBytes);
+  if(!/^[a-zA-Z0-9_./-]{1,120}$/.test(name)||name.startsWith('/')||
+     name.includes('..')||name.includes('//')||names.has(name))
+   throw Error('ZIPパスまたは重複が不正です');
+  names.add(name);
+  if(local!==dataCursor||local+30>dirOffset||u32(local)!==0x04034b50||
+     u16(local+6)!==flags||u16(local+8)!==method||u32(local+14)!==crc||
+     u32(local+18)!==packed||u32(local+22)!==original||
+     u16(local+26)!==nlen||u16(local+28)!==0)
+   throw Error('ZIPローカルヘッダーと中央索引が不一致です');
+  const nameStart=local+30,begin=nameStart+nlen,finish=begin+packed;
+  if(finish>dirOffset)throw Error('ZIPファイル境界が不正です');
+  for(let n=0;n<nlen;n++)if(bytes[nameStart+n]!==nameBytes[n])
+   throw Error('ZIP内の素材名が一致しません');
+  total+=packed;if(total>MEDIA_LIMITS.projectBytes)throw Error('ZIP展開量の上限超過');
+  const payload=bytes.slice(begin,finish);
+  if(crc32(payload)!==crc)throw Error('ZIP CRC不一致');
+  files.push({name,bytes:payload});
+  dataCursor=finish;dir+=46+nlen;
  }
- if(!files.length||pos+4>bytes.length||u32(pos)!==0x02014b50)throw Error('ZIP中央ディレクトリがありません');
+ if(dir!==eocd||dataCursor!==dirOffset)throw Error('ZIP索引とデータの境界が不一致です');
  return files;
 }
 
@@ -1791,19 +1819,125 @@ function fileDownload(data,name,type){const blob=new Blob([data],{type}),url=URL
 function makeCanvas(w,h){const c=element('canvas');c.width=w;c.height=h;return c;}
 function toPng(canvas){return new Promise((resolve,reject)=>canvas.toBlob(async blob=>{if(!blob)return reject(Error('PNG変換に失敗'));resolve(new Uint8Array(await blob.arrayBuffer()));},'image/png'));}
 async function studioDB(){if(typeof indexedDB==='undefined')return null;return new Promise((res)=>{let r;try{r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('assets'))r.result.createObjectStore('assets',{keyPath:'id'});};r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null);}catch{res(null);}});}
-async function dbOp(op,value){const db=await studioDB();if(!db)return null;return new Promise(resolve=>{let req;try{const tx=db.transaction('assets',op==='getAll'?'readonly':'readwrite'),s=tx.objectStore('assets');req=op==='getAll'?s.getAll():op==='put'?s.put(value):op==='clear'?s.clear():s.delete(value);req.onsuccess=()=>resolve(req.result??true);req.onerror=()=>resolve(null);tx.oncomplete=()=>db.close();tx.onerror=()=>db.close();}catch{db.close();resolve(null);}});}
+async function dbOp(op,value){
+ const db=await studioDB();if(!db)return null;
+ return new Promise(resolve=>{
+  let done=false,result=null;
+  const finish=v=>{if(done)return;done=true;db.close();resolve(v);};
+  try{
+   const tx=db.transaction('assets',op==='getAll'?'readonly':'readwrite'),s=tx.objectStore('assets');
+   const req=op==='getAll'?s.getAll():op==='put'?s.put(value):op==='clear'?s.clear():s.delete(value);
+   req.onsuccess=()=>{result=req.result??true;};
+   tx.oncomplete=()=>finish(result);
+   tx.onabort=()=>finish(null);
+  }catch{finish(null);}
+ });
+}
+// IndexedDB transactions either commit all restored assets or keep the old set.
+async function replaceAssetsTransaction(assets){
+ const db=await studioDB();if(!db)return null;
+ return new Promise(resolve=>{
+  let done=false;
+  const finish=ok=>{if(done)return;done=true;db.close();resolve(ok);};
+  try{
+   const tx=db.transaction('assets','readwrite'),store=tx.objectStore('assets');
+   store.clear();for(const asset of assets)store.put(asset);
+   tx.oncomplete=()=>finish(true);
+   tx.onabort=()=>finish(false);
+  }catch{finish(false);}
+ });
+}
 class MediaStudio {
- constructor(){this.assets=[];this.loaded=false;this.busy=false;this.wsp=new MediaWSP();this.project={name:'Sol-Zero作品',prompt:'夕焼けの海に浮かぶ星',seed:2026,theme:'auto',width:512,height:288,frames:24,fps:8,kind:'waves',text:'こんにちは'};
-  try{const raw=JSON.parse(localStorage.getItem(STORE)||'null');if(raw&&typeof raw==='object'){Object.assign(this.project,raw);if(raw.wsp)this.wsp.restore(raw.wsp);}}catch{}
+ constructor(){this.assets=[];this.loaded=false;this.loadingPromise=null;this.storageState='unknown';this.recipeSaved=true;this.previewUrls=new Set();this.busy=false;this.uiBusy=false;this.wsp=new MediaWSP();this.project={name:'Sol-Zero作品',prompt:'夕焼けの海に浮かぶ星',seed:2026,theme:'auto',width:512,height:288,frames:24,fps:8,kind:'waves',text:'こんにちは'};
+  try{
+   const serialized=localStorage.getItem(STORE);
+   if(serialized&&serialized.length<=4096){
+    const raw=JSON.parse(serialized);
+    if(raw&&typeof raw==='object'&&!Array.isArray(raw)){
+     const candidate={...this.project};
+     for(const key of ['name','prompt','seed','theme','width','height','frames','fps','kind','text'])
+      if(Object.hasOwn(raw,key))candidate[key]=raw[key];
+     if(typeof candidate.name!=='string'||candidate.name.length>60||
+        typeof candidate.prompt!=='string'||candidate.prompt.length>180||
+        typeof candidate.text!=='string'||candidate.text.length>200||
+        !['seed','width','height','frames','fps'].every(key=>Number.isInteger(candidate[key])))
+      throw Error('保存済み作品設定が不正');
+     validateMediaSpec({...candidate,theme:candidate.theme==='auto'?undefined:candidate.theme});
+     audioSpec({kind:candidate.kind,seconds:candidate.frames/candidate.fps,seed:candidate.seed,text:candidate.text});
+     if(raw.wsp!==undefined&&!this.wsp.restore(raw.wsp))throw Error('保存済み重みが不正');
+     this.project=candidate;
+    }
+   }
+  }catch{this.wsp=new MediaWSP();}
  }
- async ensureLoaded(){if(this.loaded)return;this.loaded=true;const rows=await dbOp('getAll');if(Array.isArray(rows)){for(const a of rows){if(a?.id&&a?.name&&a?.bytes instanceof Uint8Array&&a.bytes.length<=MEDIA_LIMITS.projectBytes&&this.assets.length<MEDIA_LIMITS.assets)this.assets.push(a);}}}
- saveRecipe(){try{localStorage.setItem(STORE,JSON.stringify({...this.project,wsp:this.wsp.snapshot()}));return true;}catch{return false;}}
+ async ensureLoaded(){
+  if(this.loaded)return;
+  if(!this.loadingPromise){
+   this.loadingPromise=(async()=>{
+    const rows=await dbOp('getAll');
+    this.storageState=Array.isArray(rows)?'saved':'session';
+    if(Array.isArray(rows)){
+     for(const asset of rows){
+      if(asset?.id&&asset?.name&&asset?.bytes instanceof Uint8Array&&
+         asset.bytes.length<=MEDIA_LIMITS.projectBytes&&this.assets.length<MEDIA_LIMITS.assets)
+       this.assets.push(asset);
+     }
+    }
+    this.loaded=true;
+   })().finally(()=>{this.loadingPromise=null;});
+  }
+  return this.loadingPromise;
+ }
+ saveRecipe(){try{localStorage.setItem(STORE,JSON.stringify({...this.project,wsp:this.wsp.snapshot()}));this.recipeSaved=true;return true;}catch{this.recipeSaved=false;return false;}}
  buildSpec(p=this.project){const theme=p.theme==='auto'?undefined:p.theme;const result=validateMediaSpec({prompt:p.prompt,seed:Number(p.seed),width:Number(p.width),height:Number(p.height),frames:Number(p.frames),fps:Number(p.fps),theme});return validateMediaSpec({...result,controls:this.wsp.controls(result.theme)});}
- async add(name,type,bytes,kind,spec){if(!(bytes instanceof Uint8Array)||bytes.length>22_000_000||bytes.length===0)throw Error('素材サイズが範囲外です');if(this.assets.length>=MEDIA_LIMITS.assets||this.assets.reduce((n,a)=>n+a.bytes.length,0)+bytes.length>MEDIA_LIMITS.projectBytes)throw Error('素材の個数または合計容量が上限です');const id=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+'_'+Math.random().toString(16).slice(2);
-  const asset={id,name,type,bytes,kind,spec,created:new Date().toISOString()};this.assets.push(asset);await dbOp('put',asset);return asset;
+ async checkSessionRecovery(){
+  // If a browser temporarily hid a previously existing DB during startup, never
+  // overwrite that persisted project with a partial in-memory workspace.
+  if(this.storageState!=='session')return;
+  const existing=await dbOp('getAll');
+  if(!Array.isArray(existing))return;
+  const inMemoryIds=new Set(this.assets.map(a=>a.id));
+  if(existing.some(asset=>!inMemoryIds.has(asset.id)))
+   throw Error('保存領域に別の素材があります。作品ZIPを退避してから画面を再読み込みしてください');
  }
- async remove(id){this.assets=this.assets.filter(a=>a.id!==id);await dbOp('delete',id);}
- async clear(){this.assets=[];await dbOp('clear');}
+ async add(name,type,bytes,kind,spec){
+  await this.ensureLoaded();
+  if(!(bytes instanceof Uint8Array)||bytes.length>22_000_000||bytes.length===0)throw Error('素材サイズが範囲外です');
+  if(this.assets.length>=MEDIA_LIMITS.assets||
+     this.assets.reduce((n,a)=>n+a.bytes.length,0)+bytes.length>MEDIA_LIMITS.projectBytes)
+   throw Error('素材の個数または合計容量が上限です');
+  const id=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+'_'+Math.random().toString(16).slice(2);
+  const asset={id,name,type,bytes,kind,spec,created:new Date().toISOString()};
+  // Recover an entire session-only workspace atomically, never just the last asset.
+  if(this.storageState==='session')await this.checkSessionRecovery();
+  const saved=this.storageState==='session'?
+    await replaceAssetsTransaction([...this.assets,asset]):await dbOp('put',asset);
+  if(saved===false||(saved===null&&this.storageState==='saved'))
+   throw Error('端末への保存に失敗しました。既存の作品を保持しました');
+  this.storageState=saved===null?'session':'saved';
+  this.assets.push(asset);return asset;
+ }
+ async remove(id){
+  await this.ensureLoaded();
+  const next=this.assets.filter(a=>a.id!==id);
+  if(next.length===this.assets.length)return;
+  if(this.storageState==='session')await this.checkSessionRecovery();
+  const saved=this.storageState==='session'?
+    await replaceAssetsTransaction(next):await dbOp('delete',id);
+  if(saved===false||(saved===null&&this.storageState==='saved'))
+   throw Error('端末保存に失敗したため削除しませんでした');
+  this.storageState=saved===null?'session':'saved';
+  this.assets=next;
+ }
+ async clear(){
+  await this.ensureLoaded();
+  if(this.storageState==='session')await this.checkSessionRecovery();
+  const saved=await dbOp('clear');
+  if(saved===false||(saved===null&&this.storageState==='saved'))
+   throw Error('端末保存に失敗したため既存素材を保持しました');
+  this.storageState=saved===null?'session':'saved';
+  this.assets=[];
+ }
  async makeImage(p=this.project){const s=this.buildSpec(p),canvas=makeCanvas(s.width,s.height);renderMediaScene(canvas.getContext('2d'),s,0);const bytes=await toPng(canvas);return this.add(`media_${Date.now()}.png`,'image/png',bytes,'image',s);}
  async makeAudio(p=this.project){const spec=audioSpec({kind:p.kind,seconds:Number(p.frames)/Number(p.fps),seed:Number(p.seed),text:p.text,pitch:this.buildSpec(p).controls.pitch}),bytes=wavBytes(spec);return this.add(`audio_${Date.now()}.wav`,'audio/wav',bytes,'audio',spec);}
  async makeGif(p=this.project){const origin=this.buildSpec(p),s={...origin,width:Math.min(320,origin.width),height:Math.min(180,origin.height)},frames=[],canvas=makeCanvas(s.width,s.height),ctx=canvas.getContext('2d',{willReadFrequently:true});
@@ -1826,36 +1960,126 @@ class MediaStudio {
   }finally{try{if(rec&&rec.state!=='inactive')rec.stop();}catch{}stream.getTracks().forEach(x=>x.stop());dest.stream.getTracks().forEach(x=>x.stop());await ac.close();}
  }
  async generate(kind,override=null){if(this.busy)throw Error('すでに生成中です');this.busy=true;try{const p=override?{...this.project,...override}:this.project;switch(kind){case'image':return await this.makeImage(p);case'audio':return await this.makeAudio(p);case'gif':return await this.makeGif(p);case'webm':return await this.makeWebm(p);default:throw Error('生成種別が不正です');}}finally{this.busy=false;}}
+ async generateBatch(kinds,override=null){
+  if(this.busy)throw Error('すでに生成中です');
+  this.busy=true;const results=[],p=override?{...this.project,...override}:this.project;
+  try{
+   for(const kind of kinds){
+    if(kind==='image')results.push(await this.makeImage(p));
+    else if(kind==='audio')results.push(await this.makeAudio(p));
+    else if(kind==='gif')results.push(await this.makeGif(p));
+    else if(kind==='webm')results.push(await this.makeWebm(p));
+    else throw Error('生成種別が不正です');
+   }
+   return results;
+  }catch(error){
+   if(results.length)throw Error(`${results.length}/${kinds.length}件の素材を生成済みですが途中停止しました。作品ZIPで退避できます。原因：${error.message}`);
+   throw error;
+  }finally{this.busy=false;}
+ }
  download(asset){fileDownload(asset.bytes,asset.name,asset.type);}
  exportZip(){const manifest={format:'solzero-media-v012',version:1,project:{...this.project,wsp:this.wsp.snapshot()},assets:this.assets.map((a,i)=>({file:`assets/a${String(i).padStart(2,'0')}.${a.name.split('.').at(-1)}`,kind:a.kind,mime:a.type,originalName:a.name,spec:a.spec,created:a.created}))};const entries=[{name:'project.json',bytes:JSON.stringify(manifest,null,2)},...manifest.assets.map((a,i)=>({name:a.file,bytes:this.assets[i].bytes}))];const bytes=zipBytes(entries);fileDownload(bytes,'SolZero_media_project.zip','application/zip');return bytes.length;}
- async importZip(file){if(file.size>MEDIA_LIMITS.projectBytes+100_000)throw Error('ZIP上限超過');const entries=unzipStored(new Uint8Array(await file.arrayBuffer())),manifestFile=entries.find(x=>x.name==='project.json');if(!manifestFile)throw Error('project.jsonなし');const m=JSON.parse(new TextDecoder().decode(manifestFile.bytes));if(m.format!=='solzero-media-v012'||m.version!==1||!Array.isArray(m.assets)||m.assets.length>MEDIA_LIMITS.assets)throw Error('プロジェクト形式不正');
-  const next=[];for(const a of m.assets){if(typeof a.file!=='string'||!/^assets\/a\d{2}\.(png|gif|jpg|jpeg|wav|mp3|webm|mp4)$/.test(a.file))throw Error('素材名が不正');const f=entries.find(x=>x.name===a.file),type=mimeFor(a.file);if(!f||f.bytes.length>22_000_000||a.mime!==type)throw Error('素材と説明が不一致');next.push({id:(crypto.randomUUID?crypto.randomUUID():String(Date.now()+next.length)),name:String(a.originalName||a.file).slice(0,120),type,bytes:f.bytes,kind:String(a.kind||'import'),spec:a.spec||{},created:a.created||new Date().toISOString()});}
-  if(next.reduce((n,a)=>n+a.bytes.length,0)>MEDIA_LIMITS.projectBytes)throw Error('総容量が多すぎます');const p=m.project;if(!p||typeof p!=='object'||!validateMediaSpec({...p,theme:p.theme==='auto'?undefined:p.theme}))throw Error('作品仕様が不正');
-  await this.clear();for(const a of next){this.assets.push(a);await dbOp('put',a);}this.project={...this.project,...p};if(p.wsp)this.wsp.restore(p.wsp);this.saveRecipe();return next.length;
+ async importZip(file){
+  await this.ensureLoaded();
+  if(!file||file.size>MEDIA_LIMITS.projectBytes+100_000)throw Error('ZIP上限超過');
+  const entries=unzipStored(new Uint8Array(await file.arrayBuffer()));
+  const manifestFile=entries.find(entry=>entry.name==='project.json');
+  if(!manifestFile||manifestFile.bytes.length>262144)throw Error('project.jsonがないか長すぎます');
+  const m=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(manifestFile.bytes));
+  if(!m||m.format!=='solzero-media-v012'||m.version!==1||!Array.isArray(m.assets)||
+     m.assets.length>MEDIA_LIMITS.assets||entries.length!==m.assets.length+1)
+   throw Error('プロジェクト形式または素材一覧が不正です');
+  const index=new Map(entries.map(entry=>[entry.name,entry])),referenced=new Set(),next=[];
+  for(const item of m.assets){
+   if(!item||typeof item.file!=='string'||!/^assets\/a\d{2}\.(png|gif|jpg|jpeg|wav|mp3|webm|mp4)$/.test(item.file)||
+      referenced.has(item.file))throw Error('素材名が不正または重複しています');
+   referenced.add(item.file);
+   const source=index.get(item.file),type=mimeFor(item.file),name=item.originalName??item.file;
+   if(!source||!source.bytes.length||source.bytes.length>22_000_000||item.mime!==type||
+      typeof name!=='string'||!name||name.length>120||
+      typeof item.kind!=='string'||item.kind.length>40||
+      (item.spec!==undefined&&(!item.spec||typeof item.spec!=='object'||Array.isArray(item.spec)))||
+      (item.created!==undefined&&(typeof item.created!=='string'||item.created.length>48)))
+    throw Error('素材と説明が不一致です');
+   const id=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():String(Date.now()+next.length);
+   next.push({id,name,type,bytes:source.bytes,kind:item.kind,spec:item.spec||{},created:item.created||new Date().toISOString()});
+  }
+  if(next.reduce((n,a)=>n+a.bytes.length,0)>MEDIA_LIMITS.projectBytes)throw Error('総容量が多すぎます');
+  const p=m.project;
+  if(!p||typeof p!=='object'||Array.isArray(p)||
+     typeof p.name!=='string'||p.name.length>60||
+     typeof p.prompt!=='string'||p.prompt.length>180||
+     typeof p.text!=='string'||p.text.length>200||
+     typeof p.kind!=='string'||!['ambient','waves','wind','tones','robot'].includes(p.kind)||
+     !['seed','width','height','frames','fps'].every(k=>Number.isInteger(p[k])))
+   throw Error('作品の設定が不正です');
+  const verified=validateMediaSpec({...p,theme:p.theme==='auto'?undefined:p.theme});
+  audioSpec({kind:p.kind,seconds:p.frames/p.fps,seed:p.seed,text:p.text});
+  const newWsp=new MediaWSP();
+  if(p.wsp!==undefined&&!newWsp.restore(p.wsp))throw Error('作品内のWSP重みが不正です');
+  const project={name:p.name,prompt:p.prompt,seed:verified.seed,theme:p.theme==='auto'?'auto':verified.theme,
+   width:verified.width,height:verified.height,frames:verified.frames,fps:verified.fps,kind:p.kind,text:p.text};
+  // Validate everything before attempting a single, all-or-nothing storage transaction.
+  if(this.storageState==='session')await this.checkSessionRecovery();
+  const persisted=await replaceAssetsTransaction(next);
+  if(persisted===false||(persisted===null&&this.storageState==='saved'))
+   throw Error('保存領域の更新に失敗したため、元の作品を保持しました');
+  this.assets=next;this.storageState=persisted===true?'saved':'session';
+  this.project=project;this.wsp=newWsp;this.saveRecipe();
+  return next.length;
  }
  async importMedia(files){let added=0;for(const f of [...files]){const type=mimeFor(f.name);if(!type||f.type && type!==f.type||f.size>22_000_000)continue;await this.add(`imported_${Date.now()}_${added}.${f.name.split('.').at(-1).toLowerCase()}`,type,new Uint8Array(await f.arrayBuffer()),'import',{originalName:f.name.slice(0,100)});added++;}return added;}
  render(root,helpers){const {notify}=helpers;root.replaceChildren();const notice=element('p','生成AIではなく、コードから直接画像・波形・フレームを作る独自エンジンです。学習済みモデル・通信・外部APIなし。WebMはブラウザ対応時のみ音声入りで生成します。');notice.className='muted';root.append(notice);
-  const setRow=(label,type,value,options=null)=>{const row=element('div');row.className='field';const caption=element('label',label),input=options?element('select'):element(type==='textarea'?'textarea':'input');if(!options&&type!=='textarea')input.type=type;if(options)for(const [val,text] of options){const option=element('option',text);option.value=val;input.append(option);}input.value=String(value);caption.append(input);row.append(caption);root.append(row);return input;};
+  const storage=element('p',this.storageState==='saved'?
+    '素材保存：端末内のIndexedDBへ完了後に反映します。':
+    '注意：素材は一時保存です。画面終了前に作品ZIPを書き出してください。');
+  storage.className='muted';root.append(storage);
+  if(!this.recipeSaved){const warning=element('p','注意：制作設定は端末に保存されていません。作品ZIPで退避してください。');warning.className='muted';root.append(warning);}
+  const setRow=(label,type,value,options=null)=>{const row=element('div');row.className='field';const caption=element('label',label),input=options?element('select'):element(type==='textarea'?'textarea':'input');if(!options&&type!=='textarea')input.type=type;if(options){const choices=[...options];if(!choices.some(([val])=>String(val)===String(value)))choices.push([String(value),`${value}（読み込んだ設定）`]);for(const [val,text] of choices){const option=element('option',text);option.value=val;input.append(option);}}input.value=String(value);caption.append(input);row.append(caption);root.append(row);return input;};
   const name=setRow('作品名','text',this.project.name),prompt=setRow('生成指示（対応テーマ：宇宙・海・山・森・街・花・雨・雪・夕焼け・抽象）','textarea',this.project.prompt);
   const seed=setRow('乱数シード','number',this.project.seed),theme=setRow('画風','text',this.project.theme,[['auto','指示から自動選択'],...['space','sea','mountain','forest','city','flowers','rain','snow','sunset','abstract'].map(x=>[x,x])]);
   const dims=setRow('画像サイズ','text',`${this.project.width}x${this.project.height}`,[['512x288','512×288'],['768x432','768×432'],['320x180','320×180'],['1024x576','1024×576']]);
-  const duration=setRow('動画長（フレーム数）','text',`${this.project.frames}`,[['16','2秒'],['24','3秒'],['32','4秒'],['48','6秒']]);
+  const duration=setRow('動画長（フレーム数）','text',`${this.project.frames}`,[16,24,32,48].map(n=>[String(n),`${(n/this.project.fps).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}秒`]));
   const sound=setRow('音の種類','text',this.project.kind,[['ambient','アンビエント'],['waves','波音'],['wind','風音'],['tones','オリジナル電子音'],['robot','簡易ロボット声（音素風）']]);
   const speech=setRow('ロボット声の文字','text',this.project.text);
   const log=element('div','準備完了。生成結果は端末に保存されます（対応ブラウザのIndexedDB）。');log.className='listentry';root.append(log);
   const btnrow=element('div');btnrow.className='buttons';root.append(btnrow);
-  const collect=()=>{const [w,h]=dims.value.split('x').map(Number);const p={name:name.value.slice(0,60),prompt:prompt.value,seed:Number(seed.value),theme:theme.value,width:w,height:h,frames:Number(duration.value),fps:8,kind:sound.value,text:speech.value};this.buildSpec(p);audioSpec({kind:p.kind,seconds:p.frames/p.fps,seed:p.seed,text:p.text});this.project=p;this.saveRecipe();return p;};
-  const action=(label,fn)=>{const b=element('button',label);b.className='btn primary';b.addEventListener('click',async()=>{if(this.busy)return;try{const p=collect();b.disabled=true;log.textContent='処理中：'+label;const result=await fn(p);log.textContent=typeof result==='string'?result:`生成完了：${result.name}（${result.bytes.length.toLocaleString('ja-JP')}バイト）`;this.drawAssets(list,notify);}catch(err){log.textContent='エラー：'+err.message;}finally{b.disabled=false;}});btnrow.append(b);};
+  const collect=()=>{const [w,h]=dims.value.split('x').map(Number);const p={name:name.value.slice(0,60),prompt:prompt.value,seed:Number(seed.value),theme:theme.value,width:w,height:h,frames:Number(duration.value),fps:this.project.fps,kind:sound.value,text:speech.value};this.buildSpec(p);audioSpec({kind:p.kind,seconds:p.frames/p.fps,seed:p.seed,text:p.text});this.project=p;this.saveRecipe();return p;};
+  const action=(label,fn)=>{const b=element('button',label);b.className='btn primary';b.addEventListener('click',async()=>{
+  if(this.uiBusy||this.busy)return;
+  this.uiBusy=true;
+  try{
+   const p=collect();b.disabled=true;log.textContent='処理中：'+label;
+   const result=await fn(p);
+   log.textContent=typeof result==='string'?result:`生成完了：${result.name}（${result.bytes.length.toLocaleString('ja-JP')}バイト）`;
+  }catch(err){log.textContent='エラー：'+err.message;}
+  finally{this.drawAssets(list,notify);b.disabled=false;this.uiBusy=false;}
+ });btnrow.append(b);};
   action('画像 PNG',p=>this.generate('image',p));action('音声 WAV',p=>this.generate('audio',p));action('動画 GIF',p=>this.generate('gif',p));action('音声付き動画 WebM',p=>this.generate('webm',p));
-  action('画像＋音声＋GIF一括',async p=>{let count=0;for(const kind of ['image','audio','gif']){await this.generate(kind,p);count++;}return `${count}種類の素材を生成しました。作品ZIPで一括取得できます。`;});
+  action('画像＋音声＋GIF一括',async p=>{const assets=await this.generateBatch(['image','audio','gif'],p);return `${assets.length}種類の素材を生成しました。作品ZIPで一括取得できます。`;});
   const extras=element('div');extras.className='buttons';root.append(extras);
-  const extra=(label,fn)=>{const b=element('button',label);b.className='btn';b.addEventListener('click',fn);extras.append(b);};
+  const extra=(label,fn)=>{const b=element('button',label);b.className='btn';b.addEventListener('click',async()=>{
+  if(this.uiBusy||this.busy)return;
+  this.uiBusy=true;
+  try{await fn();}catch(error){log.textContent='操作を中止：'+error.message;}
+  finally{this.uiBusy=false;}
+ });extras.append(b);};
   extra('全素材をZIPで書き出し',()=>{try{log.textContent='作品ZIP保存：'+this.exportZip().toLocaleString('ja-JP')+'バイト';}catch(e){log.textContent='ZIPエラー：'+e.message;}});
   const inp=element('input');inp.type='file';inp.accept='.zip,application/zip';inp.className='hidden';root.append(inp);
-  extra('作品ZIPを復元',()=>inp.click());inp.addEventListener('change',async()=>{const file=inp.files?.[0];inp.value='';if(!file)return;if(!confirm('現在のメディア作品と素材を、ZIPの内容で置き換えます。続けますか？'))return;try{const count=await this.importZip(file);log.textContent=`作品復元完了：${count}素材`;this.render(root,helpers);}catch(e){log.textContent='ZIP復元拒否：'+e.message;}});
+  extra('作品ZIPを復元',()=>inp.click());inp.addEventListener('change',async()=>{const file=inp.files?.[0];inp.value='';if(!file)return;if(this.uiBusy||this.busy)return;
+  if(!confirm('現在のメディア作品と素材を、ZIPの内容で置き換えます。続けますか？'))return;
+  this.uiBusy=true;
+  try{const count=await this.importZip(file);this.render(root,helpers);const notice=root.querySelector('.listentry');if(notice)notice.textContent=`作品復元完了：${count}素材`;}
+  catch(e){log.textContent='ZIP復元拒否：'+e.message;}
+  finally{this.uiBusy=false;}});
   const importInput=element('input');importInput.type='file';importInput.accept='image/png,image/jpeg,image/gif,audio/wav,audio/mpeg,video/mp4,video/webm';importInput.multiple=true;importInput.className='hidden';root.append(importInput);
-  extra('端末の素材を取り込む',()=>importInput.click());importInput.addEventListener('change',async()=>{const files=[...importInput.files];importInput.value='';try{const count=await this.importMedia(files);log.textContent=`端末素材 ${count}件を取り込みました。ZIPに統合できます。`;this.drawAssets(list,notify);}catch(e){log.textContent='取込制限：'+e.message;}});
-  extra('全部削除',async()=>{if(!confirm('生成素材・取り込んだ素材をすべて削除しますか？'))return;await this.clear();this.drawAssets(list,notify);});
+  extra('端末の素材を取り込む',()=>importInput.click());importInput.addEventListener('change',async()=>{const files=[...importInput.files];importInput.value='';
+  if(this.uiBusy||this.busy)return;
+  this.uiBusy=true;
+  try{const count=await this.importMedia(files);log.textContent=`端末素材 ${count}件を取り込みました。ZIPに統合できます。`;}
+  catch(e){log.textContent='取込制限：'+e.message;}
+  finally{this.drawAssets(list,notify);this.uiBusy=false;}});
+  extra('全部削除',async()=>{if(!confirm('生成素材・取り込んだ素材をすべて削除しますか？'))return;try{await this.clear();this.drawAssets(list,notify);}catch(e){log.textContent='削除を中止：'+e.message;}});
   const preview=makeCanvas(320,180);preview.style.cssText='max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:8px 0';root.append(preview);
   extra('指定からプレビュー',()=>{try{const s=this.buildSpec(collect());renderMediaScene(preview.getContext('2d'),{...s,width:320,height:180},0);notify('プレビュー更新');}catch(e){log.textContent='プレビュー失敗：'+e.message;}});
   try{renderMediaScene(preview.getContext('2d'),{...this.buildSpec(),width:320,height:180},0);}catch{}
@@ -1867,13 +2091,20 @@ class MediaStudio {
   const mkSelect=(data)=>{const x=element('select');for(const [v,label] of data){const o=element('option',label);o.value=v;x.append(o);}return x;};
   const wr=mkSelect(rows),wc=mkSelect(cols),wv=element('input');wv.type='number';wv.min='-1.5';wv.max='1.5';wv.step='0.05';wv.value='0.5';wv.style.maxWidth='90px';ww.append(wr,wc,wv);
   const report=element('div');report.className='listentry';const reportRefresh=()=>{report.textContent=`直接設定した重み：${JSON.stringify(this.wsp.weights)}\n現在の画風への出力：${JSON.stringify(this.wsp.controls(this.buildSpec().theme))}`;};
-  const edit=element('button','重みを設定'),undo=element('button','戻す');edit.className='btn primary';undo.className='btn';edit.addEventListener('click',()=>{try{this.wsp.edit(Number(wr.value),Number(wc.value),Number(wv.value));this.saveRecipe();reportRefresh();notify('生成制御の重みを更新');}catch(e){report.textContent=e.message;}});undo.addEventListener('click',()=>{this.wsp.rollback();this.saveRecipe();reportRefresh();});ww.append(edit,undo);root.append(report);reportRefresh();
+  const edit=element('button','重みを設定'),undo=element('button','戻す');edit.className='btn primary';undo.className='btn';edit.addEventListener('click',()=>{if(this.uiBusy||this.busy)return;try{this.wsp.edit(Number(wr.value),Number(wc.value),Number(wv.value));this.saveRecipe();reportRefresh();notify('生成制御の重みを更新');}catch(e){report.textContent=e.message;}});
+  undo.addEventListener('click',()=>{if(this.uiBusy||this.busy)return;this.wsp.rollback();this.saveRecipe();reportRefresh();});ww.append(edit,undo);root.append(report);reportRefresh();
   root.append(element('h3','作品に含まれる素材（最大16件／合計55MB）'));const list=element('div');root.append(list);this.drawAssets(list,notify);
  }
- drawAssets(root,notify){root.replaceChildren();const total=this.assets.reduce((s,a)=>s+a.bytes.length,0);root.append(element('p',`${this.assets.length}件・${(total/1024/1024).toFixed(2)} MiB。画像・音声・動画を同じプロジェクトとしてZIPに保存できます。`));
-  for(const a of this.assets){const entry=element('div');entry.className='listentry';entry.append(element('b',`${a.kind}: ${a.name} (${Math.round(a.bytes.length/1024)}KB)`));const blob=new Blob([a.bytes],{type:a.type}),url=URL.createObjectURL(blob);const media=a.type.startsWith('image/')?element('img'):a.type.startsWith('audio/')?element('audio'):a.type.startsWith('video/')?element('video'):null;
+ drawAssets(root,notify){for(const url of this.previewUrls)URL.revokeObjectURL(url);this.previewUrls.clear();root.replaceChildren();const total=this.assets.reduce((s,a)=>s+a.bytes.length,0);root.append(element('p',`${this.assets.length}件・${(total/1024/1024).toFixed(2)} MiB。画像・音声・動画を同じプロジェクトとしてZIPに保存できます。`));
+  for(const a of this.assets){const entry=element('div');entry.className='listentry';entry.append(element('b',`${a.kind}: ${a.name} (${Math.round(a.bytes.length/1024)}KB)`));const blob=new Blob([a.bytes],{type:a.type}),url=URL.createObjectURL(blob);this.previewUrls.add(url);const media=a.type.startsWith('image/')?element('img'):a.type.startsWith('audio/')?element('audio'):a.type.startsWith('video/')?element('video'):null;
    if(media){media.src=url;media.style.cssText='display:block;max-width:100%;max-height:190px;object-fit:contain;margin:8px 0;border-radius:8px';if(media.tagName!=='IMG'){media.controls=true;if(media.tagName==='VIDEO')media.muted=false;}entry.append(media);}else URL.revokeObjectURL(url);
-   const buttons=element('div');buttons.className='buttons';const dl=element('button','保存');dl.className='btn';dl.addEventListener('click',()=>this.download(a));const del=element('button','削除');del.className='btn danger';del.addEventListener('click',async()=>{await this.remove(a.id);URL.revokeObjectURL(url);this.drawAssets(root,notify);});buttons.append(dl,del);entry.append(buttons);root.append(entry);
+   const buttons=element('div');buttons.className='buttons';const dl=element('button','保存');dl.className='btn';dl.addEventListener('click',()=>this.download(a));const del=element('button','削除');del.className='btn danger';del.addEventListener('click',async()=>{
+    if(this.uiBusy||this.busy)return;
+    this.uiBusy=true;
+    try{await this.remove(a.id);this.drawAssets(root,notify);}
+    catch(err){notify('削除を中止：'+err.message);}
+    finally{this.uiBusy=false;}
+   });buttons.append(dl,del);entry.append(buttons);root.append(entry);
   }
  }
 }
@@ -1896,7 +2127,7 @@ const DB_KEY='solzero_chat_v012_local',V011_KEY='solzero_chat_v011_local',V010_K
 const MAX_CHATS=40,MAX_MESSAGES=400,MAX_DOCS=8,MAX_DOC_CHARS=450000;
 const byId=id=>document.getElementById(id);
 const $messages=byId('messages'),$input=byId('input'),$history=byId('history'),$sidebar=byId('sidebar');
-let db,priorFocus=null,toastTimer=null;
+let db,priorFocus=null,toastTimer=null,sending=false;
 const el=(tag,props={},...children)=>{
   const node=document.createElement(tag);
   for(const [k,v] of Object.entries(props)) {
@@ -2002,7 +2233,11 @@ function draw(){drawHistory();drawMessages();$input.value=current().draft||'';re
 function resize(){$input.style.height='auto';$input.style.height=Math.min(145,$input.scrollHeight)+'px';}
 async function send(event){
   event?.preventDefault();
+  if(sending)return; // Reject repeat submit before asynchronous media generation finishes.
   const text=$input.value.trim();if(!text)return;
+  if(text.length>3000){notify('送信は最大3000文字までです。内容を短くしてください。');return;}
+  sending=true;const submit=byId('send');submit.disabled=true;$input.readOnly=true;
+  try{
   const c=current();let answer;
   if(/^\/(?:image|audio|video|gif|webm)(?:\s|$)/i.test(text)){
     const cmd=text.slice(1).split(/\s+/)[0].toLowerCase(),p=text.slice(cmd.length+1).trim();
@@ -2028,6 +2263,8 @@ async function send(event){
   if(c.messages.length>MAX_MESSAGES)c.messages.splice(0,c.messages.length-MAX_MESSAGES);
   if(c.title==='新しい会話')c.title=text.replace(/\s+/g,' ').slice(0,36);
   c.draft='';$input.value='';resize();save();draw();$input.focus();
+  }catch(err){notify('送信処理でエラーが発生しました：'+String(err?.message||err).slice(0,120));}
+  finally{sending=false;submit.disabled=false;$input.readOnly=false;}
 }
 function newChat(){const c=createChat();db.chats.unshift(c);if(db.chats.length>MAX_CHATS)db.chats.pop();db.current=c.id;save();draw();$input.value='';resize();sidebarClose();$input.focus();}
 function deleteChat(){const c=current();if(c.messages.length && !confirm(`「${c.title}」を削除しますか？ 会話内のメモ・タスク・学習も削除されます。`))return;

@@ -21,14 +21,53 @@ def run():
         page.wait_for_timeout(250)
         assert page.locator('#panelTitle').inner_text()=='メディア工房'
         for label in ['画像 PNG','音声 WAV','動画 GIF','音声付き動画 WebM']:
+            print('MEDIA STEP',label,flush=True)
             page.get_by_role('button',name=label,exact=True).click()
-            page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('生成完了：')",timeout=15000)
+            try:
+                page.wait_for_function("""() => {
+                  const s=document.querySelector('#panelBody .listentry')?.textContent||'';
+                  return s.includes('生成完了：')||s.includes('エラー：');
+                }""",timeout=20000)
+            except Exception:
+                print('MEDIA TIMEOUT',label,page.locator('#panelBody .listentry').first.inner_text(),flush=True)
+                raise
+            status=page.locator('#panelBody .listentry').first.inner_text()
+            print('MEDIA RESULT',label,status[:200],flush=True)
+            assert '生成完了：' in status,(label,status)
             page.wait_for_timeout(50)
         assert page.get_by_role('button',name='重みを設定').count()==1
         assert page.locator('#panelBody .listentry').count()>=5
         with page.expect_download() as pending:
             page.get_by_role('button',name='全素材をZIPで書き出し').click()
         assert pending.value.suggested_filename=='SolZero_media_project.zip'
+        # A forged central-directory checksum must be refused without deleting
+        # previously created media; a verified archive must roundtrip on reload.
+        from tempfile import TemporaryDirectory
+        from pathlib import Path
+        archive_bytes=Path(pending.value.path()).read_bytes()
+        before=page.locator('#panelBody .listentry').count()
+        with TemporaryDirectory() as temp:
+            good=Path(temp)/'good.zip'
+            bad=Path(temp)/'corrupt.zip'
+            good.write_bytes(archive_bytes)
+            forged=bytearray(archive_bytes)
+            central=forged.rfind(b'PK\x01\x02')
+            assert central!=-1
+            forged[central+16]^=1
+            bad.write_bytes(forged)
+            page.on('dialog',lambda dialog:dialog.accept())
+            picker=page.locator('#panelBody input[accept=".zip,application/zip"]')
+            picker.set_input_files(str(bad))
+            page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('ZIP復元拒否：')",timeout=10000)
+            assert page.locator('#panelBody .listentry').count()==before
+            picker.set_input_files(str(good))
+            page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('作品復元完了：')",timeout=10000)
+            assert page.locator('#panelBody .listentry').count()==before
+        page.reload(wait_until='load')
+        page.locator('#studioBtn').click(force=True)
+        page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('準備完了')",timeout=10000)
+        assert page.locator('#panelBody .listentry').count()==before
+
         page.locator('#closePanel').click()
         page.locator('#input').fill('/image 海')
         page.locator('#send').click()
@@ -36,6 +75,73 @@ def run():
         assert '生成しました' in page.locator('.message.assistant .bubble').last.inner_text()
         send_box=page.locator('#send').bounding_box()
         assert send_box and send_box['height']>=44,send_box
+        # Recover all offline-only assets once storage becomes available.
+        temporary=browser.new_context(viewport={'width':390,'height':820},is_mobile=True,has_touch=True)
+        temporary.add_init_script("""(() => {
+          if(localStorage.getItem('__idb_available')!=='1'){
+            window.__savedIDB=window.indexedDB;
+            Object.defineProperty(window,'indexedDB',{configurable:true,value:undefined});
+          }
+        })()""")
+        session_page=temporary.new_page()
+        session_page.on('pageerror',lambda error:errors.append(str(error)))
+        session_page.goto(origin+'SolZero_Chat_Offline.html',wait_until='load')
+        session_page.locator('#studioBtn').click(force=True)
+        assert '一時保存' in session_page.locator('#panelBody').inner_text()
+        for label in ['画像 PNG','音声 WAV']:
+            session_page.get_by_role('button',name=label,exact=True).click()
+            session_page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('生成完了：')",timeout=15000)
+        assert session_page.locator('#panelBody .listentry b').count()==2
+        session_page.evaluate("""() => {
+          localStorage.setItem('__idb_available','1');
+          Object.defineProperty(window,'indexedDB',{configurable:true,value:window.__savedIDB});
+        }""")
+        session_page.get_by_role('button',name='動画 GIF',exact=True).click()
+        session_page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('生成完了：')",timeout=15000)
+        assert session_page.locator('#panelBody .listentry b').count()==3
+        session_page.reload(wait_until='load')
+        session_page.locator('#studioBtn').click(force=True)
+        session_page.wait_for_function("() => document.querySelectorAll('#panelBody .listentry b').length===3",timeout=15000)
+        assert 'IndexedDB' in session_page.locator('#panelBody').inner_text()
+        # Invalid localStorage recipes must be ignored, not crash the whole studio.
+        session_page.evaluate("""() => localStorage.setItem('solzero_studio_v012_recipe',
+          JSON.stringify({theme:'not-a-theme',frames:9999999,kind:'robot'}))""")
+        session_page.reload(wait_until='load')
+        session_page.locator('#studioBtn').click(force=True)
+        assert session_page.locator('#panelBody .listentry b').count()==3
+        session_page.get_by_role('button',name='指定からプレビュー').click()
+        # A fully valid ZIP may specify custom image dimensions and frame rates.
+        # The editing UI must preserve them, not silently reset fps to 8.
+        custom=session_page.evaluate("""async () => {
+          const {zipBytes}=await import('./chat_web/media_studio.js');
+          const {MediaStudio}=await import('./chat_web/media_ui.js');
+          const editor=new MediaStudio();
+          await editor.ensureLoaded();
+          const project={name:'カスタム',prompt:'海',seed:12,theme:'auto',
+            width:480,height:300,frames:20,fps:10,kind:'waves',text:'音'};
+          const manifest={format:'solzero-media-v012',version:1,project,assets:[]};
+          const bytes=zipBytes([{name:'project.json',bytes:JSON.stringify(manifest)}]);
+          const file=new File([bytes],'custom.zip',{type:'application/zip'});
+          await editor.importZip(file);
+          return editor.project;
+        }""")
+        assert custom['fps']==10
+        session_page.reload(wait_until='load')
+        session_page.locator('#studioBtn').click(force=True)
+        selectors=session_page.locator('#panelBody select')
+        assert selectors.nth(1).input_value()=='480x300'
+        assert selectors.nth(2).input_value()=='20'
+        session_page.get_by_role('button',name='画像 PNG',exact=True).click()
+        session_page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('生成完了：')",timeout=15000)
+        saved_fps=session_page.evaluate("""async () => {
+          const open=indexedDB.open('solzero_media_v012',1);
+          const db=await new Promise((resolve,reject)=>{open.onsuccess=()=>resolve(open.result);open.onerror=()=>reject(open.error)});
+          const tx=db.transaction('assets','readonly'),req=tx.objectStore('assets').getAll();
+          const items=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
+          db.close();return items.map(x=>x.spec.fps);
+        }""")
+        assert saved_fps==[10],saved_fps
+        temporary.close()
         assert not errors,errors
         print('PASS: local-origin PNG/WAV/GIF/WebM + ZIP + WSP controls + mobile touch UI')
         browser.close()
