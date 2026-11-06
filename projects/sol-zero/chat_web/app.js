@@ -138,11 +138,16 @@ function agentServices(c){
     generate:async(kind,goal)=>{await studio.ensureLoaded();return studio.generate(kind,{prompt:goal,text:goal});}
   };
 }
+function queueServices(job){
+  const target=job.chatId?db.chats.find(ch=>ch.id===job.chatId):current();
+  if(!target)throw Error('目標を登録した会話が存在しません。実行を中断します。');
+  return agentServices(target);
+}
 async function handleQueueCommand(args,c){
   const parts=args.trim().split(/\s+/),verb=(parts.shift()||'list').toLowerCase();
   if(verb==='add'){
     const priority=['high','normal','low'].includes(parts[0])?parts.shift():'normal';
-    try{const item=agenda.add(parts.join(' '),priority);save();
+    try{const item=agenda.add(parts.join(' '),priority,c.id);save();
       return '🐻 新しい目標を登録しました: '+item.id+'\n'+agenda.status();
     }catch(e){return '目標登録失敗: '+e.message;}
   }
@@ -152,7 +157,7 @@ async function handleQueueCommand(args,c){
   if(verb==='resume'){agenda.resume();personaAgent.resume();save();return agenda.status();}
   if(verb==='run'){
     const count=parts[0]==='2'?2:1;
-    const r=await agenda.runBatch(personaAgent,agentServices(c),
+    const r=await agenda.runBatch(personaAgent,queueServices,
       {approved:true,maxGoals:count,checkpoint:save});
     return '🐻 承認済みの処理結果\n'+r.message+'\n'+agenda.status();
   }
@@ -229,9 +234,9 @@ function renderPersonaAgent(){
   const queueActions=el('div',{class:'buttons'});
   const refreshQueue=()=>{queueStatus.textContent=agenda.status();status.textContent=personaAgent.describe();save();drawMessages();};
   queueActions.append(
-    el('button',{class:'btn primary',text:'目標をキューに追加',onClick:()=>{try{agenda.add(queuedGoal.input.value,priority.value);queuedGoal.input.value='';queueLog.textContent='目標を登録。実行前に内容を確認してください。';refreshQueue();}catch(e){notify(e.message);}}}),
-    el('button',{class:'btn',text:'次の1件を承認・実行',onClick:async()=>{const r=await agenda.runBatch(personaAgent,agentServices(current()),{approved:true,maxGoals:1,checkpoint:save});queueLog.textContent=r.message;refreshQueue();}}),
-    el('button',{class:'btn',text:'最大2件を承認・実行',onClick:async()=>{const r=await agenda.runBatch(personaAgent,agentServices(current()),{approved:true,maxGoals:2,checkpoint:save});queueLog.textContent=r.message;refreshQueue();}}),
+    el('button',{class:'btn primary',text:'目標をキューに追加',onClick:()=>{try{agenda.add(queuedGoal.input.value,priority.value,current().id);queuedGoal.input.value='';queueLog.textContent='目標を登録。実行前に内容を確認してください。';refreshQueue();}catch(e){notify(e.message);}}}),
+    el('button',{class:'btn',text:'次の1件を承認・実行',onClick:async()=>{const r=await agenda.runBatch(personaAgent,queueServices,{approved:true,maxGoals:1,checkpoint:save});queueLog.textContent=r.message;refreshQueue();}}),
+    el('button',{class:'btn',text:'最大2件を承認・実行',onClick:async()=>{const r=await agenda.runBatch(personaAgent,queueServices,{approved:true,maxGoals:2,checkpoint:save});queueLog.textContent=r.message;refreshQueue();}}),
     el('button',{class:'btn',text:'一時停止',onClick:()=>{agenda.pause(personaAgent);refreshQueue();}}),
     el('button',{class:'btn',text:'再開',onClick:()=>{agenda.resume();personaAgent.resume();refreshQueue();}}),
     el('button',{class:'btn',text:'未完了タスクから提案',onClick:()=>{queueLog.textContent=agenda.suggest(current());}}),
