@@ -8,6 +8,7 @@ engine = (ROOT / 'chat_web' / 'engine.js').read_text(encoding='utf-8')
 code_workshop = (ROOT / 'chat_web' / 'code_workshop.js').read_text(encoding='utf-8')
 task_agent = (ROOT / 'chat_web' / 'task_agent.js').read_text(encoding='utf-8')
 wsp_neural = (ROOT / 'chat_web' / 'wsp_neural.js').read_text(encoding='utf-8')
+banc_cognition = (ROOT / 'chat_web' / 'banc_cognition.js').read_text(encoding='utf-8')
 learned_router = (ROOT / 'chat_web' / 'learned_router.js').read_text(encoding='utf-8')
 app = (ROOT / 'chat_web' / 'app.js').read_text(encoding='utf-8')
 bigram = (ROOT / 'chat_web' / 'bigram.js').read_text(encoding='utf-8')
@@ -41,11 +42,13 @@ task_agent = re.sub(r'\bexport (const|class|function|async function)\b', r'\1', 
 task_agent = '\nconst {TASK_AGENT_LIMITS,TASK_AGENT_TOOLS,TASK_AGENT_DEMO,validateTaskPlan,runTaskPlan,runTaskPlanAsync,taskAgentHelp} = (() => {\n' + task_agent + '\nreturn {TASK_AGENT_LIMITS,TASK_AGENT_TOOLS,TASK_AGENT_DEMO,validateTaskPlan,runTaskPlan,runTaskPlanAsync,taskAgentHelp};\n})();\n'
 wsp_neural = re.sub(r'\bexport (const|class|function)\b', r'\1', wsp_neural)
 wsp_neural = '\nconst { WeightSpaceNetwork, NEURAL_DEMO, trainAndVerifyNeural, promoteNeural } = (() => {\n' + wsp_neural + '\nreturn { WeightSpaceNetwork, NEURAL_DEMO, trainAndVerifyNeural, promoteNeural };\n})();\n'
+banc_cognition = re.sub(r'\bexport (const|class|function)\b', r'\1', banc_cognition)
 learned_router = re.sub(r'\bexport (const|class|function)\b', r'\1', learned_router)
 engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./learned_router\.js[\"\'];?\s*$', '', engine, flags=re.MULTILINE)
 engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./code_workshop\.js[\"\'];?\s*$', '', engine, flags=re.MULTILINE)
 engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./wsp_codegen\.js[\"\'];?\s*$', '', engine, flags=re.MULTILINE)
 engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./wsp_neural\.js[\"\'];?\s*$', '', engine, flags=re.MULTILINE)
+engine = re.sub(r'^import\s+\{[^\n]*?\}\s+from\s+[\"\']\./banc_cognition\.js[\"\'];?\s*$', '', engine, flags=re.MULTILINE)
 engine = re.sub(r'\bexport (const|class|function)\b', r'\1', engine)
 app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./engine\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
 app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./task_agent\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
@@ -60,9 +63,9 @@ app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_factory\.js['\"];?\s*$
 app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./wsp_induction\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
 app = re.sub(r"^import\s+\{[^\n]*?\}\s+from\s+['\"]\./media_ui\.js['\"];?\s*$", '', app, flags=re.MULTILINE)
 assert not re.search(r'(?<![a-z])import\s+\{', app)
-assert '</script' not in (task_agent + wsp_neural + code_workshop + wsp_codegen + engine + bigram + wsp_bulk + wsp_flow + wsp_auto + wsp_factory + app).lower()
+assert '</script' not in (task_agent + wsp_neural + banc_cognition + code_workshop + wsp_codegen + engine + bigram + wsp_bulk + wsp_flow + wsp_auto + wsp_factory + app).lower()
 bundle = ui.replace('<script type="module" src="./app.js"></script>',
-                    '<script type="module">\n' + learned_router + '\n' + code_workshop + '\n' + task_agent + '\n' + wsp_neural + '\n' + engine + '\n' + bigram + '\n' + wsp_bulk + '\n' + wsp_flow + '\n' + wsp_auto + '\n' + wsp_graph + '\n' + wsp_codegen + '\n' + wsp_factory + '\n' + wsp_induction + '\n' + media_studio + '\n' + media_ui + '\n' + app + '\n</script>')
+                    '<script type="module">\n' + learned_router + '\n' + code_workshop + '\n' + task_agent + '\n' + wsp_neural + '\n' + banc_cognition + '\n' + engine + '\n' + bigram + '\n' + wsp_bulk + '\n' + wsp_flow + '\n' + wsp_auto + '\n' + wsp_graph + '\n' + wsp_codegen + '\n' + wsp_factory + '\n' + wsp_induction + '\n' + media_studio + '\n' + media_ui + '\n' + app + '\n</script>')
 assert 'src="./app.js"' not in bundle
 path = ROOT / 'SolZero_Chat_Offline.html'
 path.write_text(bundle, encoding='utf-8')
