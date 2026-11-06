@@ -74,8 +74,24 @@ def main():
     page.get_by_role('button',name='計画を実行').click()
     expect(page.locator('#panelBody .listentry').last).to_contain_text(
         '完了：2工程実行',timeout=12000)
+    # BANC888 cognition is a preview-only optional layer: no hidden tool call.
+    page.get_by_role('button',name='閉じる').click()
+    page.locator('#input').fill('/cognition demo')
+    page.locator('#chatForm button[type="submit"]').click()
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text('"schema": 1')
+    page.locator('#input').fill('/cognition {"schema":1,"facts":{"state":"new"},"goal":{"state":"ready"},"actions":[{"id":"prepare","tool":"task.value","requires":{"state":"new"},"effects":{"state":"ready"},"args":{}}]}')
+    page.locator('#chatForm button[type="submit"]').click()
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text(
+        'BANC888認知計画（予測のみ、未実行）')
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text('"status":"planned"')
+    page.get_by_role('button',name='タスク工房').first.click()
+    page.locator('#panelBody select').select_option(label='BANC認知計画（実行せず検証）')
+    page.get_by_role('button',name='計画を実行').click()
+    expect(page.locator('#panelBody .listentry').last).to_contain_text(
+        '完了：1工程実行',timeout=12000)
+    assert '予測のみ・未実行' in page.locator('#panelBody .listentry').last.inner_text()
     assert not errors,errors
-    print('PASS: migration, induction, rollback, scratch WSP training, persistence, task reuse; no JS errors')
+    print('PASS: migration, WSP training/persistence/task reuse, BANC cognition preview, no JS errors')
     browser.close()
 
 if __name__=='__main__':
