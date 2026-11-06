@@ -2,7 +2,7 @@
 
 ユーザーが提供した白黒の熊の顔（右目が赤いマーク）を**Androidのホーム画面に表示するアプリアイコン**として設定しました。背景・輪郭・目を保持した軽量なベクター資産で、丸形を含むAndroid 8以降のアダプティブアイコンに対応しています。
 
-- **[最新版の署名済みdebug APKビルド](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-apk-user-icon-v1)** — Artifactsから **BANC888-v7.16-selfheal-debug** を選んでダウンロード
+- **[最新版の署名済みdebug APKビルド](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-apk-user-icon-v1)** — Artifactsから **BANC888-v7.16.1-user-icon-debug** を選んでダウンロード
 - **[ランチャーアイコンのAndroidエミュレータ検査](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-icon-android.yml?query=branch%3Abanc888-apk-user-icon-v1)**
 - [自律復旧版の機能と制約](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/banc888-selfhealing-ui-v1/README.md)
 
