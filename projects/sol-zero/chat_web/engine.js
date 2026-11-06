@@ -2,7 +2,8 @@
  * No pretrained weights, no network calls, no arbitrary code execution.
  */
 import {predictLearnedIntent, LEARNED_ROUTER_META} from './learned_router.js';
-export const ENGINE_VERSION = '0.12.0';
+import {generateCode,codeHelp} from './code_workshop.js';
+export const ENGINE_VERSION = '0.13.0';
 export const FEATURE_SETS = Object.freeze({
   greeting: ['こんにちは','こんばんは','おはよう','はじめまして','やあ','hello','hi'],
   identity: ['あなたは','君は','誰ですか','名前は','sol-zero','solzero','何者'],
@@ -196,6 +197,8 @@ export class SolZeroEngine {
     const global=Array.isArray(context.knowledge)?context.knowledge:[];
     const documents=Array.isArray(context.documents)?context.documents:[];
     const generator=context.generator;
+    const codeArtifact=generateCode(raw);
+    if(codeArtifact)return codeArtifact.message;
     if(/^\/induce(?:\s|$)/iu.test(raw)){
       if(!this.graph)return '帰納WSPは未接続です。';
       const arg=raw.replace(/^\/induce\s*/iu,'').trim();
@@ -332,9 +335,9 @@ export class SolZeroEngine {
       case 'identity':return '私はSol-Zero v0.12です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
       case 'help':return this.help();
       case 'gratitude':return 'どういたしまして。';
-      case 'code':return 'コードを自由生成する学習済み機能はまだありません。既存の質問と回答を知識パネルに登録して再利用できます。';
+      case 'code':return codeHelp();
       case 'reasoning':return '未知の問題に対する一般推論は未実装です。式の計算や、登録した資料の文字列検索なら実行できます。';
-      case 'multimodal':return '画像・音声・動画の理解は未実装です。現在は .txt/.md を追加して文字列を検索できます。';
+      case 'multimodal':return '画像・音声・GIF・WebMの手続き的生成は「メディア工房」または /image、/audio、/video、/webm から使えます。画像や動画の内容理解、高品質な学習生成モデルは未実装です。';
       case 'casual':return '会話履歴、タスク、メモ、登録した回答を使えます。一般的な自由回答能力はまだ学習されていません。';
       default:
         if(raw.length>=5){const p=predictLearnedIntent(raw);
@@ -345,5 +348,5 @@ export class SolZeroEngine {
   }
   help(){return `Sol-Zero v${ENGINE_VERSION}（ローカル試作）\n・計算：「計算して (12+8)/4」\n・覚える：「覚えて：内容」／「覚えていること」\n・会話内Q&A：「教える：質問 => 回答」\n・全会話共通Q&A：「/teach 質問 => 回答」\n・直前の回答を訂正：「修正：正しい回答」\n・共有知識：「/knowledge」\n・タスク：「/todo 内容」→「/tasks」→「/done 1」\n・資料：「/docs」「/search 検索語」（文字列一致）
 ・関連する資料の行を抜粋：「/ask 質問」（根拠候補）
-・数値例からWSP回路を帰納合成：「/induce」「/induce 2,3」（画面「帰納WSP」）\n・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
+・数値例からWSP回路を帰納合成：「/induce」「/induce 2,3」（画面「帰納WSP」）\n・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・コード生成：「/code python fibonacci」「/code javascript binary_search」（検証済み固定アルゴリズム）\n・画像/音声/動画：「/image 海」「/audio 波」「/video 星」「/webm 街」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
 }
