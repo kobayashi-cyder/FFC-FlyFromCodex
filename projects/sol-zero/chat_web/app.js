@@ -7,10 +7,13 @@ import {WSPGraph,inspectGraph,compileTruthTable,denseTemplate,GRAPH_DEMO_XOR,GRA
 import {generateWSPCode} from './wsp_codegen.js';
 import {INDUCTION_DEMO,induceAndVerify,promoteInduction} from './wsp_induction.js';
 import {MediaStudio} from './media_ui.js';
+import {SolZeroPersonaAgent,SolZeroVoice} from './character_agent.js';
 import {FACTORY_FAMILIES,FACTORY_LIMITS,buildFactory,verifyFactory,auditFactory,composeFactories} from './wsp_factory.js';
 const engine=new SolZeroEngine();
 const generator=new ScratchBigram();
 const studio=new MediaStudio();
+const personaAgent=new SolZeroPersonaAgent();
+const voiceOut=new SolZeroVoice();
 engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();
 engine.graph=new WSPGraph();
@@ -53,15 +56,17 @@ function schemaRead(raw){
     const documents=Array.isArray(data.documents)?data.documents.filter(d=>d&&typeof d.text==='string'&&typeof d.title==='string').slice(0,MAX_DOCS).map(d=>({id:String(d.id||id()).slice(0,100),title:d.title.slice(0,100),text:d.text.slice(0,100000),added:typeof d.added==='string'?d.added.slice(0,48):''})):[];
     if(documents.reduce((s,d)=>s+d.text.length,0)>MAX_DOC_CHARS)return null;
     const theme=data.theme==='dark'?'dark':'light';
-    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null};
+    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null,agent:data.agent||null,voiceEnabled:data.voiceEnabled===true};
   }catch{return null;}
 }
 function notify(message){const node=byId('toast');node.textContent=message;node.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.add('hidden'),2800);}
-function save(){db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
+function save(){db.agent=personaAgent.snapshot();db.voiceEnabled=voiceOut.enabled;db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
 function init(){
   let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V011_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
-  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null};
+  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null,agent:null,voiceEnabled:false};
   db.current ||= db.chats[0].id;
+  personaAgent.restore(db.agent);
+  voiceOut.setEnabled(db.voiceEnabled===true);
   if(db.wsp)engine.router.restore(db.wsp);
   if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP一括回路のデータが不正なため復元しませんでした。');
   if(db.bulkPrevious){const old=new WSPBulk();if(old.restore(db.bulkPrevious))engine.bulk.previous=old.snapshot();else notify('旧回路の復元データが不正です。');}
@@ -94,7 +99,7 @@ function drawHistory(){
 }
 function bubble(message){
   const item=el('article',{class:`message ${message.role}`});
-  if(message.role==='assistant')item.append(el('div',{class:'avatar',text:'S0'}));
+  if(message.role==='assistant')item.append(el('div',{class:'avatar',text:'🐻'}));
   const content=el('div',{class:'content'}),body=el('div',{class:'bubble',text:message.text});
   const stamp=el('div',{class:'meta'});
   const d=new Date(message.at);
@@ -122,11 +127,67 @@ function drawMessages(){
 }
 function draw(){drawHistory();drawMessages();$input.value=current().draft||'';resize();byId('pinChat').textContent=current().pinned?'📌 固定を解除':'📌 会話を固定';}
 function resize(){$input.style.height='auto';$input.style.height=Math.min(145,$input.scrollHeight)+'px';}
+function agentServices(c){
+  return {
+    reply:goal=>engine.reply(goal,c,{knowledge:db.knowledge,documents:db.documents,generator}),
+    addNote:goal=>{c.notes.push(goal.slice(0,500));c.notes=c.notes.slice(-100);return c.notes.includes(goal.slice(0,500));},
+    addTask:goal=>{c.tasks.push({text:goal.slice(0,160),done:false});c.tasks=c.tasks.slice(-100);return c.tasks.some(t=>t.text===goal.slice(0,160));},
+    generate:async(kind,goal)=>{await studio.ensureLoaded();return studio.generate(kind,{prompt:goal,text:goal});}
+  };
+}
+async function handleAgentCommand(text,c){
+  const match=text.match(/^\/agent(?:\s+(\S+))?(?:\s+([\s\S]*))?$/i);
+  const action=(match?.[1]||'help').toLowerCase(),args=(match?.[2]||'').trim();
+  if(action==='plan'){
+    try{return '🐻 エージェント計画\n'+personaAgent.makePlan(args)+'\n実行は /agent step または /agent run で承認してください。';}
+    catch(e){return '計画作成エラー: '+e.message;}
+  }
+  if(action==='step'){
+    const r=await personaAgent.step(agentServices(c),true);
+    return '🐻 '+r.message+'\n'+(r.state||personaAgent.describe());
+  }
+  if(action==='run'){
+    const r=await personaAgent.run(agentServices(c),true,3);
+    return '🐻 実行結果\n'+r.messages.join('\n')+'\n'+(r.state||personaAgent.describe());
+  }
+  if(action==='stop')return personaAgent.stop();
+  if(action==='resume'){personaAgent.resume();return personaAgent.describe();}
+  if(action==='status')return personaAgent.describe();
+  if(action==='clear'){personaAgent.clear();voiceOut.cancel();return 'エージェントの計画と実行ログを消去しました。';}
+  if(action==='voice'){
+    if(args!=='on'&&args!=='off')return '音声設定: /agent voice on または /agent voice off';
+    const enabled=voiceOut.setEnabled(args==='on');
+    return enabled?'音声読み上げを有効化しました。端末の日本語TTSを使用します。':'音声読み上げを無効化しました。';
+  }
+  return '🐻 SolZero案内役。目標を受け取って計画→1手実行→検証します。\n/agent plan 目標 /agent status /agent step /agent run /agent stop /agent resume /agent clear /agent voice on|off\nローカル機能だけを実行し、ネット操作・外部送信は行いません。声は参考プリセットのピッチ/速度のみで、本人音声のクローンではありません。';
+}
+function renderPersonaAgent(){
+  panelIntro('🐻 SolZeroエージェント','計画は自動作成。実行は明示承認した範囲のみ、最大3手です。');
+  const box=byId('panelBody');
+  const goal=field('達成したいこと','text','例：青い海の画像を作成');
+  goal.input.maxLength=180;box.append(goal.wrapper);
+  const status=el('div',{class:'listentry',text:personaAgent.describe()});
+  const result=el('div',{class:'listentry',text:'音声は初期設定でオフです。'});
+  const actions=el('div',{class:'buttons'});
+  const refresh=()=>{status.textContent=personaAgent.describe();save();drawMessages();};
+  actions.append(
+    el('button',{class:'btn primary',text:'計画を作成',onClick:()=>{try{personaAgent.makePlan(goal.input.value);result.textContent='実行前に内容を確認してください。';refresh();}catch(e){notify(e.message);}}}),
+    el('button',{class:'btn',text:'1手実行',onClick:async()=>{const r=await personaAgent.step(agentServices(current()),true);result.textContent=r.message;refresh();}}),
+    el('button',{class:'btn',text:'最大3手を承認・実行',onClick:async()=>{const r=await personaAgent.run(agentServices(current()),true,3);result.textContent=r.messages.join('\n');refresh();}}),
+    el('button',{class:'btn',text:'停止',onClick:()=>{result.textContent=personaAgent.stop();refresh();}}),
+    el('button',{class:'btn',text:'再開',onClick:()=>{personaAgent.resume();refresh();}}),
+    el('button',{class:'btn',text:'音声を切替',onClick:()=>{const on=voiceOut.setEnabled(!voiceOut.enabled);result.textContent='読み上げ: '+(on?'オン':'オフ');refresh();}})
+  );
+  box.append(actions,status,result,
+    el('p',{text:'音声は端末の日本語TTSを使います。類似音色・声優本人の声は保証しません。外部アプリ操作は実装していません。'}));
+}
+
 async function send(event){
   event?.preventDefault();
   const text=$input.value.trim();if(!text)return;
   const c=current();let answer;
-  if(/^\/(?:image|audio|video|gif|webm)(?:\s|$)/i.test(text)){
+  if(/^\/agent(?:\s|$)/i.test(text))answer=await handleAgentCommand(text,c);
+  else if(/^\/(?:image|audio|video|gif|webm)(?:\s|$)/i.test(text)){
     const cmd=text.slice(1).split(/\s+/)[0].toLowerCase(),p=text.slice(cmd.length+1).trim();
     try{await studio.ensureLoaded();const kind=cmd==='video'?'gif':cmd;
       const asset=await studio.generate(kind,p?{prompt:p,text:p}:null);
@@ -146,10 +207,11 @@ async function send(event){
       else {const numbers=arg.split(/[,，\s]+/).map(x=>Number(x));answer='WSPグラフ出力：'+JSON.stringify(engine.graph.run(numbers).outputs);}
     }catch(e){answer='WSPグラフ入力拒否：'+e.message;}
   }else answer=engine.reply(text,c,{knowledge:db.knowledge,documents:db.documents,generator});
+  if(!text.startsWith('/'))answer=personaAgent.persona(answer);
   c.messages.push({role:'user',text,at:new Date().toISOString()},{role:'assistant',text:answer,at:new Date().toISOString()});
   if(c.messages.length>MAX_MESSAGES)c.messages.splice(0,c.messages.length-MAX_MESSAGES);
   if(c.title==='新しい会話')c.title=text.replace(/\s+/g,' ').slice(0,36);
-  c.draft='';$input.value='';resize();save();draw();$input.focus();
+  c.draft='';$input.value='';resize();save();draw();voiceOut.speak(answer);$input.focus();
 }
 function newChat(){const c=createChat();db.chats.unshift(c);if(db.chats.length>MAX_CHATS)db.chats.pop();db.current=c.id;save();draw();$input.value='';resize();sidebarClose();$input.focus();}
 function deleteChat(){const c=current();if(c.messages.length && !confirm(`「${c.title}」を削除しますか？ 会話内のメモ・タスク・学習も削除されます。`))return;
@@ -164,7 +226,7 @@ async function importJson(event){const file=event.target.files?.[0];event.target
   if(file.size>4000000)return notify('JSONは4MB以下にしてください。');
   const parsed=schemaRead(await file.text());if(!parsed)return notify('復元できない形式、または上限超過です。');
   if(!confirm('現在の全会話・知識・資料をバックアップの内容で置き換えます。続けますか？'))return;
-  db=parsed;engine.router=new engine.router.constructor();if(db.wsp)engine.router.restore(db.wsp);
+  db=parsed;personaAgent.restore(db.agent);voiceOut.setEnabled(db.voiceEnabled===true);engine.router=new engine.router.constructor();if(db.wsp)engine.router.restore(db.wsp);
   engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP回路を検証できず読み込みを中止しました。');
   if(db.flow&&!engine.flow.restore(db.flow))notify('状態機械を復元できませんでした。');
@@ -179,7 +241,7 @@ function openPanel(which){
   priorFocus=document.activeElement;
   byId('scrim').classList.remove('hidden');byId('panel').classList.remove('hidden');
   byId('panelBody').replaceChildren();
-  if(which==='knowledge')renderKnowledge();else if(which==='documents')renderDocuments();else if(which==='circuit')renderCircuit();else if(which==='generator')renderGenerator();else if(which==='bulk')renderBulk();else if(which==='auto')renderAutoDesign();else if(which==='graph')renderGraph();else if(which==='factory')renderFactory();else if(which==='induce')renderInduction();else if(which==='studio'){panelIntro('メディア工房','画像・音声・動画をゼロから生成し、作品ZIPに統合。WSP重みで生成を調整できます。');studio.ensureLoaded().then(()=>{if(!byId('panel').classList.contains('hidden')&&byId('panelTitle').textContent==='メディア工房')studio.render(byId('panelBody'),{notify});}).catch(e=>notify(e.message));}
+  if(which==='agent')renderPersonaAgent();else if(which==='knowledge')renderKnowledge();else if(which==='documents')renderDocuments();else if(which==='circuit')renderCircuit();else if(which==='generator')renderGenerator();else if(which==='bulk')renderBulk();else if(which==='auto')renderAutoDesign();else if(which==='graph')renderGraph();else if(which==='factory')renderFactory();else if(which==='induce')renderInduction();else if(which==='studio'){panelIntro('メディア工房','画像・音声・動画をゼロから生成し、作品ZIPに統合。WSP重みで生成を調整できます。');studio.ensureLoaded().then(()=>{if(!byId('panel').classList.contains('hidden')&&byId('panelTitle').textContent==='メディア工房')studio.render(byId('panelBody'),{notify});}).catch(e=>notify(e.message));}
   byId('closePanel').focus();
 }
 function closePanel(){byId('panel').classList.add('hidden');byId('scrim').classList.add('hidden');priorFocus?.focus?.();}
@@ -589,7 +651,7 @@ byId('exportMd').addEventListener('click',exportMd);
 byId('importJson').addEventListener('click',()=>byId('jsonPicker').click());
 byId('jsonPicker').addEventListener('change',importJson);
 byId('themeSide').addEventListener('click',changeTheme);
-for(const [btn,section] of [['knowledgeBtn','knowledge'],['docsBtn','documents'],['circuitBtn','circuit'],['generatorBtn','generator'],['bulkBtn','bulk'],['bulkSide','bulk'],['autoBtn','auto'],['autoSide','auto'],['graphBtn','graph'],['graphSide','graph'],['factoryBtn','factory'],['factorySide','factory'],['induceBtn','induce'],['induceSide','induce'],['studioBtn','studio'],['studioSide','studio']])byId(btn).addEventListener('click',()=>openPanel(section));
+for(const [btn,section] of [['knowledgeBtn','knowledge'],['docsBtn','documents'],['circuitBtn','circuit'],['generatorBtn','generator'],['bulkBtn','bulk'],['bulkSide','bulk'],['autoBtn','auto'],['agentBtn','agent'],['autoSide','auto'],['graphBtn','graph'],['graphSide','graph'],['factoryBtn','factory'],['factorySide','factory'],['induceBtn','induce'],['induceSide','induce'],['studioBtn','studio'],['studioSide','studio']])byId(btn).addEventListener('click',()=>openPanel(section));
 byId('docPicker').addEventListener('change',addDocuments);
 byId('closePanel').addEventListener('click',closePanel);
 byId('scrim').addEventListener('click',closePanel);
