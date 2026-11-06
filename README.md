@@ -1,3 +1,19 @@
+# BANC888 v7.16.1 — ご指定の熊アイコンを採用
+
+ユーザーが提供した白黒の熊の顔（右目が赤いマーク）を**Androidのホーム画面に表示するアプリアイコン**として設定しました。提供画像から生成した256×256の最適化PNGを実際のランチャー画像として同梱しました。Android 8以降のアダプティブアイコンでは、丸形のマスクで耳が切れないように余白を設定しています。
+
+- **[最新版の署名済みdebug APKビルド](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-threaded-apk.yml?query=branch%3Abanc888-apk-user-icon-v1)** — Artifactsから **BANC888-v7.16.1-user-icon-debug** を選んでダウンロード
+- **[ランチャーアイコンのAndroidエミュレータ検査](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/banc888-icon-android.yml?query=branch%3Abanc888-apk-user-icon-v1)**
+- [自律復旧版の機能と制約](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/banc888-selfhealing-ui-v1/README.md)
+
+変更箇所：`app/src/main/res/drawable-nodpi/banc888_user_icon_png.png`（ユーザー提供画像由来）、`drawable/banc888_icon_foreground.xml`、`mipmap-anydpi-v26/ic_launcher.xml`、`AndroidManifest.xml`。
+
+v7.16.1のデバッグ用アプリIDは`com.ffc.banc888.fly.selfheal`です。CIが生成するデバッグ署名は以前のビルドと一致するとは限らないため、更新時に署名不一致が出た場合は既存の会話をJSONで保存してから変更してください。元画像の細かな陰影は、256pxへの縮小と32色への最適化のため一部簡略化されています。
+
+なお、SolZeroの実装が入った権限付きリポジトリは確認できず、BANC888とのプログラム統合は行っていません。今回の改修は**ランチャーアイコンのみ**です。
+
+---
+
 # BANC888 v7.16 — 自律復旧型の操作画面（実験版）
 
 このブランチはv7.15で発生した「上部の会話操作は見えるのに、本文入力欄・送信ボタン・会話履歴が見えない」問題を優先して改修しています。
