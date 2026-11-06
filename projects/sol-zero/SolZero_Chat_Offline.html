@@ -2201,10 +2201,150 @@ class SolZeroVoice {
     }catch{return false;}
   }
 }
+
+const SolZeroAgenda = (() => {
+// Sol-Zero local agenda: no network, no background execution, no arbitrary actions.
+// Existing PersonaAgent remains the only authority for whitelisted local steps.
+const MAX_GOALS=24, MAX_HISTORY=60, MAX_BATCH=2;
+const PRIORITY=Object.freeze({high:3,normal:2,low:1});
+const clip=(value,length)=>String(value??'').trim().slice(0,length);
+const ISO=()=>new Date().toISOString();
+let sequence=0;
+class SolZeroAgenda {
+  constructor(){this.queue=[];this.history=[];this.paused=false;this.running=false;}
+  record(action,detail=''){
+    this.history.push({at:ISO(),action:clip(action,24),detail:clip(detail,200)});
+    this.history=this.history.slice(-MAX_HISTORY);
+  }
+  add(goal,priority='normal'){
+    goal=clip(goal,180);
+    if(!goal)throw Error('目標を入力してください。');
+    if(!Object.hasOwn(PRIORITY,priority))throw Error('優先度は high、normal、low のいずれかです。');
+    if(this.queue.length>=MAX_GOALS)throw Error('目標の上限です。完了済みを整理してください。');
+    const item={id:'g'+Date.now().toString(36)+'-'+(++sequence),goal,priority,status:'pending',created:ISO(),finished:null,detail:''};
+    this.queue.push(item);this.record('queued',goal);
+    return item;
+  }
+  get(id){return this.queue.find(q=>q.id===id)||null;}
+  pending(){
+    return this.queue.filter(g=>g.status==='pending').sort((a,b)=>PRIORITY[b.priority]-PRIORITY[a.priority]||
+      a.created.localeCompare(b.created)||this.queue.indexOf(a)-this.queue.indexOf(b));
+  }
+  cancel(id){
+    const item=this.get(id);
+    if(!item)return false;
+    if(item.status==='running')throw Error('実行中は停止操作を使ってください。');
+    if(item.status!=='pending')return false;
+    item.status='cancelled';item.finished=ISO();this.record('cancelled',item.goal);return true;
+  }
+  clearCompleted(){
+    if(this.running)throw Error('実行中は整理できません。');
+    const len=this.queue.length;
+    this.queue=this.queue.filter(q=>['pending','running','interrupted'].includes(q.status));
+    this.record('cleanup',String(len-this.queue.length)+'件整理');return len-this.queue.length;
+  }
+  pause(agent){
+    this.paused=true;
+    if(agent?.active?.status==='running'||agent?.active?.status==='planned')agent.stop();
+    this.record('pause','ユーザー操作');return true;
+  }
+  resume(){this.paused=false;this.record('resume');return true;}
+  suggest(conversation){
+    const tasks=Array.isArray(conversation?.tasks)?conversation.tasks:[];
+    const already=new Set(this.queue.filter(x=>x.status==='pending').map(x=>x.goal));
+    const pending=tasks.filter(t=>t&&t.done!==true&&typeof t.text==='string')
+      .map(t=>clip(t.text,160)).filter(t=>t&&!already.has(t)).slice(0,5);
+    return pending.length?'未完了タスクからの候補（未登録・未実行）:\n'+pending.map((t,i)=>String(i+1)+'. '+t).join('\n'):
+      '未完了の追加候補はありません。';
+  }
+  status(){
+    const ready=this.pending(),totals={};
+    for(const q of this.queue)totals[q.status]=(totals[q.status]||0)+1;
+    const items=this.queue.map(x=>x.id+' ['+x.status+'/'+x.priority+'] '+x.goal+(x.detail?'\n  '+x.detail:''));
+    return '🐻 SolZero業務ボード: '+(this.paused?'一時停止':'待機')+' / 未処理 '+ready.length+'件 / 完了 '+(totals.completed||0)+'件\n'+
+       (items.length?items.join('\n'):'キューは空です。')+
+       '\n※ユーザーが実行を承認したときだけ動きます。';
+  }
+  async runNext(agent,services,{approved=false,checkpoint=()=>true}={}){
+    if(!approved)return {ok:false,message:'実行は未承認です。/agent queue run で明示承認してください。'};
+    if(this.paused)return {ok:false,message:'一時停止中です。/agent queue resume で再開してください。'};
+    if(this.running)return {ok:false,message:'既に実行中です。'};
+    const item=this.pending()[0];
+    if(!item)return {ok:false,message:'実行可能な目標がありません。'};
+    if(agent?.active&&agent.active.status!=='completed'&&agent.active.cursor<agent.active.steps.length){
+      return {ok:false,message:'未完了の単独エージェント計画があります。/agent status で確認してください。'};
+    }
+    this.running=true;
+    item.status='running';this.record('started',item.goal);
+    try{
+      agent.makePlan(item.goal);
+      if(checkpoint()===false)throw Error('実行前の状態保存に失敗しました。');
+      const result=[];
+      for(let i=0;i<3;i++){
+        if(this.paused){item.status='interrupted';item.detail='停止されたため再実行しません。必要なら内容を確認して新規登録してください。';break;}
+        const step=await agent.step(services,true);
+        result.push(step.message);
+        if(checkpoint()===false)throw Error('保存に失敗しました。副作用の再実行を防ぐため停止します。');
+        if(!step.ok){item.status='failed';item.detail=clip(step.message,200);break;}
+        if(step.completed){item.status='completed';item.detail='3工程で完了、検証済み';item.finished=ISO();break;}
+      }
+      if(item.status==='running'){item.status='interrupted';item.detail='完了を証明できないため自動再開しません。';}
+      this.record(item.status,item.goal);
+      return {ok:item.status==='completed',itemId:item.id,message:result.join('\n')||item.detail,status:item.status};
+    }catch(err){
+      item.status='interrupted';
+      item.detail=clip(err?.message||err,200);
+      this.paused=true;
+      agent?.stop?.();
+      this.record('interrupted',item.detail);
+      return {ok:false,itemId:item.id,message:'処理中断: '+item.detail,status:'interrupted'};
+    }finally{
+      this.running=false;
+      checkpoint();
+    }
+  }
+  async runBatch(agent,services,{approved=false,maxGoals=1,checkpoint=()=>true}={}){
+    if(!approved)return {ok:false,results:[],message:'実行の承認が必要です。'};
+    const max=Math.max(1,Math.min(MAX_BATCH,Math.trunc(Number(maxGoals)||1)));
+    const results=[];
+    for(let i=0;i<max;i++){
+      const r=await this.runNext(agent,services,{approved:true,checkpoint});
+      results.push(r);
+      if(!r.ok||this.paused)break;
+    }
+    return {ok:results.length>0&&results.every(r=>r.ok),results,
+      message:results.map(r=>'['+(r.itemId||'-')+'] '+(r.status||'中断')+': '+r.message).join('\n')};
+  }
+  snapshot(){
+    return {queue:this.queue.map(x=>({...x})),history:this.history.slice(-MAX_HISTORY).map(x=>({...x})),paused:this.paused};
+  }
+  restore(value){
+    this.queue=[];this.history=[];this.paused=false;this.running=false;
+    if(!value||typeof value!=='object')return false;
+    if(!Array.isArray(value.queue)||value.queue.length>MAX_GOALS||!Array.isArray(value.history)||value.history.length>MAX_HISTORY)return false;
+    const ids=new Set();
+    for(const x of value.queue){
+      if(!x||typeof x.id!=='string'||x.id.length>80||ids.has(x.id)||typeof x.goal!=='string'||x.goal.length>180||
+          !Object.hasOwn(PRIORITY,x.priority)||!['pending','running','interrupted','failed','completed','cancelled'].includes(x.status))return false;
+      ids.add(x.id);
+      this.queue.push({id:x.id,goal:x.goal,priority:x.priority,status:x.status==='running'?'interrupted':x.status,
+        created:clip(x.created,40),finished:typeof x.finished==='string'?clip(x.finished,40):null,
+        detail:x.status==='running'?'前回セッションは中断。副作用を自動再実行しません。':clip(x.detail,200)});
+    }
+    if(!value.history.every(x=>x&&typeof x.action==='string'&&typeof x.detail==='string'))return false;
+    this.history=value.history.map(x=>({at:clip(x.at,40),action:clip(x.action,24),detail:clip(x.detail,200)}));
+    this.paused=value.paused===true||this.queue.some(x=>x.status==='interrupted');
+    return true;
+  }
+}
+return SolZeroAgenda;
+})();
+
 const engine=new SolZeroEngine();
 const generator=new ScratchBigram();
 const studio=new MediaStudio();
 const personaAgent=new SolZeroPersonaAgent();
+const agenda=new SolZeroAgenda();
 const voiceOut=new SolZeroVoice();
 engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();
@@ -2248,16 +2388,17 @@ function schemaRead(raw){
     const documents=Array.isArray(data.documents)?data.documents.filter(d=>d&&typeof d.text==='string'&&typeof d.title==='string').slice(0,MAX_DOCS).map(d=>({id:String(d.id||id()).slice(0,100),title:d.title.slice(0,100),text:d.text.slice(0,100000),added:typeof d.added==='string'?d.added.slice(0,48):''})):[];
     if(documents.reduce((s,d)=>s+d.text.length,0)>MAX_DOC_CHARS)return null;
     const theme=data.theme==='dark'?'dark':'light';
-    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null,agent:data.agent||null,voiceEnabled:data.voiceEnabled===true};
+    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null,agent:data.agent||null,agenda:data.agenda||null,voiceEnabled:data.voiceEnabled===true};
   }catch{return null;}
 }
 function notify(message){const node=byId('toast');node.textContent=message;node.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.add('hidden'),2800);}
-function save(){db.agent=personaAgent.snapshot();db.voiceEnabled=voiceOut.enabled;db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
+function save(){db.agenda=agenda.snapshot();db.agent=personaAgent.snapshot();db.voiceEnabled=voiceOut.enabled;db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
 function init(){
   let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V011_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
-  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null,agent:null,voiceEnabled:false};
+  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null,agent:null,agenda:null,voiceEnabled:false};
   db.current ||= db.chats[0].id;
   personaAgent.restore(db.agent);
+  if(db.agenda&&!agenda.restore(db.agenda))notify('業務ボードの保存内容が不正です。キューを初期化しました。');
   voiceOut.setEnabled(db.voiceEnabled===true);
   if(db.wsp)engine.router.restore(db.wsp);
   if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP一括回路のデータが不正なため復元しませんでした。');
@@ -2327,9 +2468,42 @@ function agentServices(c){
     generate:async(kind,goal)=>{await studio.ensureLoaded();return studio.generate(kind,{prompt:goal,text:goal});}
   };
 }
+async function handleQueueCommand(args,c){
+  const parts=args.trim().split(/\s+/),verb=(parts.shift()||'list').toLowerCase();
+  if(verb==='add'){
+    const priority=['high','normal','low'].includes(parts[0])?parts.shift():'normal';
+    try{const item=agenda.add(parts.join(' '),priority);save();
+      return '🐻 新しい目標を登録しました: '+item.id+'\n'+agenda.status();
+    }catch(e){return '目標登録失敗: '+e.message;}
+  }
+  if(verb==='list'||verb==='status')return agenda.status();
+  if(verb==='suggest')return agenda.suggest(c);
+  if(verb==='pause'){agenda.pause(personaAgent);save();return agenda.status();}
+  if(verb==='resume'){agenda.resume();personaAgent.resume();save();return agenda.status();}
+  if(verb==='run'){
+    const count=parts[0]==='2'?2:1;
+    const r=await agenda.runBatch(personaAgent,agentServices(c),
+      {approved:true,maxGoals:count,checkpoint:save});
+    return '🐻 承認済みの処理結果\n'+r.message+'\n'+agenda.status();
+  }
+  if(verb==='cancel'){
+    try{const ok=agenda.cancel(parts[0]);save();return ok?'目標を取消しました。\n'+agenda.status():'取消可能な未処理目標がありません。';}
+    catch(e){return '取消エラー: '+e.message;}
+  }
+  if(verb==='cleanup'){
+    try{const count=agenda.clearCompleted();save();return String(count)+'件の終了済み目標を整理しました。';}
+    catch(e){return '整理エラー: '+e.message;}
+  }
+  if(verb==='history'){
+    return '最新の実行履歴\n'+(agenda.history.length?agenda.history.slice(-15).map(x=>x.at+' '+x.action+' '+x.detail).join('\n'):'まだ履歴がありません。');
+  }
+  return '/agent queue add [high|normal|low] 目標\n/agent queue list\n/agent queue suggest\n/agent queue run [2]\n/agent queue pause|resume\n/agent queue cancel ID\n/agent queue cleanup|history\n※runを明示したときだけ、最大2件・各3手を実行します。';
+}
+
 async function handleAgentCommand(text,c){
   const match=text.match(/^\/agent(?:\s+(\S+))?(?:\s+([\s\S]*))?$/i);
   const action=(match?.[1]||'help').toLowerCase(),args=(match?.[2]||'').trim();
+  if(action==='queue')return handleQueueCommand(args,c);
   if(action==='plan'){
     try{return '🐻 エージェント計画\n'+personaAgent.makePlan(args)+'\n実行は /agent step または /agent run で承認してください。';}
     catch(e){return '計画作成エラー: '+e.message;}
@@ -2342,8 +2516,8 @@ async function handleAgentCommand(text,c){
     const r=await personaAgent.run(agentServices(c),true,3);
     return '🐻 実行結果\n'+r.messages.join('\n')+'\n'+(r.state||personaAgent.describe());
   }
-  if(action==='stop')return personaAgent.stop();
-  if(action==='resume'){personaAgent.resume();return personaAgent.describe();}
+  if(action==='stop'){agenda.pause(personaAgent);return personaAgent.stop();}
+  if(action==='resume'){agenda.resume();personaAgent.resume();return personaAgent.describe();}
   if(action==='status')return personaAgent.describe();
   if(action==='clear'){personaAgent.clear();voiceOut.cancel();return 'エージェントの計画と実行ログを消去しました。';}
   if(action==='voice'){
@@ -2351,7 +2525,7 @@ async function handleAgentCommand(text,c){
     const enabled=voiceOut.setEnabled(args==='on');
     return enabled?'音声読み上げを有効化しました。端末の日本語TTSを使用します。':'音声読み上げを無効化しました。';
   }
-  return '🐻 SolZero案内役。目標を受け取って計画→1手実行→検証します。\n/agent plan 目標 /agent status /agent step /agent run /agent stop /agent resume /agent clear /agent voice on|off\nローカル機能だけを実行し、ネット操作・外部送信は行いません。声は参考プリセットのピッチ/速度のみで、本人音声のクローンではありません。';
+  return '🐻 SolZero案内役。目標を受け取って計画→1手実行→検証します。\n/agent plan 目標 /agent queue help /agent status /agent step /agent run /agent stop /agent resume /agent clear /agent voice on|off\nローカル機能だけを実行し、ネット操作・外部送信は行いません。声は参考プリセットのピッチ/速度のみで、本人音声のクローンではありません。';
 }
 function renderPersonaAgent(){
   panelIntro('🐻 SolZeroエージェント','計画は自動作成。実行は明示承認した範囲のみ、最大3手です。');
@@ -2372,6 +2546,31 @@ function renderPersonaAgent(){
   );
   box.append(actions,status,result,
     el('p',{text:'音声は端末の日本語TTSを使います。類似音色・声優本人の声は保証しません。外部アプリ操作は実装していません。'}));
+  box.append(el('h3',{text:'🐾 業務ボード（実行承認制）'}));
+  const queuedGoal=field('追加する目標','text','例：タスク 実験結果を記録');
+  queuedGoal.input.maxLength=180;
+  const priority=el('select');
+  for(const [v,label] of [['normal','標準'],['high','高'],['low','低']]){
+    const option=el('option',{text:label});option.value=v;priority.append(option);
+  }
+  const level=el('div',{class:'field'},el('label',{text:'優先度'}),priority);
+  const queueStatus=el('div',{class:'listentry',text:agenda.status()});
+  const queueLog=el('div',{class:'listentry',text:'承認実行では、最大2件の目標を各3工程まで処理します。'});
+  const queueActions=el('div',{class:'buttons'});
+  const refreshQueue=()=>{queueStatus.textContent=agenda.status();status.textContent=personaAgent.describe();save();drawMessages();};
+  queueActions.append(
+    el('button',{class:'btn primary',text:'目標をキューに追加',onClick:()=>{try{agenda.add(queuedGoal.input.value,priority.value);queuedGoal.input.value='';queueLog.textContent='目標を登録。実行前に内容を確認してください。';refreshQueue();}catch(e){notify(e.message);}}}),
+    el('button',{class:'btn',text:'次の1件を承認・実行',onClick:async()=>{const r=await agenda.runBatch(personaAgent,agentServices(current()),{approved:true,maxGoals:1,checkpoint:save});queueLog.textContent=r.message;refreshQueue();}}),
+    el('button',{class:'btn',text:'最大2件を承認・実行',onClick:async()=>{const r=await agenda.runBatch(personaAgent,agentServices(current()),{approved:true,maxGoals:2,checkpoint:save});queueLog.textContent=r.message;refreshQueue();}}),
+    el('button',{class:'btn',text:'一時停止',onClick:()=>{agenda.pause(personaAgent);refreshQueue();}}),
+    el('button',{class:'btn',text:'再開',onClick:()=>{agenda.resume();personaAgent.resume();refreshQueue();}}),
+    el('button',{class:'btn',text:'未完了タスクから提案',onClick:()=>{queueLog.textContent=agenda.suggest(current());}}),
+    el('button',{class:'btn',text:'実行ログを表示',onClick:()=>{queueLog.textContent=agenda.history.slice(-15).map(h=>h.at+' '+h.action+' '+h.detail).join('\n')||'履歴がありません。';}}),
+    el('button',{class:'btn',text:'終了済みを整理',onClick:()=>{try{queueLog.textContent=String(agenda.clearCompleted())+'件を整理しました。';refreshQueue();}catch(e){notify(e.message);}}})
+  );
+  box.append(queuedGoal.wrapper,level,queueActions,queueStatus,queueLog,
+    el('p',{text:'外部送信やバックグラウンド実行は行いません。前回の実行中断を検出した目標は再実行せず確認待ちにします。'}));
+
 }
 
 async function send(event){
@@ -2418,7 +2617,7 @@ async function importJson(event){const file=event.target.files?.[0];event.target
   if(file.size>4000000)return notify('JSONは4MB以下にしてください。');
   const parsed=schemaRead(await file.text());if(!parsed)return notify('復元できない形式、または上限超過です。');
   if(!confirm('現在の全会話・知識・資料をバックアップの内容で置き換えます。続けますか？'))return;
-  db=parsed;personaAgent.restore(db.agent);voiceOut.setEnabled(db.voiceEnabled===true);engine.router=new engine.router.constructor();if(db.wsp)engine.router.restore(db.wsp);
+  db=parsed;personaAgent.restore(db.agent);agenda.restore(db.agenda);voiceOut.setEnabled(db.voiceEnabled===true);engine.router=new engine.router.constructor();if(db.wsp)engine.router.restore(db.wsp);
   engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP回路を検証できず読み込みを中止しました。');
   if(db.flow&&!engine.flow.restore(db.flow))notify('状態機械を復元できませんでした。');
