@@ -1,0 +1,43 @@
+/* BANC-specific presentation of the independent, user-owned SolZero offline HTML. */
+.ffcSolZeroWorkspace{
+ position:fixed;inset:0;z-index:60;background:#f7faff;color:#172a41;
+ display:flex;flex-direction:column;min-width:0;min-height:0;max-height:100dvh;
+ padding:max(8px,env(safe-area-inset-top)) 10px max(8px,env(safe-area-inset-bottom));
+ box-sizing:border-box;font:16px/1.5 system-ui,"Noto Sans JP",sans-serif
+}
+.ffcSolZeroWorkspace[hidden]{display:none!important}
+.ffcSolZeroWorkspace *{box-sizing:border-box}
+.ffcSolZeroHeader{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ffcSolZeroHeading{display:flex;flex-direction:column;gap:2px}
+.ffcSolZeroHeading strong{font-size:18px}
+.ffcSolZeroHeading span{font-size:12px;color:#455e77}
+.ffcSolZeroActions{display:flex;flex-wrap:wrap;gap:8px}
+.ffcSolZeroWorkspace button,.ffcSolZeroTrigger{
+ min-height:48px!important;min-width:48px!important;
+ font:700 14px/1.4 system-ui,"Noto Sans JP",sans-serif!important;
+ padding:8px 12px!important;background:#fff!important;color:#005bac!important;
+ border:2px solid #005bac!important;border-radius:9px!important;touch-action:manipulation
+}
+.ffcSolZeroWorkspace button:focus-visible,.ffcSolZeroTrigger:focus-visible{
+ outline:3px solid #ffdb4d!important;outline-offset:3px!important;
+ box-shadow:0 0 0 5px #151e2a!important
+}
+.ffcSolZeroWorkspace #ffcSolZeroClose{background:#005bac!important;color:#fff!important}
+.ffcSolZeroStatus{color:#3b526d;font-size:12px;line-height:1.45;margin:5px 2px;min-height:1.45em}
+.ffcSolZeroStatus[data-error="true"]{color:#a41b2a;font-weight:700}
+#ffcSolZeroFrame{display:block;border:2px solid #b9cbdc;border-radius:9px;background:#fff;
+ flex:1;min-height:0;width:100%;height:100%;max-width:100%}
+@media(max-width:700px){
+ .ffcSolZeroHeader{align-items:stretch}
+ .ffcSolZeroHeading{flex-basis:100%}
+ .ffcSolZeroActions{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+ .ffcSolZeroActions button:last-child{grid-column:1/3}
+ .ffcSolZeroWorkspace{padding-left:5px;padding-right:5px}
+ .ffcSolZeroWorkspace button{font-size:13px!important;padding:8px 5px!important}
+}
+@media(max-height:570px){
+ .ffcSolZeroWorkspace{padding-top:4px;padding-bottom:4px}
+ .ffcSolZeroHeading strong{font-size:15px}
+ .ffcSolZeroHeading span{display:none}
+}
+@media(prefers-reduced-motion:reduce){.ffcSolZeroWorkspace{scroll-behavior:auto}}
