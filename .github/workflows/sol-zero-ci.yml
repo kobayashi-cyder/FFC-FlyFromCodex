@@ -1,0 +1,48 @@
+name: Sol-Zero offline regression
+on:
+  push:
+    branches: [main, 'feature/sol-zero-*']
+    paths:
+      - 'projects/sol-zero/**'
+      - '.github/workflows/sol-zero-ci.yml'
+  pull_request:
+    paths:
+      - 'projects/sol-zero/**'
+      - '.github/workflows/sol-zero-ci.yml'
+permissions:
+  contents: read
+jobs:
+  offline-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/sol-zero
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: JavaScript regression (including actual Python/JS generation)
+        run: node --test tests/*.test.mjs
+      - name: Python syntax validation
+        run: python -m compileall -q solzero training scripts tools
+      - name: Build single-file offline HTML
+        run: python scripts/build_standalone.py
+      - name: Assert offline bundle contains code and media engines
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('SolZero_Chat_Offline.html').read_text(encoding='utf-8')
+          for token in ('function generateCode(', 'class MediaStudio', 'class SolZeroEngine', 'v0.13'):
+              assert token in s, token
+          assert '<script type="module" src="./app.js"></script>' not in s
+          print('Standalone offline bundle verified:', len(s.encode('utf-8')), 'bytes')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SolZero-v013-offline-HTML
+          path: projects/sol-zero/SolZero_Chat_Offline.html
+          if-no-files-found: error
