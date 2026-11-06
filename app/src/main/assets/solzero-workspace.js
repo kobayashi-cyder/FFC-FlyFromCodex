@@ -114,8 +114,18 @@ function install(){
  if(rescue&&!get('ffcSolZeroRescueOpen'))rescue.append(makeButton('ffcSolZeroRescueOpen'));
  return !!header||!!rescue;
 }
+function loadStyles(){
+ if(get('ffcSolZeroStyles'))return;
+ const link=node('link');link.id='ffcSolZeroStyles';link.rel='stylesheet';
+ try{
+  const url=new URL('solzero-workspace.css',location.href);
+  if(url.origin!==location.origin||!/^\/(assets|live)\//.test(url.pathname))throw Error('not local');
+  link.href=url.href;
+  document.head.appendChild(link);
+ }catch(e){status('画面スタイルの読み込みに失敗しました。',true)}
+}
 function init(){
- createOverlay();install();
+ loadStyles();createOverlay();install();
  const observer=new MutationObserver(()=>install());
  observer.observe(document.body,{childList:true,subtree:true});
  document.addEventListener('keydown',event=>{
