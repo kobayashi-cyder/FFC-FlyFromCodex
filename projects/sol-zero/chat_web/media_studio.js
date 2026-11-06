@@ -110,9 +110,10 @@ export function gifBytes(frames,w,h,fps=8){
 let crcTable;
 export function crc32(data){if(!crcTable){crcTable=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;crcTable[i]=c>>>0;}}let c=0xffffffff;for(const b of data)c=crcTable[(c^b)&255]^(c>>>8);return(c^0xffffffff)>>>0;}
 /** Noncompressed ZIP so it works without APIs or internet. Caller must enforce asset limits. */
-export function zipBytes(entries){if(!Array.isArray(entries)||!entries.length||entries.length>MEDIA_LIMITS.assets+3)throw Error('ZIPエントリ数不正');let size=0;const parts=[],index=[];const u16=n=>[n&255,(n>>>8)&255],u32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];let offset=0;
+export function zipBytes(entries){if(!Array.isArray(entries)||!entries.length||entries.length>MEDIA_LIMITS.assets+3)throw Error('ZIPエントリ数不正');let size=0;const parts=[],index=[],used=new Set();const u16=n=>[n&255,(n>>>8)&255],u32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];let offset=0;
  for(const entry of entries){const name=String(entry.name||''),filename=enc.encode(name),buf=entry.bytes instanceof Uint8Array?entry.bytes:enc.encode(String(entry.bytes??''));
   if(!/^[a-zA-Z0-9_./-]{1,120}$/.test(name)||name.startsWith('/')||name.includes('..')||name.includes('//'))throw Error('ZIPパス不正');
+  if(used.has(name))throw Error('ZIP同名ファイルは追加できません');used.add(name);
   size+=buf.length;if(size>MEDIA_LIMITS.projectBytes)throw Error('ZIP総量を超過');const crc=crc32(buf);
   const local=Uint8Array.from([...u32(0x04034b50),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(buf.length),...u32(buf.length),...u16(filename.length),...u16(0)]);
   parts.push(local,filename,buf);const central=Uint8Array.from([...u32(0x02014b50),...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(buf.length),...u32(buf.length),...u16(filename.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(offset)]);index.push(central,filename);offset+=local.length+filename.length+buf.length;
@@ -122,18 +123,45 @@ export function zipBytes(entries){if(!Array.isArray(entries)||!entries.length||e
 /** Import ZIPs produced by Sol-Zero's store writer only. Reject compressed data,
  * encrypted/data-descriptor archives and path traversal rather than guessing. */
 export function unzipStored(bytes){
- if(!(bytes instanceof Uint8Array)||bytes.length>MEDIA_LIMITS.projectBytes+100_000)throw Error('ZIP容量超過');
- const d=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),u16=o=>d.getUint16(o,true),u32=o=>d.getUint32(o,true),files=[];let pos=0;
- while(pos+4<=bytes.length&&u32(pos)===0x04034b50){
-  if(files.length>=MEDIA_LIMITS.assets+3)throw Error('ZIP項目数が多すぎます');if(pos+30>bytes.length)throw Error('ZIPヘッダー破損');
-  const flags=u16(pos+6),method=u16(pos+8),checksum=u32(pos+14),len=u32(pos+18),original=u32(pos+22),nameLen=u16(pos+26),extraLen=u16(pos+28);
-  if(method!==0||len!==original||!(flags&0x0800)||(flags&0x0009))throw Error('ZIP形式は非圧縮UTF-8のみ対応');
-  const begin=pos+30+nameLen+extraLen,end=begin+len;if(end>bytes.length)throw Error('ZIP長が不正');
-  const name=new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(pos+30,pos+30+nameLen));
-  if(!/^[a-zA-Z0-9_./-]{1,120}$/.test(name)||name.startsWith('/')||name.includes('..')||name.includes('//')||files.some(f=>f.name===name))throw Error('ZIPパス・重複が不正');
-  const payload=bytes.slice(begin,end);if(crc32(payload)!==checksum)throw Error('ZIP CRC不一致');files.push({name,bytes:payload});pos=end;
+ if(!(bytes instanceof Uint8Array)||bytes.length<22||bytes.length>MEDIA_LIMITS.projectBytes+100_000)throw Error('ZIP容量または形式が不正です');
+ const d=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+ const u16=o=>d.getUint16(o,true),u32=o=>d.getUint32(o,true),eocd=bytes.length-22;
+ if(u32(eocd)!==0x06054b50||u16(eocd+4)!==0||u16(eocd+6)!==0||
+   u16(eocd+8)!==u16(eocd+10)||u16(eocd+20)!==0)throw Error('ZIP終端またはディスク構成が不正です');
+ const count=u16(eocd+10),dirSize=u32(eocd+12),dirOffset=u32(eocd+16);
+ if(!count||count>MEDIA_LIMITS.assets+3||dirOffset>eocd||dirOffset+dirSize!==eocd)
+  throw Error('ZIP中央ディレクトリの個数・長さが不正です');
+ const files=[],names=new Set(),decoder=new TextDecoder('utf-8',{fatal:true});
+ let dir=dirOffset,dataCursor=0,total=0;
+ for(let i=0;i<count;i++){
+  if(dir+46>eocd||u32(dir)!==0x02014b50)throw Error('ZIP中央エントリ破損');
+  const flags=u16(dir+8),method=u16(dir+10),crc=u32(dir+16),packed=u32(dir+20),
+        original=u32(dir+24),nlen=u16(dir+28),extra=u16(dir+30),
+        comment=u16(dir+32),disk=u16(dir+34),local=u32(dir+42);
+  if(flags!==0x0800||method!==0||packed!==original||extra||comment||disk||
+     !nlen||nlen>120||dir+46+nlen>eocd)
+   throw Error('ZIPは自己生成した非圧縮UTF-8形式のみ対応です');
+  const nameBytes=bytes.subarray(dir+46,dir+46+nlen),name=decoder.decode(nameBytes);
+  if(!/^[a-zA-Z0-9_./-]{1,120}$/.test(name)||name.startsWith('/')||
+     name.includes('..')||name.includes('//')||names.has(name))
+   throw Error('ZIPパスまたは重複が不正です');
+  names.add(name);
+  if(local!==dataCursor||local+30>dirOffset||u32(local)!==0x04034b50||
+     u16(local+6)!==flags||u16(local+8)!==method||u32(local+14)!==crc||
+     u32(local+18)!==packed||u32(local+22)!==original||
+     u16(local+26)!==nlen||u16(local+28)!==0)
+   throw Error('ZIPローカルヘッダーと中央索引が不一致です');
+  const nameStart=local+30,begin=nameStart+nlen,finish=begin+packed;
+  if(finish>dirOffset)throw Error('ZIPファイル境界が不正です');
+  for(let n=0;n<nlen;n++)if(bytes[nameStart+n]!==nameBytes[n])
+   throw Error('ZIP内の素材名が一致しません');
+  total+=packed;if(total>MEDIA_LIMITS.projectBytes)throw Error('ZIP展開量の上限超過');
+  const payload=bytes.slice(begin,finish);
+  if(crc32(payload)!==crc)throw Error('ZIP CRC不一致');
+  files.push({name,bytes:payload});
+  dataCursor=finish;dir+=46+nlen;
  }
- if(!files.length||pos+4>bytes.length||u32(pos)!==0x02014b50)throw Error('ZIP中央ディレクトリがありません');
+ if(dir!==eocd||dataCursor!==dirOffset)throw Error('ZIP索引とデータの境界が不一致です');
  return files;
 }
 
