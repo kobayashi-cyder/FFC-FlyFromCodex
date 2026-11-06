@@ -13,6 +13,10 @@ def main():
                                    **({'executable_path':system_chromium} if system_chromium else {}))
         page=browser.new_page(viewport={'width':390,'height':844},is_mobile=True,has_touch=True,accept_downloads=True)
         errors=[]
+        js_exceptions=[]
+        session=page.context.new_cdp_session(page)
+        session.send('Runtime.enable')
+        session.on('Runtime.exceptionThrown',lambda event: js_exceptions.append(event['exceptionDetails']))
         page.on('pageerror',lambda err: errors.append(str(err)))
         url=origin+'SolZero_Chat_Offline.html'
         page.goto(url,wait_until='load')
@@ -32,7 +36,7 @@ def main():
           storageKeys:Object.keys(localStorage),
           storedNew:localStorage.getItem('solzero_chat_v012_local')?.slice(0,120),
           storedOld:localStorage.getItem('solzero_chat_v010_local')?.slice(0,120)
-        })"""), 'PAGE_ERRORS', errors, flush=True)
+        })"""), 'PAGE_ERRORS', errors, 'CHROMIUM', browser.version, 'JS_EXCEPTION', js_exceptions, flush=True)
         page.get_by_text('旧データは残ります').wait_for(timeout=10000)
         assert page.get_by_text('旧データは残ります').count()==1
         page.get_by_role('button',name='帰納WSP',exact=True).click()
