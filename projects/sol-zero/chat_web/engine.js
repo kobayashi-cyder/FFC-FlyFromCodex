@@ -2,7 +2,7 @@
  * No pretrained weights, no network calls, no arbitrary code execution.
  */
 import {predictLearnedIntent, LEARNED_ROUTER_META} from './learned_router.js';
-export const ENGINE_VERSION = '0.10.0';
+export const ENGINE_VERSION = '0.11.0';
 export const FEATURE_SETS = Object.freeze({
   greeting: ['こんにちは','こんばんは','おはよう','はじめまして','やあ','hello','hi'],
   identity: ['あなたは','君は','誰ですか','名前は','sol-zero','solzero','何者'],
@@ -196,6 +196,16 @@ export class SolZeroEngine {
     const global=Array.isArray(context.knowledge)?context.knowledge:[];
     const documents=Array.isArray(context.documents)?context.documents:[];
     const generator=context.generator;
+    if(/^\/induce(?:\s|$)/iu.test(raw)){
+      if(!this.graph)return '帰納WSPは未接続です。';
+      const arg=raw.replace(/^\/induce\s*/iu,'').trim();
+      if(!arg||arg==='status')return `現在のWSP数値回路：${this.graph.spec.name}。\n例からの新規回路は上部の『帰納WSP』画面で訓練例と独立評価例を分けて合成してください。`;
+      if(arg==='undo')return this.graph.rollback()?'帰納WSP回路を元に戻しました（保存は画面で実行）。':'元に戻せる回路はありません。';
+      try{const values=arg.split(/[,，\s]+/).map(Number);if(values.length!==this.graph.spec.inputs.length||!values.every(Number.isFinite))return '入力の次元が一致しません。';
+        const result=Object.values(this.graph.run(values).outputs).flat();
+        return `現在のWSPグラフの数値出力：${result.join(', ')}\n※規則推定は例示された演算候補に限定されます。`;
+      }catch(e){return '回路実行拒否：'+e.message;}
+    }
     if(/^\/(?:intent|learner)(?:\s|$)/iu.test(raw)){
       if(/^\/learner(?:\s|$)/iu.test(raw)) return `スクラッチ学習済み分類器：${LEARNED_ROUTER_META.parameters}パラメータ、6分類。\n独立テンプレート324件で287件正解（88.6%）。自由回答の知能ではありません。\n使い方：/intent 資料を検索してください`; 
       const phrase=raw.replace(/^\/intent\s*/iu,'').trim();
@@ -319,7 +329,7 @@ export class SolZeroEngine {
     const {intent}=this.router.predict(raw);
     switch(intent){
       case 'greeting':return 'こんにちは。Sol-Zeroです。既存の学習済みAIを使わないチャット試作版です。質問を教えると、次回から検索して回答できます。';
-      case 'identity':return '私はSol-Zero v0.10です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
+      case 'identity':return '私はSol-Zero v0.11です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
       case 'help':return this.help();
       case 'gratitude':return 'どういたしまして。';
       case 'code':return 'コードを自由生成する学習済み機能はまだありません。既存の質問と回答を知識パネルに登録して再利用できます。';
@@ -335,5 +345,5 @@ export class SolZeroEngine {
   }
   help(){return `Sol-Zero v${ENGINE_VERSION}（ローカル試作）\n・計算：「計算して (12+8)/4」\n・覚える：「覚えて：内容」／「覚えていること」\n・会話内Q&A：「教える：質問 => 回答」\n・全会話共通Q&A：「/teach 質問 => 回答」\n・直前の回答を訂正：「修正：正しい回答」\n・共有知識：「/knowledge」\n・タスク：「/todo 内容」→「/tasks」→「/done 1」\n・資料：「/docs」「/search 検索語」（文字列一致）
 ・関連する資料の行を抜粋：「/ask 質問」（根拠候補）
-・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
+・数値例からWSP回路を帰納合成：「/induce」「/induce 2,3」（画面「帰納WSP」）\n・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
 }

@@ -4,13 +4,14 @@ import {WSPBulk,WSP_DEMO_RULES,syntheticRules} from './wsp_bulk.js';
 import {WSPFlow,FLOW_DEMO} from './wsp_flow.js';
 import {AUTO_DEMO,AUTO_FLOW_DEMO,designAndVerify,validateTask,evaluate,promoteVerified,planFlow} from './wsp_autodesign.js';
 import {WSPGraph,inspectGraph,compileTruthTable,denseTemplate,GRAPH_DEMO_XOR,GRAPH_DEMO_NUMERIC,GRAPH_DEMO_PARITY,GRAPH_LIMITS} from './wsp_graph.js';
+import {INDUCTION_DEMO,induceAndVerify,promoteInduction} from './wsp_induction.js';
 import {FACTORY_FAMILIES,FACTORY_LIMITS,buildFactory,verifyFactory,auditFactory,composeFactories} from './wsp_factory.js';
 const engine=new SolZeroEngine();
 const generator=new ScratchBigram();
 engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();
 engine.graph=new WSPGraph();
-const DB_KEY='solzero_chat_v010_local',V09_KEY='solzero_chat_v09_local',V08_KEY='solzero_chat_v08_local',V07_KEY='solzero_chat_v07_local',PREV_KEY='solzero_chat_v06_local',OLD_KEY='solzero_chat_v05_local',OLDER_KEY='solzero_chat_v04_local',ANCIENT_KEY='solzero_chat_v03_local';
+const DB_KEY='solzero_chat_v011_local',V010_KEY='solzero_chat_v010_local',V09_KEY='solzero_chat_v09_local',V08_KEY='solzero_chat_v08_local',V07_KEY='solzero_chat_v07_local',PREV_KEY='solzero_chat_v06_local',OLD_KEY='solzero_chat_v05_local',OLDER_KEY='solzero_chat_v04_local',ANCIENT_KEY='solzero_chat_v03_local';
 const MAX_CHATS=40,MAX_MESSAGES=400,MAX_DOCS=8,MAX_DOC_CHARS=450000;
 const byId=id=>document.getElementById(id);
 const $messages=byId('messages'),$input=byId('input'),$history=byId('history'),$sidebar=byId('sidebar');
@@ -55,7 +56,7 @@ function schemaRead(raw){
 function notify(message){const node=byId('toast');node.textContent=message;node.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.add('hidden'),2800);}
 function save(){db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
 function init(){
-  let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
+  let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
   db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null};
   db.current ||= db.chats[0].id;
   if(db.wsp)engine.router.restore(db.wsp);
@@ -147,7 +148,7 @@ function togglePin(){const c=current();c.pinned=!c.pinned;save();drawHistory();b
 function rename(){const c=current(),name=prompt('会話名を入力してください（最大80文字）',c.title);if(name===null)return;
   if(!name.trim())return notify('会話名を入力してください。');c.title=name.trim().slice(0,80);save();drawHistory();sidebarClose();}
 function download(content,name,type){const blob=new Blob([content],{type});const href=URL.createObjectURL(blob);const a=el('a');a.href=href;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),3000);}
-function exportJson(){save();download(JSON.stringify({...db,exported_at:new Date().toISOString(),app_version:ENGINE_VERSION},null,2),'solzero_v09_backup.json','application/json;charset=utf-8');sidebarClose();}
+function exportJson(){save();download(JSON.stringify({...db,exported_at:new Date().toISOString(),app_version:ENGINE_VERSION},null,2),'solzero_v011_backup.json','application/json;charset=utf-8');sidebarClose();}
 function exportMd(){const c=current();const out=[`# ${c.title}`,'','Sol-Zero チャット記録',...c.messages.flatMap(m=>[`## ${m.role==='user'?'ユーザー':'Sol-Zero'}`,'',m.text,''])];download(out.join('\n'),'solzero_chat.md','text/markdown;charset=utf-8');sidebarClose();}
 async function importJson(event){const file=event.target.files?.[0];event.target.value='';if(!file)return;
   if(file.size>4000000)return notify('JSONは4MB以下にしてください。');
@@ -168,7 +169,7 @@ function openPanel(which){
   priorFocus=document.activeElement;
   byId('scrim').classList.remove('hidden');byId('panel').classList.remove('hidden');
   byId('panelBody').replaceChildren();
-  if(which==='knowledge')renderKnowledge();else if(which==='documents')renderDocuments();else if(which==='circuit')renderCircuit();else if(which==='generator')renderGenerator();else if(which==='bulk')renderBulk();else if(which==='auto')renderAutoDesign();else if(which==='graph')renderGraph();else if(which==='factory')renderFactory();
+  if(which==='knowledge')renderKnowledge();else if(which==='documents')renderDocuments();else if(which==='circuit')renderCircuit();else if(which==='generator')renderGenerator();else if(which==='bulk')renderBulk();else if(which==='auto')renderAutoDesign();else if(which==='graph')renderGraph();else if(which==='factory')renderFactory();else if(which==='induce')renderInduction();
   byId('closePanel').focus();
 }
 function closePanel(){byId('panel').classList.add('hidden');byId('scrim').classList.add('hidden');priorFocus?.focus?.();}
@@ -521,6 +522,43 @@ function appendFlowControls(root){
   ),result);
 }
 
+
+function renderInduction(){
+  panelIntro('帰納WSP：数値例から回路を発見','例だけから候補を決め、未使用評価は採用の可否だけに使います。汎用知能ではありません。');
+  const root=byId('panelBody');root.replaceChildren();
+  root.append(el('p',{class:'muted',text:'1〜3入力の算術・比較・非線形関数や、入力の線形結合を少数の例から推定します。訓練と検証は入力重複禁止。規則が曖昧なら追加の訓練例を求めます。合格しても一般推論の能力を意味しません。'}));
+  const spec=field('訓練例と未使用評価例（JSON形式）','textarea');spec.input.style.minHeight='250px';spec.input.value=JSON.stringify(INDUCTION_DEMO,null,2);
+  const sample=field('現在の回路に与える入力（例 2,3）','text');sample.input.value='2,3';
+  const output=el('div',{class:'listentry',text:'まず「候補回路を合成して検証」を押してください。'});
+  let pending=null;
+  root.append(spec.wrapper,sample.wrapper,el('div',{class:'buttons'},
+    el('button',{class:'btn',text:'サンプルを表示',onClick:()=>{spec.input.value=JSON.stringify(INDUCTION_DEMO,null,2);pending=null;output.textContent='新しい例を読み込みました。まだ回路には適用していません。';}}),
+    el('button',{class:'btn primary',text:'① 候補回路を合成して独立検証',onClick:()=>{
+      try{const r=induceAndVerify(JSON.parse(spec.input.value));pending=r.accepted?r:null;
+        output.textContent=`判定：${r.status}\n${r.reason}\n訓練 ${r.training.correct}/${r.training.total}・未使用評価 ${r.validation.correct}/${r.validation.total}\n合格候補数 ${r.candidates}・選択 ${r.chosen||'なし'}・重み ${r.weights}個`+
+          (r.ambiguity?'\n追加例の候補：'+JSON.stringify(r.ambiguity):'')+
+          '\n※実証対象は表現可能な少数の数値関数に限定されます。';
+      }catch(e){pending=null;output.textContent='回路合成拒否：'+e.message;}
+    }}),
+    el('button',{class:'btn primary',text:'② 合格回路だけ採用',onClick:()=>{
+      try{if(!pending)throw Error('検証済みの候補がありません');
+        const result=promoteInduction(pending,engine.graph);pending=null;
+        const saved=save();
+        output.textContent=`回路を採用しました。${result.weights}個の重み・${result.nodes}ノード。\n${saved?'端末へ保存済み。':'ブラウザ保存失敗。バックアップしてください。'}\n/induce 2,3 でチャットから実行できます。`;
+      }catch(e){output.textContent='採用拒否：'+e.message;}
+    }}),
+    el('button',{class:'btn',text:'現在の回路を実行',onClick:()=>{
+      try{const values=sample.input.value.split(/[,，\s]+/).map(Number);const r=engine.graph.run(values);output.textContent='現在の回路出力：'+JSON.stringify(r.outputs)+'\n中間値：'+JSON.stringify(r.values).slice(0,500);}
+      catch(e){output.textContent='実行拒否：'+e.message;}
+    }}),
+    el('button',{class:'btn',text:'採用前の回路へ戻す',onClick:()=>{
+      pending=null;
+      output.textContent=engine.graph.rollback()?'前の回路へ復元しました。':'復元する履歴はありません。';save();
+    }}),
+    el('button',{class:'btn',text:'現在の回路JSONを書き出す',onClick:()=>download(JSON.stringify(engine.graph.snapshot(),null,2),'solzero_induced_wsp.json','application/json;charset=utf-8')})
+  ),output);
+}
+
 byId('pinChat').addEventListener('click',togglePin);
 for(const key of ['newSidebar','newTop'])byId(key).addEventListener('click',newChat);
 byId('chatForm').addEventListener('submit',send);
@@ -535,7 +573,7 @@ byId('exportMd').addEventListener('click',exportMd);
 byId('importJson').addEventListener('click',()=>byId('jsonPicker').click());
 byId('jsonPicker').addEventListener('change',importJson);
 byId('themeSide').addEventListener('click',changeTheme);
-for(const [btn,section] of [['knowledgeBtn','knowledge'],['docsBtn','documents'],['circuitBtn','circuit'],['generatorBtn','generator'],['bulkBtn','bulk'],['bulkSide','bulk'],['autoBtn','auto'],['autoSide','auto'],['graphBtn','graph'],['graphSide','graph'],['factoryBtn','factory'],['factorySide','factory']])byId(btn).addEventListener('click',()=>openPanel(section));
+for(const [btn,section] of [['knowledgeBtn','knowledge'],['docsBtn','documents'],['circuitBtn','circuit'],['generatorBtn','generator'],['bulkBtn','bulk'],['bulkSide','bulk'],['autoBtn','auto'],['autoSide','auto'],['graphBtn','graph'],['graphSide','graph'],['factoryBtn','factory'],['factorySide','factory'],['induceBtn','induce'],['induceSide','induce']])byId(btn).addEventListener('click',()=>openPanel(section));
 byId('docPicker').addEventListener('change',addDocuments);
 byId('closePanel').addEventListener('click',closePanel);
 byId('scrim').addEventListener('click',closePanel);
