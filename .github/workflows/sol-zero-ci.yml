@@ -45,6 +45,18 @@ jobs:
           assert '<script type="module" src="./app.js"></script>' not in s
           print('Standalone offline bundle verified:', len(s.encode('utf-8')), 'bytes')
           PY
+      - name: Validate generated browser JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          html=Path('SolZero_Chat_Offline.html').read_text(encoding='utf-8')
+          open_tag='<script type="module">'
+          assert html.count(open_tag)==1
+          start=html.index(open_tag)+len(open_tag)
+          end=html.index('</script>',start)
+          Path('/tmp/solzero-bundle.mjs').write_text(html[start:end],encoding='utf-8')
+          PY
+          node --check /tmp/solzero-bundle.mjs
       - name: Assert committed offline HTML matches source build
         run: git diff --exit-code -- projects/sol-zero/SolZero_Chat_Offline.html
       - uses: actions/upload-artifact@v4
