@@ -64,6 +64,42 @@ def run():
         assert '生成しました' in page.locator('.message.assistant .bubble').last.inner_text()
         send_box=page.locator('#send').bounding_box()
         assert send_box and send_box['height']>=44,send_box
+        # Recover all offline-only assets once storage becomes available.
+        temporary=browser.new_context(viewport={'width':390,'height':820},is_mobile=True,has_touch=True)
+        temporary.add_init_script("""() => {
+          if(localStorage.getItem('__idb_available')!=='1'){
+            window.__savedIDB=window.indexedDB;
+            Object.defineProperty(window,'indexedDB',{configurable:true,value:undefined});
+          }
+        }""")
+        session_page=temporary.new_page()
+        session_page.on('pageerror',lambda error:errors.append(str(error)))
+        session_page.goto(origin+'SolZero_Chat_Offline.html',wait_until='load')
+        session_page.locator('#studioBtn').click(force=True)
+        assert '一時保存' in session_page.locator('#panelBody').inner_text()
+        for label in ['画像 PNG','音声 WAV']:
+            session_page.get_by_role('button',name=label,exact=True).click()
+            session_page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('生成完了：')",timeout=15000)
+        assert session_page.locator('#panelBody .listentry b').count()==2
+        session_page.evaluate("""() => {
+          localStorage.setItem('__idb_available','1');
+          Object.defineProperty(window,'indexedDB',{configurable:true,value:window.__savedIDB});
+        }""")
+        session_page.get_by_role('button',name='動画 GIF',exact=True).click()
+        session_page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('生成完了：')",timeout=15000)
+        assert session_page.locator('#panelBody .listentry b').count()==3
+        session_page.reload(wait_until='load')
+        session_page.locator('#studioBtn').click(force=True)
+        session_page.wait_for_function("() => document.querySelectorAll('#panelBody .listentry b').length===3",timeout=15000)
+        assert 'IndexedDB' in session_page.locator('#panelBody').inner_text()
+        # Invalid localStorage recipes must be ignored, not crash the whole studio.
+        session_page.evaluate("""() => localStorage.setItem('solzero_studio_v012_recipe',
+          JSON.stringify({theme:'not-a-theme',frames:9999999,kind:'robot'}))""")
+        session_page.reload(wait_until='load')
+        session_page.locator('#studioBtn').click(force=True)
+        assert session_page.locator('#panelBody .listentry b').count()==3
+        session_page.get_by_role('button',name='指定からプレビュー').click()
+        temporary.close()
         assert not errors,errors
         print('PASS: local-origin PNG/WAV/GIF/WebM + ZIP + WSP controls + mobile touch UI')
         browser.close()

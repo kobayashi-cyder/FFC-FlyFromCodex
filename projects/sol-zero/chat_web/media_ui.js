@@ -148,6 +148,23 @@ export class MediaStudio {
   }finally{try{if(rec&&rec.state!=='inactive')rec.stop();}catch{}stream.getTracks().forEach(x=>x.stop());dest.stream.getTracks().forEach(x=>x.stop());await ac.close();}
  }
  async generate(kind,override=null){if(this.busy)throw Error('すでに生成中です');this.busy=true;try{const p=override?{...this.project,...override}:this.project;switch(kind){case'image':return await this.makeImage(p);case'audio':return await this.makeAudio(p);case'gif':return await this.makeGif(p);case'webm':return await this.makeWebm(p);default:throw Error('生成種別が不正です');}}finally{this.busy=false;}}
+ async generateBatch(kinds,override=null){
+  if(this.busy)throw Error('すでに生成中です');
+  this.busy=true;const results=[],p=override?{...this.project,...override}:this.project;
+  try{
+   for(const kind of kinds){
+    if(kind==='image')results.push(await this.makeImage(p));
+    else if(kind==='audio')results.push(await this.makeAudio(p));
+    else if(kind==='gif')results.push(await this.makeGif(p));
+    else if(kind==='webm')results.push(await this.makeWebm(p));
+    else throw Error('生成種別が不正です');
+   }
+   return results;
+  }catch(error){
+   if(results.length)throw Error(`${results.length}/${kinds.length}件の素材を生成済みですが途中停止しました。作品ZIPで退避できます。原因：${error.message}`);
+   throw error;
+  }finally{this.busy=false;}
+ }
  download(asset){fileDownload(asset.bytes,asset.name,asset.type);}
  exportZip(){const manifest={format:'solzero-media-v012',version:1,project:{...this.project,wsp:this.wsp.snapshot()},assets:this.assets.map((a,i)=>({file:`assets/a${String(i).padStart(2,'0')}.${a.name.split('.').at(-1)}`,kind:a.kind,mime:a.type,originalName:a.name,spec:a.spec,created:a.created}))};const entries=[{name:'project.json',bytes:JSON.stringify(manifest,null,2)},...manifest.assets.map((a,i)=>({name:a.file,bytes:this.assets[i].bytes}))];const bytes=zipBytes(entries);fileDownload(bytes,'SolZero_media_project.zip','application/zip');return bytes.length;}
  async importZip(file){
@@ -216,16 +233,40 @@ export class MediaStudio {
   const log=element('div','準備完了。生成結果は端末に保存されます（対応ブラウザのIndexedDB）。');log.className='listentry';root.append(log);
   const btnrow=element('div');btnrow.className='buttons';root.append(btnrow);
   const collect=()=>{const [w,h]=dims.value.split('x').map(Number);const p={name:name.value.slice(0,60),prompt:prompt.value,seed:Number(seed.value),theme:theme.value,width:w,height:h,frames:Number(duration.value),fps:8,kind:sound.value,text:speech.value};this.buildSpec(p);audioSpec({kind:p.kind,seconds:p.frames/p.fps,seed:p.seed,text:p.text});this.project=p;this.saveRecipe();return p;};
-  const action=(label,fn)=>{const b=element('button',label);b.className='btn primary';b.addEventListener('click',async()=>{if(this.busy)return;try{const p=collect();b.disabled=true;log.textContent='処理中：'+label;const result=await fn(p);log.textContent=typeof result==='string'?result:`生成完了：${result.name}（${result.bytes.length.toLocaleString('ja-JP')}バイト）`;this.drawAssets(list,notify);}catch(err){log.textContent='エラー：'+err.message;}finally{b.disabled=false;}});btnrow.append(b);};
+  const action=(label,fn)=>{const b=element('button',label);b.className='btn primary';b.addEventListener('click',async()=>{
+  if(this.uiBusy||this.busy)return;
+  this.uiBusy=true;
+  try{
+   const p=collect();b.disabled=true;log.textContent='処理中：'+label;
+   const result=await fn(p);
+   log.textContent=typeof result==='string'?result:`生成完了：${result.name}（${result.bytes.length.toLocaleString('ja-J')}バイト）`;
+  }catch(err){log.textContent='エラー：'+err.message;}
+  finally{this.drawAssets(list,notify);b.disabled=false;this.uiBusy=false;}
+ });btnrow.append(b);};
   action('画像 PNG',p=>this.generate('image',p));action('音声 WAV',p=>this.generate('audio',p));action('動画 GIF',p=>this.generate('gif',p));action('音声付き動画 WebM',p=>this.generate('webm',p));
-  action('画像＋音声＋GIF一括',async p=>{let count=0;for(const kind of ['image','audio','gif']){await this.generate(kind,p);count++;}return `${count}種類の素材を生成しました。作品ZIPで一括取得できます。`;});
+  action('画像＋音声＋GIF一括',async p=>{const assets=await this.generateBatch(['image','audio','gif'],p);return `${assets.length}種類の素材を生成しました。作品ZIPで一括取得できます。`;});
   const extras=element('div');extras.className='buttons';root.append(extras);
-  const extra=(label,fn)=>{const b=element('button',label);b.className='btn';b.addEventListener('click',fn);extras.append(b);};
+  const extra=(label,fn)=>{const b=element('button',label);b.className='btn';b.addEventListener('click',async()=>{
+  if(this.uiBusy||this.busy)return;
+  this.uiBusy=true;
+  try{await fn();}catch(error){log.textContent='操作を中止：'+error.message;}
+  finally{this.uiBusy=false;}
+ });extras.append(b);};
   extra('全素材をZIPで書き出し',()=>{try{log.textContent='作品ZIP保存：'+this.exportZip().toLocaleString('ja-JP')+'バイト';}catch(e){log.textContent='ZIPエラー：'+e.message;}});
   const inp=element('input');inp.type='file';inp.accept='.zip,application/zip';inp.className='hidden';root.append(inp);
-  extra('作品ZIPを復元',()=>inp.click());inp.addEventListener('change',async()=>{const file=inp.files?.[0];inp.value='';if(!file)return;if(!confirm('現在のメディア作品と素材を、ZIPの内容で置き換えます。続けますか？'))return;try{const count=await this.importZip(file);this.render(root,helpers);const notice=root.querySelector('.listentry');if(notice)notice.textContent=`作品復元完了：${count}素材`;}catch(e){log.textContent='ZIP復元拒否：'+e.message;}});
+  extra('作品ZIPを復元',()=>inp.click());inp.addEventListener('change',async()=>{const file=inp.files?.[0];inp.value='';if(!file)return;if(this.uiBusy||this.busy)return;
+  if(!confirm('現在のメディア作品と素材を、ZIPの内容で置き換えます。続けますか？'))return;
+  this.uiBusy=true;
+  try{const count=await this.importZip(file);this.render(root,helpers);const notice=root.querySelector('.listentry');if(notice)notice.textContent=`作品復元完了：${count}素材`;}
+  catch(e){log.textContent='ZIP復元拒否：'+e.message;}
+  finally{this.uiBusy=false;}});
   const importInput=element('input');importInput.type='file';importInput.accept='image/png,image/jpeg,image/gif,audio/wav,audio/mpeg,video/mp4,video/webm';importInput.multiple=true;importInput.className='hidden';root.append(importInput);
-  extra('端末の素材を取り込む',()=>importInput.click());importInput.addEventListener('change',async()=>{const files=[...importInput.files];importInput.value='';try{const count=await this.importMedia(files);log.textContent=`端末素材 ${count}件を取り込みました。ZIPに統合できます。`;this.drawAssets(list,notify);}catch(e){log.textContent='取込制限：'+e.message;}});
+  extra('端末の素材を取り込む',()=>importInput.click());importInput.addEventListener('change',async()=>{const files=[...importInput.files];importInput.value='';
+  if(this.uiBusy||this.busy)return;
+  this.uiBusy=true;
+  try{const count=await this.importMedia(files);log.textContent=`端末素材 ${count}件を取り込みました。ZIPに統合できます。`;}
+  catch(e){log.textContent='取込制限：'+e.message;}
+  finally{this.drawAssets(list,notify);this.uiBusy=false;}});
   extra('全部削除',async()=>{if(!confirm('生成素材・取り込んだ素材をすべて削除しますか？'))return;try{await this.clear();this.drawAssets(list,notify);}catch(e){log.textContent='削除を中止：'+e.message;}});
   const preview=makeCanvas(320,180);preview.style.cssText='max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:8px 0';root.append(preview);
   extra('指定からプレビュー',()=>{try{const s=this.buildSpec(collect());renderMediaScene(preview.getContext('2d'),{...s,width:320,height:180},0);notify('プレビュー更新');}catch(e){log.textContent='プレビュー失敗：'+e.message;}});
@@ -238,13 +279,20 @@ export class MediaStudio {
   const mkSelect=(data)=>{const x=element('select');for(const [v,label] of data){const o=element('option',label);o.value=v;x.append(o);}return x;};
   const wr=mkSelect(rows),wc=mkSelect(cols),wv=element('input');wv.type='number';wv.min='-1.5';wv.max='1.5';wv.step='0.05';wv.value='0.5';wv.style.maxWidth='90px';ww.append(wr,wc,wv);
   const report=element('div');report.className='listentry';const reportRefresh=()=>{report.textContent=`直接設定した重み：${JSON.stringify(this.wsp.weights)}\n現在の画風への出力：${JSON.stringify(this.wsp.controls(this.buildSpec().theme))}`;};
-  const edit=element('button','重みを設定'),undo=element('button','戻す');edit.className='btn primary';undo.className='btn';edit.addEventListener('click',()=>{try{this.wsp.edit(Number(wr.value),Number(wc.value),Number(wv.value));this.saveRecipe();reportRefresh();notify('生成制御の重みを更新');}catch(e){report.textContent=e.message;}});undo.addEventListener('click',()=>{this.wsp.rollback();this.saveRecipe();reportRefresh();});ww.append(edit,undo);root.append(report);reportRefresh();
+  const edit=element('button','重みを設定'),undo=element('button','戻す');edit.className='btn primary';undo.className='btn';edit.addEventListener('click',()=>{if(this.uiBusy||this.busy)return;try{this.wsp.edit(Number(wr.value),Number(wc.value),Number(wv.value));this.saveRecipe();reportRefresh();notify('生成制御の重みを更新');}catch(e){report.textContent=e.message;}});
+  undo.addEventListener('click',()=>{if(this.uiBusy||this.busy)return;this.wsp.rollback();this.saveRecipe();reportRefresh();});ww.append(edit,undo);root.append(report);reportRefresh();
   root.append(element('h3','作品に含まれる素材（最大16件／合計55MB）'));const list=element('div');root.append(list);this.drawAssets(list,notify);
  }
  drawAssets(root,notify){for(const url of this.previewUrls)URL.revokeObjectURL(url);this.previewUrls.clear();root.replaceChildren();const total=this.assets.reduce((s,a)=>s+a.bytes.length,0);root.append(element('p',`${this.assets.length}件・${(total/1024/1024).toFixed(2)} MiB。画像・音声・動画を同じプロジェクトとしてZIPに保存できます。`));
   for(const a of this.assets){const entry=element('div');entry.className='listentry';entry.append(element('b',`${a.kind}: ${a.name} (${Math.round(a.bytes.length/1024)}KB)`));const blob=new Blob([a.bytes],{type:a.type}),url=URL.createObjectURL(blob);this.previewUrls.add(url);const media=a.type.startsWith('image/')?element('img'):a.type.startsWith('audio/')?element('audio'):a.type.startsWith('video/')?element('video'):null;
    if(media){media.src=url;media.style.cssText='display:block;max-width:100%;max-height:190px;object-fit:contain;margin:8px 0;border-radius:8px';if(media.tagName!=='IMG'){media.controls=true;if(media.tagName==='VIDEO')media.muted=false;}entry.append(media);}else URL.revokeObjectURL(url);
-   const buttons=element('div');buttons.className='buttons';const dl=element('button','保存');dl.className='btn';dl.addEventListener('click',()=>this.download(a));const del=element('button','削除');del.className='btn danger';del.addEventListener('click',async()=>{try{await this.remove(a.id);this.drawAssets(root,notify);}catch(err){notify('削除を中止：'+err.message);}});buttons.append(dl,del);entry.append(buttons);root.append(entry);
+   const buttons=element('div');buttons.className='buttons';const dl=element('button','保存');dl.className='btn';dl.addEventListener('click',()=>this.download(a));const del=element('button','削除');del.className='btn danger';del.addEventListener('click',async()=>{
+    if(this.uiBusy||this.busy)return;
+    this.uiBusy=true;
+    try{await this.remove(a.id);this.drawAssets(root,notify);}
+    catch(err){notify('削除を中止：'+err.message);}
+    finally{this.uiBusy=false;}
+   });buttons.append(dl,del);entry.append(buttons);root.append(entry);
   }
  }
 }
