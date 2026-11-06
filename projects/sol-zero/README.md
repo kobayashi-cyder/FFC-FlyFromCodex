@@ -1,3 +1,25 @@
+# Sol-Zero v0.15 — タスクを分解・検証して実行するオフライン作業基盤
+
+v0.14のチャット、WSP回路の生成・輸出、固定アルゴリズムのPython/JS生成、PNG/WAV/GIF/WebMメディア工房に、**22種類の許可済み操作を最大16工程つなぐタスク工房**を実装しました。自由な汎用知能ではなく、JSON手順を検証して実行する決定的な作業エンジンです。
+
+## 操作方法
+1. `SolZero_Chat_Offline.html`を開き、上部の「🧩 タスク工房」を選択。サンプル「CSV集計」から実行できます。
+2. `/agent help`で操作説明、`/agent demo`でサンプルJSONを表示。`/agent {JSON}` はメディア書込みのない計画のみチャットから実行します。
+3. `$ref`を使って直前工程の計算結果や表を次の工程へ渡します。手順と結果をJSONファイルに書き出せます。
+4. `media.generate` が含まれる場合だけ実行時に明示確認を求め、許可された場合に限って画像・音声・GIF・WebMを作品領域へ保存します。
+
+対応する工程： `value`, `documents.read`, `documents.search`, `text.normalize`, `text.replace`, `text.lines`, `text.join`, `json.parse`, `json.stringify`, `csv.parse`, `csv.stringify`, `table.select`, `table.filter`, `table.sort`, `table.group`, `table.stats`, `math.calculate`, `wsp.run`, `code.generate`, `wsp.export`, `media.generate`, `assert.equal`。
+
+## 実行の例
+CSV入力を読み取り、カテゴリごとに金額を合計してCSVへ変換する4工程のデモが同梱されています。文字列・表・文書・WSPを同一プラン内に組み込めます。未定義の操作や未来の工程参照、無効な値は停止し、実行した工程と失敗工程を表示します。1計画16工程、CSV1000行・32列、計画JSON48,000文字の上限があります。
+
+## 品質と限界
+`node --test tests/*.test.mjs` によりタスク基盤の16テストと過去版回帰テストを実行。CIでPython重みストア試験、単独HTMLの再現ビルド・バイト一致、PlaywrightのCSV集計・不正操作拒否・メディア生成承認・既存チャット/メディア回帰を確認します。ブラウザCIはAndroid実機試験の代替ではありません。
+
+未知の自然言語要求を自動分解する汎用プランナー、任意の外部WebやOS操作、既存モデルなしでの高度な自然言語生成、拡散画像・自然音声・実写動画生成は未実装です。「万能AI完成」とは扱いません。許可済み処理を順序立てて確実に実行するための基盤です。
+
+---
+
 # Sol-Zero v0.14: 数値WSP → 実行可能なPython・JavaScriptコード
 今回の追加機能は、**数値WSPの訓練・編集・検証済み回路**をPython/JavaScriptの移植可能なソースに変換するものです。画面「WSP 汎用グラフ」の「現在の回路→Python / →JavaScript」、またはチャットの `/exportwsp python` と `/exportwsp javascript` を利用します。
 
