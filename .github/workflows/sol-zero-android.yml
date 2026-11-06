@@ -1,0 +1,59 @@
+name: Sol-Zero Android offline APK lab
+
+on:
+  push:
+    branches: [main, 'feature/sol-zero-*']
+    paths:
+      - 'projects/sol-zero/android/**'
+      - 'projects/sol-zero/SolZero_Chat_Offline.html'
+      - '.github/workflows/sol-zero-android.yml'
+  pull_request:
+    paths:
+      - 'projects/sol-zero/android/**'
+      - 'projects/sol-zero/SolZero_Chat_Offline.html'
+      - '.github/workflows/sol-zero-android.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Install Android 35 platform and tools
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Android unit tests and signed debug APK
+        run: gradle --no-daemon --stacktrace -p projects/sol-zero/android :app:testDebugUnitTest :app:assembleDebug
+      - name: Validate signature, package and bundled HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=projects/sol-zero/android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep "package: name='jp.solzero.offline'"
+          if "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -q 'android.permission.INTERNET'; then
+            echo 'Unexpected INTERNET permission'
+            exit 1
+          fi
+          unzip -p "$APK" assets/index.html | sha256sum > /tmp/embedded.sha256
+          sha256sum projects/sol-zero/SolZero_Chat_Offline.html > /tmp/original.sha256
+          diff <(cut -d' ' -f1 /tmp/embedded.sha256) <(cut -d' ' -f1 /tmp/original.sha256)
+          sha256sum "$APK"
+          echo 'PASS: offline HTML bundled byte-for-byte; no Internet permission; debug APK signed'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SolZero-v016-Android-offline-debug-signed-APK
+          path: projects/sol-zero/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
