@@ -59,3 +59,31 @@ test('batch size clamped to two for explicit bounded action',async()=>{
  const r=await q.runBatch(agent,{reply:()=> '分析',addTask:()=>true},{approved:true,maxGoals:99});
  assert.equal(r.results.length,2);assert.equal(q.pending().length,2);
 });
+
+test('queue routes each goal to its original conversation and persists origin',async()=>{
+ const q=new SolZeroAgenda(),agent=new SolZeroPersonaAgent(),stored={alpha:[],beta:[]};
+ q.add('タスク 最初','low','alpha');
+ q.add('タスク 次','high','beta');
+ const factory=item=>({
+   reply:()=> '分析',
+   addTask:value=>{stored[item.chatId].push(value);return true;}
+ });
+ const r=await q.runBatch(agent,factory,{approved:true,maxGoals:2});
+ assert.equal(r.ok,true);
+ assert.deepEqual(stored.beta,['タスク 次']);
+ assert.deepEqual(stored.alpha,['タスク 最初']);
+ const saved=q.snapshot(),other=new SolZeroAgenda();
+ assert.equal(other.restore(saved),true);
+ assert.equal(other.queue[0].chatId,'alpha');
+ assert.equal(other.queue[1].chatId,'beta');
+});
+test('removed source conversation stops action without writing elsewhere',async()=>{
+ const q=new SolZeroAgenda(),agent=new SolZeroPersonaAgent();
+ q.add('タスク 存在しない会話','normal','deleted-chat');
+ let writes=0;
+ const r=await q.runNext(agent,()=>{throw Error('元の会話がありません');},{approved:true});
+ assert.equal(r.ok,false);
+ assert.equal(q.queue[0].status,'interrupted');
+ assert.equal(q.paused,true);
+ assert.equal(writes,0);
+});
