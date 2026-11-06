@@ -55,8 +55,27 @@ def main():
     page.locator('#input').fill('/induce 1,0')
     page.locator('#chatForm button[type="submit"]').click()
     assert '数値出力：1' in page.locator('.message.assistant .bubble').last.inner_text()
+    # WSP trained from scratch must remain usable after a real UI reload,
+    # then be callable through the same weights from the task workbench.
+    page.locator('#input').fill('/net demo')
+    page.locator('#chatForm button[type="submit"]').click()
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text(
+        'WSP重み学習・採用完了',timeout=30000)
+    saved=page.evaluate("""() => JSON.parse(
+      localStorage.getItem('solzero_chat_v012_local')).neural""")
+    assert saved and len(saved['w1'])>0 and len(saved['w2'])>0
+    page.set_content(HTML,wait_until='load')
+    page.locator('#input').fill('/net run [1.3]')
+    page.locator('#chatForm button[type="submit"]').click()
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text(
+        'WSP重み行列の推論出力',timeout=12000)
+    page.get_by_role('button',name='タスク工房').first.click()
+    page.locator('#panelBody select').select_option(label='学習WSP推論（/net demo後）')
+    page.get_by_role('button',name='計画を実行').click()
+    expect(page.locator('#panelBody .listentry').last).to_contain_text(
+        '完了：2工程実行',timeout=12000)
     assert not errors,errors
-    print('PASS: v0.10 migration; induction 5/5; promotion; saved graph reload; chat execute; rollback; no JS errors')
+    print('PASS: migration, induction, rollback, scratch WSP training, persistence, task reuse; no JS errors')
     browser.close()
 
 if __name__=='__main__':
