@@ -5,10 +5,10 @@
 export const CODE_TASKS=Object.freeze(['sum','sort','unique','search','fibonacci']);
 export const CODE_LANGUAGES=Object.freeze(['js','python']);
 const FEATURES=Object.freeze([
- /(?:\\bsum\\b|\\btotal\\b|合計|総和|足し算|加算)/iu,
- /(?:\\bsort\\b|並べ替|ソート|昇順)/iu,
- /(?:\\bunique\\b|\\bdedupe\\b|重複|一意)/iu,
- /(?:\\bsearch\\b|\\bfind\\b|検索|位置を探|添字)/iu,
+ /(?:\bsum\b|\btotal\b|合計|総和|足し算|加算)/iu,
+ /(?:\bsort\b|並べ替|ソート|昇順)/iu,
+ /(?:\bunique\b|\bdedupe\b|重複|一意)/iu,
+ /(?:\bsearch\b|\bfind\b|検索|位置を探|添字)/iu,
  /(?:fibonacci|フィボナッチ)/iu
 ]);
 const TEMPLATES=Object.freeze({
