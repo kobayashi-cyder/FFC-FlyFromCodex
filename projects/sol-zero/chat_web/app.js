@@ -126,7 +126,7 @@ function drawMessages(){
 }
 function draw(){drawHistory();drawMessages();$input.value=current().draft||'';resize();byId('pinChat').textContent=current().pinned?'📌 固定を解除':'📌 会話を固定';}
 function resize(){$input.style.height='auto';$input.style.height=Math.min(145,$input.scrollHeight)+'px';}
-function taskAdapter(allowMediaWrites=false){return {documents:db.documents,graph:engine.graph,neural:engine.neural,calculate,generateCode,generateWSPCode,allowMediaWrites,generateMedia:async(kind,opts)=>{await studio.ensureLoaded();return studio.generate(kind,opts);}};}
+function taskAdapter(allowMediaWrites=false){return {documents:db.documents,graph:engine.graph,neural:engine.neural,cognition:engine.cognition,calculate,generateCode,generateWSPCode,allowMediaWrites,generateMedia:async(kind,opts)=>{await studio.ensureLoaded();return studio.generate(kind,opts);}};}
 function taskResultText(r){return (r.ok?'完了':'停止')+'：'+r.trace.length+'工程実行'+(r.ok?'':`。失敗工程：${r.failedAt}（${r.error}）`)+'\n'+JSON.stringify(r.ok?r.output:r.trace,null,2).slice(0,9000)+'\n※計画の実行記録です。自由なAI推論の証明ではありません。';}
 async function send(event){
   event?.preventDefault();
@@ -205,7 +205,7 @@ function field(label,type='text',placeholder=''){
 function renderTaskAgent(){
   panelIntro('タスク工房 v0.15','許可された工程を組み合わせるオフライン実行機構。一般推論AIではありません。');
   const root=byId('panelBody');root.replaceChildren();
-  root.append(el('p',{class:'muted',text:'最大16工程・23種類の操作。JSONの前工程を $ref で参照し、CSV集計・資料検索・WSP回路実行・コード生成・手続き的メディア生成を連結できます。未知の操作は拒否します。'}));
+  root.append(el('p',{class:'muted',text:'最大16工程・24種類の操作。JSONの前工程を $ref で参照し、CSV集計・資料検索・WSP回路実行・コード生成・手続き的メディア生成を連結できます。未知の操作は拒否します。'}));
   const recipe=field('タスク計画JSON（version=1、steps）','textarea');recipe.input.maxLength=48000;recipe.input.style.minHeight='225px';
   try{recipe.input.value=localStorage.getItem(TASK_AGENT_STORE)||JSON.stringify(TASK_AGENT_DEMO,null,2);}catch{recipe.input.value=JSON.stringify(TASK_AGENT_DEMO,null,2);}
   const status=el('div',{class:'listentry',text:'計画を確認後に実行してください。メディア生成だけは実行前に書込みを確認します。'});
@@ -213,6 +213,7 @@ function renderTaskAgent(){
     ['CSV集計',TASK_AGENT_DEMO],
     ['資料検索',{version:1,steps:[{id:'hits',op:'documents.search',args:{query:'売上'}}]}],
     ['WSP計算とコード変換',{version:1,steps:[{id:'result',op:'wsp.run',args:{input:[1,0]}},{id:'source',op:'wsp.export',args:{language:'python'}}],output:'source'}],
+    ['BANC認知計画（実行せず検証）',{version:1,steps:[{id:'preview',op:'cognition.plan',args:{task:{schema:1,facts:{state:'new'},goal:{state:'ready'},actions:[{id:'prepare',tool:'task.value',requires:{state:'new'},effects:{state:'draft'},args:{}},{id:'verify',tool:'task.value',requires:{state:'draft'},effects:{state:'ready'},args:{}}]}}}]}],
     ['学習WSP推論（/net demo後）',{version:1,steps:[{id:'x',op:'value',args:{value:[1.3]}},{id:'guess',op:'wsp.learned',args:{input:{$ref:'x'}}}],output:'guess'}],
     ['画像・音声の生成',{version:1,steps:[{id:'image',op:'media.generate',args:{kind:'image',prompt:'星空'}},{id:'audio',op:'media.generate',args:{kind:'audio',prompt:'波音',text:'波音'}}],output:'audio'}]
   ];
