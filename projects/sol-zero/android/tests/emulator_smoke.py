@@ -91,6 +91,37 @@ def main():
        .some(x=>x.textContent.includes('def factorial'))""")
     print('PASS: offline code workshop and chat')
 
+    # Train an entirely local neural WSP from examples in chat, then reuse
+    # its learned weights through the shared task workbench in this WebView.
+    dev.evaluate("""(() => {
+      document.getElementById('input').value = '/net demo';
+      document.getElementById('chatForm').requestSubmit();
+      return true;
+    })()""")
+    dev.wait_for("""[...document.querySelectorAll('.message.assistant .bubble')]
+       .some(x => x.textContent.includes('WSP重み学習・採用完了'))""")
+    dev.evaluate("""(() => {
+      document.getElementById('input').value = '/net run [1.3]';
+      document.getElementById('chatForm').requestSubmit();
+      return true;
+    })()""")
+    dev.wait_for("""[...document.querySelectorAll('.message.assistant .bubble')]
+       .some(x => x.textContent.includes('WSP重み行列の推論出力'))""")
+    dev.evaluate("document.getElementById('agentBtn').click(); true")
+    dev.wait_for("document.getElementById('panelTitle')?.textContent.includes('タスク工房')")
+    dev.evaluate("""(() => {
+      document.querySelector('#panelBody textarea').value =
+        JSON.stringify({version:1,steps:[{id:'estimate',op:'wsp.learned',args:{input:[1.3]}}]});
+      const button = [...document.querySelectorAll('#panelBody button')].find(
+        b => b.textContent.trim() === '計画を実行');
+      if (!button) return false;
+      button.click();
+      return true;
+    })()""")
+    dev.wait_for("document.getElementById('panelBody')?.textContent.includes('完了：1工程実行')")
+    print('PASS: scratch-trained WSP weights are shared between chat and task workbench')
+    dev.evaluate("document.getElementById('closePanel').click(); true")
+
     dev.evaluate("document.getElementById('exportJson').click(); true")
     # Native bridge writes to Downloads/SolZero; independently verify on adb.
     time.sleep(3)
