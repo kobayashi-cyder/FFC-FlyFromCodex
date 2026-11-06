@@ -58,7 +58,7 @@ jobs:
           PY
           node --check /tmp/solzero-bundle.mjs
       - name: Assert committed offline HTML matches source build
-        run: git diff --exit-code -- projects/sol-zero/SolZero_Chat_Offline.html
+        run: git diff --exit-code -- SolZero_Chat_Offline.html
       - uses: actions/upload-artifact@v4
         with:
           name: SolZero-v013-offline-HTML
