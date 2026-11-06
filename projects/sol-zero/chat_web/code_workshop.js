@@ -127,16 +127,22 @@ export function codeHelp() {
     '固定済みアルゴリズムのソースを端末内で生成・コピーします。自由なコーディングAIや実行環境ではありません。';
 }
 export function generateCode(request) {
-  const raw=String(request||'').normalize('NFKC').trim();
+  const source=String(request??'');
+  if(source.length>512 && /^\s*(?:\/code|コード生成|コード作成)/iu.test(source.slice(0,32)))
+    return {ok:false,message:'コード生成の入力は512文字以内にしてください。'};
+  const raw=source.normalize('NFKC').trim();
   const match=raw.match(/^(?:\/code|コード生成|コード作成)(?:\s+|$)(.*)$/iu);
   if(!match)return null;
   const query=match[1].trim().toLowerCase();
   if(!query || /^(?:help|list|一覧|ヘルプ)$/u.test(query))return {ok:false,message:codeHelp()};
-  const langHits=[/\b(?:python|py)\b/u.test(query),/\b(?:javascript|js)\b/u.test(query)];
-  if(langHits.filter(Boolean).length!==1)return {ok:false,message:'言語を python または javascript のどちらか1つ指定してください。\n'+codeHelp()};
-  const language=langHits[0]?'python':'javascript';
-  const hits=Object.entries(CATALOGUE).filter(([,t])=>t.aliases.some(alias=>query.includes(alias)));
-  if(hits.length!==1)return {ok:false,message:(hits.length?'複数のアルゴリズム候補を検出しました。1つに絞ってください。':'対応アルゴリズムが見つかりません。')+'\n'+codeHelp()};
+  // Parse one exact language and one exact known algorithm. Unknown modifiers
+  // must not be silently dropped: they can change the requested behavior.
+  const parsed=query.match(/^(python|py|javascript|js)\s+(.+)$/u);
+  if(!parsed)return {ok:false,message:'言語を python または javascript のどちらか1つ指定してください。\n'+codeHelp()};
+  const language=(parsed[1]==='python'||parsed[1]==='py')?'python':'javascript';
+  const requested=parsed[2].trim();
+  const hits=Object.entries(CATALOGUE).filter(([,task])=>task.aliases.some(alias=>alias===requested));
+  if(hits.length!==1)return {ok:false,message:'対応アルゴリズムが見つからないか、未対応の追加条件が含まれています。一覧から1つ正確に指定してください。\n'+codeHelp()};
   const [task,def]=hits[0];
   const code=def[language];
   const ext=language==='python'?'py':'js';

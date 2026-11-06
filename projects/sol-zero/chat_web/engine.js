@@ -332,7 +332,7 @@ export class SolZeroEngine {
     const {intent}=this.router.predict(raw);
     switch(intent){
       case 'greeting':return 'こんにちは。Sol-Zeroです。既存の学習済みAIを使わないチャット試作版です。質問を教えると、次回から検索して回答できます。';
-      case 'identity':return '私はSol-Zero v0.12です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
+      case 'identity':return '私はSol-Zero v0.13です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
       case 'help':return this.help();
       case 'gratitude':return 'どういたしまして。';
       case 'code':return codeHelp();
