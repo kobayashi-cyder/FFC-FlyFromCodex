@@ -40,7 +40,7 @@ def run():
             bad=Path(temp)/'corrupt.zip'
             good.write_bytes(archive_bytes)
             forged=bytearray(archive_bytes)
-            central=forged.rfind(b'PK\\x01\\x02')
+            central=forged.rfind(b'PK\x01\x02')
             assert central!=-1
             forged[central+16]^=1
             bad.write_bytes(forged)
