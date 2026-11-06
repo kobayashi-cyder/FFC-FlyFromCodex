@@ -44,3 +44,14 @@ test('WSP media control matrix directly changes generation and supports rollback
 test('media WSP pitch modifies sound waveform, keeping PCM format',()=>{
  const a=wavBytes({kind:'tones',seconds:.5,pitch:1}),b=wavBytes({kind:'tones',seconds:.5,pitch:1.3});assert.notDeepEqual(a,b);assert.equal(a.length,b.length);
 });
+
+test('ZIP refuses directory forgery, appended content and duplicated names',()=>{
+ const original=zipBytes([{name:'project.json',bytes:'{"ok":true}'},{name:'assets/a00.png',bytes:new Uint8Array([1,2,3,4,5])}]);
+ const eocd=original.length-22,dv=new DataView(original.buffer,original.byteOffset,original.byteLength);
+ const central=dv.getUint32(eocd+16,true),broken=at=>{const mutated=original.slice();mutated[at]^=1;assert.throws(()=>unzipStored(mutated));};
+ assert.equal(unzipStored(original).length,2);
+ for(const at of [central+16,central+42,eocd+12,eocd+8,30])broken(at);
+ assert.throws(()=>unzipStored(Uint8Array.from([...original,0])));
+ assert.throws(()=>zipBytes([{name:'project.json',bytes:'a'},{name:'project.json',bytes:'b'}]));
+ const forged=original.slice();forged[central+8]=0;assert.throws(()=>unzipStored(forged));
+});
