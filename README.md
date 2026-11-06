@@ -4,9 +4,9 @@
 
 [検証用オフラインHTML](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/feature/sol-zero-unified-wsp-apk-20261106/projects/sol-zero/SolZero_Chat_Offline.html) / [統合PR #79](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/79) / [詳細と操作方法](projects/sol-zero/README.md)
 
-- **実装済み:** ゼロから訓練する数値WSP重みをチャットの `/net demo`・`/net train`・`/net run`、タスク工房の `wsp.learned` に統合。学習重みを保存・復元し、最大16工程・23操作のタスク内で使用できます。既存のチャット、固定コード、メディア制作機能を保持しています。
+- **実装済み:** ゼロから訓練する数値WSP重みを `/net demo`・`/net train`・`/net run`、タスク工房の `wsp.learned` に統合。加えてBANC888の認知計画検証コアを `/cognition demo`・`/cognition {JSON}` および `cognition.plan` として移植し、最大16工程・24操作のタスク内で使用できます。既存のチャット、コード、メディア制作機能を維持。BANC計画は予測のみで、OS操作は実行しません。
 - **検証:** Node 157件・Python 7件、Chromiumのモバイル表示試験、単体HTML再生成一致が通過。Android版のGradle/署名・エミュレーター結果は別に確認し、未確認のまま本番公開しません。
-- **範囲:** BANCv888旧Android内部実装の統合や、万能知能・高品質生成AIの完成はまだ主張できません。既存の大規模言語モデルやクラウドAPIは不使用です。
+- **範囲:** BANC888認知コアの一部のみを移植。旧Androidアプリ全体、万能知能、自由な高品質生成AIは未完成です。既存の大規模言語モデルやクラウドAPIは不使用です。
 
 ---
 
