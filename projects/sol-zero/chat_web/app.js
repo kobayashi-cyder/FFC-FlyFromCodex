@@ -17,7 +17,7 @@ const DB_KEY='solzero_chat_v012_local',V011_KEY='solzero_chat_v011_local',V010_K
 const MAX_CHATS=40,MAX_MESSAGES=400,MAX_DOCS=8,MAX_DOC_CHARS=450000;
 const byId=id=>document.getElementById(id);
 const $messages=byId('messages'),$input=byId('input'),$history=byId('history'),$sidebar=byId('sidebar');
-let db,priorFocus=null,toastTimer=null;
+let db,priorFocus=null,toastTimer=null,sending=false;
 const el=(tag,props={},...children)=>{
   const node=document.createElement(tag);
   for(const [k,v] of Object.entries(props)) {
@@ -123,7 +123,11 @@ function draw(){drawHistory();drawMessages();$input.value=current().draft||'';re
 function resize(){$input.style.height='auto';$input.style.height=Math.min(145,$input.scrollHeight)+'px';}
 async function send(event){
   event?.preventDefault();
+  if(sending)return; // Reject repeat submit before asynchronous media generation finishes.
   const text=$input.value.trim();if(!text)return;
+  if(text.length>3000){notify('送信は最大3000文字までです。内容を短くしてください。');return;}
+  sending=true;const submit=byId('send');submit.disabled=true;$input.readOnly=true;
+  try{
   const c=current();let answer;
   if(/^\/(?:image|audio|video|gif|webm)(?:\s|$)/i.test(text)){
     const cmd=text.slice(1).split(/\s+/)[0].toLowerCase(),p=text.slice(cmd.length+1).trim();
@@ -149,6 +153,8 @@ async function send(event){
   if(c.messages.length>MAX_MESSAGES)c.messages.splice(0,c.messages.length-MAX_MESSAGES);
   if(c.title==='新しい会話')c.title=text.replace(/\s+/g,' ').slice(0,36);
   c.draft='';$input.value='';resize();save();draw();$input.focus();
+  }catch(err){notify('送信処理でエラーが発生しました：'+String(err?.message||err).slice(0,120));}
+  finally{sending=false;submit.disabled=false;$input.readOnly=false;}
 }
 function newChat(){const c=createChat();db.chats.unshift(c);if(db.chats.length>MAX_CHATS)db.chats.pop();db.current=c.id;save();draw();$input.value='';resize();sidebarClose();$input.focus();}
 function deleteChat(){const c=current();if(c.messages.length && !confirm(`「${c.title}」を削除しますか？ 会話内のメモ・タスク・学習も削除されます。`))return;

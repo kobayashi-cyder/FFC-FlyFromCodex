@@ -36,8 +36,27 @@ async function replaceAssetsTransaction(assets){
  });
 }
 export class MediaStudio {
- constructor(){this.assets=[];this.loaded=false;this.loadingPromise=null;this.storageState='unknown';this.recipeSaved=true;this.previewUrls=new Set();this.busy=false;this.wsp=new MediaWSP();this.project={name:'Sol-Zero作品',prompt:'夕焼けの海に浮かぶ星',seed:2026,theme:'auto',width:512,height:288,frames:24,fps:8,kind:'waves',text:'こんにちは'};
-  try{const raw=JSON.parse(localStorage.getItem(STORE)||'null');if(raw&&typeof raw==='object'){Object.assign(this.project,raw);if(raw.wsp)this.wsp.restore(raw.wsp);}}catch{}
+ constructor(){this.assets=[];this.loaded=false;this.loadingPromise=null;this.storageState='unknown';this.recipeSaved=true;this.previewUrls=new Set();this.busy=false;this.uiBusy=false;this.wsp=new MediaWSP();this.project={name:'Sol-Zero作品',prompt:'夕焼けの海に浮かぶ星',seed:2026,theme:'auto',width:512,height:288,frames:24,fps:8,kind:'waves',text:'こんにちは'};
+  try{
+   const serialized=localStorage.getItem(STORE);
+   if(serialized&&serialized.length<=4096){
+    const raw=JSON.parse(serialized);
+    if(raw&&typeof raw==='object'&&!Array.isArray(raw)){
+     const candidate={...this.project};
+     for(const key of ['name','prompt','seed','theme','width','height','frames','fps','kind','text'])
+      if(Object.hasOwn(raw,key))candidate[key]=raw[key];
+     if(typeof candidate.name!=='string'||candidate.name.length>60||
+        typeof candidate.prompt!=='string'||candidate.prompt.length>180||
+        typeof candidate.text!=='string'||candidate.text.length>200||
+        !['seed','width','height','frames','fps'].every(key=>Number.isInteger(candidate[key])))
+      throw Error('保存済み作品設定が不正');
+     validateMediaSpec({...candidate,theme:candidate.theme==='auto'?undefined:candidate.theme});
+     audioSpec({kind:candidate.kind,seconds:candidate.frames/candidate.fps,seed:candidate.seed,text:candidate.text});
+     if(raw.wsp!==undefined&&!this.wsp.restore(raw.wsp))throw Error('保存済み重みが不正');
+     this.project=candidate;
+    }
+   }
+  }catch{this.wsp=new MediaWSP();}
  }
  async ensureLoaded(){
   if(this.loaded)return;
@@ -59,6 +78,16 @@ export class MediaStudio {
  }
  saveRecipe(){try{localStorage.setItem(STORE,JSON.stringify({...this.project,wsp:this.wsp.snapshot()}));this.recipeSaved=true;return true;}catch{this.recipeSaved=false;return false;}}
  buildSpec(p=this.project){const theme=p.theme==='auto'?undefined:p.theme;const result=validateMediaSpec({prompt:p.prompt,seed:Number(p.seed),width:Number(p.width),height:Number(p.height),frames:Number(p.frames),fps:Number(p.fps),theme});return validateMediaSpec({...result,controls:this.wsp.controls(result.theme)});}
+ async checkSessionRecovery(){
+  // If a browser temporarily hid a previously existing DB during startup, never
+  // overwrite that persisted project with a partial in-memory workspace.
+  if(this.storageState!=='session')return;
+  const existing=await dbOp('getAll');
+  if(!Array.isArray(existing))return;
+  const inMemoryIds=new Set(this.assets.map(a=>a.id));
+  if(existing.some(asset=>!inMemoryIds.has(asset.id)))
+   throw Error('保存領域に別の素材があります。作品ZIPを退避してから画面を再読み込みしてください');
+ }
  async add(name,type,bytes,kind,spec){
   await this.ensureLoaded();
   if(!(bytes instanceof Uint8Array)||bytes.length>22_000_000||bytes.length===0)throw Error('素材サイズが範囲外です');
@@ -67,21 +96,34 @@ export class MediaStudio {
    throw Error('素材の個数または合計容量が上限です');
   const id=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+'_'+Math.random().toString(16).slice(2);
   const asset={id,name,type,bytes,kind,spec,created:new Date().toISOString()};
-  const saved=await dbOp('put',asset);
-  if(saved===null&&this.storageState==='saved')throw Error('端末への保存に失敗しました。素材は追加せず既存の作品を保持しました');
+  // Recover an entire session-only workspace atomically, never just the last asset.
+  if(this.storageState==='session')await this.checkSessionRecovery();
+  const saved=this.storageState==='session'?
+    await replaceAssetsTransaction([...this.assets,asset]):await dbOp('put',asset);
+  if(saved===false||(saved===null&&this.storageState==='saved'))
+   throw Error('端末への保存に失敗しました。既存の作品を保持しました');
   this.storageState=saved===null?'session':'saved';
   this.assets.push(asset);return asset;
  }
  async remove(id){
   await this.ensureLoaded();
-  const saved=await dbOp('delete',id);
-  if(saved===null&&this.storageState==='saved')throw Error('端末保存に失敗したため削除しませんでした');
-  this.assets=this.assets.filter(a=>a.id!==id);
+  const next=this.assets.filter(a=>a.id!==id);
+  if(next.length===this.assets.length)return;
+  if(this.storageState==='session')await this.checkSessionRecovery();
+  const saved=this.storageState==='session'?
+    await replaceAssetsTransaction(next):await dbOp('delete',id);
+  if(saved===false||(saved===null&&this.storageState==='saved'))
+   throw Error('端末保存に失敗したため削除しませんでした');
+  this.storageState=saved===null?'session':'saved';
+  this.assets=next;
  }
  async clear(){
   await this.ensureLoaded();
+  if(this.storageState==='session')await this.checkSessionRecovery();
   const saved=await dbOp('clear');
-  if(saved===null&&this.storageState==='saved')throw Error('端末保存に失敗したため既存素材を保持しました');
+  if(saved===false||(saved===null&&this.storageState==='saved'))
+   throw Error('端末保存に失敗したため既存素材を保持しました');
+  this.storageState=saved===null?'session':'saved';
   this.assets=[];
  }
  async makeImage(p=this.project){const s=this.buildSpec(p),canvas=makeCanvas(s.width,s.height);renderMediaScene(canvas.getContext('2d'),s,0);const bytes=await toPng(canvas);return this.add(`media_${Date.now()}.png`,'image/png',bytes,'image',s);}
@@ -149,6 +191,7 @@ export class MediaStudio {
   const project={name:p.name,prompt:p.prompt,seed:verified.seed,theme:p.theme==='auto'?'auto':verified.theme,
    width:verified.width,height:verified.height,frames:verified.frames,fps:verified.fps,kind:p.kind,text:p.text};
   // Validate everything before attempting a single, all-or-nothing storage transaction.
+  if(this.storageState==='session')await this.checkSessionRecovery();
   const persisted=await replaceAssetsTransaction(next);
   if(persisted===false||(persisted===null&&this.storageState==='saved'))
    throw Error('保存領域の更新に失敗したため、元の作品を保持しました');
