@@ -1,8 +1,8 @@
 """Playwright UI smoke. Uses set_content to work in browser sandboxes that block navigation.
 Real IndexedDB persistence must be tested separately on the target device/origin.
 """
-import argparse
 from pathlib import Path
+from shutil import which
 from playwright.sync_api import sync_playwright
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -10,7 +10,12 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def run():
     with sync_playwright() as playwright:
-        browser=playwright.chromium.launch(headless=True, executable_path='/usr/bin/chromium',args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
+        system_chromium=which('chromium') or which('chromium-browser')
+        browser=playwright.chromium.launch(
+            headless=True,
+            args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'],
+            **({'executable_path':system_chromium} if system_chromium else {})
+        )
         context=browser.new_context(viewport={'width':390,'height':820},accept_downloads=True)
         page=context.new_page()
         errors=[]

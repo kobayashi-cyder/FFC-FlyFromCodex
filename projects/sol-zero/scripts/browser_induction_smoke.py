@@ -2,6 +2,7 @@
 The mocked storage tests the app's persistence wiring; it is not proof of every browser's file: storage policy.
 """
 from pathlib import Path
+from shutil import which
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,7 +20,9 @@ INIT_STORAGE = """() => {
 
 def main():
   with sync_playwright() as pw:
-    browser=pw.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
+    system_chromium=which('chromium') or which('chromium-browser')
+    browser=pw.chromium.launch(headless=True,args=['--no-sandbox','--disable-dev-shm-usage'],
+                               **({'executable_path':system_chromium} if system_chromium else {}))
     page=browser.new_page(viewport={'width':390,'height':844},accept_downloads=True)
     errors=[]
     page.on('pageerror',lambda err: errors.append(str(err)))

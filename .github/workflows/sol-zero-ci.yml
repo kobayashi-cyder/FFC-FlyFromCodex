@@ -52,3 +52,22 @@ jobs:
           name: SolZero-v013-offline-HTML
           path: projects/sol-zero/SolZero_Chat_Offline.html
           if-no-files-found: error
+ 
+  browser-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/sol-zero
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install browser test runtime
+        run: |
+          python -m pip install --disable-pip-version-check playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Mobile-size chat + inductive WSP regression
+        run: python scripts/browser_induction_smoke.py
+      - name: Mobile-size PNG/WAV/GIF/WebM and ZIP regression
+        run: python scripts/browser_media_smoke.py
