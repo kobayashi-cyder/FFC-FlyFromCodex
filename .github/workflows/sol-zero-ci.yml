@@ -29,6 +29,10 @@ jobs:
         run: node --test tests/*.test.mjs
       - name: Python syntax validation
         run: python -m compileall -q solzero training scripts tools
+      - name: Python 4-bit weight-store regression (no pretrained models)
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          python -m pytest -q tests/test_weight_store.py
       - name: Build single-file offline HTML
         run: python scripts/build_standalone.py
       - name: Assert offline bundle contains code and media engines
@@ -41,6 +45,8 @@ jobs:
           assert '<script type="module" src="./app.js"></script>' not in s
           print('Standalone offline bundle verified:', len(s.encode('utf-8')), 'bytes')
           PY
+      - name: Assert committed offline HTML matches source build
+        run: git diff --exit-code -- projects/sol-zero/SolZero_Chat_Offline.html
       - uses: actions/upload-artifact@v4
         with:
           name: SolZero-v013-offline-HTML
