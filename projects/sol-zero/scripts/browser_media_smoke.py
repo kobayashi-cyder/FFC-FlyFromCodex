@@ -1,7 +1,7 @@
 """Mobile Chromium media UI smoke on real local origin, including IndexedDB and ZIP."""
 from pathlib import Path
 from shutil import which
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 from browser_server import serve_root
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -66,17 +66,17 @@ def run():
         assert send_box and send_box['height']>=44,send_box
         # Recover all offline-only assets once storage becomes available.
         temporary=browser.new_context(viewport={'width':390,'height':820},is_mobile=True,has_touch=True)
-        temporary.add_init_script("""() => {
+        temporary.add_init_script("""(() => {
           if(localStorage.getItem('__idb_available')!=='1'){
             window.__savedIDB=window.indexedDB;
             Object.defineProperty(window,'indexedDB',{configurable:true,value:undefined});
           }
-        }""")
+        })();""")
         session_page=temporary.new_page()
         session_page.on('pageerror',lambda error:errors.append(str(error)))
         session_page.goto(origin+'SolZero_Chat_Offline.html',wait_until='load')
         session_page.locator('#studioBtn').click(force=True)
-        assert '一時保存' in session_page.locator('#panelBody').inner_text()
+        expect(session_page.locator('#panelBody')).to_contain_text('一時保存',timeout=12000)
         for label in ['画像 PNG','音声 WAV']:
             session_page.get_by_role('button',name=label,exact=True).click()
             session_page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('生成完了：')",timeout=15000)
