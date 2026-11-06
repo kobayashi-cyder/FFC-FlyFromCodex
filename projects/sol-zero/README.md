@@ -1,3 +1,23 @@
+# Sol-Zero エージェント拡張: 優先度付き業務ボード
+
+「🐻 エージェント」パネルでは、目標をキューに追加し、優先度（高・標準・低）を設定できます。計画を登録しただけでは操作せず、ユーザーが「次の1件を承認・実行」または「最大2件を承認・実行」を押したときだけ実行します。1件は最大3工程（分析、既存機能の呼び出し、結果の照合）です。キューは最大24件、履歴は最大60件をローカル保存します。
+
+チャット操作:
+- /agent queue add high タスク 実験を記録 ― 優先度高で登録（登録のみで実行しない）。
+- /agent queue add normal 海の画像を生成 ― 画像生成目標の登録。
+- /agent queue list ― 全キューの状態を表示。
+- /agent queue run ― 次の1件の最大3手を実行承認。
+- /agent queue run 2 ― 最大2件を順番に実行承認。
+- /agent queue suggest ― 会話の未完了タスクから候補を提案（登録・実行はしない）。
+- /agent queue pause、/agent queue resume、/agent queue cancel ID、/agent queue cleanup、/agent queue history。
+- /agent queue ack ― 失敗・中断した操作を人が確認した後、後続目標のみ実行可能にする（失敗済み操作の再実行はしない）。
+
+**安全性・制限:** 利用可能な目標は画像・音声・動画の既存手続き生成、および「タスク 内容」「メモ 内容」の明示登録だけです。曖昧な目標を勝手にメモ保存して「達成」とは判定せず、未対応として拒否します。ユーザー承認なしに自動実行しません。実行はSolZero内のメモ/タスク保存と既存の手続き的メディア生成に限ります。ブラウザを閉じた間のバックグラウンド処理、インターネット操作、Android他アプリの実行、外部API、学習済みLLMは含みません。失敗・強制終了・保存エラーの後に同じ副作用を自動再実行しないよう、中断として記録します。異常が出た場合は履歴・成果物を人が確認してから新規目標を作ってください。独立検証で判定する範囲を超える成果品質や端末ごとの音声類似性は保証しません。
+
+**回帰検証:** node --test tests/*.test.mjs、python scripts/build_standalone.py、python scripts/browser_agenda_smoke.py。CIでは生成単体HTMLの一致も検査します。
+
+---
+
 # Sol-Zero v0.14: 数値WSP → 実行可能なPython・JavaScriptコード
 今回の追加機能は、**数値WSPの訓練・編集・検証済み回路**をPython/JavaScriptの移植可能なソースに変換するものです。画面「WSP 汎用グラフ」の「現在の回路→Python / →JavaScript」、またはチャットの `/exportwsp python` と `/exportwsp javascript` を利用します。
 
