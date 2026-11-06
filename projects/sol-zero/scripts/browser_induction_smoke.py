@@ -24,6 +24,15 @@ def main():
           localStorage.setItem('solzero_chat_v010_local', JSON.stringify(data));
         }""",old)
         page.reload(wait_until='load')
+        print('DIAGNOSTIC', page.evaluate("""() => ({
+          title:document.title,
+          scriptCount:document.scripts.length,
+          history:document.querySelector('#history')?.textContent.slice(0,300),
+          messages:document.querySelector('#messages')?.textContent.slice(0,300),
+          storageKeys:Object.keys(localStorage),
+          storedNew:localStorage.getItem('solzero_chat_v012_local')?.slice(0,120),
+          storedOld:localStorage.getItem('solzero_chat_v010_local')?.slice(0,120)
+        })"""), 'PAGE_ERRORS', errors, flush=True)
         page.get_by_text('旧データは残ります').wait_for(timeout=10000)
         assert page.get_by_text('旧データは残ります').count()==1
         page.get_by_role('button',name='帰納WSP',exact=True).click()
