@@ -8,11 +8,13 @@ import {generateWSPCode} from './wsp_codegen.js';
 import {INDUCTION_DEMO,induceAndVerify,promoteInduction} from './wsp_induction.js';
 import {MediaStudio} from './media_ui.js';
 import {SolZeroPersonaAgent,SolZeroVoice} from './character_agent.js';
+import {SolZeroAgenda} from './agent_agenda.js';
 import {FACTORY_FAMILIES,FACTORY_LIMITS,buildFactory,verifyFactory,auditFactory,composeFactories} from './wsp_factory.js';
 const engine=new SolZeroEngine();
 const generator=new ScratchBigram();
 const studio=new MediaStudio();
 const personaAgent=new SolZeroPersonaAgent();
+const agenda=new SolZeroAgenda();
 const voiceOut=new SolZeroVoice();
 engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();
@@ -56,16 +58,17 @@ function schemaRead(raw){
     const documents=Array.isArray(data.documents)?data.documents.filter(d=>d&&typeof d.text==='string'&&typeof d.title==='string').slice(0,MAX_DOCS).map(d=>({id:String(d.id||id()).slice(0,100),title:d.title.slice(0,100),text:d.text.slice(0,100000),added:typeof d.added==='string'?d.added.slice(0,48):''})):[];
     if(documents.reduce((s,d)=>s+d.text.length,0)>MAX_DOC_CHARS)return null;
     const theme=data.theme==='dark'?'dark':'light';
-    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null,agent:data.agent||null,voiceEnabled:data.voiceEnabled===true};
+    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null,agent:data.agent||null,agenda:data.agenda||null,voiceEnabled:data.voiceEnabled===true};
   }catch{return null;}
 }
 function notify(message){const node=byId('toast');node.textContent=message;node.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.add('hidden'),2800);}
-function save(){db.agent=personaAgent.snapshot();db.voiceEnabled=voiceOut.enabled;db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
+function save(){db.agenda=agenda.snapshot();db.agent=personaAgent.snapshot();db.voiceEnabled=voiceOut.enabled;db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
 function init(){
   let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V011_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
-  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null,agent:null,voiceEnabled:false};
+  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null,agent:null,agenda:null,voiceEnabled:false};
   db.current ||= db.chats[0].id;
   personaAgent.restore(db.agent);
+  if(db.agenda&&!agenda.restore(db.agenda))notify('業務ボードの保存内容が不正です。キューを初期化しました。');
   voiceOut.setEnabled(db.voiceEnabled===true);
   if(db.wsp)engine.router.restore(db.wsp);
   if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP一括回路のデータが不正なため復元しませんでした。');
@@ -135,9 +138,42 @@ function agentServices(c){
     generate:async(kind,goal)=>{await studio.ensureLoaded();return studio.generate(kind,{prompt:goal,text:goal});}
   };
 }
+async function handleQueueCommand(args,c){
+  const parts=args.trim().split(/\s+/),verb=(parts.shift()||'list').toLowerCase();
+  if(verb==='add'){
+    const priority=['high','normal','low'].includes(parts[0])?parts.shift():'normal';
+    try{const item=agenda.add(parts.join(' '),priority);save();
+      return '🐻 新しい目標を登録しました: '+item.id+'\n'+agenda.status();
+    }catch(e){return '目標登録失敗: '+e.message;}
+  }
+  if(verb==='list'||verb==='status')return agenda.status();
+  if(verb==='suggest')return agenda.suggest(c);
+  if(verb==='pause'){agenda.pause(personaAgent);save();return agenda.status();}
+  if(verb==='resume'){agenda.resume();personaAgent.resume();save();return agenda.status();}
+  if(verb==='run'){
+    const count=parts[0]==='2'?2:1;
+    const r=await agenda.runBatch(personaAgent,agentServices(c),
+      {approved:true,maxGoals:count,checkpoint:save});
+    return '🐻 承認済みの処理結果\n'+r.message+'\n'+agenda.status();
+  }
+  if(verb==='cancel'){
+    try{const ok=agenda.cancel(parts[0]);save();return ok?'目標を取消しました。\n'+agenda.status():'取消可能な未処理目標がありません。';}
+    catch(e){return '取消エラー: '+e.message;}
+  }
+  if(verb==='cleanup'){
+    try{const count=agenda.clearCompleted();save();return String(count)+'件の終了済み目標を整理しました。';}
+    catch(e){return '整理エラー: '+e.message;}
+  }
+  if(verb==='history'){
+    return '最新の実行履歴\n'+(agenda.history.length?agenda.history.slice(-15).map(x=>x.at+' '+x.action+' '+x.detail).join('\n'):'まだ履歴がありません。');
+  }
+  return '/agent queue add [high|normal|low] 目標\n/agent queue list\n/agent queue suggest\n/agent queue run [2]\n/agent queue pause|resume\n/agent queue cancel ID\n/agent queue cleanup|history\n※runを明示したときだけ、最大2件・各3手を実行します。';
+}
+
 async function handleAgentCommand(text,c){
   const match=text.match(/^\/agent(?:\s+(\S+))?(?:\s+([\s\S]*))?$/i);
   const action=(match?.[1]||'help').toLowerCase(),args=(match?.[2]||'').trim();
+  if(action==='queue')return handleQueueCommand(args,c);
   if(action==='plan'){
     try{return '🐻 エージェント計画\n'+personaAgent.makePlan(args)+'\n実行は /agent step または /agent run で承認してください。';}
     catch(e){return '計画作成エラー: '+e.message;}
@@ -150,8 +186,8 @@ async function handleAgentCommand(text,c){
     const r=await personaAgent.run(agentServices(c),true,3);
     return '🐻 実行結果\n'+r.messages.join('\n')+'\n'+(r.state||personaAgent.describe());
   }
-  if(action==='stop')return personaAgent.stop();
-  if(action==='resume'){personaAgent.resume();return personaAgent.describe();}
+  if(action==='stop'){agenda.pause(personaAgent);return personaAgent.stop();}
+  if(action==='resume'){agenda.resume();personaAgent.resume();return personaAgent.describe();}
   if(action==='status')return personaAgent.describe();
   if(action==='clear'){personaAgent.clear();voiceOut.cancel();return 'エージェントの計画と実行ログを消去しました。';}
   if(action==='voice'){
@@ -159,7 +195,7 @@ async function handleAgentCommand(text,c){
     const enabled=voiceOut.setEnabled(args==='on');
     return enabled?'音声読み上げを有効化しました。端末の日本語TTSを使用します。':'音声読み上げを無効化しました。';
   }
-  return '🐻 SolZero案内役。目標を受け取って計画→1手実行→検証します。\n/agent plan 目標 /agent status /agent step /agent run /agent stop /agent resume /agent clear /agent voice on|off\nローカル機能だけを実行し、ネット操作・外部送信は行いません。声は参考プリセットのピッチ/速度のみで、本人音声のクローンではありません。';
+  return '🐻 SolZero案内役。目標を受け取って計画→1手実行→検証します。\n/agent plan 目標 /agent queue help /agent status /agent step /agent run /agent stop /agent resume /agent clear /agent voice on|off\nローカル機能だけを実行し、ネット操作・外部送信は行いません。声は参考プリセットのピッチ/速度のみで、本人音声のクローンではありません。';
 }
 function renderPersonaAgent(){
   panelIntro('🐻 SolZeroエージェント','計画は自動作成。実行は明示承認した範囲のみ、最大3手です。');
@@ -180,6 +216,31 @@ function renderPersonaAgent(){
   );
   box.append(actions,status,result,
     el('p',{text:'音声は端末の日本語TTSを使います。類似音色・声優本人の声は保証しません。外部アプリ操作は実装していません。'}));
+  box.append(el('h3',{text:'🐾 業務ボード（実行承認制）'}));
+  const queuedGoal=field('追加する目標','text','例：タスク 実験結果を記録');
+  queuedGoal.input.maxLength=180;
+  const priority=el('select');
+  for(const [v,label] of [['normal','標準'],['high','高'],['low','低']]){
+    const option=el('option',{text:label});option.value=v;priority.append(option);
+  }
+  const level=el('div',{class:'field'},el('label',{text:'優先度'}),priority);
+  const queueStatus=el('div',{class:'listentry',text:agenda.status()});
+  const queueLog=el('div',{class:'listentry',text:'承認実行では、最大2件の目標を各3工程まで処理します。'});
+  const queueActions=el('div',{class:'buttons'});
+  const refreshQueue=()=>{queueStatus.textContent=agenda.status();status.textContent=personaAgent.describe();save();drawMessages();};
+  queueActions.append(
+    el('button',{class:'btn primary',text:'目標をキューに追加',onClick:()=>{try{agenda.add(queuedGoal.input.value,priority.value);queuedGoal.input.value='';queueLog.textContent='目標を登録。実行前に内容を確認してください。';refreshQueue();}catch(e){notify(e.message);}}}),
+    el('button',{class:'btn',text:'次の1件を承認・実行',onClick:async()=>{const r=await agenda.runBatch(personaAgent,agentServices(current()),{approved:true,maxGoals:1,checkpoint:save});queueLog.textContent=r.message;refreshQueue();}}),
+    el('button',{class:'btn',text:'最大2件を承認・実行',onClick:async()=>{const r=await agenda.runBatch(personaAgent,agentServices(current()),{approved:true,maxGoals:2,checkpoint:save});queueLog.textContent=r.message;refreshQueue();}}),
+    el('button',{class:'btn',text:'一時停止',onClick:()=>{agenda.pause(personaAgent);refreshQueue();}}),
+    el('button',{class:'btn',text:'再開',onClick:()=>{agenda.resume();personaAgent.resume();refreshQueue();}}),
+    el('button',{class:'btn',text:'未完了タスクから提案',onClick:()=>{queueLog.textContent=agenda.suggest(current());}}),
+    el('button',{class:'btn',text:'実行ログを表示',onClick:()=>{queueLog.textContent=agenda.history.slice(-15).map(h=>h.at+' '+h.action+' '+h.detail).join('\n')||'履歴がありません。';}}),
+    el('button',{class:'btn',text:'終了済みを整理',onClick:()=>{try{queueLog.textContent=String(agenda.clearCompleted())+'件を整理しました。';refreshQueue();}catch(e){notify(e.message);}}})
+  );
+  box.append(queuedGoal.wrapper,level,queueActions,queueStatus,queueLog,
+    el('p',{text:'外部送信やバックグラウンド実行は行いません。前回の実行中断を検出した目標は再実行せず確認待ちにします。'}));
+
 }
 
 async function send(event){
@@ -226,7 +287,7 @@ async function importJson(event){const file=event.target.files?.[0];event.target
   if(file.size>4000000)return notify('JSONは4MB以下にしてください。');
   const parsed=schemaRead(await file.text());if(!parsed)return notify('復元できない形式、または上限超過です。');
   if(!confirm('現在の全会話・知識・資料をバックアップの内容で置き換えます。続けますか？'))return;
-  db=parsed;personaAgent.restore(db.agent);voiceOut.setEnabled(db.voiceEnabled===true);engine.router=new engine.router.constructor();if(db.wsp)engine.router.restore(db.wsp);
+  db=parsed;personaAgent.restore(db.agent);agenda.restore(db.agenda);voiceOut.setEnabled(db.voiceEnabled===true);engine.router=new engine.router.constructor();if(db.wsp)engine.router.restore(db.wsp);
   engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP回路を検証できず読み込みを中止しました。');
   if(db.flow&&!engine.flow.restore(db.flow))notify('状態機械を復元できませんでした。');
