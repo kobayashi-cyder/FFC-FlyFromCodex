@@ -1,3 +1,15 @@
+# Sol-Zero v0.13 — WSP・チャット・コード生成・メディア統合（実験版）
+
+v0.12のチャット・独立評価つきWSP帰納・画像/音声/動画工房を維持し、**Python/JavaScriptの実行可能な8種類の固定アルゴリズムコード生成**を追加します。ブラウザ内でコードを実行せず、コピー用テキストを生成します。
+
+**試す：** `/code python fibonacci`、`/code javascript binary_search`、`/code help`。利用可能：階乗、フィボナッチ、昇順二分探索、重複除去、回文、平均、CSVフィールド引用、範囲制限。`/image 海`、`/audio 波`、`/video 星空`（GIF）、`/webm 街`（ブラウザ対応時の音声付きWebM）は継続利用可能です。映像・画像は学習済みモデルではなく手続き的生成です。
+
+**ビルド・検証：** `node --test tests/*.test.mjs`、`python scripts/build_standalone.py`。コミット済みソースを `SolZero_Chat_Offline.html` に再生成できます。`/code` のPython/JSコードは実行テストを用意しています。GitHub Actions `sol-zero-ci.yml` ではNodeテスト、Python構文検査、単体HTMLの再構築と配布アーティファクト化を実施します。PythonのPyTorch学習系テストは別工程であり、CIの軽量チェックには含めません。
+
+**限界：** 自由なコード生成、総合的な自然言語推論、実写・高品質画像・動画生成、一般用途の学習知能は未実装です。ゼロからのモデル開発と、WSP数値回路・手続き的生成を区別します。端末ブラウザ互換と現物動作は別途検証が必要です。
+
+---
+
 # Sol-Zero Chat v0.12 — オフライン・マルチメディア統合版
 
 学習済みの外部モデル（Qwen、Llama、Gemma、GPT等）・蒸留・外部推論API・CDNは**使用しません**。v0.11のチャット/WSPに、数学的な手続きによる画像・波形・動画の生成を追加しました。高品質な生成AIモデルはまだ存在しません。
