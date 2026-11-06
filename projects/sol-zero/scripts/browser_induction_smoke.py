@@ -75,8 +75,11 @@ def main():
         page.locator('#chatForm button[type="submit"]').click()
         assert page.locator('.message.user .bubble').filter(has_text='こんにちは').count()==1
         # Oversized message is rejected without disappearing from the draft.
-        page.locator('#input').fill('あ'*3001)
-        page.locator('#chatForm button[type="submit"]').click()
+        # textarea has maxlength=3000; test programmatic/DOM over-limit input too.
+        page.evaluate("""() => {
+          const input=document.querySelector('#input');input.value='あ'.repeat(3001);
+          document.querySelector('#chatForm').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+        }""")
         assert '最大3000文字' in page.locator('#toast').inner_text()
         assert len(page.locator('#input').input_value())==3001
         assert not errors,errors
