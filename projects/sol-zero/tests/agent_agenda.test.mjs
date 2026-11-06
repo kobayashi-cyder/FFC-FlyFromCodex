@@ -87,3 +87,22 @@ test('removed source conversation stops action without writing elsewhere',async(
  assert.equal(q.paused,true);
  assert.equal(writes,0);
 });
+
+test('failed goal requires explicit acknowledgement before subsequent goal; never repeats failed side effects',async()=>{
+ const q=new SolZeroAgenda(),agent=new SolZeroPersonaAgent();let attempts=0,saved=0;
+ q.add('画像を生成','high');
+ q.add('タスク 次の作業','normal');
+ const services={
+  reply:()=> '分析',
+  generate:async()=>{attempts++;return {name:'empty.png',bytes:new Uint8Array()};},
+  addTask:()=>{saved++;return true;}
+ };
+ const first=await q.runBatch(agent,services,{approved:true,maxGoals:2});
+ assert.equal(first.ok,false);assert.equal(attempts,1);
+ const blocked=await q.runNext(agent,services,{approved:true});
+ assert.equal(blocked.ok,false);assert.equal(saved,0);
+ assert.equal(q.acknowledge(agent),true);
+ const resumed=await q.runNext(agent,services,{approved:true});
+ assert.equal(resumed.ok,true);assert.equal(attempts,1);assert.equal(saved,1);
+ assert.equal(q.queue[0].status,'failed');
+});
