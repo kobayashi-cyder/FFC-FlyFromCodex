@@ -60,3 +60,49 @@ jobs:
           path: projects/sol-zero/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+  emulator-smoke:
+    needs: build-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: SolZero-v016-Android-offline-debug-signed-APK
+          path: android-apk
+      - name: Install WebView debug test driver
+        run: python -m pip install --disable-pip-version-check websocket-client==1.8.0
+      - name: Boot Android 15 and test real offline app behavior
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          ram-size: 2048M
+          disk-size: 4096M
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: |
+            set -euo pipefail
+            adb install -r android-apk/app-debug.apk
+            adb shell am start -W -n jp.solzero.offline/.MainActivity
+            sleep 8
+            PID="$(adb shell pidof jp.solzero.offline | tr -d '\r')"
+            test -n "$PID"
+            adb forward tcp:9222 "localabstract:webview_devtools_remote_$PID"
+            python projects/sol-zero/android/tests/emulator_smoke.py
+            adb shell ls /sdcard/Download/SolZero/ | grep -F 'solzero_v012_backup.json'
+            adb logcat -d > /tmp/solzero-android-logcat.txt
+            if grep -A8 'FATAL EXCEPTION' /tmp/solzero-android-logcat.txt | grep -F 'jp.solzero.offline'; then
+              echo 'Sol-Zero process crashed'
+              exit 1
+            fi
+            adb shell screencap -p /sdcard/solzero-android.png
+            adb pull /sdcard/solzero-android.png /tmp/solzero-android.png
+            echo 'PASS: Android 15 offline WebView boot, chat, CSV task, PNG, native Downloads'
