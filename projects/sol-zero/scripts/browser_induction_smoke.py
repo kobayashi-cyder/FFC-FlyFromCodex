@@ -3,7 +3,7 @@ The mocked storage tests the app's persistence wiring; it is not proof of every 
 """
 from pathlib import Path
 from shutil import which
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML = (ROOT / 'SolZero_Chat_Offline.html').read_text(encoding='utf-8')
@@ -31,7 +31,7 @@ def main():
     page.evaluate('x=>localStorage.setItem("solzero_chat_v010_local",JSON.stringify(x))',old)
     page.set_content(HTML,wait_until='load')
     assert 'Sol-Zero' in page.title()
-    assert page.get_by_text('旧データは残ります').count()==1
+    expect(page.get_by_text('旧データは残ります')).to_have_count(1,timeout=12000)
     page.get_by_role('button',name='帰納WSP',exact=True).click()
     page.get_by_role('button',name='① 候補回路を合成して独立検証').click()
     report=page.locator('#panelBody .listentry').last.inner_text()
