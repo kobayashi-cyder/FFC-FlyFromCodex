@@ -29,6 +29,34 @@ def run():
         with page.expect_download() as pending:
             page.get_by_role('button',name='全素材をZIPで書き出し').click()
         assert pending.value.suggested_filename=='SolZero_media_project.zip'
+        # A forged central-directory checksum must be refused without deleting
+        # previously created media; a verified archive must roundtrip on reload.
+        from tempfile import TemporaryDirectory
+        from pathlib import Path
+        archive_bytes=Path(pending.value.path()).read_bytes()
+        before=page.locator('#panelBody .listentry').count()
+        with TemporaryDirectory() as temp:
+            good=Path(temp)/'good.zip'
+            bad=Path(temp)/'corrupt.zip'
+            good.write_bytes(archive_bytes)
+            forged=bytearray(archive_bytes)
+            central=forged.rfind(b'PK\\x01\\x02')
+            assert central!=-1
+            forged[central+16]^=1
+            bad.write_bytes(forged)
+            page.on('dialog',lambda dialog:dialog.accept())
+            picker=page.locator('#panelBody input[accept=".zip,application/zip"]')
+            picker.set_input_files(str(bad))
+            page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('ZIP復元拒否：')",timeout=10000)
+            assert page.locator('#panelBody .listentry').count()==before
+            picker.set_input_files(str(good))
+            page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('作品復元完了：')",timeout=10000)
+            assert page.locator('#panelBody .listentry').count()==before
+        page.reload(wait_until='load')
+        page.locator('#studioBtn').click(force=True)
+        page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('準備完了')",timeout=10000)
+        assert page.locator('#panelBody .listentry').count()==before
+
         page.locator('#closePanel').click()
         page.locator('#input').fill('/image 海')
         page.locator('#send').click()
