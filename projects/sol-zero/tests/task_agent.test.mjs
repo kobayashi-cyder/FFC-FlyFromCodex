@@ -91,3 +91,21 @@ test('async media requires explicit authorization and never silently writes',asy
 test('overlong plans are refused before execution or side effects',()=>{
  assert.throws(()=>run([{id:'x',op:'value',args:{value:'X'.repeat(155000)}}]),/長すぎ/);
 });
+import {WeightSpaceNetwork,NEURAL_DEMO,trainAndVerifyNeural,promoteNeural} from '../chat_web/wsp_neural.js';
+
+test('task plans reuse exactly the scratch-learned WSP weights used by chat',()=>{
+ const net=new WeightSpaceNetwork();promoteNeural(trainAndVerifyNeural(NEURAL_DEMO),net);
+ const res=run([v('x',[1.3]),{id:'estimate',op:'wsp.learned',args:{input:ref('x')}}],{neural:net});
+ assert.equal(res.ok,true);
+ assert.ok(Math.abs(res.output[0]-1.69)<.25);
+ assert.deepEqual(res.trace.map(s=>s.op),['value','wsp.learned']);
+});
+test('task plans reject missing, untrained or invalid neural adapters',()=>{
+ const plan=[{id:'estimate',op:'wsp.learned',args:{input:[0.5]}}];
+ assert.equal(run(plan,{}).ok,false);
+ const empty=run(plan,{neural:new WeightSpaceNetwork()});
+ assert.equal(empty.ok,false);assert.match(empty.error,/学習済みWSP/);
+ const net=new WeightSpaceNetwork();promoteNeural(trainAndVerifyNeural(NEURAL_DEMO),net);
+ const invalid=run([{id:'bad',op:'wsp.learned',args:{input:[1,2]}}],{neural:net});
+ assert.equal(invalid.ok,false);assert.match(invalid.error,/次元/);
+});
