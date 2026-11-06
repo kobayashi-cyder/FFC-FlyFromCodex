@@ -254,6 +254,8 @@ function generateCode(request) {
 /* Sol-Zero Chat v0.6 — entirely local, explicit rules and WSP circuit.
  * No pretrained weights, no network calls, no arbitrary code execution.
  */
+
+
 const ENGINE_VERSION = '0.13.0';
 const FEATURE_SETS = Object.freeze({
   greeting: ['こんにちは','こんばんは','おはよう','はじめまして','やあ','hello','hi'],
@@ -919,6 +921,7 @@ class WSPFlow {
  * circuits -> sealed, separate validation -> explicit promotion / rollback.
  * "Goal" is documentation, not natural-language comprehension.
  */
+
 const AUTO_MAX_TRAIN=256, AUTO_MAX_VALIDATION=128;
 const norm=x=>String(x).normalize('NFKC').trim().toLowerCase();
 const key=x=>norm(x).replace(/[\s\p{P}\p{S}]+/gu,'');
@@ -1780,6 +1783,7 @@ class MediaWSP{
 }
 
 /** Unified offline media workspace for Sol-Zero. No external AI/services. */
+
 const STORE='solzero_studio_v012_recipe',DB_NAME='solzero_media_v012';
 function element(tag,txt){const x=document.createElement(tag);if(txt!==undefined)x.textContent=txt;return x;}
 function mimeFor(name){const ext=name.toLowerCase().split('.').pop();return ({png:'image/png',gif:'image/gif',jpg:'image/jpeg',jpeg:'image/jpeg',wav:'audio/wav',mp3:'audio/mpeg',webm:'video/webm',mp4:'video/mp4'})[ext]||null;}
@@ -1873,6 +1877,14 @@ class MediaStudio {
   }
  }
 }
+
+
+
+
+
+
+
+
 
 const engine=new SolZeroEngine();
 const generator=new ScratchBigram();
