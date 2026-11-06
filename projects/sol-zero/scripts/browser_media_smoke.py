@@ -99,6 +99,37 @@ def run():
         session_page.locator('#studioBtn').click(force=True)
         assert session_page.locator('#panelBody .listentry b').count()==3
         session_page.get_by_role('button',name='指定からプレビュー').click()
+        # A fully valid ZIP may specify custom image dimensions and frame rates.
+        # The editing UI must preserve them, not silently reset fps to 8.
+        custom=session_page.evaluate("""async () => {
+          const {zipBytes}=await import('./chat_web/media_studio.js');
+          const {MediaStudio}=await import('./chat_web/media_ui.js');
+          const editor=new MediaStudio();
+          await editor.ensureLoaded();
+          const project={name:'カスタム',prompt:'海',seed:12,theme:'auto',
+            width:480,height:300,frames:20,fps:10,kind:'waves',text:'音'};
+          const manifest={format:'solzero-media-v012',version:1,project,assets:[]};
+          const bytes=zipBytes([{name:'project.json',bytes:JSON.stringify(manifest)}]);
+          const file=new File([bytes],'custom.zip',{type:'application/zip'});
+          await editor.importZip(file);
+          return editor.project;
+        }""")
+        assert custom['fps']==10
+        session_page.reload(wait_until='load')
+        session_page.locator('#studioBtn').click(force=True)
+        selectors=session_page.locator('#panelBody select')
+        assert selectors.nth(1).input_value()=='480x300'
+        assert selectors.nth(2).input_value()=='20'
+        session_page.get_by_role('button',name='画像 PNG',exact=True).click()
+        session_page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('生成完了：')",timeout=15000)
+        saved_fps=session_page.evaluate("""async () => {
+          const open=indexedDB.open('solzero_media_v012',1);
+          const db=await new Promise((resolve,reject)=>{open.onsuccess=()=>resolve(open.result);open.onerror=()=>reject(open.error)});
+          const tx=db.transaction('assets','readonly'),req=tx.objectStore('assets').getAll();
+          const items=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
+          db.close();return items.map(x=>x.spec.fps);
+        }""")
+        assert saved_fps==[10],saved_fps
         temporary.close()
         assert not errors,errors
         print('PASS: local-origin PNG/WAV/GIF/WebM + ZIP + WSP controls + mobile touch UI')

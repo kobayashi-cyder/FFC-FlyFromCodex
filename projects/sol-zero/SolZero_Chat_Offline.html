@@ -2035,16 +2035,16 @@ class MediaStudio {
     '注意：素材は一時保存です。画面終了前に作品ZIPを書き出してください。');
   storage.className='muted';root.append(storage);
   if(!this.recipeSaved){const warning=element('p','注意：制作設定は端末に保存されていません。作品ZIPで退避してください。');warning.className='muted';root.append(warning);}
-  const setRow=(label,type,value,options=null)=>{const row=element('div');row.className='field';const caption=element('label',label),input=options?element('select'):element(type==='textarea'?'textarea':'input');if(!options&&type!=='textarea')input.type=type;if(options)for(const [val,text] of options){const option=element('option',text);option.value=val;input.append(option);}input.value=String(value);caption.append(input);row.append(caption);root.append(row);return input;};
+  const setRow=(label,type,value,options=null)=>{const row=element('div');row.className='field';const caption=element('label',label),input=options?element('select'):element(type==='textarea'?'textarea':'input');if(!options&&type!=='textarea')input.type=type;if(options){const choices=[...options];if(!choices.some(([val])=>String(val)===String(value)))choices.push([String(value),`${value}（読み込んだ設定）`]);for(const [val,text] of choices){const option=element('option',text);option.value=val;input.append(option);}}input.value=String(value);caption.append(input);row.append(caption);root.append(row);return input;};
   const name=setRow('作品名','text',this.project.name),prompt=setRow('生成指示（対応テーマ：宇宙・海・山・森・街・花・雨・雪・夕焼け・抽象）','textarea',this.project.prompt);
   const seed=setRow('乱数シード','number',this.project.seed),theme=setRow('画風','text',this.project.theme,[['auto','指示から自動選択'],...['space','sea','mountain','forest','city','flowers','rain','snow','sunset','abstract'].map(x=>[x,x])]);
   const dims=setRow('画像サイズ','text',`${this.project.width}x${this.project.height}`,[['512x288','512×288'],['768x432','768×432'],['320x180','320×180'],['1024x576','1024×576']]);
-  const duration=setRow('動画長（フレーム数）','text',`${this.project.frames}`,[['16','2秒'],['24','3秒'],['32','4秒'],['48','6秒']]);
+  const duration=setRow('動画長（フレーム数）','text',`${this.project.frames}`,[16,24,32,48].map(n=>[String(n),`${(n/this.project.fps).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}秒`]));
   const sound=setRow('音の種類','text',this.project.kind,[['ambient','アンビエント'],['waves','波音'],['wind','風音'],['tones','オリジナル電子音'],['robot','簡易ロボット声（音素風）']]);
   const speech=setRow('ロボット声の文字','text',this.project.text);
   const log=element('div','準備完了。生成結果は端末に保存されます（対応ブラウザのIndexedDB）。');log.className='listentry';root.append(log);
   const btnrow=element('div');btnrow.className='buttons';root.append(btnrow);
-  const collect=()=>{const [w,h]=dims.value.split('x').map(Number);const p={name:name.value.slice(0,60),prompt:prompt.value,seed:Number(seed.value),theme:theme.value,width:w,height:h,frames:Number(duration.value),fps:8,kind:sound.value,text:speech.value};this.buildSpec(p);audioSpec({kind:p.kind,seconds:p.frames/p.fps,seed:p.seed,text:p.text});this.project=p;this.saveRecipe();return p;};
+  const collect=()=>{const [w,h]=dims.value.split('x').map(Number);const p={name:name.value.slice(0,60),prompt:prompt.value,seed:Number(seed.value),theme:theme.value,width:w,height:h,frames:Number(duration.value),fps:this.project.fps,kind:sound.value,text:speech.value};this.buildSpec(p);audioSpec({kind:p.kind,seconds:p.frames/p.fps,seed:p.seed,text:p.text});this.project=p;this.saveRecipe();return p;};
   const action=(label,fn)=>{const b=element('button',label);b.className='btn primary';b.addEventListener('click',async()=>{
   if(this.uiBusy||this.busy)return;
   this.uiBusy=true;
