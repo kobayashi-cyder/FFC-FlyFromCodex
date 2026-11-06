@@ -1,0 +1,61 @@
+name: BANC888 Launcher Icon Android
+
+on:
+  push:
+    branches:
+      - "banc888-apk-user-icon-v1"
+    paths:
+      - "app/**"
+      - ".github/workflows/banc888-icon-android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: banc888-user-icon
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  launcher_icon:
+    name: Launcher icon draw test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Compile app and launcher test
+        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+      - name: Render actual installed launcher icon
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          TEST_NAME: Launcher icon Android
+          TEST_CLASS: com.ffc.banc888.fly.LauncherIconIntegrationTest
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
+          script: bash .github/scripts/banc888-voice-ci.sh
+      - name: Save icon test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BANC888-icon-test-evidence
+          path: |
+            /tmp/instrumentation-result.txt
+            /tmp/device-logcat.txt
+          if-no-files-found: warn
