@@ -76,9 +76,7 @@ const _raw=atob(MODEL.weights_b64);
 const TABLE=Int8Array.from(_raw, ch => ch.charCodeAt(0)>127?ch.charCodeAt(0)-256:ch.charCodeAt(0));
 if (TABLE.length !== MODEL.buckets * MODEL.labels.length) throw new Error('Invalid learned router');
 function learnedNgrams(text){
-  const chars=Array.from('^'+String(text).normalize('NFKC').trim().toLowerCase()+'
-</body></html>
-),out=[];
+  const chars=Array.from('^'+String(text).normalize('NFKC').trim().toLowerCase()+'$'),out=[];
   for (const n of [2,3,4]) for(let i=0;i<=chars.length-n;i++){
     let h=2166136261>>>0;
     for(let j=i;j<i+n;j++)h=Math.imul((h^chars[j].codePointAt(0))>>>0,16777619)>>>0;
