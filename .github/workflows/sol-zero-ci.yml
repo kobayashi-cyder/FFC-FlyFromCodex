@@ -40,7 +40,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           s = Path('SolZero_Chat_Offline.html').read_text(encoding='utf-8')
-          for token in ('function generateCode(', 'class MediaStudio', 'class SolZeroEngine', 'v0.13'):
+          for token in ('function generateWSPCode(', 'function generateCode(', 'class MediaStudio', 'class SolZeroEngine', 'v0.14'):
               assert token in s, token
           assert '<script type="module" src="./app.js"></script>' not in s
           print('Standalone offline bundle verified:', len(s.encode('utf-8')), 'bytes')
@@ -49,7 +49,7 @@ jobs:
         run: git diff --exit-code -- projects/sol-zero/SolZero_Chat_Offline.html
       - uses: actions/upload-artifact@v4
         with:
-          name: SolZero-v013-offline-HTML
+          name: SolZero-v014-offline-HTML
           path: projects/sol-zero/SolZero_Chat_Offline.html
           if-no-files-found: error
  
