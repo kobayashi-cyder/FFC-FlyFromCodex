@@ -131,5 +131,5 @@ test('BANC cognition rejects arbitrary or malformed graph and missing adapter',(
  const r=run([{id:'p',op:'cognition.plan',args:{task:impossible}}],{cognition:BANC_COGNITION});
  assert.equal(r.ok,true);assert.equal(r.output.status,'blocked');
  const broken={...cognitionFixture,actions:[{id:'bad',tool:'task.value',requires:{},effects:{step:'finished'},args:JSON.parse('{"__proto__":5}')} ]};
- assert.equal(run([{id:'p',op:'cognition.plan',args:{task:broken}}],{cognition:BANC_COGNITION}).ok,false);
+ assert.throws(()=>run([{id:'p',op:'cognition.plan',args:{task:broken}}],{cognition:BANC_COGNITION}),/危険|フィールド/);
 });
