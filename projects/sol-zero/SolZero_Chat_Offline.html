@@ -2294,7 +2294,7 @@ class MediaStudio {
   try{
    const p=collect();b.disabled=true;log.textContent='処理中：'+label;
    const result=await fn(p);
-   log.textContent=typeof result==='string'?result:`生成完了：${result.name}（${result.bytes.length.toLocaleString('ja-J')}バイト）`;
+   log.textContent=typeof result==='string'?result:`生成完了：${result.name}（${result.bytes.length.toLocaleString('ja-JP')}バイト）`;
   }catch(err){log.textContent='エラー：'+err.message;}
   finally{this.drawAssets(list,notify);b.disabled=false;this.uiBusy=false;}
  });btnrow.append(b);};
