@@ -5,6 +5,16 @@
 
 **検証:** 生成済みPython/JavaScriptを実行する独立回帰試験で、同じ数値入力に対する元のWSPGraph実行結果と比較します。正しさは検査した演算・入力に限り、実際の一般知能や自由コード生成の証明ではありません。埋め込み回路JSONには120KBの制限があり、それ以上はJSON回路として保存してください。モバイルブラウザ端末の実機互換確認は別途必要です。
 
+**コマンドラインでもWSPをコードへ変換：**
+
+```bash
+node tools/export_wsp.mjs solzero_wsp_graph.json python result.py
+node tools/export_wsp.mjs solzero_wsp_graph.json javascript result.js
+# 既存ファイルへの上書きは --force を明示したときだけ
+```
+
+不正回路・サイズ超過は出力ファイルを書き込む前に拒否し、生成コードを元のWSPGraph結果と照合するクロス言語回帰テストを追加しています。通常の実行ではネットワーク通信や元のコードの任意実行は行いません。Python・JavaScript双方のコードを外部プロセスで実行するのは開発時のテストに限ります。
+
 ---
 
 # Sol-Zero v0.13 — WSP・チャット・コード生成・メディア統合（実験版）
