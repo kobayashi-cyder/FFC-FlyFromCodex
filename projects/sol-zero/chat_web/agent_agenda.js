@@ -45,6 +45,16 @@ export class SolZeroAgenda {
     this.record('pause','ユーザー操作');return true;
   }
   resume(){this.paused=false;this.record('resume');return true;}
+  acknowledge(agent){
+    if(this.running)throw Error('実行中は中断を確認できません。');
+    if(!this.queue.some(x=>x.status==='interrupted'||x.status==='failed')&&
+        !['failed','stopped'].includes(agent?.active?.status))throw Error('確認を要する中断がありません。');
+    agent?.clear?.(); // Clear only the active plan; agenda history and failed items remain.
+    this.paused=false;
+    this.record('acknowledged','失敗済み目標は再実行せず、後続の未処理目標だけ許可');
+    return true;
+  }
+
   suggest(conversation){
     const tasks=Array.isArray(conversation?.tasks)?conversation.tasks:[];
     const already=new Set(this.queue.filter(x=>x.status==='pending').map(x=>x.goal));
