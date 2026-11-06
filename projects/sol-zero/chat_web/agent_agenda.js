@@ -11,12 +11,13 @@ export class SolZeroAgenda {
     this.history.push({at:ISO(),action:clip(action,24),detail:clip(detail,200)});
     this.history=this.history.slice(-MAX_HISTORY);
   }
-  add(goal,priority='normal'){
+  add(goal,priority='normal',chatId=null){
     goal=clip(goal,180);
     if(!goal)throw Error('目標を入力してください。');
     if(!Object.hasOwn(PRIORITY,priority))throw Error('優先度は high、normal、low のいずれかです。');
+    if(chatId!==null&&(typeof chatId!=='string'||chatId.length>100))throw Error('会話IDが不正です。');
     if(this.queue.length>=MAX_GOALS)throw Error('目標の上限です。完了済みを整理してください。');
-    const item={id:'g'+Date.now().toString(36)+'-'+(++sequence),goal,priority,status:'pending',created:ISO(),finished:null,detail:''};
+    const item={id:'g'+Date.now().toString(36)+'-'+(++sequence),goal,priority,chatId,status:'pending',created:ISO(),finished:null,detail:''};
     this.queue.push(item);this.record('queued',goal);
     return item;
   }
@@ -72,12 +73,14 @@ export class SolZeroAgenda {
     this.running=true;
     item.status='running';this.record('started',item.goal);
     try{
+      const scopedServices=typeof services==='function'?services(item):services;
+      if(!scopedServices||typeof scopedServices!=='object')throw Error('会話スコープを特定できません。');
       agent.makePlan(item.goal);
       if(checkpoint()===false)throw Error('実行前の状態保存に失敗しました。');
       const result=[];
       for(let i=0;i<3;i++){
         if(this.paused){item.status='interrupted';item.detail='停止されたため再実行しません。必要なら内容を確認して新規登録してください。';break;}
-        const step=await agent.step(services,true);
+        const step=await agent.step(scopedServices,true);
         result.push(step.message);
         if(checkpoint()===false)throw Error('保存に失敗しました。副作用の再実行を防ぐため停止します。');
         if(!step.ok){item.status='failed';item.detail=clip(step.message,200);break;}
@@ -120,9 +123,9 @@ export class SolZeroAgenda {
     const ids=new Set();
     for(const x of value.queue){
       if(!x||typeof x.id!=='string'||x.id.length>80||ids.has(x.id)||typeof x.goal!=='string'||x.goal.length>180||
-          !Object.hasOwn(PRIORITY,x.priority)||!['pending','running','interrupted','failed','completed','cancelled'].includes(x.status))return false;
+          !Object.hasOwn(PRIORITY,x.priority)||(x.chatId!=null&&(typeof x.chatId!=='string'||x.chatId.length>100))||!['pending','running','interrupted','failed','completed','cancelled'].includes(x.status))return false;
       ids.add(x.id);
-      this.queue.push({id:x.id,goal:x.goal,priority:x.priority,status:x.status==='running'?'interrupted':x.status,
+      this.queue.push({id:x.id,goal:x.goal,priority:x.priority,chatId:x.chatId??null,status:x.status==='running'?'interrupted':x.status,
         created:clip(x.created,40),finished:typeof x.finished==='string'?clip(x.finished,40):null,
         detail:x.status==='running'?'前回セッションは中断。副作用を自動再実行しません。':clip(x.detail,200)});
     }
