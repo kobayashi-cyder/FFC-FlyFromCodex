@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#153e56"><title>Sol-Zero | Chat v0.13</title>
+<meta name="theme-color" content="#153e56"><title>Sol-Zero | Chat v0.14</title>
 <style>
 :root{color-scheme:light;--bg:#f4f8fa;--surface:#fff;--side:#12374d;--side-ink:#e3f1f6;--ink:#152f3e;--sub:#587180;--line:#d5e2e8;--accent:#126e82;--accent-2:#e2f4f6;--user:#dbedf3;--shadow:0 16px 45px #16344324;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
 :root[data-theme=dark]{color-scheme:dark;--bg:#101e28;--surface:#192c38;--side:#0d1b25;--side-ink:#dbe8ef;--ink:#e6f2f6;--sub:#a4bcc7;--line:#35505e;--accent:#58c3d2;--accent-2:#194350;--user:#1f4c5a;--shadow:0 16px 45px #0007}
@@ -37,7 +37,7 @@
 </style></head><body>
 <div id="app">
 <aside id="sidebar" class="sidebar" aria-label="会話一覧">
-  <div class="brand"><div class="logo">S0</div><div><strong>Sol-Zero</strong><small>from scratch · Chat v0.13</small></div></div>
+  <div class="brand"><div class="logo">S0</div><div><strong>Sol-Zero</strong><small>from scratch · Chat v0.14</small></div></div>
   <button id="newSidebar" class="side-btn">＋ 新しい会話</button>
   <input id="historySearch" class="searchbox" type="search" placeholder="会話とメッセージを検索" aria-label="会話履歴を検索">
   <div class="section-caption">会話履歴 <span id="chatCount"></span></div>
@@ -52,7 +52,7 @@
 </aside>
 <main class="main">
 <header class="topbar"><div><h1>Sol-Zero Chat</h1><p>学習済みモデルなし・端末内で実行</p></div><div class="head-actions">
-  <span class="status">ローカル v0.13</span>
+  <span class="status">ローカル v0.14</span>
   <button class="top-btn mobile-only" id="menu" title="会話履歴" aria-label="会話履歴">☰</button>
   <button class="top-btn" id="studioBtn">🎨 メディア工房</button><button class="top-btn" id="knowledgeBtn">知識</button><button class="top-btn" id="docsBtn">資料</button><button class="top-btn" id="generatorBtn">生成実験</button><button class="top-btn" id="factoryBtn">回路工房</button><button class="top-btn" id="graphBtn">汎用WSP</button><button class="top-btn" id="induceBtn">帰納WSP</button><button class="top-btn" id="autoBtn">自動設計</button><button class="top-btn desktop-optional" id="bulkBtn">WSP拡張</button><button class="top-btn desktop-optional" id="circuitBtn">回路</button>
   <button class="top-btn" id="newTop" title="新しい会話" aria-label="新しい会話">＋</button>
@@ -76,9 +76,7 @@ const _raw=atob(MODEL.weights_b64);
 const TABLE=Int8Array.from(_raw, ch => ch.charCodeAt(0)>127?ch.charCodeAt(0)-256:ch.charCodeAt(0));
 if (TABLE.length !== MODEL.buckets * MODEL.labels.length) throw new Error('Invalid learned router');
 function learnedNgrams(text){
-  const chars=Array.from('^'+String(text).normalize('NFKC').trim().toLowerCase()+'
-</body></html>
-),out=[];
+  const chars=Array.from('^'+String(text).normalize('NFKC').trim().toLowerCase()+'$'),out=[];
   for (const n of [2,3,4]) for(let i=0;i<=chars.length-n;i++){
     let h=2166136261>>>0;
     for(let j=i;j<i+n;j++)h=Math.imul((h^chars[j].codePointAt(0))>>>0,16777619)>>>0;
@@ -256,7 +254,10 @@ function generateCode(request) {
 /* Sol-Zero Chat v0.6 — entirely local, explicit rules and WSP circuit.
  * No pretrained weights, no network calls, no arbitrary code execution.
  */
-const ENGINE_VERSION = '0.13.0';
+
+
+
+const ENGINE_VERSION = '0.14.0';
 const FEATURE_SETS = Object.freeze({
   greeting: ['こんにちは','こんばんは','おはよう','はじめまして','やあ','hello','hi'],
   identity: ['あなたは','君は','誰ですか','名前は','sol-zero','solzero','何者'],
@@ -450,6 +451,14 @@ class SolZeroEngine {
     const global=Array.isArray(context.knowledge)?context.knowledge:[];
     const documents=Array.isArray(context.documents)?context.documents:[];
     const generator=context.generator;
+    const exportMatch=raw.match(/^\/exportwsp(?:\s+(.+))?$/iu);
+    if(exportMatch){
+      if(!this.graph)return 'WSP数値回路がまだありません。先にWSPグラフを読み込んでください。';
+      try{
+        const result=generateWSPCode(this.graph.snapshot(),(exportMatch[1]||'').trim());
+        return `［WSP数値回路を${result.language}へ変換：${result.nodes}ノード・${result.weights}重み］\nファイル名：${result.filename}\n\n${result.code}\n\n※単独実行可能な関数ですが、ブラウザのチャット内ではコード実行しません。WSP回路画面からファイルとして書き出せます。`;
+      }catch(e){return 'WSPコード出力を拒否：'+e.message;}
+    }
     const codeArtifact=generateCode(raw);
     if(codeArtifact)return codeArtifact.message;
     if(/^\/induce(?:\s|$)/iu.test(raw)){
@@ -585,7 +594,7 @@ class SolZeroEngine {
     const {intent}=this.router.predict(raw);
     switch(intent){
       case 'greeting':return 'こんにちは。Sol-Zeroです。既存の学習済みAIを使わないチャット試作版です。質問を教えると、次回から検索して回答できます。';
-      case 'identity':return '私はSol-Zero v0.13です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
+      case 'identity':return '私はSol-Zero v0.14です。既存の学習済みモデルは使用していません。直接設定した重みの分類回路、計算器、メモ、登録知識と資料の文字列検索を組み合わせています。自由な高度推論は未実装です。';
       case 'help':return this.help();
       case 'gratitude':return 'どういたしまして。';
       case 'code':return codeHelp();
@@ -601,7 +610,7 @@ class SolZeroEngine {
   }
   help(){return `Sol-Zero v${ENGINE_VERSION}（ローカル試作）\n・計算：「計算して (12+8)/4」\n・覚える：「覚えて：内容」／「覚えていること」\n・会話内Q&A：「教える：質問 => 回答」\n・全会話共通Q&A：「/teach 質問 => 回答」\n・直前の回答を訂正：「修正：正しい回答」\n・共有知識：「/knowledge」\n・タスク：「/todo 内容」→「/tasks」→「/done 1」\n・資料：「/docs」「/search 検索語」（文字列一致）
 ・関連する資料の行を抜粋：「/ask 質問」（根拠候補）
-・数値例からWSP回路を帰納合成：「/induce」「/induce 2,3」（画面「帰納WSP」）\n・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・コード生成：「/code python fibonacci」「/code javascript binary_search」（検証済み固定アルゴリズム）\n・画像/音声/動画：「/image 海」「/audio 波」「/video 星」「/webm 街」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
+・数値例からWSP回路を帰納合成：「/induce」「/induce 2,3」（画面「帰納WSP」）\n・問題例からWSP回路を自動設計：「/auto」（画面で作成と独立検証）\n・WSP状態遷移：「/flow」「/flow event 開始」「/flow back」\n・WSP大量回路：「/wsp」「/wsp add キーワード & !除外 => 応答」「/wsp trace 質問」「/wsp undo」\n・スクラッチ学習による指示分類：「/intent 質問」「/learner」\n・文字予測実験：「/model」「/generate 書き出し」\n・WSP回路をコードに変換：「/exportwsp python」「/exportwsp javascript」\n・コード生成：「/code python fibonacci」「/code javascript binary_search」（検証済み固定アルゴリズム）\n・画像/音声/動画：「/image 海」「/audio 波」「/video 星」「/webm 街」\n・文字数：「/count 文字列」\n・履歴／日時\n・画面から履歴検索、JSONバックアップ・復元、テキスト出力、回路編集\n※登録回答の検索・ルール・実験用文字予測を組み合わせています。一般推論・画像理解は未搭載です。`;}
 }
 
 /* Tiny scratch-trained character-to-character softmax predictor.
@@ -921,6 +930,7 @@ class WSPFlow {
  * circuits -> sealed, separate validation -> explicit promotion / rollback.
  * "Goal" is documentation, not natural-language comprehension.
  */
+
 const AUTO_MAX_TRAIN=256, AUTO_MAX_VALIDATION=128;
 const norm=x=>String(x).normalize('NFKC').trim().toLowerCase();
 const key=x=>norm(x).replace(/[\s\p{P}\p{S}]+/gu,'');
@@ -1286,6 +1296,166 @@ const GRAPH_DEMO_NUMERIC=Object.freeze({name:'WSP calculation: z=max(0,2a-3b+1)'
 ],outputs:['z']});
 const GRAPH_DEMO_PARITY=Object.freeze({name:'WSP 3-bit parity',inputs:['a','b','c'],rows:Array.from({length:8},(_,k)=>({input:[k>>2&1,k>>1&1,k&1],output:((k>>2&1)+(k>>1&1)+(k&1))%2}))});
 
+/** Compile a validated WSP numeric graph into stand-alone Python or JavaScript.
+ * No pretrained models, arbitrary code interpretation, eval, Function or network.
+ * Export only a bounded, validated graph: this is an interpreter transpilation,
+ * not natural-language program synthesis.
+ */
+
+const WSP_EXPORT_LIMIT = 120_000;
+
+const JS_RUNTIME = String.raw`
+'use strict';
+function wsp_predict(inputs) {
+  if (!Array.isArray(inputs) || inputs.length !== GRAPH.inputs.length) throw new Error('input shape');
+  const finite=(v,b)=>{if(typeof v!=='number'||!Number.isFinite(v)||Math.abs(v)>b)throw new Error('nonfinite/out-of-range numeric value');return v;};
+  const act=(v,op,t=.5)=>{
+    switch(op){
+      case 'identity':return v;
+      case 'relu':return Math.max(v,0);
+      case 'tanh':return Math.tanh(v);
+      case 'sigmoid':return v>=0?1/(1+Math.exp(-v)):Math.exp(v)/(1+Math.exp(v));
+      case 'threshold':return v>=t?1:0;
+      case 'abs':return Math.abs(v);
+      case 'negate':return -v;
+      case 'square':return v*v;
+      case 'sign':return Math.sign(v);
+      case 'sin':return Math.sin(v);
+      case 'cos':return Math.cos(v);
+      case 'sqrtabs':return Math.sqrt(Math.abs(v));
+      default:throw new Error('invalid activation');
+    }
+  };
+  const vars=Object.create(null);
+  GRAPH.inputs.forEach((k,i)=>{vars[k]=[finite(inputs[i],1e6)];});
+  let work=0;
+  for(const n of GRAPH.nodes){
+    let out;
+    if(n.op==='constant'){out=n.value.slice();}
+    else {
+      const arrays=n.from.map(k=>vars[k]),flat=arrays.flat();
+      if(n.op==='linear')out=n.weights.map((row,i)=>{
+        let v=n.bias[i];for(let k=0;k<row.length;k++)v+=row[k]*flat[k];
+        return act(finite(v,1e12),n.activation);
+      });
+      else if(n.op==='softmax'){
+        const max=Math.max(...flat),exps=flat.map(v=>Math.exp(v-max));
+        const z=exps.reduce((a,b)=>a+b,0);out=exps.map(v=>v/z);
+      }else if(n.op==='l2norm'){
+        const norm=Math.hypot(...flat);out=norm===0?flat.map(()=>0):flat.map(v=>v/norm);
+      }else if(['relu','tanh','sigmoid','abs','threshold','negate','square','sign','sin','cos','sqrtabs'].includes(n.op))
+        out=flat.map(v=>act(v,n.op,n.threshold));
+      else if(n.op==='concat')out=flat;
+      else if(n.op==='sum')out=[flat.reduce((a,b)=>a+b,0)];
+      else if(n.op==='mean')out=[flat.reduce((a,b)=>a+b,0)/flat.length];
+      else if(n.op==='pick')out=[flat[n.index]];
+      else if(n.op==='dot')out=[arrays[0].reduce((a,v,i)=>a+v*arrays[1][i],0)];
+      else out=arrays[0].map((_,i)=>{
+        const c=arrays.map(a=>a[i]);
+        if(n.op==='add')return c.reduce((a,b)=>a+b,0);
+        if(n.op==='multiply')return c.reduce((a,b)=>a*b,1);
+        if(n.op==='maximum')return Math.max(...c);
+        if(n.op==='minimum')return Math.min(...c);
+        throw new Error('invalid graph operation');
+      });
+    }
+    out.forEach(v=>finite(v,1e12));work+=out.length;
+    if(work>3000000)throw new Error('graph computation budget exceeded');
+    vars[n.id]=out;
+  }
+  return Object.fromEntries(GRAPH.outputs.map(k=>[k,vars[k]]));
+}
+`;
+
+const PY_RUNTIME = String.raw`
+import json
+import math
+
+def wsp_predict(inputs):
+    if not isinstance(inputs, (list, tuple)) or len(inputs) != len(GRAPH['inputs']):
+        raise ValueError('input shape')
+
+    def finite(value, bound):
+        if type(value) not in (float, int) or not math.isfinite(value) or abs(value) > bound:
+            raise ValueError('nonfinite/out-of-range numeric value')
+        return value
+
+    def act(value, op, threshold=0.5):
+        if op == 'identity': return value
+        if op == 'relu': return max(value, 0)
+        if op == 'tanh': return math.tanh(value)
+        if op == 'sigmoid':
+            return 1/(1+math.exp(-value)) if value >= 0 else math.exp(value)/(1+math.exp(value))
+        if op == 'threshold': return 1 if value >= threshold else 0
+        if op == 'abs': return abs(value)
+        if op == 'negate': return -value
+        if op == 'square': return value*value
+        if op == 'sign': return 1 if value > 0 else (-1 if value < 0 else 0)
+        if op == 'sin': return math.sin(value)
+        if op == 'cos': return math.cos(value)
+        if op == 'sqrtabs': return math.sqrt(abs(value))
+        raise ValueError('invalid activation')
+
+    values = {name: [finite(x, 1e6)] for name, x in zip(GRAPH['inputs'], inputs)}
+    work = 0
+    for node in GRAPH['nodes']:
+        op = node['op']
+        if op == 'constant':
+            out = node['value'][:]
+        else:
+            arrays = [values[k] for k in node['from']]
+            flat = [v for a in arrays for v in a]
+            if op == 'linear':
+                out = []
+                for i, row in enumerate(node['weights']):
+                    v = node['bias'][i]
+                    for k, w in enumerate(row): v += w*flat[k]
+                    out.append(act(finite(v, 1e12), node['activation']))
+            elif op == 'softmax':
+                high = max(flat)
+                exps = [math.exp(v-high) for v in flat]
+                z = sum(exps)
+                out = [v/z for v in exps]
+            elif op == 'l2norm':
+                norm = math.hypot(*flat)
+                out = [0 for _ in flat] if norm == 0 else [v/norm for v in flat]
+            elif op in ('relu','tanh','sigmoid','abs','threshold','negate','square','sign','sin','cos','sqrtabs'):
+                out = [act(v, op, node.get('threshold', 0.5)) for v in flat]
+            elif op == 'concat': out = flat
+            elif op == 'sum': out = [sum(flat)]
+            elif op == 'mean': out = [sum(flat)/len(flat)]
+            elif op == 'pick': out = [flat[node['index']]]
+            elif op == 'dot': out = [sum(v*w for v,w in zip(arrays[0], arrays[1]))]
+            elif op in ('add','multiply','maximum','minimum'):
+                out = []
+                for items in zip(*arrays):
+                    if op == 'add': out.append(sum(items))
+                    elif op == 'multiply': out.append(math.prod(items))
+                    elif op == 'maximum': out.append(max(items))
+                    else: out.append(min(items))
+            else: raise ValueError('invalid graph operation')
+        for v in out: finite(v, 1e12)
+        work += len(out)
+        if work > 3_000_000: raise ValueError('graph computation budget exceeded')
+        values[node['id']] = out
+    return {k: values[k] for k in GRAPH['outputs']}
+`;
+
+/** @returns {{language: string, filename: string, code: string, nodes: number, weights: number}} */
+function generateWSPCode(raw, language) {
+  const lang = String(language ?? '').trim().toLowerCase();
+  if (!['python', 'javascript'].includes(lang)) throw Error('言語は python または javascript を指定してください');
+  const checked=inspectGraph(raw); // sanitize and validate before string interpolation
+  const compact=JSON.stringify(checked.spec);
+  if(compact.length>WSP_EXPORT_LIMIT)throw Error('回路が大きすぎてコードに埋め込めません（120KB上限）。JSON回路として保存してください。');
+  const source=lang==='javascript' ?
+    '// Sol-Zero export: validated numeric WSP graph (not a trained language model).\n' +
+    'const GRAPH = ' + compact + ';\n' + JS_RUNTIME :
+    '# Sol-Zero export: validated numeric WSP graph (not a trained language model).\n' +
+    'GRAPH = __import__("json").loads(' + JSON.stringify(compact) + ')\n' + PY_RUNTIME;
+  return {language:lang,filename:lang==='python'?'solzero_wsp.py':'solzero_wsp.js',
+    code:source,nodes:checked.stats.nodes,weights:checked.stats.weights};
+}
 /** Sol-Zero v0.9: zero-pretrained, deterministic WSP circuit factory.
  * A recipe is a parameterized SPECIFICATION, not a stored/learned skill.
  * LUT4 indexes all 65,536 distinct four-bit Boolean functions; compile on demand.
@@ -1782,6 +1952,7 @@ class MediaWSP{
 }
 
 /** Unified offline media workspace for Sol-Zero. No external AI/services. */
+
 const STORE='solzero_studio_v012_recipe',DB_NAME='solzero_media_v012';
 function element(tag,txt){const x=document.createElement(tag);if(txt!==undefined)x.textContent=txt;return x;}
 function mimeFor(name){const ext=name.toLowerCase().split('.').pop();return ({png:'image/png',gif:'image/gif',jpg:'image/jpeg',jpeg:'image/jpeg',wav:'audio/wav',mp3:'audio/mpeg',webm:'video/webm',mp4:'video/mp4'})[ext]||null;}
@@ -1875,6 +2046,15 @@ class MediaStudio {
   }
  }
 }
+
+
+
+
+
+
+
+
+
 
 const engine=new SolZeroEngine();
 const generator=new ScratchBigram();
@@ -2259,7 +2439,13 @@ function renderGraph(){
         test.input.value=JSON.stringify([{input:spec.inputs.map(()=>1),expected:Array(meta.stats.outputWidths[0]).fill(0)}]);
         result.textContent=`未学習の密行列 ${meta.stats.weights.toLocaleString()} 重みを生成。実際の出力は乱数に依存し、期待値テストを合格するとは限りません。自動採用・自動保存はしません。`;
       }catch(e){result.textContent='生成拒否：'+e.message;}
-    }}),el('button',{class:'btn',text:'現在の回路をJSONで出力',onClick:()=>download(JSON.stringify(engine.graph.snapshot()),'solzero_wsp_graph.json','application/json;charset=utf-8')})));
+    }}),el('button',{class:'btn',text:'現在の回路をJSONで出力',onClick:()=>download(JSON.stringify(engine.graph.snapshot()),'solzero_wsp_graph.json','application/json;charset=utf-8')}),
+    ...['python','javascript'].map(language=>el('button',{class:'btn',text:language==='python'?'現在の回路→Python':'現在の回路→JavaScript',onClick:()=>{
+      try{const compiled=generateWSPCode(engine.graph.snapshot(),language);
+        download(compiled.code,compiled.filename,'text/plain;charset=utf-8');
+        result.textContent=`数値WSP回路の${compiled.language}コードを出力しました（${compiled.nodes}ノード・${compiled.weights}重み）。コードの実行は端末上で行いません。`;
+      }catch(err){result.textContent='コード出力拒否：'+err.message;}
+    }}))));
   root.append(el('h3',{text:'重みを指定座標へ直接書き込む'}));
   const target=field('linearノードID','text');target.input.value='hidden';
   const row=field('重みの行番号（0開始）','number');row.input.value='0';
