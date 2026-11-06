@@ -24,7 +24,7 @@ assert.ok(css.includes('min-height:48px'));
 assert.ok(css.includes('safe-area-inset-bottom'));
 assert.ok(!js.includes('fetch(') && !js.includes('location.reload('));
 assert.ok(js.includes('returnLast')&&js.includes('handoff'));
-assert.ok(js.includes('BANC_SOLZERO'));
+assert.ok(js.includes('FFC_SOLZERO_WORKSPACE'));
 assert.ok(!js.includes('executeAsync('),'handoff must not silently execute BANC tools');
 class Fake {
  constructor(tag,owner){this.tagName=tag.toUpperCase();this.ownerDocument=owner;this.children=[];this.dataset={};this.attributes={};
