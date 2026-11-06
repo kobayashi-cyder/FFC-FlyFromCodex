@@ -21,8 +21,19 @@ def run():
         page.wait_for_timeout(250)
         assert page.locator('#panelTitle').inner_text()=='メディア工房'
         for label in ['画像 PNG','音声 WAV','動画 GIF','音声付き動画 WebM']:
+            print('MEDIA STEP',label,flush=True)
             page.get_by_role('button',name=label,exact=True).click()
-            page.wait_for_function("() => document.querySelector('#panelBody .listentry')?.textContent.includes('生成完了：')",timeout=15000)
+            try:
+                page.wait_for_function("""() => {
+                  const s=document.querySelector('#panelBody .listentry')?.textContent||'';
+                  return s.includes('生成完了：')||s.includes('エラー：');
+                }""",timeout=20000)
+            except Exception:
+                print('MEDIA TIMEOUT',label,page.locator('#panelBody .listentry').first.inner_text(),flush=True)
+                raise
+            status=page.locator('#panelBody .listentry').first.inner_text()
+            print('MEDIA RESULT',label,status[:200],flush=True)
+            assert '生成完了：' in status,(label,status)
             page.wait_for_timeout(50)
         assert page.get_by_role('button',name='重みを設定').count()==1
         assert page.locator('#panelBody .listentry').count()>=5
