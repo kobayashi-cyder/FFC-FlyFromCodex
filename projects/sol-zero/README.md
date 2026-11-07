@@ -1,4 +1,4 @@
-## BANC888認知コア統合と学習WSP（実験ブランチ）
+## Sol-Zero v0.16 — BANC888認知コアと学習WSP（main統合済み）
 
 2026-11-06、BANC888の `app/src/main/assets/cognition-core.js` から認知計画検証コアを `chat_web/banc_cognition.js` へ移植しました。**BANC888 Androidアプリ全体の統合ではありません**。これは状態・前提条件・期待結果を扱う有限探索であり、学習型ニューラルWSPや自由推論とは区別します。
 
@@ -11,20 +11,20 @@
 
 ---
 
-## 学習WSP × タスク工房 × Android実験版（統合ブランチ）
+## 学習WSP × タスク工房 × Androidオフライン版
 
-本統合は、ゼロから訓練する小規模な数値ニューラルネットを既存のチャット・タスク工房と接続し、AndroidオフラインWebViewパッケージングに含める改修です。**BANCv888の旧Android内部コード移植は含みません。万能AIは未完成です。**
+本統合は、ゼロから訓練する小規模な数値ニューラルネットを既存のチャット・タスク工房と接続し、AndroidオフラインWebViewパッケージングに含める改修です。**BANC888の認知計画JSコアを移植していますが、旧Androidアプリ全体の統合ではありません。万能AIは未完成です。**
 
 1. チャットで `/net demo` を入力。訓練データから学習し、別の検証データで合格した数値WSP重みを採用します。
 2. `/net run [1.3]` で数値推定。独自タスクなら `/net train {JSON}` で数値の入出力例と未使用評価例を指定します。 `/net undo` で一つ前に戻せます。
 3. タスク工房から同じ重みを呼ぶ場合は `{"version":1,"steps":[{"id":"prediction","op":"wsp.learned","args":{"input":[1.3]}}]}` を実行します。
 4. JSONバックアップで重みを保存・復元します。破損した重みは拒否します。訓練例への近似だけで万能な自然言語知能・コード・画像・音声・動画生成に達するわけではありません。
 
-Node回帰: `node --test tests/*.test.mjs`、HTML再構築: `python scripts/build_standalone.py`。Android APKは専用CIが完成・署名・起動検証を確認した場合のみ配布候補とします。
+Node回帰: `node --test tests/*.test.mjs`（159件合格）、HTML再構築: `python scripts/build_standalone.py`。Android 15エミュレーター上でチャット・学習WSP・認知計画・タスク・PNG・保存の操作試験に合格済み（[CI #42342001443](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42342001443)）。Pixel 10 / Android 17実機は未検証です。
 
 ---
 
-# Sol-Zero v0.15 — タスクを分解・検証して実行するオフライン作業基盤
+# Sol-Zero v0.15（旧版仕様）— タスクを分解・検証して実行するオフライン作業基盤
 
 v0.14のチャット、WSP回路の生成・輸出、固定アルゴリズムのPython/JS生成、PNG/WAV/GIF/WebMメディア工房に、**22種類の許可済み操作を最大16工程つなぐタスク工房**を実装しました。自由な汎用知能ではなく、JSON手順を検証して実行する決定的な作業エンジンです。
 
