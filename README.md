@@ -1,30 +1,30 @@
 # FFC — FlyFromCodex
 
-## 統合開発：Sol-Zero × 学習WSP × Android（PR #79）
+## Sol-Zero v0.16 — 学習WSP × BANC888認知 × Android（2026-11-07）
 
-[検証用オフラインHTML](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/feature/sol-zero-unified-wsp-apk-20261106/projects/sol-zero/SolZero_Chat_Offline.html) / [統合PR #79](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/79) / [詳細と操作方法](projects/sol-zero/README.md)
+[▶ 統合オフラインHTMLを取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/raw/refs/heads/main/projects/sol-zero/SolZero_Chat_Offline.html) / [統合PR #79](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/79) / [詳細と操作方法](projects/sol-zero/README.md)
 
 - **実装済み:** ゼロから訓練する数値WSP重みを `/net demo`・`/net train`・`/net run`、タスク工房の `wsp.learned` に統合。加えてBANC888の認知計画検証コアを `/cognition demo`・`/cognition {JSON}` および `cognition.plan` として移植し、最大16工程・24操作のタスク内で使用できます。既存のチャット、コード、メディア制作機能を維持。BANC計画は予測のみで、OS操作は実行しません。
-- **検証:** Node 157件・Python 7件、Chromiumのモバイル表示試験、単体HTML再生成一致が通過。Android版のGradle/署名・エミュレーター結果は別に確認し、未確認のまま本番公開しません。
+- **検証:** Node **159/159**・Python **7/7**、Chromiumのモバイル表示試験、単体HTML再生成一致が通過。[Android 15実動作CI #42342318734](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42342318734) ではAPK署名・WebView起動・チャット・学習WSP・認知計画・タスク工房・PNG・ローカル保存が合格しました。
 - **範囲:** BANC888認知コアの一部のみを移植。旧Androidアプリ全体、万能知能、自由な高品質生成AIは未完成です。既存の大規模言語モデルやクラウドAPIは不使用です。
 
 ---
 
-## Sol-Zero v0.16 — Androidオフライン検証APK（2026-11-06）
+## Sol-Zero v0.16 — Androidオフライン検証APK（2026-11-07 公開）
 
-**APKはGitHub Release未公開（Androidエミュレーター検証待ち）** / [Androidビルドと署名済みCIアーティファクト](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/sol-zero-android.yml) / [Androidビルド仕様](projects/sol-zero/android/README.md)
+**[▶ Android用署名済みAPKを直接ダウンロード](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/sol-zero-v016-offline-lab/SolZero-v016-Android-offline-debug-signed.apk)** / [検証版Release](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/tag/sol-zero-v016-offline-lab) / [SHA-256](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/sol-zero-v016-offline-lab/SHA256SUMS.txt) / [仕様](projects/sol-zero/android/README.md)
 
-- **アプリの内容:** Sol-Zero v0.15のチャット・WSP・コード生成・タスク工房・PNG/WAV/GIF/WebM制作を端末内の安全なWebViewに収録。Android 10（API 29）以上が対象。パッケージ `jp.solzero.offline`。
+- **アプリの内容:** Sol-Zeroのチャット・学習WSP・BANC888認知計画・コード生成・24種類のタスク工房・PNG/WAV/GIF/WebM制作を端末内の安全なWebViewに収録。Android 10（API 29）以上が対象。パッケージ `jp.solzero.offline`。
 - **完全ローカル:** `INTERNET`権限・アクセシビリティ権限・広域ストレージ権限は不要。外部URLはWebViewで遮断し、保存はAndroid標準の `Downloads/SolZero`、取込はシステムファイル選択を利用します。
-- **検査:** [Android APK CI](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/sol-zero-android.yml) でAPK署名・16KB配置・内蔵HTMLのSHA-256一致・Java単体テストを実施。**Android 15エミュレーターによる起動/操作試験が成功した場合のみ**同じCIから検証版をGitHub Releaseへ初回公開します。
+- **検査:** [Android APK CI](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/sol-zero-android.yml) でAPK署名・16KB配置・内蔵HTMLのSHA-256一致・Java単体テストを実施。**Android 15エミュレーターの実動作試験に合格し、同じCIから検証版をGitHub Releaseへ公開済み**です。[検証ログ](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42342318734)を確認できます。
 - **署名と更新:** CIのdebug鍵で署名された**試験用APK**です。将来のAPKと証明書が異なると上書き更新できません。端末データのバックアップ後に必要に応じてアンインストールしてください。
 - **未保証:** Android 17 / Pixel 10実機、長時間の安定性、WebMの全WebView互換、自由学習による万能AI。通常のAndroid操作自動化機能はありません。
 
 ---
 
-## Sol-Zero v0.15 — オフライン汎用タスク工房（2026-11-06）
+## Sol-Zero v0.15 — 旧版仕様（2026-11-06）
 
-**[▶ Sol-Zero v0.15 単体HTMLを取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/raw/refs/heads/main/projects/sol-zero/SolZero_Chat_Offline.html)** / **[ソースと使い方](projects/sol-zero/README.md)** / [GitHub上でファイルを確認](projects/sol-zero/SolZero_Chat_Offline.html)
+**[▶ 現行版v0.16の単体HTMLを取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/raw/refs/heads/main/projects/sol-zero/SolZero_Chat_Offline.html)** / **[ソースと使い方](projects/sol-zero/README.md)** / [GitHub上でファイルを確認](projects/sol-zero/SolZero_Chat_Offline.html)
 
 - **機能:** 会話、数値WSP回路の帰納・実行・Python/JavaScript書き出し、固定8アルゴリズムのコード生成、手続き的なPNG/WAV/GIF/WebM生成・作品ZIP、最大16工程・22操作のCSV/資料/計算/WSP/メディア連結タスク。
 - **回帰検査:** [GitHub Actions #42155012701](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42155012701) でNode **149/149**、Python **7/7**、Chrome画面幅390pxのチャット・WSP・作品生成・ZIP復元・メディア保存・タスク実行が合格。単体HTMLは生成ソースとのバイト一致を確認済み。
