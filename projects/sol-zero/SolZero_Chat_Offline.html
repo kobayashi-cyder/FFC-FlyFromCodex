@@ -2371,7 +2371,7 @@ function gifLzw(pixels){const clear=256,end=257,dict=new Map();let next=258,widt
 }
 /** Encode GIF89a animation; pixels are palette indices for each frame. */
 function gifBytes(frames,w,h,fps=8){
- if(!Array.isArray(frames)||frames.length<2||frames.length>MEDIA_LIMITS.frames||!Number.isInteger(w)||!Number.isInteger(h)||w<1||h<1||w>MEDIA_LIMITS.videoWidth||h>MEDIA_LIMITS.videoHeight||!Number.isInteger(fps)||fps<2||fps>20)throw Error('GIF制限超過');
+ if(!Array.isArray(frames)||frames.length<2||frames.length>MEDIA_LIMITS.frames||!Number.isInteger(fps)||fps<2||fps>20||frames.length/fps>MEDIA_LIMITS.duration||!Number.isInteger(w)||!Number.isInteger(h)||w<1||h<1||w>MEDIA_LIMITS.videoWidth||h>MEDIA_LIMITS.videoHeight)throw Error('GIF制限超過');
  const out=[],byte=n=>out.push(n&255),word=n=>{byte(n);byte(n>>8);},str=s=>{for(let i=0;i<s.length;i++)byte(s.charCodeAt(i));};
  str('GIF89a');word(w);word(h);byte(0xf7);byte(0);byte(0);out.push(...gifPalette());
  // Netscape infinite loop
