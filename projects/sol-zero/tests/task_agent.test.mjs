@@ -91,3 +91,45 @@ test('async media requires explicit authorization and never silently writes',asy
 test('overlong plans are refused before execution or side effects',()=>{
  assert.throws(()=>run([{id:'x',op:'value',args:{value:'X'.repeat(155000)}}]),/長すぎ/);
 });
+import {WeightSpaceNetwork,NEURAL_DEMO,trainAndVerifyNeural,promoteNeural} from '../chat_web/wsp_neural.js';
+
+test('task plans reuse exactly the scratch-learned WSP weights used by chat',()=>{
+ const net=new WeightSpaceNetwork();promoteNeural(trainAndVerifyNeural(NEURAL_DEMO),net);
+ const res=run([v('x',[1.3]),{id:'estimate',op:'wsp.learned',args:{input:ref('x')}}],{neural:net});
+ assert.equal(res.ok,true);
+ assert.ok(Math.abs(res.output[0]-1.69)<.25);
+ assert.deepEqual(res.trace.map(s=>s.op),['value','wsp.learned']);
+});
+test('task plans reject missing, untrained or invalid neural adapters',()=>{
+ const plan=[{id:'estimate',op:'wsp.learned',args:{input:[0.5]}}];
+ assert.equal(run(plan,{}).ok,false);
+ const empty=run(plan,{neural:new WeightSpaceNetwork()});
+ assert.equal(empty.ok,false);assert.match(empty.error,/学習済みWSP/);
+ const net=new WeightSpaceNetwork();promoteNeural(trainAndVerifyNeural(NEURAL_DEMO),net);
+ const invalid=run([{id:'bad',op:'wsp.learned',args:{input:[1,2]}}],{neural:net});
+ assert.equal(invalid.ok,false);assert.match(invalid.error,/次元/);
+});
+
+import {BANC_COGNITION} from '../chat_web/banc_cognition.js';
+const cognitionFixture={schema:1,facts:{step:'start'},goal:{step:'finished'},actions:[
+ {id:'prepare',tool:'task.value',requires:{step:'start'},effects:{step:'checked'},args:{}},
+ {id:'finish',tool:'task.value',requires:{step:'checked'},effects:{step:'finished'},args:{}}
+]};
+test('BANC888 cognition core ports its bounded multi-step planning without execution',()=>{
+ const seen=BANC_COGNITION.plan(cognitionFixture);
+ assert.equal(seen.status,'planned');
+ assert.deepEqual(seen.steps.map(s=>s.id),['prepare','finish']);
+ const result=run([{id:'preview',op:'cognition.plan',args:{task:cognitionFixture}}],{cognition:BANC_COGNITION});
+ assert.equal(result.ok,true);
+ assert.equal(result.output.status,'planned');
+ assert.deepEqual(result.output.steps.map(s=>s.id),['prepare','finish']);
+ assert.equal(result.output.scope,'予測のみ・未実行');
+});
+test('BANC cognition rejects arbitrary or malformed graph and missing adapter',()=>{
+ assert.equal(run([{id:'p',op:'cognition.plan',args:{task:cognitionFixture}}]).ok,false);
+ const impossible={...cognitionFixture,actions:[]};
+ const r=run([{id:'p',op:'cognition.plan',args:{task:impossible}}],{cognition:BANC_COGNITION});
+ assert.equal(r.ok,true);assert.equal(r.output.status,'blocked');
+ const broken={...cognitionFixture,actions:[{id:'bad',tool:'task.value',requires:{},effects:{step:'finished'},args:JSON.parse('{"__proto__":5}')} ]};
+ assert.throws(()=>run([{id:'p',op:'cognition.plan',args:{task:broken}}],{cognition:BANC_COGNITION}),/危険|フィールド/);
+});

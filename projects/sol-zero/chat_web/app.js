@@ -56,16 +56,17 @@ function schemaRead(raw){
     const documents=Array.isArray(data.documents)?data.documents.filter(d=>d&&typeof d.text==='string'&&typeof d.title==='string').slice(0,MAX_DOCS).map(d=>({id:String(d.id||id()).slice(0,100),title:d.title.slice(0,100),text:d.text.slice(0,100000),added:typeof d.added==='string'?d.added.slice(0,48):''})):[];
     if(documents.reduce((s,d)=>s+d.text.length,0)>MAX_DOC_CHARS)return null;
     const theme=data.theme==='dark'?'dark':'light';
-    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null};
+    return {schema:3,chats,current:chats.some(c=>c.id===data.current)?data.current:chats[0].id,knowledge,documents,theme,wsp:data.wsp||null,bulk:data.bulk||null,bulkPrevious:data.bulkPrevious||null,flow:data.flow||null,generator:data.generator||null,autoAudit:data.autoAudit||null,flowPrevious:data.flowPrevious||null,graph:data.graph||null,graphHistory:data.graphHistory||null,neural:data.neural||null};
   }catch{return null;}
 }
 function notify(message){const node=byId('toast');node.textContent=message;node.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.add('hidden'),2800);}
-function save(){db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
+function save(){db.neural=engine.neural.snapshot();db.wsp=engine.router.snapshot();db.bulk=engine.bulk.snapshot();db.bulkPrevious=engine.bulk.previous;db.flow=engine.flow.snapshot();db.generator=generator.snapshot();db.graph=engine.graph.snapshot();db.graphHistory=engine.graph.history;try{const payload=JSON.stringify(db);if(payload.length>3400000)throw Error('localStorage上限に近いです');localStorage.setItem(DB_KEY,payload);return true;}catch{notify('保存に失敗しました。容量・ブラウザ設定を確認し、JSONを書き出してください。');return false;}}
 function init(){
   let read=null;try{read=schemaRead(localStorage.getItem(DB_KEY));if(!read)read=schemaRead(localStorage.getItem(V011_KEY));if(!read)read=schemaRead(localStorage.getItem(V010_KEY));if(!read)read=schemaRead(localStorage.getItem(V09_KEY));if(!read)read=schemaRead(localStorage.getItem(V08_KEY));if(!read)read=schemaRead(localStorage.getItem(V07_KEY));if(!read)read=schemaRead(localStorage.getItem(PREV_KEY));if(!read)read=schemaRead(localStorage.getItem(OLD_KEY));if(!read)read=schemaRead(localStorage.getItem(OLDER_KEY));if(!read)read=schemaRead(localStorage.getItem(ANCIENT_KEY));}catch{}
-  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null};
+  db=read||{schema:3,chats:[createChat()],current:null,knowledge:[],documents:[],theme:'light',wsp:null,bulk:null,bulkPrevious:null,flow:null,generator:null,autoAudit:null,flowPrevious:null,graph:null,graphHistory:null,neural:null};
   db.current ||= db.chats[0].id;
   if(db.wsp)engine.router.restore(db.wsp);
+  if(db.neural&&!engine.neural.restore(db.neural))notify('保存されたWSPニューラル重みは不正です。');
   if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP一括回路のデータが不正なため復元しませんでした。');
   if(db.bulkPrevious){const old=new WSPBulk();if(old.restore(db.bulkPrevious))engine.bulk.previous=old.snapshot();else notify('旧回路の復元データが不正です。');}
   if(db.flow&&!engine.flow.restore(db.flow))notify('状態機械の保存内容が不正です。');
@@ -125,7 +126,7 @@ function drawMessages(){
 }
 function draw(){drawHistory();drawMessages();$input.value=current().draft||'';resize();byId('pinChat').textContent=current().pinned?'📌 固定を解除':'📌 会話を固定';}
 function resize(){$input.style.height='auto';$input.style.height=Math.min(145,$input.scrollHeight)+'px';}
-function taskAdapter(allowMediaWrites=false){return {documents:db.documents,graph:engine.graph,calculate,generateCode,generateWSPCode,allowMediaWrites,generateMedia:async(kind,opts)=>{await studio.ensureLoaded();return studio.generate(kind,opts);}};}
+function taskAdapter(allowMediaWrites=false){return {documents:db.documents,graph:engine.graph,neural:engine.neural,cognition:engine.cognition,calculate,generateCode,generateWSPCode,allowMediaWrites,generateMedia:async(kind,opts)=>{await studio.ensureLoaded();return studio.generate(kind,opts);}};}
 function taskResultText(r){return (r.ok?'完了':'停止')+'：'+r.trace.length+'工程実行'+(r.ok?'':`。失敗工程：${r.failedAt}（${r.error}）`)+'\n'+JSON.stringify(r.ok?r.output:r.trace,null,2).slice(0,9000)+'\n※計画の実行記録です。自由なAI推論の証明ではありません。';}
 async function send(event){
   event?.preventDefault();
@@ -176,6 +177,7 @@ async function importJson(event){const file=event.target.files?.[0];event.target
   const parsed=schemaRead(await file.text());if(!parsed)return notify('復元できない形式、または上限超過です。');
   if(!confirm('現在の全会話・知識・資料をバックアップの内容で置き換えます。続けますか？'))return;
   db=parsed;engine.router=new engine.router.constructor();if(db.wsp)engine.router.restore(db.wsp);
+  engine.neural=new engine.neural.constructor();if(db.neural&&!engine.neural.restore(db.neural))notify('復元されたWSP重みは不正です。');
   engine.bulk=new WSPBulk();
 engine.flow=new WSPFlow();if(db.bulk&&!engine.bulk.restore(db.bulk))notify('WSP回路を検証できず読み込みを中止しました。');
   if(db.flow&&!engine.flow.restore(db.flow))notify('状態機械を復元できませんでした。');
@@ -203,7 +205,7 @@ function field(label,type='text',placeholder=''){
 function renderTaskAgent(){
   panelIntro('タスク工房 v0.15','許可された工程を組み合わせるオフライン実行機構。一般推論AIではありません。');
   const root=byId('panelBody');root.replaceChildren();
-  root.append(el('p',{class:'muted',text:'最大16工程・22種類の操作。JSONの前工程を $ref で参照し、CSV集計・資料検索・WSP回路実行・コード生成・手続き的メディア生成を連結できます。未知の操作は拒否します。'}));
+  root.append(el('p',{class:'muted',text:'最大16工程・24種類の操作。JSONの前工程を $ref で参照し、CSV集計・資料検索・WSP回路実行・コード生成・手続き的メディア生成を連結できます。未知の操作は拒否します。'}));
   const recipe=field('タスク計画JSON（version=1、steps）','textarea');recipe.input.maxLength=48000;recipe.input.style.minHeight='225px';
   try{recipe.input.value=localStorage.getItem(TASK_AGENT_STORE)||JSON.stringify(TASK_AGENT_DEMO,null,2);}catch{recipe.input.value=JSON.stringify(TASK_AGENT_DEMO,null,2);}
   const status=el('div',{class:'listentry',text:'計画を確認後に実行してください。メディア生成だけは実行前に書込みを確認します。'});
@@ -211,6 +213,8 @@ function renderTaskAgent(){
     ['CSV集計',TASK_AGENT_DEMO],
     ['資料検索',{version:1,steps:[{id:'hits',op:'documents.search',args:{query:'売上'}}]}],
     ['WSP計算とコード変換',{version:1,steps:[{id:'result',op:'wsp.run',args:{input:[1,0]}},{id:'source',op:'wsp.export',args:{language:'python'}}],output:'source'}],
+    ['BANC認知計画（実行せず検証）',{version:1,steps:[{id:'preview',op:'cognition.plan',args:{task:{schema:1,facts:{state:'new'},goal:{state:'ready'},actions:[{id:'prepare',tool:'task.value',requires:{state:'new'},effects:{state:'draft'},args:{}},{id:'verify',tool:'task.value',requires:{state:'draft'},effects:{state:'ready'},args:{}}]}}}]}],
+    ['学習WSP推論（/net demo後）',{version:1,steps:[{id:'x',op:'value',args:{value:[1.3]}},{id:'guess',op:'wsp.learned',args:{input:{$ref:'x'}}}],output:'guess'}],
     ['画像・音声の生成',{version:1,steps:[{id:'image',op:'media.generate',args:{kind:'image',prompt:'星空'}},{id:'audio',op:'media.generate',args:{kind:'audio',prompt:'波音',text:'波音'}}],output:'audio'}]
   ];
   const choose=document.createElement('select');choose.className='btn';choose.setAttribute('aria-label','タスクの例を選択');for(const [label]of templates){const o=document.createElement('option');o.textContent=label;choose.append(o);}

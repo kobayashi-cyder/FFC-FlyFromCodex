@@ -1,5 +1,27 @@
 # FFC — FlyFromCodex
 
+## 統合開発：Sol-Zero × 学習WSP × Android（PR #79）
+
+[検証用オフラインHTML](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/blob/feature/sol-zero-unified-wsp-apk-20261106/projects/sol-zero/SolZero_Chat_Offline.html) / [統合PR #79](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/pull/79) / [詳細と操作方法](projects/sol-zero/README.md)
+
+- **実装済み:** ゼロから訓練する数値WSP重みを `/net demo`・`/net train`・`/net run`、タスク工房の `wsp.learned` に統合。加えてBANC888の認知計画検証コアを `/cognition demo`・`/cognition {JSON}` および `cognition.plan` として移植し、最大16工程・24操作のタスク内で使用できます。既存のチャット、コード、メディア制作機能を維持。BANC計画は予測のみで、OS操作は実行しません。
+- **検証:** Node 157件・Python 7件、Chromiumのモバイル表示試験、単体HTML再生成一致が通過。Android版のGradle/署名・エミュレーター結果は別に確認し、未確認のまま本番公開しません。
+- **範囲:** BANC888認知コアの一部のみを移植。旧Androidアプリ全体、万能知能、自由な高品質生成AIは未完成です。既存の大規模言語モデルやクラウドAPIは不使用です。
+
+---
+
+## Sol-Zero v0.16 — Androidオフライン検証APK（2026-11-06）
+
+**APKはGitHub Release未公開（Androidエミュレーター検証待ち）** / [Androidビルドと署名済みCIアーティファクト](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/sol-zero-android.yml) / [Androidビルド仕様](projects/sol-zero/android/README.md)
+
+- **アプリの内容:** Sol-Zero v0.15のチャット・WSP・コード生成・タスク工房・PNG/WAV/GIF/WebM制作を端末内の安全なWebViewに収録。Android 10（API 29）以上が対象。パッケージ `jp.solzero.offline`。
+- **完全ローカル:** `INTERNET`権限・アクセシビリティ権限・広域ストレージ権限は不要。外部URLはWebViewで遮断し、保存はAndroid標準の `Downloads/SolZero`、取込はシステムファイル選択を利用します。
+- **検査:** [Android APK CI](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/workflows/sol-zero-android.yml) でAPK署名・16KB配置・内蔵HTMLのSHA-256一致・Java単体テストを実施。**Android 15エミュレーターによる起動/操作試験が成功した場合のみ**同じCIから検証版をGitHub Releaseへ初回公開します。
+- **署名と更新:** CIのdebug鍵で署名された**試験用APK**です。将来のAPKと証明書が異なると上書き更新できません。端末データのバックアップ後に必要に応じてアンインストールしてください。
+- **未保証:** Android 17 / Pixel 10実機、長時間の安定性、WebMの全WebView互換、自由学習による万能AI。通常のAndroid操作自動化機能はありません。
+
+---
+
 ## Sol-Zero v0.15 — オフライン汎用タスク工房（2026-11-06）
 
 **[▶ Sol-Zero v0.15 単体HTMLを取得](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/raw/refs/heads/main/projects/sol-zero/SolZero_Chat_Offline.html)** / **[ソースと使い方](projects/sol-zero/README.md)** / [GitHub上でファイルを確認](projects/sol-zero/SolZero_Chat_Offline.html)

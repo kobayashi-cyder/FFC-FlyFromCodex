@@ -55,8 +55,43 @@ def main():
     page.locator('#input').fill('/induce 1,0')
     page.locator('#chatForm button[type="submit"]').click()
     assert '数値出力：1' in page.locator('.message.assistant .bubble').last.inner_text()
+    # WSP trained from scratch must remain usable after a real UI reload,
+    # then be callable through the same weights from the task workbench.
+    page.locator('#input').fill('/net demo')
+    page.locator('#chatForm button[type="submit"]').click()
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text(
+        'WSP重み学習・採用完了',timeout=30000)
+    saved=page.evaluate("""() => JSON.parse(
+      localStorage.getItem('solzero_chat_v012_local')).neural""")
+    assert saved and len(saved['w1'])>0 and len(saved['w2'])>0
+    page.set_content(HTML,wait_until='load')
+    page.locator('#input').fill('/net run [1.3]')
+    page.locator('#chatForm button[type="submit"]').click()
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text(
+        'WSP重み行列の推論出力',timeout=12000)
+    page.get_by_role('button',name='タスク工房').first.click()
+    page.locator('#panelBody select').select_option(label='学習WSP推論（/net demo後）')
+    page.get_by_role('button',name='計画を実行').click()
+    expect(page.locator('#panelBody .listentry').last).to_contain_text(
+        '完了：2工程実行',timeout=12000)
+    # BANC888 cognition is a preview-only optional layer: no hidden tool call.
+    page.get_by_role('button',name='閉じる').click()
+    page.locator('#input').fill('/cognition demo')
+    page.locator('#chatForm button[type="submit"]').click()
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text('"schema": 1')
+    page.locator('#input').fill('/cognition {"schema":1,"facts":{"state":"new"},"goal":{"state":"ready"},"actions":[{"id":"prepare","tool":"task.value","requires":{"state":"new"},"effects":{"state":"ready"},"args":{}}]}')
+    page.locator('#chatForm button[type="submit"]').click()
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text(
+        'BANC888認知計画（予測のみ、未実行）')
+    expect(page.locator('.message.assistant .bubble').last).to_contain_text('"status":"planned"')
+    page.get_by_role('button',name='タスク工房').first.click()
+    page.locator('#panelBody select').select_option(label='BANC認知計画（実行せず検証）')
+    page.get_by_role('button',name='計画を実行').click()
+    expect(page.locator('#panelBody .listentry').last).to_contain_text(
+        '完了：1工程実行',timeout=12000)
+    assert '予測のみ・未実行' in page.locator('#panelBody .listentry').last.inner_text()
     assert not errors,errors
-    print('PASS: v0.10 migration; induction 5/5; promotion; saved graph reload; chat execute; rollback; no JS errors')
+    print('PASS: migration, WSP training/persistence/task reuse, BANC cognition preview, no JS errors')
     browser.close()
 
 if __name__=='__main__':

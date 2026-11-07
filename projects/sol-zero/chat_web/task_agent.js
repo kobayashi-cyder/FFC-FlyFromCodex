@@ -6,7 +6,7 @@ export const TASK_AGENT_LIMITS = Object.freeze({steps:16,planChars:48000,cellCha
 export const TASK_AGENT_TOOLS = Object.freeze([
   'value','documents.read','documents.search','text.normalize','text.replace','text.lines','text.join',
   'json.parse','json.stringify','csv.parse','csv.stringify','table.select','table.filter','table.sort',
-  'table.group','table.stats','math.calculate','wsp.run','code.generate','wsp.export','media.generate','assert.equal'
+  'table.group','table.stats','math.calculate','wsp.run','wsp.learned','cognition.plan','code.generate','wsp.export','media.generate','assert.equal'
 ]);
 const OPS = new Set(TASK_AGENT_TOOLS);
 const IDENT = /^[a-zA-Z][a-zA-Z0-9_]{0,31}$/;
@@ -52,6 +52,8 @@ case 'table.stats':{const rows=ensureTable(args.rows),col=safeKey(args.column);i
 case 'table.group':{const rows=ensureTable(args.rows),by=safeKey(args.by),col=safeKey(args.column),metric=args.metric||'sum';if(!['sum','mean','count','min','max'].includes(metric))fail('集計方式が不正');const groups=new Map();for(const r of rows){if(!Object.hasOwn(r,by)||!Object.hasOwn(r,col))fail('集計列がありません');if(!groups.has(r[by]))groups.set(r[by],[]);groups.get(r[by]).push(r);}return [...groups].map(([name,items])=>({group:name,count:items.length,value:metric==='count'?items.length:statistic(items,col)[metric]}));}
 case 'math.calculate':{if(typeof ctx.calculate!=='function')fail('計算機能が未接続');const r=ctx.calculate(text(args.expression,120));if(!r||r.error)fail(r?.error||'計算不可');return Number(r.value);}
 case 'wsp.run':{if(!ctx.graph||typeof ctx.graph.run!=='function')fail('WSP回路が未接続');if(!Array.isArray(args.input))fail('WSP入力は配列です');return ctx.graph.run(args.input).outputs;}
+case 'wsp.learned':{if(!ctx.neural||typeof ctx.neural.run!=='function')fail('学習済みWSPネットワークが未接続');if(!Array.isArray(args.input))fail('WSP推論入力は配列です');return ctx.neural.run(args.input);}
+case 'cognition.plan':{if(!ctx.cognition||typeof ctx.cognition.plan!=='function')fail('BANC888認知計画器が未接続');if(!isRecord(args.task))fail('認知タスクはJSONオブジェクトです');const result=ctx.cognition.plan(args.task);return {status:result.status,steps:result.steps||[],reason:result.reason||null,expanded:result.expanded||0,scope:'予測のみ・未実行'};}
 case 'code.generate':{if(typeof ctx.generateCode!=='function')fail('コード生成が未接続');const r=ctx.generateCode(text(args.request,512));if(!r?.ok)fail(r?.message||'未対応のコード生成');return {filename:r.filename,language:r.language,code:r.code};}
 case 'wsp.export':{if(!ctx.graph||typeof ctx.generateWSPCode!=='function')fail('WSP書き出しが未接続');const r=ctx.generateWSPCode(ctx.graph.snapshot(),args.language);return {filename:r.filename,language:r.language,code:r.code};}
 case 'assert.equal':{const actual=args.actual,expected=args.expected;if(JSON.stringify(actual)!==JSON.stringify(expected))fail('検証不合格：結果が期待値と一致しません');return {passed:true};}
@@ -65,4 +67,4 @@ export const TASK_AGENT_DEMO = Object.freeze({version:1,steps:[
   {id:'totals',op:'table.group',args:{rows:{$ref:'rows'},by:'category',column:'amount',metric:'sum'}},
   {id:'csv',op:'csv.stringify',args:{rows:{$ref:'totals'}}}
 ],output:'csv'});
-export function taskAgentHelp(){return `Sol-Zeroタスク工房 v0.15：${TASK_AGENT_TOOLS.length}種の許可済み操作を1〜16工程でつなげます。\n上部「タスク工房」でCSV集計や文書検索・WSP・コード生成・メディア生成を計画JSONから実行。\n「/agent help」：この説明。「/agent demo」：サンプルJSON。「/agent {JSON}」：副作用のない工程だけ実行。\n任意コード・Web通信・未知の指示理解は未対応です。`;}
+export function taskAgentHelp(){return `Sol-Zeroタスク工房 v0.15：${TASK_AGENT_TOOLS.length}種の許可済み操作を1〜16工程でつなげます。\n上部「タスク工房」でCSV集計や文書検索・WSP・コード生成・メディア生成を計画JSONから実行。\n「/agent help」：この説明。「/agent demo」：サンプルJSON。「/agent {JSON}」：副作用のない工程だけ実行。\n新操作 wsp.learned：/net train で学習した重みから数値を推論します。cognition.plan：BANC888の認知計画を予測のみで検証し、端末操作は実行しません。任意コード・Web通信・未知の指示理解は未対応です。`;}
