@@ -1,6 +1,6 @@
 # Sol-Zero v0.16 (Android Offline Lab)
 
-このフォルダは**Sol-Zero v0.15 の単体HTMLをAndroid WebViewで開く検証用APK**です。認知モデルの更新ではありません。独自学習の万能AI、自由なコード生成、実写級メディア生成を保証しません。
+このフォルダは**Sol-Zero v0.16の統合HTMLをAndroid WebViewで動かすオフライン検証用APK**です。独自訓練の小規模数値WSP・BANC888の検証専用認知計画・24操作のタスク工房を同梱します。万能AI、自由なコード生成、実写級メディア生成を保証しません。
 
 ## 動作条件
 
@@ -11,9 +11,9 @@
 
 ## 使い方
 
-1. GitHub Actionsの `SolZero-v016-Android-offline-debug-signed-APK` をダウンロード。
-2. ZIPを展開し、`app-debug.apk`をAndroid端末で開いてインストール。
-3. アプリを起動すると、同梱したSol-Zero v0.15 HTMLがオフラインで開きます。「タスク工房」「チャット」「メディア工房」「WSP」が利用可能です。
+1. [検証済み署名APK（GitHub Release）](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/sol-zero-v016-offline-lab/SolZero-v016-Android-offline-debug-signed.apk) をダウンロード。
+2. APKファイルをAndroid端末で開いてインストール。検証用署名であるため、旧デバッグ版との上書きは保証されません。
+3. アプリを起動すると、統合HTMLがオフラインで開きます。チャット `/net demo` で独自WSP学習、`/cognition demo` でBANC認知計画、上部からタスク工房・メディア工房が利用可能です。
 4. プロジェクトZIP・画像・音声などの書き出しは `Downloads/SolZero` へ保存されます。ファイル選択はAndroid標準のシステムピッカーです。
 
 ## 再現ビルド
@@ -25,7 +25,11 @@ cd projects/sol-zero/android
 gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
 ```
 
-ビルド時には `../SolZero_Chat_Offline.html` を `assets/index.html` として組み込みます。CIでAPK内HTMLとリポジトリ内HTMLのSHA-256一致、署名、ZIP16KB alignment、`INTERNET`権限がないことを確認します。
+ビルド時には `../SolZero_Chat_Offline.html` を `assets/index.html` として組み込みます。CIでAPK内HTMLとリポジトリ内HTMLのSHA-256一致、署名、ZIP16KB alignment、`INTERNET`権限がないことを確認します。さらにKVMを有効にしたAndroid 15エミュレーターで実際のWebView・チャット・学習・認知計画・PNG・Downloadsを実行し、[本流CI #42342318734](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/actions/runs/42342318734) で合格しています。
+
+## 公開APKの整合性
+
+[SHA256SUMS.txt](https://github.com/kobayashi-cyder/FFC-FlyFromCodex/releases/download/sol-zero-v016-offline-lab/SHA256SUMS.txt) のSHA-256を照合してください。公開APKは3,261,821バイト、SHA-256 `becf872e062635d3f770f3cd7c08ca62a7f1ea0147aaed4d9ffb48ab2b88af67` です。
 
 ## 重要な制限
 
