@@ -25,6 +25,8 @@ test('fixed palette and GIF89a encode animated frames',()=>{
  const w=32,h=20,rgba=new Uint8Array(w*h*4).fill(255),idx=rgbaToIndex(rgba,w,h);assert.equal(idx.length,w*h);
  const frames=Array.from({length:4},(_,f)=>Uint8Array.from({length:w*h},(_,i)=>(i%256+f)%256));
  const g=gifBytes(frames,w,h,5);assert.equal(new TextDecoder().decode(g.slice(0,6)),'GIF89a');assert.equal(g.at(-1),0x3b);assert.ok(g.length>850);
+ assert.throws(()=>gifBytes(Array.from({length:60},()=>new Uint8Array(w*h)),w,h,2),/GIF制限超過/);
+ assert.doesNotThrow(()=>gifBytes(Array.from({length:16},()=>new Uint8Array(w*h)),w,h,2));
  assert.throws(()=>gifBytes(frames,999,999,8));assert.throws(()=>rgbaToIndex([1],w,h));
 });
 test('noncompressed ZIP exports and checks the exact same binary bytes',()=>{
