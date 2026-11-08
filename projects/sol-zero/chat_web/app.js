@@ -623,7 +623,7 @@ function renderInduction(){
 byId('pinChat').addEventListener('click',togglePin);
 for(const key of ['newSidebar','newTop'])byId(key).addEventListener('click',newChat);
 byId('chatForm').addEventListener('submit',send);
-$input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229){event.preventDefault();send();}});
+$input.addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)&&!event.isComposing&&event.keyCode!==229){event.preventDefault();send();}});
 $input.addEventListener('input',()=>{current().draft=$input.value.slice(0,3000);save();resize();});
 byId('menu').addEventListener('click',()=>$sidebar.classList.toggle('open'));
 byId('historySearch').addEventListener('input',drawHistory);
