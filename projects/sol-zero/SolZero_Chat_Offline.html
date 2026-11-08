@@ -2371,6 +2371,7 @@ engine.flow=new WSPFlow();
 engine.graph=new WSPGraph();
 const DB_KEY='solzero_chat_v012_local',V011_KEY='solzero_chat_v011_local',V010_KEY='solzero_chat_v010_local',V09_KEY='solzero_chat_v09_local',V08_KEY='solzero_chat_v08_local',V07_KEY='solzero_chat_v07_local',PREV_KEY='solzero_chat_v06_local',OLD_KEY='solzero_chat_v05_local',OLDER_KEY='solzero_chat_v04_local',ANCIENT_KEY='solzero_chat_v03_local';
 const MAX_CHATS=40,MAX_MESSAGES=400,MAX_DOCS=8,MAX_DOC_CHARS=450000;
+const MAX_ASSISTANT_MESSAGE_CHARS=200000;
 const byId=id=>document.getElementById(id);
 const $messages=byId('messages'),$input=byId('input'),$history=byId('history'),$sidebar=byId('sidebar');
 let db,priorFocus=null,toastTimer=null;
@@ -2401,7 +2402,7 @@ function schemaRead(raw){
       notes:Array.isArray(c.notes)?c.notes.filter(n=>typeof n==='string').slice(-100).map(n=>n.slice(0,500)):[],
       lessons:Array.isArray(c.lessons)?c.lessons.filter(l=>l&&typeof l.q==='string'&&typeof l.a==='string').slice(-100).map(l=>({q:l.q.slice(0,120),a:l.a.slice(0,1500)})):[],
       tasks:Array.isArray(c.tasks)?c.tasks.filter(t=>t&&typeof t.text==='string').slice(-100).map(t=>({text:t.text.slice(0,160),done:!!t.done})):[],
-      messages:c.messages.filter(m=>m&&(m.role==='user'||m.role==='assistant')&&typeof m.text==='string').slice(-MAX_MESSAGES).map(m=>({role:m.role,text:m.text.slice(0,3200),at:typeof m.at==='string'?m.at.slice(0,48):''}))
+      messages:c.messages.filter(m=>m&&(m.role==='user'||m.role==='assistant')&&typeof m.text==='string').slice(-MAX_MESSAGES).map(m=>({role:m.role,text:m.text.slice(0,m.role==='assistant'?MAX_ASSISTANT_MESSAGE_CHARS:3200),at:typeof m.at==='string'?m.at.slice(0,48):''}))
     }));
     if(!chats.length)return null;
     const knowledge=Array.isArray(data.knowledge)?data.knowledge.filter(l=>l&&typeof l.q==='string'&&typeof l.a==='string').slice(-200).map(l=>({q:l.q.slice(0,120),a:l.a.slice(0,1500)})):[];
